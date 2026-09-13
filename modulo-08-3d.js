@@ -155,6 +155,8 @@
     // queden con un borde continuo y suave, sin muescas/quiebres.
     const ribbonGeo = new THREE.BufferGeometry();
     const ribbonPos = [];
+    const ribbonUv = [];
+    const RIBBON_UV_SCALE = 0.06;
     const HALF_W = 0.9;
     edges.forEach(([kind, pts], edgeIdx) => {
       // Desfase de altura MUY pequeno por via (no por segmento, para que
@@ -193,11 +195,22 @@
           a.x - ax, yJitter, a.z - az, a.x + ax, yJitter, a.z + az, b.x + bx, yJitter, b.z + bz,
           a.x - ax, yJitter, a.z - az, b.x + bx, yJitter, b.z + bz, b.x - bx, yJitter, b.z - bz
         );
+        [
+          [a.x - ax, a.z - az], [a.x + ax, a.z + az], [b.x + bx, b.z + bz],
+          [a.x - ax, a.z - az], [b.x + bx, b.z + bz], [b.x - bx, b.z - bz],
+        ].forEach(([px, pz]) => ribbonUv.push(px * RIBBON_UV_SCALE, pz * RIBBON_UV_SCALE));
       }
     });
     ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(ribbonPos, 3));
+    ribbonGeo.setAttribute("uv", new THREE.Float32BufferAttribute(ribbonUv, 2));
     ribbonGeo.computeVertexNormals();
-    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0x76797d, roughness: 0.85, side: THREE.DoubleSide });
+    const viaTex = new THREE.TextureLoader().load("./assets/textura_via.jpg");
+    viaTex.wrapS = THREE.RepeatWrapping;
+    viaTex.wrapT = THREE.RepeatWrapping;
+    const ribbonMat = new THREE.MeshStandardMaterial({
+      map: viaTex, color: 0x76797d, roughness: 0.85, side: THREE.DoubleSide,
+      transparent: true, opacity: 0.7,
+    });
     const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
     roadMesh.receiveShadow = true;
     sceneRoot.add(roadMesh);
