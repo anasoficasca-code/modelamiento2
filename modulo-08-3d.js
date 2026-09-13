@@ -572,7 +572,7 @@
   function buildParques(parques) {
     const positions = [];
     const uvs = [];
-    const UV_SCALE = 0.012; // tiles aun mas grandes y textura mas suave, casi homogenea
+    const UV_SCALE = 0.006; // la mitad de antes, porque el tile espejado ahora es 2x mas grande (para mantener el mismo tamano de grano)
     parques.forEach(p => {
       const pts = p.pts.map(pt => toScene(pt[0], pt[1]));
       if (pts.length < 3) return;
