@@ -163,7 +163,7 @@
     });
     ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(ribbonPos, 3));
     ribbonGeo.computeVertexNormals();
-    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xc7ccd1, roughness: 0.95, side: THREE.DoubleSide });
+    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xe3ded3, roughness: 0.92, side: THREE.DoubleSide });
     const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
     roadMesh.receiveShadow = true;
     sceneRoot.add(roadMesh);
@@ -221,9 +221,9 @@
   // dos InstancedMesh (tronco y copa) por rendimiento con ~120 mil arboles. ----
   function buildTrees(trees) {
     const trunkGeo = new THREE.CylinderGeometry(1, 1, 1, 6);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a4632, roughness: 0.95 });
-    const foliageGeo = new THREE.ConeGeometry(1, 1, 7);
-    const foliageMat = new THREE.MeshStandardMaterial({ color: 0x3f6b3f, roughness: 0.9 });
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b5643, roughness: 0.95 });
+    const foliageGeo = new THREE.IcosahedronGeometry(1, 1);
+    const foliageMat = new THREE.MeshStandardMaterial({ color: 0x5c8f52, roughness: 0.85, flatShading: true });
 
     const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
     const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, trees.length);
@@ -237,7 +237,7 @@
       const p = toScene(x, y);
       const h = hMeters * SCALE;
       const trunkH = h * 0.22, trunkR = Math.max(0.015, h * 0.02);
-      const foliageH = h * 0.85, foliageR = Math.max(0.12, h * 0.32);
+      const foliageH = h * 0.7, foliageR = Math.max(0.16, h * 0.4);
 
       dummyT.position.set(p.x, trunkH / 2, p.z);
       dummyT.scale.set(trunkR, trunkH, trunkR);
@@ -289,7 +289,7 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ color: 0x8ec6e8, roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.82, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ color: 0xaee3e0, roughness: 0.15, metalness: 0.05, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
     const waterMesh = new THREE.Mesh(geo, mat);
     waterMesh.receiveShadow = true;
     sceneRoot.add(waterMesh);
