@@ -351,7 +351,7 @@
 
   let treeMeshes = [];
   let treeInstanceData = null; // {x,z,w,h} por instancia, para recalcular el billboard al girar la camara
-  let treeMesh = null;
+  let treeMesh = null; // la tarjeta con la foto (para el detalle realista)
   function buildTrees(trees) {
     const planeGeo = makePlaneGeometry();
     const treeTex = new THREE.TextureLoader().load("./assets/arbol_real.png");
@@ -361,17 +361,48 @@
     });
     const mesh = new THREE.InstancedMesh(planeGeo, mat, trees.length);
     treeMesh = mesh;
-    // Sin sombra proyectada en tiempo real (se pidio que los arboles no
-    // tengan sombra, ni la de la textura ni la del render).
+
+    // Volumen 3D real (no solo la tarjeta con la foto): tronco (cilindro)
+    // + copa (esfera achatada, verde solido) - esto le da forma de
+    // verdad al arbol desde CUALQUIER angulo (incluso desde arriba o de
+    // canto), con sombra propia correcta, y no solo una tarjeta plana.
+    // La foto se ve encima para el detalle realista desde el frente.
+    const trunkGeo = new THREE.CylinderGeometry(0.7, 1, 1, 6);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b5643, roughness: 0.95 });
+    const foliageGeo = new THREE.IcosahedronGeometry(1, 1);
+    const foliageMat = new THREE.MeshStandardMaterial({ color: 0x5f8f52, roughness: 0.9, flatShading: true });
+    const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
+    const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, trees.length);
+    trunkMesh.castShadow = true;
+    foliageMesh.castShadow = true;
+    foliageMesh.receiveShadow = true;
+
     treeInstanceData = new Array(trees.length);
+    const dummyV = new THREE.Object3D();
     trees.forEach((t, i) => {
       const [x, y, hMeters, , code] = t;
       const p = toScene(x, y);
       const h = Math.max(0.3, hMeters * SCALE);
       const w = h * (0.72 + (hash2(code) % 20) / 100);
       treeInstanceData[i] = { x: p.x, z: p.z, w, h };
+
+      const trunkH = h * 0.22, trunkR = Math.max(0.02, h * 0.025);
+      dummyV.position.set(p.x, trunkH / 2, p.z);
+      dummyV.scale.set(trunkR, trunkH, trunkR);
+      dummyV.rotation.set(0, 0, 0);
+      dummyV.updateMatrix();
+      trunkMesh.setMatrixAt(i, dummyV.matrix);
+
+      const foliageR = w * 0.42, foliageH = h * 0.62;
+      dummyV.position.set(p.x, trunkH + foliageH / 2, p.z);
+      dummyV.scale.set(foliageR, foliageH / 2, foliageR);
+      dummyV.rotation.set(0, (hash2(code) % 360) * Math.PI / 180, 0);
+      dummyV.updateMatrix();
+      foliageMesh.setMatrixAt(i, dummyV.matrix);
     });
-    sceneRoot.add(mesh);
+    trunkMesh.instanceMatrix.needsUpdate = true;
+    foliageMesh.instanceMatrix.needsUpdate = true;
+    sceneRoot.add(trunkMesh, foliageMesh, mesh);
     treeMeshes = [{ mesh, data: trees }];
     updateTreeBillboards();
   }
