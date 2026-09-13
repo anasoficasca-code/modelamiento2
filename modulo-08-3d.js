@@ -250,7 +250,7 @@
   function buildBuildings(buildings) {
     const positions = [];
     const normals = [];
-    const edgePositions = []; // lineas de borde (contorno del techo + esquinas verticales)
+    const edgePositions = []; // lineas de borde: SOLO el perimetro del techo (nada de esquinas verticales ni lineas interiores)
     buildings.forEach(b => {
       const pts = b.pts.map(p => toScene(p[0], p[1]));
       const h = b.h * SCALE;
@@ -266,7 +266,7 @@
           a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
         );
         for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
-        edgePositions.push(a.x, 0, a.z, a.x, h, a.z); // esquina vertical
+        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // borde del perimetro del techo (solamente)
       }
 
       // Techo plano simple (sin parapeto sintetico): las mallas REALES de
@@ -295,8 +295,9 @@
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
 
-    // Borde negro/oscuro de cada edificio (contorno del techo + esquinas),
-    // estilo render arquitectonico (edificios blancos con linea de borde).
+    // Borde oscuro de cada edificio: solo el perimetro del techo (linea
+    // simple, sin esquinas verticales ni lineas internas), para que se
+    // vea limpio como el borde de una silueta, no un dibujo de wireframe.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
     const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.55 });
@@ -417,11 +418,20 @@
   // reorientar cada billboard hacia la camara en cada cuadro.
   function makeCrossGeometry() {
     const geo = new THREE.BufferGeometry();
+    // 3 tarjetas a 60 grados entre si (en vez de solo 2 a 90 grados), para
+    // que el arbol se vea con volumen real desde cualquier angulo y no
+    // como dos planos pegados en cruz (se nota mucho desde ciertos angulos).
+    const c60 = Math.cos(Math.PI / 3) * 0.5, s60 = Math.sin(Math.PI / 3) * 0.5;
     const positions = [
       -0.5, 0, 0, 0.5, 0, 0, 0.5, 1, 0, -0.5, 0, 0, 0.5, 1, 0, -0.5, 1, 0,
       0, 0, -0.5, 0, 0, 0.5, 0, 1, 0.5, 0, 0, -0.5, 0, 1, 0.5, 0, 1, -0.5,
+      -c60, 0, -s60, c60, 0, s60, c60, 1, s60, -c60, 0, -s60, c60, 1, s60, -c60, 1, -s60,
     ];
-    const uvs = [0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1];
+    const uvs = [
+      0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1,
+      0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1,
+      0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1,
+    ];
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
     geo.computeVertexNormals();
@@ -502,8 +512,8 @@
     waterTex.wrapS = THREE.RepeatWrapping;
     waterTex.wrapT = THREE.RepeatWrapping;
     const mat = new THREE.MeshStandardMaterial({
-      map: waterTex, color: 0xbfe0ee, roughness: 0.2, metalness: 0.05,
-      transparent: true, opacity: 0.55, side: THREE.DoubleSide,
+      map: waterTex, color: 0xd6e8ee, roughness: 0.85, metalness: 0,
+      transparent: true, opacity: 0.5, side: THREE.DoubleSide,
     });
     const waterMesh = new THREE.Mesh(geo, mat);
     waterMesh.receiveShadow = true;
@@ -549,7 +559,7 @@
   function buildParques(parques) {
     const positions = [];
     const uvs = [];
-    const UV_SCALE = 0.08;
+    const UV_SCALE = 0.025; // tiles mas grandes, se nota menos la costura de repeticion
     parques.forEach(p => {
       const pts = p.pts.map(pt => toScene(pt[0], pt[1]));
       if (pts.length < 3) return;
@@ -571,7 +581,7 @@
     const pastoTex = new THREE.TextureLoader().load("./assets/textura_pasto.jpg");
     pastoTex.wrapS = THREE.RepeatWrapping;
     pastoTex.wrapT = THREE.RepeatWrapping;
-    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xbfd9ab, roughness: 0.95, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xc7dbb0, roughness: 0.95, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
