@@ -512,8 +512,8 @@
     waterTex.wrapS = THREE.RepeatWrapping;
     waterTex.wrapT = THREE.RepeatWrapping;
     const mat = new THREE.MeshStandardMaterial({
-      map: waterTex, color: 0xd6e8ee, roughness: 0.85, metalness: 0,
-      transparent: true, opacity: 0.5, side: THREE.DoubleSide,
+      map: waterTex, color: 0x9cc9dc, roughness: 0.7, metalness: 0,
+      transparent: true, opacity: 0.75, side: THREE.DoubleSide,
     });
     const waterMesh = new THREE.Mesh(geo, mat);
     waterMesh.receiveShadow = true;
@@ -581,7 +581,7 @@
     const pastoTex = new THREE.TextureLoader().load("./assets/textura_pasto.jpg");
     pastoTex.wrapS = THREE.RepeatWrapping;
     pastoTex.wrapT = THREE.RepeatWrapping;
-    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xc7dbb0, roughness: 0.95, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xc7dbb0, roughness: 0.95, transparent: true, opacity: 0.75, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
@@ -731,7 +731,6 @@
       loadWaterBodies();
       loadManzanas();
       loadParques();
-      loadTriMesh("./assets/kennedy_roofs_gable.json", 0xb5714a);   // tejas a dos aguas (color real del modelo)
       loadTriMesh("./assets/kennedy_roofs_flat.json", 0xebe5d8);    // techos planos con parapeto ya modelado
       loadTriMesh("./assets/kennedy_facades.json", 0xa05a41);       // fachadas verificadas con StreetView
       return loadVehicles();
