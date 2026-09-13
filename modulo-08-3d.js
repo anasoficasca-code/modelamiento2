@@ -338,14 +338,6 @@
     let s = seed;
     function rnd() { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }
 
-    // Sombra propia en el suelo (elipse oscura suave), para que el arbol
-    // se vea asentado y no flotando - efecto de render, no de icono plano.
-    const shadowGrad = ctx.createRadialGradient(W / 2, H * 0.985, 0, W / 2, H * 0.985, W * 0.24);
-    shadowGrad.addColorStop(0, "rgba(20,25,15,0.35)");
-    shadowGrad.addColorStop(1, "rgba(20,25,15,0)");
-    ctx.fillStyle = shadowGrad;
-    ctx.beginPath(); ctx.ellipse(W / 2, H * 0.985, W * 0.24, H * 0.02, 0, 0, Math.PI * 2); ctx.fill();
-
     const trunkTopY = H * 0.42;
     const trunkBaseW = 20 + rnd() * 10;
     // Tronco con leve degradado (mas oscuro a la izquierda, mas claro a la
@@ -466,7 +458,8 @@
         roughness: 1, metalness: 0,
       });
       const mesh = new THREE.InstancedMesh(crossGeo, mat, b.items.length);
-      mesh.castShadow = true;
+      // Sin sombra proyectada en tiempo real (se pidio que los arboles no
+      // tengan sombra, ni la de la textura ni la del render).
       const dummyT = new THREE.Object3D();
       b.items.forEach((t, i) => {
         const [x, y, hMeters, , code] = t;
@@ -594,7 +587,7 @@
     const pastoTex = new THREE.TextureLoader().load("./assets/textura_pasto.jpg");
     pastoTex.wrapS = THREE.RepeatWrapping;
     pastoTex.wrapT = THREE.RepeatWrapping;
-    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xc7dbb0, roughness: 0.95, transparent: true, opacity: 0.75, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xe4ead9, roughness: 0.95, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
