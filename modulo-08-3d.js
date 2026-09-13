@@ -406,9 +406,9 @@
     // izquierdo usa verdes mas claros/calidos (como si el sol le pegara),
     // y el lado inferior derecho usa verdes mas oscuros/frios (sombra
     // propia) - esto es lo que da el aspecto "render" en vez de plano.
-    const litGreens = ["#7fae5e", "#8fc06a", "#6fa561", "#5f9152"];
-    const midGreens = ["#4d7f45", "#5f9152", "#437a4a"];
-    const shadeGreens = ["#2c4e2b", "#20401f", "#1b3a1c", "#375c34"];
+    const litGreens = ["#a8c47a", "#b3cc85", "#9cbf72", "#c2d494"];
+    const midGreens = ["#8fb668", "#9cbf72", "#7fa85e"];
+    const shadeGreens = ["#5f8a4a", "#527a40", "#6b9552", "#476b38"];
     const cx = W / 2, cy = H * 0.34, spread = W * 0.37;
 
     function softBlob(px, py, r, color, alpha) {
@@ -498,7 +498,7 @@
         const [x, y, hMeters, , code] = t;
         const p = toScene(x, y);
         const h = Math.max(0.3, hMeters * SCALE);
-        const w = h * (0.55 + (hash2(code) % 20) / 100);
+        const w = h * (0.68 + (hash2(code) % 20) / 100);
         dummyT.position.set(p.x, 0, p.z);
         dummyT.scale.set(w, h, w);
         dummyT.rotation.set(0, (hash2(code) % 360) * Math.PI / 180, 0);
