@@ -221,43 +221,76 @@
 
   // ---- Arboles: tronco + copa, con altura real proporcional a la altura
   // registrada de cada arbol (columna Altura_Tot del inventario). Se usan
-  // dos InstancedMesh (tronco y copa) por rendimiento con ~120 mil arboles. ----
+  // dos "estilos" de copa (redonda y puntiaguda tipo conifera) repartidos
+  // entre los arboles reales, con variacion de color por instancia, para
+  // que se vea mas parecido a una ilustracion con variedad de especies.
+  // Se guarda el mapeo instancia->datos del arbol para poder mostrar su
+  // informacion (especie, altura) al hacer clic. ----
+  let treeMeshes = []; // { mesh (copa), data: [treeRecord, ...] } por cada estilo
   function buildTrees(trees) {
     const trunkGeo = new THREE.CylinderGeometry(1, 1, 1, 6);
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b5643, roughness: 0.95 });
-    const foliageGeo = new THREE.IcosahedronGeometry(1, 1);
-    const foliageMat = new THREE.MeshStandardMaterial({ color: 0x5c8f52, roughness: 0.85, flatShading: true });
+    const roundGeo = new THREE.IcosahedronGeometry(1, 1);
+    const pineGeo = new THREE.ConeGeometry(1, 1, 8);
 
-    const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
-    const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, trees.length);
-    trunkMesh.castShadow = true;
-    foliageMesh.castShadow = true;
-    foliageMesh.receiveShadow = true;
-    const dummyT = new THREE.Object3D();
-
+    // Repartir los arboles en 2 grupos (redondo / conifera) de forma
+    // determinista segun su codigo, para que la mezcla se vea natural.
+    const buckets = [
+      { geo: roundGeo, color: 0x5c8f52, items: [] },
+      { geo: pineGeo, color: 0x3f7047, items: [] },
+    ];
     trees.forEach((t, i) => {
-      const [x, y, hMeters] = t;
-      const p = toScene(x, y);
-      const h = hMeters * SCALE;
-      const trunkH = h * 0.22, trunkR = Math.max(0.015, h * 0.02);
-      const foliageH = h * 0.7, foliageR = Math.max(0.16, h * 0.4);
-
-      dummyT.position.set(p.x, trunkH / 2, p.z);
-      dummyT.scale.set(trunkR, trunkH, trunkR);
-      dummyT.rotation.set(0, 0, 0);
-      dummyT.updateMatrix();
-      trunkMesh.setMatrixAt(i, dummyT.matrix);
-
-      dummyT.position.set(p.x, trunkH + foliageH / 2, p.z);
-      dummyT.scale.set(foliageR, foliageH, foliageR);
-      dummyT.updateMatrix();
-      foliageMesh.setMatrixAt(i, dummyT.matrix);
+      const hash = (t[4] || "").split("").reduce((s, c) => s + c.charCodeAt(0), 0);
+      buckets[hash % 5 < 2 ? 1 : 0].items.push(t);
     });
-    trunkMesh.instanceMatrix.needsUpdate = true;
-    foliageMesh.instanceMatrix.needsUpdate = true;
-    sceneRoot.add(trunkMesh);
-    sceneRoot.add(foliageMesh);
+
+    treeMeshes = [];
+    buckets.forEach(b => {
+      if (!b.items.length) return;
+      const foliageMat = new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.85, flatShading: true });
+      const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, b.items.length);
+      const foliageMesh = new THREE.InstancedMesh(b.geo, foliageMat, b.items.length);
+      foliageMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(b.items.length * 3), 3);
+      trunkMesh.castShadow = true;
+      foliageMesh.castShadow = true;
+      foliageMesh.receiveShadow = true;
+      const dummyT = new THREE.Object3D();
+      const baseColor = new THREE.Color(b.color);
+      const tmpColor = new THREE.Color();
+
+      b.items.forEach((t, i) => {
+        const [x, y, hMeters] = t;
+        const p = toScene(x, y);
+        const h = hMeters * SCALE;
+        const trunkH = h * 0.22, trunkR = Math.max(0.015, h * 0.02);
+        const foliageH = h * (b.geo === pineGeo ? 0.85 : 0.7);
+        const foliageR = Math.max(0.16, h * (b.geo === pineGeo ? 0.3 : 0.4));
+
+        dummyT.position.set(p.x, trunkH / 2, p.z);
+        dummyT.scale.set(trunkR, trunkH, trunkR);
+        dummyT.rotation.set(0, 0, 0);
+        dummyT.updateMatrix();
+        trunkMesh.setMatrixAt(i, dummyT.matrix);
+
+        dummyT.position.set(p.x, trunkH + foliageH / 2, p.z);
+        dummyT.scale.set(foliageR, foliageH, foliageR);
+        dummyT.rotation.set(0, (hash2(t[4]) % 360) * Math.PI / 180, 0);
+        dummyT.updateMatrix();
+        foliageMesh.setMatrixAt(i, dummyT.matrix);
+
+        const variation = 0.85 + (hash2(t[4]) % 30) / 100;
+        tmpColor.copy(baseColor).multiplyScalar(variation);
+        foliageMesh.setColorAt(i, tmpColor);
+      });
+      trunkMesh.instanceMatrix.needsUpdate = true;
+      foliageMesh.instanceMatrix.needsUpdate = true;
+      foliageMesh.instanceColor.needsUpdate = true;
+      sceneRoot.add(trunkMesh);
+      sceneRoot.add(foliageMesh);
+      treeMeshes.push({ mesh: foliageMesh, data: b.items });
+    });
   }
+  function hash2(str) { let h = 0; for (const c of (str || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 
   function loadTrees() {
     return fetch(TREES_URL)
@@ -485,6 +518,43 @@
   }
   sunAzInput.addEventListener("input", onSunChange);
   sunElInput.addEventListener("input", onSunChange);
+
+  // ---- Clic en un arbol: muestra su informacion (especie, altura) ----
+  const raycaster = new THREE.Raycaster();
+  const mouseNdc = new THREE.Vector2();
+  const treeInfo = document.getElementById("treeInfo");
+  const treeInfoName = document.getElementById("treeInfoName");
+  const treeInfoDetails = document.getElementById("treeInfoDetails");
+  document.getElementById("treeInfoClose").addEventListener("click", () => treeInfo.classList.remove("show"));
+
+  let downAt = null;
+  renderer.domElement.addEventListener("pointerdown", (e) => { downAt = { x: e.clientX, y: e.clientY }; });
+  renderer.domElement.addEventListener("pointerup", (e) => {
+    if (!downAt) return;
+    const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
+    downAt = null;
+    if (moved > 6) return; // fue un arrastre de camara, no un clic
+    if (!treeMeshes.length) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouseNdc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouseNdc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouseNdc, camera);
+    let best = null;
+    treeMeshes.forEach(tm => {
+      const hits = raycaster.intersectObject(tm.mesh);
+      if (hits.length && (!best || hits[0].distance < best.distance)) {
+        best = { distance: hits[0].distance, data: tm.data[hits[0].instanceId] };
+      }
+    });
+    if (best) {
+      const [, , hMeters, nombre] = best.data;
+      treeInfoName.textContent = nombre;
+      treeInfoDetails.textContent = `Altura aproximada: ${hMeters.toFixed(1)} m`;
+      treeInfo.classList.add("show");
+    } else {
+      treeInfo.classList.remove("show");
+    }
+  });
 
   // ---- Loop de animacion ----
   function animate(now) {
