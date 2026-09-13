@@ -613,7 +613,14 @@
   // la red vial) — NO en cada nodo donde se juntan tramos, ya que eso
   // fue un desastre visual antes (SUMO separa carriles en tramos propios,
   // dando miles de "cruces" falsos). ----
+  let intersectionsData = null;
+  let intersectionMeshes = []; // para poder quitarlas y reconstruir al mover los deslizadores
+  let interParams = { setback: 2.6, crossW: 1.0, poleOffset: 1.1 };
   function buildIntersections(intersections) {
+    intersectionsData = intersections;
+    intersectionMeshes.forEach(m => { sceneRoot.remove(m); m.geometry.dispose(); });
+    intersectionMeshes = [];
+
     const poleGeo = new THREE.CylinderGeometry(0.05, 0.06, 1, 6);
     const poleMat = new THREE.MeshStandardMaterial({ color: 0x33383d, roughness: 0.6 });
     const headGeo = new THREE.BoxGeometry(0.16, 0.42, 0.16);
@@ -632,7 +639,8 @@
 
     const dummy = new THREE.Object3D();
     const crossPos = []; // posiciones de las rayas de cruce peatonal
-    const POLE_H = 4.2 * SCALE, SETBACK = 2.6, CROSS_W = 1.0;
+    const POLE_H = 4.2 * SCALE;
+    const SETBACK = interParams.setback, CROSS_W = interParams.crossW, POLE_OFFSET = interParams.poleOffset;
     let idx = 0;
     intersections.forEach(inter => {
       const center = toScene(inter.x, inter.y);
@@ -641,8 +649,8 @@
         const ux = dx, uz = -dy;
         const px = -uz, pz = ux; // perpendicular (ancho de la via)
         // Poste del semaforo, a un lado del acceso, cerca de la esquina.
-        const poleX = center.x + ux * (SETBACK - 0.7) + px * 1.1;
-        const poleZ = center.z + uz * (SETBACK - 0.7) + pz * 1.1;
+        const poleX = center.x + ux * (SETBACK - 0.7) + px * POLE_OFFSET;
+        const poleZ = center.z + uz * (SETBACK - 0.7) + pz * POLE_OFFSET;
         dummy.position.set(poleX, POLE_H / 2, poleZ);
         dummy.scale.set(1, POLE_H, 1);
         dummy.rotation.set(0, 0, 0);
@@ -667,7 +675,7 @@
         // al centro de la interseccion. Cada raya es angosta en el
         // sentido transversal a la via (px,pz) y larga en el sentido de
         // avance (ux,uz) — como una cebra real — con huecos claros entre
-        // rayas consecutivas (antes se superponian y no se notaban).
+        // rayas consecutivas.
         const baseX = center.x + ux * SETBACK, baseZ = center.z + uz * SETBACK;
         const CROSSING_LEN = 3.2, STRIPE_W = 0.32, STRIPE_GAP2 = 0.28;
         for (let s = -CROSS_W; s <= CROSS_W; s += STRIPE_W + STRIPE_GAP2) {
@@ -685,11 +693,17 @@
     headMesh.instanceMatrix.needsUpdate = true;
     lightMeshes.forEach(lm => (lm.instanceMatrix.needsUpdate = true));
     sceneRoot.add(poleMesh, headMesh, ...lightMeshes);
+    intersectionMeshes.push(poleMesh, headMesh, ...lightMeshes);
 
     const crossGeo = new THREE.BufferGeometry();
     crossGeo.setAttribute("position", new THREE.Float32BufferAttribute(crossPos, 3));
     const crossMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-    sceneRoot.add(new THREE.Mesh(crossGeo, crossMat));
+    const crossMesh = new THREE.Mesh(crossGeo, crossMat);
+    sceneRoot.add(crossMesh);
+    intersectionMeshes.push(crossMesh);
+  }
+  function rebuildIntersections() {
+    if (intersectionsData) buildIntersections(intersectionsData);
   }
 
   function loadIntersections() {
@@ -963,6 +977,32 @@
     updateColorOutput();
   });
   updateColorOutput();
+
+  // ---- Deslizadores para acomodar semaforos/cruces peatonales a mano.
+  // El numero se actualiza al instante; la geometria (mas pesada) se
+  // reconstruye al soltar el deslizador (evento "change"), no en cada
+  // tick del arrastre, para que se sienta fluido. ----
+  const interSetback = document.getElementById("interSetback");
+  const interCrossW = document.getElementById("interCrossW");
+  const interPoleOff = document.getElementById("interPoleOff");
+  const interSetbackVal = document.getElementById("interSetbackVal");
+  const interCrossWVal = document.getElementById("interCrossWVal");
+  const interPoleOffVal = document.getElementById("interPoleOffVal");
+  function onInterInput() {
+    interSetbackVal.textContent = interSetback.value;
+    interCrossWVal.textContent = interCrossW.value;
+    interPoleOffVal.textContent = interPoleOff.value;
+  }
+  function onInterChange() {
+    interParams.setback = parseFloat(interSetback.value);
+    interParams.crossW = parseFloat(interCrossW.value);
+    interParams.poleOffset = parseFloat(interPoleOff.value);
+    rebuildIntersections();
+  }
+  [interSetback, interCrossW, interPoleOff].forEach(el => {
+    el.addEventListener("input", onInterInput);
+    el.addEventListener("change", onInterChange);
+  });
 
   // ---- Clic en un arbol: muestra su informacion (especie, altura) ----
   const raycaster = new THREE.Raycaster();
