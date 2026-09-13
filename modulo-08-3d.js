@@ -22,8 +22,8 @@
   const canvas = document.getElementById("sceneCanvas");
   const wrap = document.getElementById("sceneWrap");
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b0c0f);
-  scene.fog = new THREE.Fog(0x0b0c0f, 500, 2400);
+  scene.background = new THREE.Color(0xf3f4f5);
+  scene.fog = new THREE.Fog(0xf3f4f5, 900, 3200);
   // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
   // se agrega a este grupo, no directamente a la escena, para poder
   // rotarlo entero en X/Y/Z con los controles manuales de orientacion.
@@ -113,7 +113,7 @@
     const w = (bbox[2] - bbox[0]) * SCALE * 1.4;
     const h = (bbox[3] - bbox[1]) * SCALE * 1.4;
     const geo = new THREE.PlaneGeometry(w, h);
-    const mat = new THREE.MeshStandardMaterial({ color: 0x14171c, roughness: 1, metalness: 0 });
+    const mat = new THREE.MeshStandardMaterial({ color: 0xeceeef, roughness: 1, metalness: 0 });
     groundMesh = new THREE.Mesh(geo, mat);
     groundMesh.rotation.x = -Math.PI / 2;
     groundMesh.position.set(0, -0.4, 0);
@@ -168,10 +168,86 @@
     });
     ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(ribbonPos, 3));
     ribbonGeo.computeVertexNormals();
-    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0x4a4f56, roughness: 0.92, side: THREE.DoubleSide });
+    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0x9a9ea3, roughness: 0.85, side: THREE.DoubleSide });
     const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
     roadMesh.receiveShadow = true;
     sceneRoot.add(roadMesh);
+
+    // Marcas viales: linea central discontinua a lo largo de cada tramo,
+    // y cruces peatonales (rayas) en los cruces (nodos donde se juntan
+    // 3 o mas tramos), para que se vea limpio con detalle tipo render
+    // arquitectonico.
+    const markPos = [];
+    const DASH_LEN = 1.2, GAP_LEN = 1.0, DASH_HALF_W = 0.05;
+    edges.forEach(([kind, pts]) => {
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = toScene(pts[i][0], pts[i][1]);
+        const b = toScene(pts[i + 1][0], pts[i + 1][1]);
+        const dx = b.x - a.x, dz = b.z - a.z;
+        const len = Math.hypot(dx, dz) || 0.001;
+        const ux = dx / len, uz = dz / len;
+        const nx = -uz * DASH_HALF_W, nz = ux * DASH_HALF_W;
+        let d = 0;
+        while (d < len) {
+          const d2 = Math.min(d + DASH_LEN, len);
+          const p0x = a.x + ux * d, p0z = a.z + uz * d;
+          const p1x = a.x + ux * d2, p1z = a.z + uz * d2;
+          markPos.push(
+            p0x - nx, 0.033, p0z - nz, p0x + nx, 0.033, p0z + nz, p1x + nx, 0.033, p1z + nz,
+            p0x - nx, 0.033, p0z - nz, p1x + nx, 0.033, p1z + nz, p1x - nx, 0.033, p1z - nz
+          );
+          d = d2 + GAP_LEN;
+        }
+      }
+    });
+
+    // Cruces peatonales: nodos donde se juntan 3+ tramos.
+    const nodeDegree = new Map();
+    edges.forEach(([kind, pts]) => {
+      [pts[0], pts[pts.length - 1]].forEach(pt => {
+        const key = pt[0].toFixed(1) + "," + pt[1].toFixed(1);
+        nodeDegree.set(key, (nodeDegree.get(key) || 0) + 1);
+      });
+    });
+    const junctionKeys = new Set();
+    edges.forEach(([kind, pts]) => {
+      [pts[0], pts[pts.length - 1]].forEach(pt => {
+        const key = pt[0].toFixed(1) + "," + pt[1].toFixed(1);
+        if (nodeDegree.get(key) >= 3) junctionKeys.add(key);
+      });
+    });
+    edges.forEach(([kind, pts]) => {
+      const ends = [
+        { pt: pts[0], dirPt: pts[1] },
+        { pt: pts[pts.length - 1], dirPt: pts[pts.length - 2] },
+      ];
+      ends.forEach(({ pt, dirPt }) => {
+        if (!dirPt) return;
+        const key = pt[0].toFixed(1) + "," + pt[1].toFixed(1);
+        if (!junctionKeys.has(key)) return;
+        const a = toScene(pt[0], pt[1]), b = toScene(dirPt[0], dirPt[1]);
+        const dx = b.x - a.x, dz = b.z - a.z;
+        const len = Math.hypot(dx, dz) || 0.001;
+        const ux = dx / len, uz = dz / len;
+        const px = -uz, pz = ux; // perpendicular (ancho de la via)
+        const setback = 2.2, crossW = 1.6, stripeLen = 0.35, stripeGap = 0.25;
+        const baseX = a.x + ux * setback, baseZ = a.z + uz * setback;
+        for (let s = -crossW; s <= crossW; s += stripeLen + stripeGap) {
+          const c0x = baseX + px * s, c0z = baseZ + pz * s;
+          const c1x = c0x + ux * stripeLen, c1z = c0z + uz * stripeLen;
+          const hx = px * 0.35, hz = pz * 0.35;
+          markPos.push(
+            c0x - hx, 0.033, c0z - hz, c0x + hx, 0.033, c0z + hz, c1x + hx, 0.033, c1z + hz,
+            c0x - hx, 0.033, c0z - hz, c1x + hx, 0.033, c1z + hz, c1x - hx, 0.033, c1z - hz
+          );
+        }
+      });
+    });
+    const markGeo = new THREE.BufferGeometry();
+    markGeo.setAttribute("position", new THREE.Float32BufferAttribute(markPos, 3));
+    markGeo.computeVertexNormals();
+    const markMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+    sceneRoot.add(new THREE.Mesh(markGeo, markMat));
   }
 
   // ---- Edificios: extrusion de cada huella (paredes + techo), TODO
@@ -212,7 +288,7 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-    const mat = new THREE.MeshStandardMaterial({ color: 0x6b727d, roughness: 0.7, metalness: 0.05, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ color: 0xf5f6f7, roughness: 0.65, metalness: 0.03, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -380,7 +456,7 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ color: 0x2f6fa8, roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ color: 0x7ec3e0, roughness: 0.15, metalness: 0.05, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
     const waterMesh = new THREE.Mesh(geo, mat);
     waterMesh.receiveShadow = true;
     sceneRoot.add(waterMesh);
