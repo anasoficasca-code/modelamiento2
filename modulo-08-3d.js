@@ -26,7 +26,13 @@
   // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
   // se agrega a este grupo, no directamente a la escena, para poder
   // rotarlo entero en X/Y/Z con los controles manuales de orientacion.
+  // El usuario encontro que la orientacion correcta del plano necesita un
+  // giro de 180° — se aplica aqui en el eje Y (vertical), no en Z, porque
+  // un giro en Z tambien voltea la altura de los edificios boca abajo (Z
+  // no es el eje "arriba" de esta escena); un giro en Y reordena el plano
+  // igual mientras deja la altura intacta.
   const sceneRoot = new THREE.Group();
+  sceneRoot.rotation.y = Math.PI;
   scene.add(sceneRoot);
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 6000);
@@ -416,7 +422,7 @@
   }
   [rotX, rotY, rotZ].forEach(el => el.addEventListener("input", updateRotation));
   document.getElementById("rotateReset").addEventListener("click", () => {
-    rotX.value = 0; rotY.value = 0; rotZ.value = 0;
+    rotX.value = 0; rotY.value = 180; rotZ.value = 0;
     updateRotation();
   });
   document.getElementById("rotateCopy").addEventListener("click", async () => {
