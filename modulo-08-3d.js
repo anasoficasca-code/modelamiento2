@@ -331,98 +331,8 @@
   }
 
   // ---- Arboles: se dibujan como "billboards cruzados" (2 tarjetas
-  // perpendiculares) con una textura de arbol realista generada en un
-  // canvas (tronco con ramas + follaje frondoso hecho de muchos circulos
-  // superpuestos), en vez de geometria 3D solida — esta es la tecnica
-  // estandar para tener miles de arboles con aspecto realista sin que la
-  // pagina se ponga lenta. Se generan 3 variantes de textura (una vez,
-  // al inicio) y se reparten entre los ~120 mil arboles reales. ----
-  function makeTreeTexture(seed) {
-    const W = 512, H = 640;
-    const c = document.createElement("canvas"); c.width = W; c.height = H;
-    const ctx = c.getContext("2d");
-    let s = seed;
-    function rnd() { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }
-    function hexToRgb(hex) {
-      const n = parseInt(hex.slice(1), 16);
-      return `rgb(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255})`;
-    }
-    function pick(arr) { return arr[Math.floor(rnd() * arr.length)]; }
-    function softBlob(px, py, r, color, alpha) {
-      const grad = ctx.createRadialGradient(px, py, 0, px, py, r);
-      grad.addColorStop(0, color);
-      grad.addColorStop(0.65, color);
-      grad.addColorStop(1, color.replace(")", ",0)").replace("rgb", "rgba"));
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = grad;
-      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
-    }
-
-    const litGreens = ["#a8c47a", "#b3cc85", "#9cbf72"];
-    const midGreens = ["#8fb668", "#9cbf72", "#7fa85e"];
-    const shadeGreens = ["#5f8a4a", "#527a40", "#6b9552"];
-    function leafCluster(px, py, r) {
-      const lightness = (px - W * 0.35) / (W * 0.5); // izquierda mas clara, derecha mas oscura
-      const palette = lightness < 0.35 ? litGreens : lightness > 0.65 ? shadeGreens : midGreens;
-      // Varios parches chicos superpuestos en vez de un solo circulo, para
-      // que el racimo de hojas se vea con textura, no una bola lisa.
-      for (let i = 0; i < 6; i++) {
-        const a = rnd() * Math.PI * 2, rr = rnd() * r * 0.6;
-        softBlob(px + Math.cos(a) * rr, py + Math.sin(a) * rr * 0.7, r * (0.45 + rnd() * 0.35), hexToRgb(pick(palette)), 0.55 + rnd() * 0.3);
-      }
-    }
-
-    // Tronco delgado con una leve curva natural (no un palo perfectamente
-    // recto), mas fino que antes para que se vea esbelto como un arbol
-    // real, no un tronco grueso de caricatura.
-    const baseX = W / 2, trunkTopY = H * 0.1;
-    const trunkBaseW = 7 + rnd() * 4;
-    const bendX = baseX + (rnd() - 0.5) * 40;
-    const trunkGrad = ctx.createLinearGradient(baseX - trunkBaseW, 0, baseX + trunkBaseW, 0);
-    trunkGrad.addColorStop(0, "#3d2e1c");
-    trunkGrad.addColorStop(0.5, "#5a4632");
-    trunkGrad.addColorStop(1, "#7a6244");
-    ctx.strokeStyle = trunkGrad; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.lineWidth = trunkBaseW;
-    ctx.beginPath();
-    ctx.moveTo(baseX, H);
-    ctx.quadraticCurveTo(baseX + (bendX - baseX) * 0.4, H * 0.55, bendX, trunkTopY);
-    ctx.stroke();
-
-    // Ramas por NIVELES (como una jerarquia real de arbol): cada nivel
-    // sale del tronco a una altura distinta, se extiende hacia afuera y
-    // termina en un racimo de hojas — dejando huecos visibles entre
-    // niveles, no una masa solida de follaje.
-    const levels = 6;
-    for (let lvl = 0; lvl < levels; lvl++) {
-      const t = lvl / (levels - 1); // 0 = abajo, 1 = arriba
-      const branchY = H - (H - trunkTopY) * (0.35 + t * 0.6);
-      const trunkX = baseX + (bendX - baseX) * (0.4 + t * 0.6) * ((H - branchY) / (H - trunkTopY));
-      const branchesInLevel = 3 + Math.floor(rnd() * 2);
-      const levelReach = (32 + t * 40) * (0.85 + rnd() * 0.3); // copa mas compacta, menos dispersa
-      for (let b = 0; b < branchesInLevel; b++) {
-        const dir = (b % 2 === 0 ? 1 : -1) * (0.6 + rnd() * 0.5);
-        const endX = trunkX + dir * levelReach;
-        const endY = branchY - levelReach * (0.2 + rnd() * 0.2);
-        ctx.strokeStyle = "#5a4632";
-        ctx.lineWidth = Math.max(1.5, trunkBaseW * (0.5 - t * 0.3));
-        ctx.beginPath();
-        ctx.moveTo(trunkX, branchY);
-        ctx.quadraticCurveTo(trunkX + dir * levelReach * 0.5, branchY - levelReach * 0.1, endX, endY);
-        ctx.stroke();
-        // Racimos de hojas a lo largo de toda la rama (no solo en la
-        // punta), para que la copa se vea llena y unida, sin huecos
-        // dispersos entre el tronco y las hojas.
-        leafCluster(endX, endY, 40 + rnd() * 28);
-        leafCluster(trunkX + dir * levelReach * 0.6, branchY - levelReach * 0.2, 32 + rnd() * 20);
-        leafCluster(trunkX + dir * levelReach * 0.3, branchY - levelReach * 0.08, 26 + rnd() * 16);
-      }
-    }
-    ctx.globalAlpha = 1;
-    const tex = new THREE.CanvasTexture(c);
-    tex.needsUpdate = true;
-    return tex;
-  }
+  // perpendiculares) con una foto real de un arbol (fondo quitado),
+  // en vez de una textura dibujada o geometria 3D solida. ----
 
   // Geometria de "tarjetas cruzadas": dos planos perpendiculares, para que
   // el arbol se vea bien desde cualquier angulo horizontal sin tener que
@@ -452,36 +362,31 @@
   let treeMeshes = [];
   function buildTrees(trees) {
     const crossGeo = makeCrossGeometry();
-    const variants = [makeTreeTexture(11), makeTreeTexture(97), makeTreeTexture(233)];
-    const buckets = variants.map(tex => ({ tex, items: [] }));
-    trees.forEach(t => { buckets[hash2(t[4]) % buckets.length].items.push(t); });
-
-    treeMeshes = [];
-    buckets.forEach(b => {
-      if (!b.items.length) return;
-      const mat = new THREE.MeshStandardMaterial({
-        map: b.tex, transparent: true, alphaTest: 0.12, side: THREE.DoubleSide,
-        roughness: 1, metalness: 0,
-      });
-      const mesh = new THREE.InstancedMesh(crossGeo, mat, b.items.length);
-      // Sin sombra proyectada en tiempo real (se pidio que los arboles no
-      // tengan sombra, ni la de la textura ni la del render).
-      const dummyT = new THREE.Object3D();
-      b.items.forEach((t, i) => {
-        const [x, y, hMeters, , code] = t;
-        const p = toScene(x, y);
-        const h = Math.max(0.3, hMeters * SCALE);
-        const w = h * (0.45 + (hash2(code) % 20) / 100);
-        dummyT.position.set(p.x, 0, p.z);
-        dummyT.scale.set(w, h, w);
-        dummyT.rotation.set(0, (hash2(code) % 360) * Math.PI / 180, 0);
-        dummyT.updateMatrix();
-        mesh.setMatrixAt(i, dummyT.matrix);
-      });
-      mesh.instanceMatrix.needsUpdate = true;
-      sceneRoot.add(mesh);
-      treeMeshes.push({ mesh, data: b.items });
+    const treeTex = new THREE.TextureLoader().load("./assets/arbol_real.png");
+    const mat = new THREE.MeshStandardMaterial({
+      map: treeTex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide,
+      roughness: 1, metalness: 0,
     });
+    const mesh = new THREE.InstancedMesh(crossGeo, mat, trees.length);
+    // Sin sombra proyectada en tiempo real (se pidio que los arboles no
+    // tengan sombra, ni la de la textura ni la del render).
+    const dummyT = new THREE.Object3D();
+    // Proporcion ancho/alto de la foto real (491x512, copa bastante
+    // ancha respecto a la altura total del arbol en la imagen).
+    trees.forEach((t, i) => {
+      const [x, y, hMeters, , code] = t;
+      const p = toScene(x, y);
+      const h = Math.max(0.3, hMeters * SCALE);
+      const w = h * (0.72 + (hash2(code) % 20) / 100);
+      dummyT.position.set(p.x, 0, p.z);
+      dummyT.scale.set(w, h, w);
+      dummyT.rotation.set(0, (hash2(code) % 360) * Math.PI / 180, 0);
+      dummyT.updateMatrix();
+      mesh.setMatrixAt(i, dummyT.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    sceneRoot.add(mesh);
+    treeMeshes = [{ mesh, data: trees }];
   }
   function hash2(str) { let h = 0; for (const c of (str || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 
