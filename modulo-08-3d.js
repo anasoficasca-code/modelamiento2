@@ -547,7 +547,7 @@
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
     geo.computeVertexNormals();
-    const waterTex = new THREE.TextureLoader().load("./assets/textura_agua.jpg");
+    const waterTex = new THREE.TextureLoader().load("./assets/textura_agua2.jpg");
     waterTex.wrapS = THREE.RepeatWrapping;
     waterTex.wrapT = THREE.RepeatWrapping;
     const mat = new THREE.MeshStandardMaterial({
@@ -597,6 +597,8 @@
   // (0.02) que no compite con via/agua/manzanas. ----
   function buildParques(parques) {
     const positions = [];
+    const uvs = [];
+    const UV_SCALE = 0.08;
     parques.forEach(p => {
       const pts = p.pts.map(pt => toScene(pt[0], pt[1]));
       if (pts.length < 3) return;
@@ -605,15 +607,20 @@
       try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
       catch (e) { tris = []; }
       tris.forEach(([a, b, c]) => {
-        positions.push(
-          pts[a].x, 0.02, pts[a].z, pts[b].x, 0.02, pts[b].z, pts[c].x, 0.02, pts[c].z
-        );
+        [a, b, c].forEach(idx => {
+          positions.push(pts[idx].x, 0.02, pts[idx].z);
+          uvs.push(pts[idx].x * UV_SCALE, pts[idx].z * UV_SCALE);
+        });
       });
     });
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
     geo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ color: 0x8fbb72, roughness: 0.95, side: THREE.DoubleSide });
+    const pastoTex = new THREE.TextureLoader().load("./assets/textura_pasto.jpg");
+    pastoTex.wrapS = THREE.RepeatWrapping;
+    pastoTex.wrapT = THREE.RepeatWrapping;
+    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xbfd9ab, roughness: 0.95, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
