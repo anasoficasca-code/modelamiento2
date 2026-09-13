@@ -252,26 +252,42 @@
     let s = seed;
     function rnd() { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }
 
+    // Sombra propia en el suelo (elipse oscura suave), para que el arbol
+    // se vea asentado y no flotando - efecto de render, no de icono plano.
+    const shadowGrad = ctx.createRadialGradient(W / 2, H * 0.985, 0, W / 2, H * 0.985, W * 0.24);
+    shadowGrad.addColorStop(0, "rgba(20,25,15,0.35)");
+    shadowGrad.addColorStop(1, "rgba(20,25,15,0)");
+    ctx.fillStyle = shadowGrad;
+    ctx.beginPath(); ctx.ellipse(W / 2, H * 0.985, W * 0.24, H * 0.02, 0, 0, Math.PI * 2); ctx.fill();
+
     const trunkTopY = H * 0.42;
     const trunkBaseW = 20 + rnd() * 10;
-    ctx.strokeStyle = "#5a4632"; ctx.lineCap = "round";
+    // Tronco con leve degradado (mas oscuro a la izquierda, mas claro a la
+    // derecha) para que se vea con volumen, no un palo plano de un color.
+    const trunkGrad = ctx.createLinearGradient(W / 2 - trunkBaseW, 0, W / 2 + trunkBaseW, 0);
+    trunkGrad.addColorStop(0, "#43331f");
+    trunkGrad.addColorStop(0.5, "#5a4632");
+    trunkGrad.addColorStop(1, "#7a6244");
+    ctx.strokeStyle = trunkGrad; ctx.lineCap = "round";
     ctx.lineWidth = trunkBaseW;
     ctx.beginPath(); ctx.moveTo(W / 2, H); ctx.lineTo(W / 2, trunkTopY); ctx.stroke();
-    for (let i = 0; i < 3; i++) {
-      const branchY = H - (H - trunkTopY) * (0.3 + i * 0.25);
+    for (let i = 0; i < 4; i++) {
+      const branchY = H - (H - trunkTopY) * (0.25 + i * 0.2);
       const dir = i % 2 === 0 ? 1 : -1;
-      ctx.lineWidth = trunkBaseW * (0.5 - i * 0.1);
+      ctx.lineWidth = trunkBaseW * (0.55 - i * 0.09);
       ctx.beginPath();
       ctx.moveTo(W / 2, branchY);
-      ctx.lineTo(W / 2 + dir * (60 + rnd() * 60), branchY - 80 - rnd() * 60);
+      ctx.lineTo(W / 2 + dir * (55 + rnd() * 55), branchY - 70 - rnd() * 55);
       ctx.stroke();
     }
 
-    // Follaje: primero una masa base solida (silueta llena, sin huecos),
-    // y encima muchos parches con degradado radial (borde suave, no un
-    // circulo con canto duro) en tonos de verde variados, para que se
-    // vea frondoso y con textura pero sin bordes pixelados/duros.
-    const greens = ["#3c6b3a", "#4d7f45", "#5f9152", "#6fa561", "#437a4a", "#2f5c30"];
+    // Follaje con iluminacion direccional simulada: el lado superior
+    // izquierdo usa verdes mas claros/calidos (como si el sol le pegara),
+    // y el lado inferior derecho usa verdes mas oscuros/frios (sombra
+    // propia) - esto es lo que da el aspecto "render" en vez de plano.
+    const litGreens = ["#7fae5e", "#8fc06a", "#6fa561", "#5f9152"];
+    const midGreens = ["#4d7f45", "#5f9152", "#437a4a"];
+    const shadeGreens = ["#2c4e2b", "#20401f", "#1b3a1c", "#375c34"];
     const cx = W / 2, cy = H * 0.34, spread = W * 0.37;
 
     function softBlob(px, py, r, color, alpha) {
@@ -287,20 +303,36 @@
       const n = parseInt(hex.slice(1), 16);
       return `rgb(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255})`;
     }
+    function pick(arr) { return arr[Math.floor(rnd() * arr.length)]; }
 
-    // Masa base: pocos parches grandes, bien solidos, cubriendo toda la
-    // silueta para que no queden huecos transparentes en el centro.
-    for (let i = 0; i < 14; i++) {
-      const ang = rnd() * Math.PI * 2, rad = rnd() * spread * 0.55;
+    // Masa base: parches grandes y solidos, eligiendo el tono segun la
+    // posicion (arriba-izquierda claro, abajo-derecha oscuro) para dar
+    // sensacion de volumen iluminado, no una silueta plana de un tono.
+    for (let i = 0; i < 16; i++) {
+      const ang = rnd() * Math.PI * 2, rad = rnd() * spread * 0.58;
       const px = cx + Math.cos(ang) * rad, py = cy + Math.sin(ang) * rad * 0.7;
-      softBlob(px, py, spread * 0.55, hexToRgb(greens[Math.floor(rnd() * greens.length)]), 0.9);
+      const lightness = (spread * 0.55 - (px - cx) + (py - cy)) / (spread * 1.3); // 0=claro,1=oscuro
+      const palette = lightness < 0.35 ? litGreens : lightness > 0.65 ? shadeGreens : midGreens;
+      softBlob(px, py, spread * 0.5, hexToRgb(pick(palette)), 0.92);
     }
-    // Detalle: parches mas chicos encima, para dar textura de hojas.
-    for (let i = 0; i < 70; i++) {
+    // Detalle medio: grupos de hojas de tamano intermedio.
+    for (let i = 0; i < 60; i++) {
       const ang = rnd() * Math.PI * 2, rad = Math.pow(rnd(), 0.5) * spread;
       const px = cx + Math.cos(ang) * rad, py = cy + Math.sin(ang) * rad * 0.72;
-      const r = 22 + rnd() * 30;
-      softBlob(px, py, r, hexToRgb(greens[Math.floor(rnd() * greens.length)]), 0.35 + rnd() * 0.25);
+      const lightness = (spread * 0.55 - (px - cx) + (py - cy)) / (spread * 1.3);
+      const palette = lightness < 0.35 ? litGreens : lightness > 0.65 ? shadeGreens : midGreens;
+      const r = 20 + rnd() * 26;
+      softBlob(px, py, r, hexToRgb(pick(palette)), 0.4 + rnd() * 0.25);
+    }
+    // Detalle fino: muchas motas chicas, mas densas donde hay luz, para
+    // dar la textura de hojas individuales brillando al sol.
+    for (let i = 0; i < 130; i++) {
+      const ang = rnd() * Math.PI * 2, rad = Math.pow(rnd(), 0.6) * spread * 0.95;
+      const px = cx + Math.cos(ang) * rad, py = cy + Math.sin(ang) * rad * 0.72;
+      const lightness = (spread * 0.55 - (px - cx) + (py - cy)) / (spread * 1.3);
+      const palette = lightness < 0.4 ? litGreens : lightness > 0.6 ? shadeGreens : midGreens;
+      const r = 6 + rnd() * 10;
+      softBlob(px, py, r, hexToRgb(pick(palette)), 0.3 + rnd() * 0.35);
     }
     ctx.globalAlpha = 1;
     const tex = new THREE.CanvasTexture(c);
