@@ -152,7 +152,14 @@
     const ribbonGeo = new THREE.BufferGeometry();
     const ribbonPos = [];
     const HALF_W = 0.9;
-    edges.forEach(([kind, pts]) => {
+    edges.forEach(([kind, pts], edgeIdx) => {
+      // Pequenisimo desfase de altura por tramo de via (no por segmento,
+      // para que cada via quede perfectamente plana a lo largo de si
+      // misma), asi las vias que se superponen justo en una interseccion
+      // o glorieta no quedan EXACTAMENTE a la misma altura, lo que
+      // causaba el efecto "cuarteado" (z-fighting) que se ve en cruces
+      // con muchos tramos convergiendo.
+      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.004;
       for (let i = 0; i < pts.length - 1; i++) {
         const a = toScene(pts[i][0], pts[i][1]);
         const b = toScene(pts[i + 1][0], pts[i + 1][1]);
@@ -161,8 +168,8 @@
         const nx = -dz / len * HALF_W, nz = dx / len * HALF_W;
         // dos triangulos formando el rectangulo de la calle
         ribbonPos.push(
-          a.x - nx, 0.03, a.z - nz, a.x + nx, 0.03, a.z + nz, b.x + nx, 0.03, b.z + nz,
-          a.x - nx, 0.03, a.z - nz, b.x + nx, 0.03, b.z + nz, b.x - nx, 0.03, b.z - nz
+          a.x - nx, yJitter, a.z - nz, a.x + nx, yJitter, a.z + nz, b.x + nx, yJitter, b.z + nz,
+          a.x - nx, yJitter, a.z - nz, b.x + nx, yJitter, b.z + nz, b.x - nx, yJitter, b.z - nz
         );
       }
     });
