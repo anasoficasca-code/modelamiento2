@@ -21,8 +21,8 @@
   const canvas = document.getElementById("sceneCanvas");
   const wrap = document.getElementById("sceneWrap");
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xeef1f4);
-  scene.fog = new THREE.Fog(0xeef1f4, 900, 3200);
+  scene.background = new THREE.Color(0x0b0c0f);
+  scene.fog = new THREE.Fog(0x0b0c0f, 500, 2400);
   // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
   // se agrega a este grupo, no directamente a la escena, para poder
   // rotarlo entero en X/Y/Z con los controles manuales de orientacion.
@@ -110,7 +110,7 @@
     const w = (bbox[2] - bbox[0]) * SCALE * 1.4;
     const h = (bbox[3] - bbox[1]) * SCALE * 1.4;
     const geo = new THREE.PlaneGeometry(w, h);
-    const mat = new THREE.MeshStandardMaterial({ color: 0xe4e7ea, roughness: 1, metalness: 0 });
+    const mat = new THREE.MeshStandardMaterial({ color: 0x14171c, roughness: 1, metalness: 0 });
     groundMesh = new THREE.Mesh(geo, mat);
     groundMesh.rotation.x = -Math.PI / 2;
     groundMesh.position.set(0, -0.4, 0);
@@ -163,7 +163,7 @@
     });
     ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(ribbonPos, 3));
     ribbonGeo.computeVertexNormals();
-    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xb5b8bc, roughness: 0.92, side: THREE.DoubleSide });
+    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0x4a4f56, roughness: 0.92, side: THREE.DoubleSide });
     const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
     roadMesh.receiveShadow = true;
     sceneRoot.add(roadMesh);
@@ -202,7 +202,7 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-    const mat = new THREE.MeshStandardMaterial({ color: 0xf3f4f6, roughness: 0.7, metalness: 0.03, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ color: 0x3d4450, roughness: 0.7, metalness: 0.05, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -289,7 +289,7 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ color: 0xaee3e0, roughness: 0.15, metalness: 0.05, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ color: 0x2f6fa8, roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
     const waterMesh = new THREE.Mesh(geo, mat);
     waterMesh.receiveShadow = true;
     sceneRoot.add(waterMesh);
