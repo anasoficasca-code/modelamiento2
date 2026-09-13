@@ -561,15 +561,13 @@
   // los controles) y 45 grados de acimut, proyeccion en paralelo (sin
   // fuga de perspectiva). ----
   function setAxonometricView(distance) {
-    const d = distance || 400;
-    const elev = Math.PI / 4, azim = Math.PI / 4;
-    camera.position.set(
-      d * Math.sin(elev) * Math.sin(azim),
-      d * Math.cos(elev),
-      d * Math.sin(elev) * Math.cos(azim)
-    );
-    controls.target.set(0, 0, 0);
-    camera.zoom = 1;
+    // Vista inicial fija que el usuario dejo lista (posicion, objetivo y
+    // zoom exactos), en vez de calcularla a partir del tamano de la red.
+    // Se verifico que la elevacion sigue siendo exactamente 45° (proyeccion
+    // paralela/axonometrica intacta).
+    camera.position.set(337.40, 704.12, 618.46);
+    controls.target.set(148.89, -51.26, -113.02);
+    camera.zoom = 1.108;
     camera.updateProjectionMatrix();
   }
 
