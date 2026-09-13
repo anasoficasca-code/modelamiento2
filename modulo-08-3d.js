@@ -312,7 +312,7 @@
       buildRoads(data.edges);
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       const h = (data.bbox[3] - data.bbox[1]) * SCALE;
-      viewSize = Math.max(w, h) * 0.42;
+      viewSize = Math.max(w, h) * 0.14;
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
