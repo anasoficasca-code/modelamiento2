@@ -84,6 +84,14 @@
     width:100%; resize:vertical; font-family:monospace; font-size:10.5px; padding:6px; border-radius:6px;
     border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
   }
+  input[type=color]{
+    width:34px; height:24px; padding:0; border:1px solid var(--panel-border); border-radius:5px;
+    background:none; cursor:pointer;
+  }
+  #colorOutput{
+    width:100%; resize:vertical; font-family:monospace; font-size:10.5px; padding:6px; border-radius:6px;
+    border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
+  }
 
   .tree-info{
     position:absolute; left:50%; top:70px; transform:translateX(-50%) translateY(-10px); z-index:20;
@@ -167,6 +175,19 @@
         <label>Sol — altura <span id="sunElVal">45°</span></label>
         <input type="range" id="sunEl" min="5" max="85" value="45" step="1">
       </div>
+      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border); flex-direction:row; align-items:center; justify-content:space-between;">
+        <label style="display:inline;">Color del agua</label>
+        <input type="color" id="colorAgua" value="#9cc9dc">
+      </div>
+      <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
+        <label style="display:inline;">Color de las vías</label>
+        <input type="color" id="colorVia" value="#76797d">
+      </div>
+      <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
+        <label style="display:inline;">Color de lo verde</label>
+        <input type="color" id="colorVerde" value="#e4ead9">
+      </div>
+      <textarea id="colorOutput" rows="3" spellcheck="false" readonly></textarea>
     </div>
 
     <div class="legend">
@@ -206,6 +227,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-08-3d.js?v=23"></script>
+<script src="modulo-08-3d.js?v=24"></script>
 </body>
 </html>

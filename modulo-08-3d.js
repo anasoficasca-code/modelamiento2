@@ -108,6 +108,7 @@
 
   // ---- Suelo ----
   let netCenter = { x: 0, y: 0 };
+  let roadMat = null, waterMat = null, parqueMat = null; // referencias para los selectores de color en vivo
   let groundMesh = null;
 
   function buildGround(bbox) {
@@ -211,6 +212,7 @@
       map: viaTex, color: 0x76797d, roughness: 0.85, side: THREE.DoubleSide,
       transparent: true, opacity: 0.7,
     });
+    roadMat = ribbonMat;
     const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
     roadMesh.receiveShadow = true;
     sceneRoot.add(roadMesh);
@@ -522,6 +524,7 @@
       map: waterTex, color: 0x9cc9dc, roughness: 0.7, metalness: 0,
       transparent: true, opacity: 0.75, side: THREE.DoubleSide,
     });
+    waterMat = mat;
     const waterMesh = new THREE.Mesh(geo, mat);
     waterMesh.receiveShadow = true;
     sceneRoot.add(waterMesh);
@@ -589,6 +592,7 @@
     pastoTex.wrapS = THREE.RepeatWrapping;
     pastoTex.wrapT = THREE.RepeatWrapping;
     const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xe4ead9, roughness: 0.95, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+    parqueMat = mat;
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
@@ -834,6 +838,29 @@
   }
   sunAzInput.addEventListener("input", onSunChange);
   sunElInput.addEventListener("input", onSunChange);
+
+  // ---- Selectores de color en vivo (agua, vias, verde) ----
+  const colorAgua = document.getElementById("colorAgua");
+  const colorVia = document.getElementById("colorVia");
+  const colorVerde = document.getElementById("colorVerde");
+  const colorOutput = document.getElementById("colorOutput");
+  function updateColorOutput() {
+    colorOutput.value =
+      `Agua:  ${colorAgua.value}\nVías:  ${colorVia.value}\nVerde: ${colorVerde.value}`;
+  }
+  colorAgua.addEventListener("input", () => {
+    if (waterMat) waterMat.color.set(colorAgua.value);
+    updateColorOutput();
+  });
+  colorVia.addEventListener("input", () => {
+    if (roadMat) roadMat.color.set(colorVia.value);
+    updateColorOutput();
+  });
+  colorVerde.addEventListener("input", () => {
+    if (parqueMat) parqueMat.color.set(colorVerde.value);
+    updateColorOutput();
+  });
+  updateColorOutput();
 
   // ---- Clic en un arbol: muestra su informacion (especie, altura) ----
   const raycaster = new THREE.Raycaster();
