@@ -175,7 +175,7 @@
     });
     ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(ribbonPos, 3));
     ribbonGeo.computeVertexNormals();
-    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0x9a9ea3, roughness: 0.85, side: THREE.DoubleSide });
+    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0x86898d, roughness: 0.85, side: THREE.DoubleSide });
     const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
     roadMesh.receiveShadow = true;
     sceneRoot.add(roadMesh);
@@ -224,7 +224,7 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-    const mat = new THREE.MeshStandardMaterial({ color: 0xf5f6f7, roughness: 0.65, metalness: 0.03, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0.03, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -409,6 +409,8 @@
   // levantados del suelo, con un material azul semi-transparente. ----
   function buildWaterBodies(bodies) {
     const positions = [];
+    const uvs = [];
+    const UV_SCALE = 0.08; // repite la textura cada ~12.5 unidades de escena
     bodies.forEach(w => {
       const pts = w.pts.map(p => toScene(p[0], p[1]));
       if (pts.length < 3) return;
@@ -421,17 +423,23 @@
       try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
       catch (e) { tris = []; }
       tris.forEach(([a, b, c]) => {
-        positions.push(
-          pts[a].x, 0.015, pts[a].z,
-          pts[b].x, 0.015, pts[b].z,
-          pts[c].x, 0.015, pts[c].z
-        );
+        [a, b, c].forEach(idx => {
+          positions.push(pts[idx].x, 0.015, pts[idx].z);
+          uvs.push(pts[idx].x * UV_SCALE, pts[idx].z * UV_SCALE);
+        });
       });
     });
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
     geo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ color: 0x7ec3e0, roughness: 0.15, metalness: 0.05, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+    const waterTex = new THREE.TextureLoader().load("./assets/textura_agua.jpg");
+    waterTex.wrapS = THREE.RepeatWrapping;
+    waterTex.wrapT = THREE.RepeatWrapping;
+    const mat = new THREE.MeshStandardMaterial({
+      map: waterTex, color: 0xbfe0ee, roughness: 0.2, metalness: 0.05,
+      transparent: true, opacity: 0.9, side: THREE.DoubleSide,
+    });
     const waterMesh = new THREE.Mesh(geo, mat);
     waterMesh.receiveShadow = true;
     sceneRoot.add(waterMesh);
