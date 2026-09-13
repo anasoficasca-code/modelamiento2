@@ -144,7 +144,7 @@
         const a = pts[i], c = pts[i + 1];
         const dx = c.x - a.x, dz = c.z - a.z;
         const len = Math.hypot(dx, dz) || 0.001;
-        const nx = -dz / len, nz = dx / len; // normal horizontal de la pared
+        const nx = dz / len, nz = -dx / len; // normal horizontal de la pared (hacia afuera)
         positions.push(
           a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z,
           a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
