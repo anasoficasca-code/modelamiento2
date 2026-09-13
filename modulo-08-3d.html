@@ -93,6 +93,18 @@
     border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
   }
 
+  .draw-panel{
+    position:absolute; top:70px; left:78px; z-index:6; width:230px;
+    background:rgba(17,20,24,.92); border:1px solid var(--panel-border); border-radius:10px; padding:12px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .draw-panel #drawToggle.active{ background:var(--accent); color:#0b0c0f; border-color:var(--accent); }
+  .draw-hint{ font-size:10px; color:var(--ink-dim); margin:0; line-height:1.4; }
+  #drawOutput{
+    width:100%; resize:vertical; font-family:monospace; font-size:10px; padding:6px; border-radius:6px;
+    border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
+  }
+
   .tree-info{
     position:absolute; left:50%; top:70px; transform:translateX(-50%) translateY(-10px); z-index:20;
     width:min(300px, 88vw); background:rgba(17,20,24,.97); border:1px solid var(--panel-border);
@@ -138,6 +150,21 @@
     <div class="hud-title">
       <h1>Simulación 3D de tránsito — Kennedy</h1>
       <p>Proyección axonométrica a 45° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista</p>
+    </div>
+
+    <div class="draw-panel" id="drawPanel">
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="drawToggle">✏️ Dibujar zona verde</button>
+      </div>
+      <p class="draw-hint">Con el modo activo, haz clic sobre el mapa para ir marcando puntos. Doble clic para cerrar la forma.</p>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="drawUndo">↺ Quitar último punto</button>
+        <button type="button" id="drawClear">🗑️ Limpiar</button>
+      </div>
+      <textarea id="drawOutput" rows="6" spellcheck="false" readonly placeholder="Los puntos que marques aparecen aquí…"></textarea>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="drawCopy">📋 Copiar coordenadas</button>
+      </div>
     </div>
 
     <div class="view-buttons">
@@ -240,6 +267,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-08-3d.js?v=37"></script>
+<script src="modulo-08-3d.js?v=38"></script>
 </body>
 </html>

@@ -1004,8 +1004,83 @@
     el.addEventListener("change", onInterChange);
   });
 
-  // ---- Clic en un arbol: muestra su informacion (especie, altura) ----
+  // ---- Herramienta de dibujo: clic para ir marcando puntos sobre el
+  // mapa (como la pluma de Photoshop), y mostrar las coordenadas REALES
+  // (mismo sistema que usan los demas archivos de datos) para copiar y
+  // pegar, por ejemplo para trazar una nueva zona verde a mano. ----
   const raycaster = new THREE.Raycaster();
+  let drawMode = false;
+  let drawPoints = []; // [[x,y], ...] en coordenadas reales (no de escena)
+  let drawLineMesh = null;
+  const drawToggleBtn = document.getElementById("drawToggle");
+  const drawOutput = document.getElementById("drawOutput");
+  function sceneToReal(x, z) {
+    return [x / SCALE + netCenter.x, -z / SCALE + netCenter.y];
+  }
+  function updateDrawOutput() {
+    if (!drawPoints.length) { drawOutput.value = ""; return; }
+    drawOutput.value = JSON.stringify(drawPoints.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]));
+  }
+  function updateDrawLine() {
+    if (drawLineMesh) { sceneRoot.remove(drawLineMesh); drawLineMesh.geometry.dispose(); drawLineMesh = null; }
+    if (drawPoints.length < 2) return;
+    const positions = [];
+    for (let i = 0; i < drawPoints.length - 1; i++) {
+      const a = toScene(drawPoints[i][0], drawPoints[i][1]);
+      const b = toScene(drawPoints[i + 1][0], drawPoints[i + 1][1]);
+      positions.push(a.x, 0.05, a.z, b.x, 0.05, b.z);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    const mat = new THREE.LineBasicMaterial({ color: 0xffcc33, linewidth: 2 });
+    drawLineMesh = new THREE.LineSegments(geo, mat);
+    sceneRoot.add(drawLineMesh);
+  }
+  drawToggleBtn.addEventListener("click", () => {
+    drawMode = !drawMode;
+    drawToggleBtn.classList.toggle("active", drawMode);
+    drawToggleBtn.textContent = drawMode ? "✏️ Dibujando… (clic para salir)" : "✏️ Dibujar zona verde";
+    controls.enabled = !drawMode; // no girar la camara mientras se dibuja
+  });
+  document.getElementById("drawUndo").addEventListener("click", () => {
+    drawPoints.pop();
+    updateDrawLine();
+    updateDrawOutput();
+  });
+  document.getElementById("drawClear").addEventListener("click", () => {
+    drawPoints = [];
+    updateDrawLine();
+    updateDrawOutput();
+  });
+  document.getElementById("drawCopy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(drawOutput.value); } catch (err) {}
+    drawOutput.select();
+  });
+  renderer.domElement.addEventListener("click", (e) => {
+    if (!drawMode) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    raycaster.setFromCamera(ndc, camera);
+    const targets = [groundMesh].filter(Boolean);
+    const hits = raycaster.intersectObjects(targets);
+    if (!hits.length) return;
+    const p = hits[0].point;
+    drawPoints.push(sceneToReal(p.x, p.z));
+    updateDrawLine();
+    updateDrawOutput();
+  });
+  renderer.domElement.addEventListener("dblclick", (e) => {
+    if (!drawMode || drawPoints.length < 3) return;
+    e.preventDefault();
+    drawPoints.push(drawPoints[0]); // cerrar la forma repitiendo el primer punto
+    updateDrawLine();
+    updateDrawOutput();
+  });
+
+  // ---- Clic en un arbol: muestra su informacion (especie, altura) ----
   const mouseNdc = new THREE.Vector2();
   const treeInfo = document.getElementById("treeInfo");
   const treeInfoName = document.getElementById("treeInfoName");
@@ -1019,6 +1094,7 @@
     const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
     downAt = null;
     if (moved > 6) return; // fue un arrastre de camara, no un clic
+    if (drawMode) return; // el modo dibujo tiene su propio manejador de clic
     if (!treeMeshes.length) return;
     const rect = renderer.domElement.getBoundingClientRect();
     mouseNdc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
