@@ -65,6 +65,25 @@
   }
   .legend span{ display:flex; align-items:center; gap:7px; }
   .legend i{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+
+  .rotate-panel{
+    position:absolute; top:70px; right:18px; z-index:6; width:220px;
+    background:rgba(17,20,24,.92); border:1px solid var(--panel-border); border-radius:10px; padding:12px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .rotate-row{ display:flex; flex-direction:column; gap:4px; }
+  .rotate-row label{ font-size:11px; color:var(--ink-dim); display:flex; justify-content:space-between; }
+  .rotate-row input[type=range]{ width:100%; accent-color:var(--accent); }
+  .rotate-row.rotate-buttons{ flex-direction:row; gap:8px; }
+  .rotate-row button{
+    flex:1; padding:7px 8px; border-radius:8px; border:1px solid var(--panel-border); background:var(--panel);
+    color:var(--ink); font-size:10.5px; cursor:pointer;
+  }
+  .rotate-row button:hover{ background:rgba(255,255,255,.12); }
+  #rotateOutput{
+    width:100%; resize:vertical; font-family:monospace; font-size:10.5px; padding:6px; border-radius:6px;
+    border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
+  }
 </style>
 </head>
 <body>
@@ -99,6 +118,26 @@
 
     <div class="view-buttons">
       <button type="button" id="viewReset">Restablecer vista axonométrica</button>
+    </div>
+
+    <div class="rotate-panel" id="rotatePanel">
+      <div class="rotate-row">
+        <label>Rotar X <span id="rotXVal">0°</span></label>
+        <input type="range" id="rotX" min="-180" max="180" value="0" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Rotar Y <span id="rotYVal">0°</span></label>
+        <input type="range" id="rotY" min="-180" max="180" value="0" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Rotar Z <span id="rotZVal">0°</span></label>
+        <input type="range" id="rotZ" min="-180" max="180" value="0" step="1">
+      </div>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="rotateReset">↺ Restablecer rotación</button>
+        <button type="button" id="rotateCopy">📋 Copiar coordenadas</button>
+      </div>
+      <textarea id="rotateOutput" rows="2" spellcheck="false" readonly></textarea>
     </div>
 
     <div class="legend">

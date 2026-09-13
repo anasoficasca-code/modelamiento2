@@ -23,6 +23,11 @@
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0b0c0f);
   scene.fog = new THREE.Fog(0x0b0c0f, 400, 2200);
+  // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
+  // se agrega a este grupo, no directamente a la escena, para poder
+  // rotarlo entero en X/Y/Z con los controles manuales de orientacion.
+  const sceneRoot = new THREE.Group();
+  scene.add(sceneRoot);
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 6000);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -76,7 +81,7 @@
     groundMesh = new THREE.Mesh(geo, mat);
     groundMesh.rotation.x = -Math.PI / 2;
     groundMesh.position.set(0, -0.4, 0);
-    scene.add(groundMesh);
+    sceneRoot.add(groundMesh);
   }
 
   // Convierte una coordenada del JSON (x,y en el plano, x=este, y=norte
@@ -101,7 +106,7 @@
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     const mat = new THREE.LineBasicMaterial({ color: 0x4a545e, transparent: true, opacity: 0.85 });
     const lines = new THREE.LineSegments(geo, mat);
-    scene.add(lines);
+    sceneRoot.add(lines);
 
     // Una segunda capa mas gruesa "de asfalto" usando tiras (planos delgados)
     // para que las vias principales se vean como calles, no solo lineas.
@@ -125,7 +130,7 @@
     ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(ribbonPos, 3));
     ribbonGeo.computeVertexNormals();
     const ribbonMat = new THREE.MeshStandardMaterial({ color: 0x2a2f36, roughness: 0.95, side: THREE.DoubleSide });
-    scene.add(new THREE.Mesh(ribbonGeo, ribbonMat));
+    sceneRoot.add(new THREE.Mesh(ribbonGeo, ribbonMat));
   }
 
   // ---- Edificios: extrusion de cada huella (paredes + techo), TODO
@@ -163,7 +168,7 @@
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
     const mat = new THREE.MeshStandardMaterial({ color: 0x3d4450, roughness: 0.85, metalness: 0.05, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
-    scene.add(mesh);
+    sceneRoot.add(mesh);
   }
 
   function loadBuildings() {
@@ -206,8 +211,8 @@
     });
     trunkMesh.instanceMatrix.needsUpdate = true;
     foliageMesh.instanceMatrix.needsUpdate = true;
-    scene.add(trunkMesh);
-    scene.add(foliageMesh);
+    sceneRoot.add(trunkMesh);
+    sceneRoot.add(foliageMesh);
   }
 
   function loadTrees() {
@@ -244,7 +249,7 @@
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.computeVertexNormals();
     const mat = new THREE.MeshStandardMaterial({ color: 0x2f6fa8, roughness: 0.25, metalness: 0.1, transparent: true, opacity: 0.88, side: THREE.DoubleSide });
-    scene.add(new THREE.Mesh(geo, mat));
+    sceneRoot.add(new THREE.Mesh(geo, mat));
   }
 
   function loadWaterBodies() {
@@ -261,7 +266,7 @@
   const vehGeo = new THREE.BoxGeometry(0.18, 0.15, 0.45);
   const vehInstanced = new THREE.InstancedMesh(vehGeo, vehMat, VEH_POOL_SIZE);
   vehInstanced.count = 0;
-  scene.add(vehInstanced);
+  sceneRoot.add(vehInstanced);
   const dummy = new THREE.Object3D();
 
   let timesteps = [];
@@ -396,6 +401,30 @@
 
   // ---- Botones de vista ----
   document.getElementById("viewReset").addEventListener("click", () => setAxonometricView(400));
+
+  // ---- Rotacion manual del mapa completo (X/Y/Z), para que el usuario
+  // pueda acomodar la orientacion a mano y luego copiar los grados
+  // exactos que quedaron, para dejarlos fijos en el codigo. ----
+  const rotX = document.getElementById("rotX"), rotY = document.getElementById("rotY"), rotZ = document.getElementById("rotZ");
+  const rotXVal = document.getElementById("rotXVal"), rotYVal = document.getElementById("rotYVal"), rotZVal = document.getElementById("rotZVal");
+  const rotateOutput = document.getElementById("rotateOutput");
+  function updateRotation() {
+    const dx = parseFloat(rotX.value), dy = parseFloat(rotY.value), dz = parseFloat(rotZ.value);
+    sceneRoot.rotation.set(dx * Math.PI / 180, dy * Math.PI / 180, dz * Math.PI / 180);
+    rotXVal.textContent = dx + "°"; rotYVal.textContent = dy + "°"; rotZVal.textContent = dz + "°";
+    rotateOutput.value = `sceneRoot.rotation.set(\n  ${(dx * Math.PI / 180).toFixed(4)}, // X: ${dx}°\n  ${(dy * Math.PI / 180).toFixed(4)}, // Y: ${dy}°\n  ${(dz * Math.PI / 180).toFixed(4)}  // Z: ${dz}°\n);`;
+  }
+  [rotX, rotY, rotZ].forEach(el => el.addEventListener("input", updateRotation));
+  document.getElementById("rotateReset").addEventListener("click", () => {
+    rotX.value = 0; rotY.value = 0; rotZ.value = 0;
+    updateRotation();
+  });
+  document.getElementById("rotateCopy").addEventListener("click", async () => {
+    updateRotation();
+    try { await navigator.clipboard.writeText(rotateOutput.value); } catch (err) {}
+    rotateOutput.select();
+  });
+  updateRotation();
 
   // ---- Loop de animacion ----
   function animate(now) {
