@@ -334,25 +334,15 @@
   // perpendiculares) con una foto real de un arbol (fondo quitado),
   // en vez de una textura dibujada o geometria 3D solida. ----
 
-  // Geometria de "tarjetas cruzadas": dos planos perpendiculares, para que
-  // el arbol se vea bien desde cualquier angulo horizontal sin tener que
-  // reorientar cada billboard hacia la camara en cada cuadro.
-  function makeCrossGeometry() {
+  // Geometria de una sola tarjeta (plano vertical). Como la camara esta
+  // fija a 45° de elevacion (solo gira horizontalmente alrededor), esta
+  // tarjeta se reorienta para mirar siempre hacia la camara (billboard
+  // real, no un cruce estatico de 2-3 planos que deja ver una "X" desde
+  // ciertos angulos).
+  function makePlaneGeometry() {
     const geo = new THREE.BufferGeometry();
-    // 3 tarjetas a 60 grados entre si (en vez de solo 2 a 90 grados), para
-    // que el arbol se vea con volumen real desde cualquier angulo y no
-    // como dos planos pegados en cruz (se nota mucho desde ciertos angulos).
-    const c60 = Math.cos(Math.PI / 3) * 0.5, s60 = Math.sin(Math.PI / 3) * 0.5;
-    const positions = [
-      -0.5, 0, 0, 0.5, 0, 0, 0.5, 1, 0, -0.5, 0, 0, 0.5, 1, 0, -0.5, 1, 0,
-      0, 0, -0.5, 0, 0, 0.5, 0, 1, 0.5, 0, 0, -0.5, 0, 1, 0.5, 0, 1, -0.5,
-      -c60, 0, -s60, c60, 0, s60, c60, 1, s60, -c60, 0, -s60, c60, 1, s60, -c60, 1, -s60,
-    ];
-    const uvs = [
-      0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1,
-      0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1,
-      0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1,
-    ];
+    const positions = [-0.5, 0, 0, 0.5, 0, 0, 0.5, 1, 0, -0.5, 0, 0, 0.5, 1, 0, -0.5, 1, 0];
+    const uvs = [0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1];
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
     geo.computeVertexNormals();
@@ -360,33 +350,49 @@
   }
 
   let treeMeshes = [];
+  let treeInstanceData = null; // {x,z,w,h} por instancia, para recalcular el billboard al girar la camara
+  let treeMesh = null;
   function buildTrees(trees) {
-    const crossGeo = makeCrossGeometry();
+    const planeGeo = makePlaneGeometry();
     const treeTex = new THREE.TextureLoader().load("./assets/arbol_real.png");
     const mat = new THREE.MeshStandardMaterial({
       map: treeTex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide,
       roughness: 1, metalness: 0,
     });
-    const mesh = new THREE.InstancedMesh(crossGeo, mat, trees.length);
+    const mesh = new THREE.InstancedMesh(planeGeo, mat, trees.length);
+    treeMesh = mesh;
     // Sin sombra proyectada en tiempo real (se pidio que los arboles no
     // tengan sombra, ni la de la textura ni la del render).
-    const dummyT = new THREE.Object3D();
-    // Proporcion ancho/alto de la foto real (491x512, copa bastante
-    // ancha respecto a la altura total del arbol en la imagen).
+    treeInstanceData = new Array(trees.length);
     trees.forEach((t, i) => {
       const [x, y, hMeters, , code] = t;
       const p = toScene(x, y);
       const h = Math.max(0.3, hMeters * SCALE);
       const w = h * (0.72 + (hash2(code) % 20) / 100);
-      dummyT.position.set(p.x, 0, p.z);
-      dummyT.scale.set(w, h, w);
-      dummyT.rotation.set(0, (hash2(code) % 360) * Math.PI / 180, 0);
-      dummyT.updateMatrix();
-      mesh.setMatrixAt(i, dummyT.matrix);
+      treeInstanceData[i] = { x: p.x, z: p.z, w, h };
     });
-    mesh.instanceMatrix.needsUpdate = true;
     sceneRoot.add(mesh);
     treeMeshes = [{ mesh, data: trees }];
+    updateTreeBillboards();
+  }
+  // Recalcula la rotacion de TODAS las tarjetas para que miren hacia la
+  // camara actual. Con camara ortografica la direccion hacia la camara es
+  // la misma sin importar la posicion en el suelo, asi que un solo angulo
+  // (el acimut actual de la camara) sirve para todas las instancias.
+  const dummyT = new THREE.Object3D();
+  function updateTreeBillboards() {
+    if (!treeMesh || !treeInstanceData) return;
+    const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z;
+    const faceAngle = Math.atan2(dx, dz);
+    for (let i = 0; i < treeInstanceData.length; i++) {
+      const d = treeInstanceData[i];
+      dummyT.position.set(d.x, 0, d.z);
+      dummyT.scale.set(d.w, d.h, d.w);
+      dummyT.rotation.set(0, faceAngle, 0);
+      dummyT.updateMatrix();
+      treeMesh.setMatrixAt(i, dummyT.matrix);
+    }
+    treeMesh.instanceMatrix.needsUpdate = true;
   }
   function hash2(str) { let h = 0; for (const c of (str || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 
@@ -819,6 +825,17 @@
       `camera.zoom = ${camera.zoom.toFixed(3)};`;
   }
   controls.addEventListener("change", updateViewOutput);
+  // Reorientar los billboards de los arboles hacia la camara cuando gira,
+  // pero limitado en frecuencia (no en cada evento, que dispara muy
+  // seguido durante un arrastre) para no recalcular 120 mil matrices por
+  // cuadro y volver lenta la pagina.
+  let lastTreeBillboardUpdate = 0;
+  controls.addEventListener("change", () => {
+    const now = performance.now();
+    if (now - lastTreeBillboardUpdate < 120) return;
+    lastTreeBillboardUpdate = now;
+    updateTreeBillboards();
+  });
   viewCopyBtn.addEventListener("click", async () => {
     updateViewOutput();
     try { await navigator.clipboard.writeText(viewOutput.value); } catch (err) {}
