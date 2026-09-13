@@ -1008,9 +1008,10 @@
   }
   drawToggleBtn.addEventListener("click", () => {
     drawMode = !drawMode;
+    if (drawMode && treePlantMode) { plantToggleBtn.click(); } // los 2 modos no se mezclan
     drawToggleBtn.classList.toggle("active", drawMode);
     drawToggleBtn.textContent = drawMode ? "✏️ Dibujando… (clic para salir)" : "✏️ Dibujar zona verde";
-    controls.enabled = !drawMode; // no girar la camara mientras se dibuja
+    controls.enabled = !drawMode && !treePlantMode; // no girar la camara mientras se dibuja
   });
   document.getElementById("drawUndo").addEventListener("click", () => {
     drawPoints.pop();
@@ -1026,8 +1027,55 @@
     try { await navigator.clipboard.writeText(drawOutput.value); } catch (err) {}
     drawOutput.select();
   });
+
+  // ---- Modo "plantar arboles": cada clic marca un punto nuevo (no se
+  // conectan con lineas), con un pequeño marcador verde visible, y las
+  // coordenadas reales quedan listas para copiar y pegar. ----
+  let treePlantMode = false;
+  let plantedPoints = [];
+  let plantedMarkersGroup = new THREE.Group();
+  sceneRoot.add(plantedMarkersGroup);
+  const plantToggleBtn = document.getElementById("treePlantToggle");
+  const plantOutput = document.getElementById("treePlantOutput");
+  const markerGeo = new THREE.SphereGeometry(0.12, 8, 6);
+  const markerMat = new THREE.MeshBasicMaterial({ color: 0x3ddc5a });
+  function updatePlantOutput() {
+    if (!plantedPoints.length) { plantOutput.value = ""; return; }
+    plantOutput.value = JSON.stringify(plantedPoints.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]));
+  }
+  function updatePlantMarkers() {
+    plantedMarkersGroup.clear();
+    plantedPoints.forEach(([rx, ry]) => {
+      const p = toScene(rx, ry);
+      const m = new THREE.Mesh(markerGeo, markerMat);
+      m.position.set(p.x, 0.15, p.z);
+      plantedMarkersGroup.add(m);
+    });
+  }
+  plantToggleBtn.addEventListener("click", () => {
+    treePlantMode = !treePlantMode;
+    if (treePlantMode && drawMode) { drawToggleBtn.click(); } // los 2 modos no se mezclan
+    plantToggleBtn.classList.toggle("active", treePlantMode);
+    plantToggleBtn.textContent = treePlantMode ? "🌳 Plantando… (clic para salir)" : "🌳 Plantar árboles";
+    controls.enabled = !treePlantMode && !drawMode;
+  });
+  document.getElementById("treePlantUndo").addEventListener("click", () => {
+    plantedPoints.pop();
+    updatePlantMarkers();
+    updatePlantOutput();
+  });
+  document.getElementById("treePlantClear").addEventListener("click", () => {
+    plantedPoints = [];
+    updatePlantMarkers();
+    updatePlantOutput();
+  });
+  document.getElementById("treePlantCopy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(plantOutput.value); } catch (err) {}
+    plantOutput.select();
+  });
+
   renderer.domElement.addEventListener("click", (e) => {
-    if (!drawMode) return;
+    if (!drawMode && !treePlantMode) return;
     const rect = renderer.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2(
       ((e.clientX - rect.left) / rect.width) * 2 - 1,
@@ -1038,6 +1086,12 @@
     const hits = raycaster.intersectObjects(targets);
     if (!hits.length) return;
     const p = hits[0].point;
+    if (treePlantMode) {
+      plantedPoints.push(sceneToReal(p.x, p.z));
+      updatePlantMarkers();
+      updatePlantOutput();
+      return;
+    }
     drawPoints.push(sceneToReal(p.x, p.z));
     updateDrawLine();
     updateDrawOutput();
