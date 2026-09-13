@@ -109,6 +109,7 @@
   // ---- Suelo ----
   let netCenter = { x: 0, y: 0 };
   let roadMat = null, waterMat = null, parqueMat = null; // referencias para los selectores de color en vivo
+  let buildingEdgeMat = null; // referencia para ajustar su opacidad segun el zoom
   let groundMesh = null;
 
   function buildGround(bbox) {
@@ -317,6 +318,7 @@
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
     const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.55 });
+    buildingEdgeMat = edgeMat;
     sceneRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
   }
 
@@ -912,6 +914,13 @@
       slider.value = String(Math.round(currentTime));
       timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(maxT)}`;
       renderVehiclesAt(currentTime);
+    }
+    // Las lineas de borde de los edificios se ven como una masa oscura
+    // cuando hay muchas superpuestas al alejar la camara (zoom bajo) -
+    // se atenuan progresivamente lejos y se ven bien definidas de cerca.
+    if (buildingEdgeMat) {
+      const t = Math.min(Math.max((camera.zoom - 1) / 4, 0), 1);
+      buildingEdgeMat.opacity = 0.1 + t * 0.45;
     }
     controls.update();
     renderer.render(scene, camera);
