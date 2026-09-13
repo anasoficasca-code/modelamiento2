@@ -195,14 +195,19 @@
         );
         for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
       }
-      // Techo: abanico de triangulos desde el primer punto (aproximacion
-      // razonable para huellas mayormente convexas/rectangulares).
-      for (let i = 1; i < pts.length - 2; i++) {
+      // Techo: triangulacion real de poligono (ear-clipping), no un abanico
+      // ingenuo desde el primer punto — huellas de edificio no convexas
+      // (formas en L, U, etc) generaban techos deformes con el abanico.
+      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+      let tris;
+      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
+      catch (e) { tris = []; }
+      tris.forEach(([ia, ib, ic]) => {
         positions.push(
-          pts[0].x, h, pts[0].z, pts[i].x, h, pts[i].z, pts[i + 1].x, h, pts[i + 1].z
+          pts[ia].x, h, pts[ia].z, pts[ib].x, h, pts[ib].z, pts[ic].x, h, pts[ic].z
         );
         for (let k = 0; k < 3; k++) normals.push(0, 1, 0);
-      }
+      });
     });
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
