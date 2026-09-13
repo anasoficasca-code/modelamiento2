@@ -71,9 +71,9 @@
   controls.enablePan = true;
 
   // ---- Luces (con sombras, tipo render arquitectonico) ----
-  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.95);
   scene.add(ambient);
-  const sun = new THREE.DirectionalLight(0xfff3e0, 1.15);
+  const sun = new THREE.DirectionalLight(0xffffff, 0.65);
   scene.add(sun);
   scene.add(sun.target);
   sun.castShadow = true;
