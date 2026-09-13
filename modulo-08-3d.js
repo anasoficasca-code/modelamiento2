@@ -10,6 +10,7 @@
   const TREES_URL = "./assets/kennedy_trees_real.json";
   const WATER_URL = "./assets/kennedy_water_bodies.json";
   const MANZANAS_URL = "./assets/kennedy_manzanas.json";
+  const PARQUES_URL = "./assets/kennedy_parques.json";
   const SCALE = 1 / 10; // las coordenadas del JSON llegan a ~10700 unidades; se escalan para Three.js
 
   const statusOverlay = document.getElementById("statusOverlay");
@@ -591,6 +592,40 @@
       .catch(err => console.warn("No se pudieron cargar las manzanas:", err));
   }
 
+  // ---- Parques/zonas verdes: poligonos rellenos, triangulacion real
+  // (ear-clipping) igual que agua y edificios, en una altura propia
+  // (0.02) que no compite con via/agua/manzanas. ----
+  function buildParques(parques) {
+    const positions = [];
+    parques.forEach(p => {
+      const pts = p.pts.map(pt => toScene(pt[0], pt[1]));
+      if (pts.length < 3) return;
+      const pts2d = pts.map(pt => new THREE.Vector2(pt.x, pt.z));
+      let tris;
+      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
+      catch (e) { tris = []; }
+      tris.forEach(([a, b, c]) => {
+        positions.push(
+          pts[a].x, 0.02, pts[a].z, pts[b].x, 0.02, pts[b].z, pts[c].x, 0.02, pts[c].z
+        );
+      });
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x8fbb72, roughness: 0.95, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.receiveShadow = true;
+    sceneRoot.add(mesh);
+  }
+
+  function loadParques() {
+    return fetch(PARQUES_URL)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + PARQUES_URL); return r.json(); })
+      .then(data => { buildParques(data); })
+      .catch(err => console.warn("No se pudieron cargar los parques:", err));
+  }
+
   // ---- Vehiculos: un pool de cajas 3D reutilizables ----
   const VEH_POOL_SIZE = 2800;
   const vehMeshes = [];
@@ -697,6 +732,7 @@
       loadTrees();
       loadWaterBodies();
       loadManzanas();
+      loadParques();
       return loadVehicles();
     })
     .catch(err => {
