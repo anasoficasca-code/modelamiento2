@@ -263,7 +263,7 @@
   function buildBuildings(buildings) {
     const positions = [];
     const normals = [];
-    const edgePositions = []; // lineas de borde: SOLO el perimetro del techo (nada de esquinas verticales ni lineas interiores)
+    const edgePositions = []; // lineas de borde: perimetro del techo + esquinas verticales (para que se lea el volumen), nada de lineas interiores
     buildings.forEach(b => {
       const pts = b.pts.map(p => toScene(p[0], p[1]));
       const h = b.h * SCALE;
@@ -279,7 +279,8 @@
           a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
         );
         for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
-        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // borde del perimetro del techo (solamente)
+        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // perimetro del techo
+        edgePositions.push(a.x, 0, a.z, a.x, h, a.z); // esquina vertical (para que se lea el volumen)
       }
 
       // Techo plano simple (sin parapeto sintetico): las mallas REALES de
@@ -308,9 +309,9 @@
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
 
-    // Borde oscuro de cada edificio: solo el perimetro del techo (linea
-    // simple, sin esquinas verticales ni lineas internas), para que se
-    // vea limpio como el borde de una silueta, no un dibujo de wireframe.
+    // Borde oscuro de cada edificio: perimetro del techo + esquinas
+    // verticales (sin lineas internas), para que se lea como un volumen
+    // real y no una silueta plana.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
     const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.55 });
