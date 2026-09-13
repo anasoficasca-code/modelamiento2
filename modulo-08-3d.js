@@ -615,7 +615,7 @@
   // dando miles de "cruces" falsos). ----
   let intersectionsData = null;
   let intersectionMeshes = []; // para poder quitarlas y reconstruir al mover los deslizadores
-  let interParams = { setback: 2.6, crossW: 1.0, poleOffset: 1.1 };
+  let interParams = { setback: 1.3, crossW: 1.0, poleOffset: 1.1 };
   function buildIntersections(intersections) {
     intersectionsData = intersections;
     intersectionMeshes.forEach(m => { sceneRoot.remove(m); m.geometry.dispose(); });
