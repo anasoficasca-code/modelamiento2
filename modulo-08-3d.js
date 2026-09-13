@@ -79,7 +79,8 @@
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.near = 10;
   sun.shadow.camera.far = 2600;
-  sun.shadow.bias = -0.0006;
+  sun.shadow.bias = -0.00015;
+  sun.shadow.normalBias = 0.35; // reduce el parpadeo/artefactos de sombra (shadow acne)
   const SHADOW_FRUSTUM = 750;
   sun.shadow.camera.left = -SHADOW_FRUSTUM;
   sun.shadow.camera.right = SHADOW_FRUSTUM;
@@ -205,7 +206,7 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-    const mat = new THREE.MeshStandardMaterial({ color: 0x3d4450, roughness: 0.7, metalness: 0.05, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ color: 0x6b727d, roughness: 0.7, metalness: 0.05, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -227,15 +228,14 @@
   // pagina se ponga lenta. Se generan 3 variantes de textura (una vez,
   // al inicio) y se reparten entre los ~120 mil arboles reales. ----
   function makeTreeTexture(seed) {
-    const W = 256, H = 320;
+    const W = 512, H = 640;
     const c = document.createElement("canvas"); c.width = W; c.height = H;
     const ctx = c.getContext("2d");
     let s = seed;
     function rnd() { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }
 
     const trunkTopY = H * 0.42;
-    const trunkBaseW = 10 + rnd() * 5;
-    // Tronco con un par de ramas visibles antes del follaje.
+    const trunkBaseW = 20 + rnd() * 10;
     ctx.strokeStyle = "#5a4632"; ctx.lineCap = "round";
     ctx.lineWidth = trunkBaseW;
     ctx.beginPath(); ctx.moveTo(W / 2, H); ctx.lineTo(W / 2, trunkTopY); ctx.stroke();
@@ -245,23 +245,44 @@
       ctx.lineWidth = trunkBaseW * (0.5 - i * 0.1);
       ctx.beginPath();
       ctx.moveTo(W / 2, branchY);
-      ctx.lineTo(W / 2 + dir * (30 + rnd() * 30), branchY - 40 - rnd() * 30);
+      ctx.lineTo(W / 2 + dir * (60 + rnd() * 60), branchY - 80 - rnd() * 60);
       ctx.stroke();
     }
 
-    // Follaje: muchos circulos semitransparentes superpuestos, en tonos
-    // de verde variados, para que se vea frondoso y no una sola bola lisa.
-    const greens = ["#3c6b3a", "#4d7f45", "#5f9152", "#6fa561", "#437a4a"];
-    const cx = W / 2, cy = H * 0.34, spread = W * 0.36;
-    ctx.globalAlpha = 0.9;
-    for (let i = 0; i < 90; i++) {
-      const ang = rnd() * Math.PI * 2, rad = Math.pow(rnd(), 0.5) * spread;
-      const px = cx + Math.cos(ang) * rad;
-      const py = cy + Math.sin(ang) * rad * 0.72;
-      const r = 18 + rnd() * 26;
-      ctx.fillStyle = greens[Math.floor(rnd() * greens.length)];
-      ctx.globalAlpha = 0.55 + rnd() * 0.35;
+    // Follaje: primero una masa base solida (silueta llena, sin huecos),
+    // y encima muchos parches con degradado radial (borde suave, no un
+    // circulo con canto duro) en tonos de verde variados, para que se
+    // vea frondoso y con textura pero sin bordes pixelados/duros.
+    const greens = ["#3c6b3a", "#4d7f45", "#5f9152", "#6fa561", "#437a4a", "#2f5c30"];
+    const cx = W / 2, cy = H * 0.34, spread = W * 0.37;
+
+    function softBlob(px, py, r, color, alpha) {
+      const grad = ctx.createRadialGradient(px, py, 0, px, py, r);
+      grad.addColorStop(0, color);
+      grad.addColorStop(0.7, color);
+      grad.addColorStop(1, color.replace(")", ",0)").replace("rgb", "rgba"));
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = grad;
       ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+    }
+    function hexToRgb(hex) {
+      const n = parseInt(hex.slice(1), 16);
+      return `rgb(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255})`;
+    }
+
+    // Masa base: pocos parches grandes, bien solidos, cubriendo toda la
+    // silueta para que no queden huecos transparentes en el centro.
+    for (let i = 0; i < 14; i++) {
+      const ang = rnd() * Math.PI * 2, rad = rnd() * spread * 0.55;
+      const px = cx + Math.cos(ang) * rad, py = cy + Math.sin(ang) * rad * 0.7;
+      softBlob(px, py, spread * 0.55, hexToRgb(greens[Math.floor(rnd() * greens.length)]), 0.9);
+    }
+    // Detalle: parches mas chicos encima, para dar textura de hojas.
+    for (let i = 0; i < 70; i++) {
+      const ang = rnd() * Math.PI * 2, rad = Math.pow(rnd(), 0.5) * spread;
+      const px = cx + Math.cos(ang) * rad, py = cy + Math.sin(ang) * rad * 0.72;
+      const r = 22 + rnd() * 30;
+      softBlob(px, py, r, hexToRgb(greens[Math.floor(rnd() * greens.length)]), 0.35 + rnd() * 0.25);
     }
     ctx.globalAlpha = 1;
     const tex = new THREE.CanvasTexture(c);
@@ -296,7 +317,7 @@
     buckets.forEach(b => {
       if (!b.items.length) return;
       const mat = new THREE.MeshStandardMaterial({
-        map: b.tex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide,
+        map: b.tex, transparent: true, alphaTest: 0.12, side: THREE.DoubleSide,
         roughness: 1, metalness: 0,
       });
       const mesh = new THREE.InstancedMesh(crossGeo, mat, b.items.length);
