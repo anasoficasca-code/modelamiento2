@@ -614,11 +614,11 @@
   // fue un desastre visual antes (SUMO separa carriles en tramos propios,
   // dando miles de "cruces" falsos). ----
   function buildIntersections(intersections) {
-    const poleGeo = new THREE.CylinderGeometry(0.025, 0.03, 1, 6);
+    const poleGeo = new THREE.CylinderGeometry(0.05, 0.06, 1, 6);
     const poleMat = new THREE.MeshStandardMaterial({ color: 0x33383d, roughness: 0.6 });
-    const headGeo = new THREE.BoxGeometry(0.09, 0.24, 0.09);
+    const headGeo = new THREE.BoxGeometry(0.16, 0.42, 0.16);
     const headMat = new THREE.MeshStandardMaterial({ color: 0x1c1f22, roughness: 0.5 });
-    const lightGeo = new THREE.CircleGeometry(0.028, 10);
+    const lightGeo = new THREE.CircleGeometry(0.06, 10);
     const lightColors = [0xe14b3f, 0xe8b93f, 0x4bb35a];
 
     let poleCount = 0;
@@ -632,7 +632,7 @@
 
     const dummy = new THREE.Object3D();
     const crossPos = []; // posiciones de las rayas de cruce peatonal
-    const POLE_H = 3.2 * SCALE, SETBACK = 4.5, CROSS_W = 3.0, STRIPE_LEN = 0.45, STRIPE_GAP = 0.3;
+    const POLE_H = 4.2 * SCALE, SETBACK = 4.5, CROSS_W = 3.0;
     let idx = 0;
     intersections.forEach(inter => {
       const center = toScene(inter.x, inter.y);
@@ -654,7 +654,7 @@
         dummy.rotation.set(0, faceAngle, 0);
         dummy.updateMatrix();
         headMesh.setMatrixAt(idx, dummy.matrix);
-        const lightYs = [POLE_H + 0.2, POLE_H + 0.14, POLE_H + 0.08];
+        const lightYs = [POLE_H + 0.34, POLE_H + 0.21, POLE_H + 0.08];
         lightMeshes.forEach((lm, li) => {
           dummy.position.set(poleX + Math.sin(faceAngle) * 0.05, lightYs[li], poleZ + Math.cos(faceAngle) * 0.05);
           dummy.rotation.set(0, faceAngle, 0);
@@ -664,12 +664,16 @@
         idx++;
 
         // Cruce peatonal (rayas) atravesando este acceso, antes de llegar
-        // al centro de la interseccion.
+        // al centro de la interseccion. Cada raya es angosta en el
+        // sentido transversal a la via (px,pz) y larga en el sentido de
+        // avance (ux,uz) — como una cebra real — con huecos claros entre
+        // rayas consecutivas (antes se superponian y no se notaban).
         const baseX = center.x + ux * SETBACK, baseZ = center.z + uz * SETBACK;
-        for (let s = -CROSS_W; s <= CROSS_W; s += STRIPE_LEN + STRIPE_GAP) {
+        const CROSSING_LEN = 3.2, STRIPE_W = 0.32, STRIPE_GAP2 = 0.28;
+        for (let s = -CROSS_W; s <= CROSS_W; s += STRIPE_W + STRIPE_GAP2) {
           const c0x = baseX + px * s, c0z = baseZ + pz * s;
-          const c1x = c0x + ux * STRIPE_LEN, c1z = c0z + uz * STRIPE_LEN;
-          const hx = px * 0.4, hz = pz * 0.4;
+          const c1x = c0x + ux * CROSSING_LEN, c1z = c0z + uz * CROSSING_LEN;
+          const hx = px * (STRIPE_W / 2), hz = pz * (STRIPE_W / 2);
           crossPos.push(
             c0x - hx, 0.034, c0z - hz, c0x + hx, 0.034, c0z + hz, c1x + hx, 0.034, c1z + hz,
             c0x - hx, 0.034, c0z - hz, c1x + hx, 0.034, c1z + hz, c1x - hx, 0.034, c1z - hz
