@@ -818,7 +818,7 @@
       loadIntersections();
       loadTriMesh("./assets/kennedy_roofs_flat.json", 0xffffff);    // techos planos con parapeto ya modelado
       loadTriMesh("./assets/kennedy_facades.json", 0xa05a41);       // fachadas verificadas con StreetView
-      loadTerrain();
+      // loadTerrain(); // quitado a pedido del usuario, vuelve al plano liso
       return loadVehicles();
     })
     .catch(err => {
