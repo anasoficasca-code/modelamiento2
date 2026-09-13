@@ -266,7 +266,7 @@
   function buildBuildings(buildings) {
     const positions = [];
     const normals = [];
-    const edgePositions = []; // lineas de borde: perimetro del techo + esquinas verticales (para que se lea el volumen), nada de lineas interiores
+    const edgePositions = []; // lineas de borde: perimetro del techo + perimetro de la base + esquinas verticales (para que se lea el volumen completo), nada de lineas interiores
     buildings.forEach(b => {
       const pts = b.pts.map(p => toScene(p[0], p[1]));
       const h = b.h * SCALE;
@@ -283,6 +283,7 @@
         );
         for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
         edgePositions.push(a.x, h, a.z, c.x, h, c.z); // perimetro del techo
+        edgePositions.push(a.x, 0, a.z, c.x, 0, c.z); // perimetro de la base (donde toca el piso)
         edgePositions.push(a.x, 0, a.z, a.x, h, a.z); // esquina vertical (para que se lea el volumen)
       }
 
@@ -917,7 +918,7 @@
     // se atenuan progresivamente lejos y se ven bien definidas de cerca.
     if (buildingEdgeMat) {
       const t = Math.min(Math.max((camera.zoom - 1) / 4, 0), 1);
-      buildingEdgeMat.opacity = 0.1 + t * 0.45;
+      buildingEdgeMat.opacity = 0.35 + t * 0.45;
     }
     controls.update();
     renderer.render(scene, camera);
