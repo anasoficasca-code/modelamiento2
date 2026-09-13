@@ -138,14 +138,22 @@
         <button type="button" id="rotateCopy">📋 Copiar coordenadas</button>
       </div>
       <textarea id="rotateOutput" rows="2" spellcheck="false" readonly></textarea>
+      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
+        <label>Sol — acimut <span id="sunAzVal">130°</span></label>
+        <input type="range" id="sunAz" min="0" max="360" value="130" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Sol — altura <span id="sunElVal">45°</span></label>
+        <input type="range" id="sunEl" min="5" max="85" value="45" step="1">
+      </div>
     </div>
 
     <div class="legend">
       <span><i style="background:#e2635a"></i> Vehículo</span>
-      <span><i style="background:#3a4148"></i> Vía</span>
-      <span><i style="background:#3d4450"></i> Edificio</span>
+      <span><i style="background:#c7ccd1"></i> Vía</span>
+      <span><i style="background:#f3f4f6"></i> Edificio</span>
       <span><i style="background:#3f6b3f"></i> Árbol</span>
-      <span><i style="background:#2f6fa8"></i> Cuerpo de agua</span>
+      <span><i style="background:#8ec6e8"></i> Cuerpo de agua</span>
     </div>
 
     <div class="controls-bar">

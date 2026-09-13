@@ -21,8 +21,8 @@
   const canvas = document.getElementById("sceneCanvas");
   const wrap = document.getElementById("sceneWrap");
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b0c0f);
-  scene.fog = new THREE.Fog(0x0b0c0f, 400, 2200);
+  scene.background = new THREE.Color(0xeef1f4);
+  scene.fog = new THREE.Fog(0xeef1f4, 900, 3200);
   // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
   // se agrega a este grupo, no directamente a la escena, para poder
   // rotarlo entero en X/Y/Z con los controles manuales de orientacion.
@@ -38,6 +38,8 @@
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 6000);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   // Tamano visible (mitad de la altura del encuadre, en unidades de la
   // escena) para la proyeccion ortogonal — se ajusta al cargar la red.
@@ -66,14 +68,39 @@
   controls.maxZoom = 8;
   controls.enablePan = true;
 
-  // ---- Luces ----
-  scene.add(new THREE.AmbientLight(0x8899aa, 0.65));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.9);
-  sun.position.set(300, 500, 200);
+  // ---- Luces (con sombras, tipo render arquitectonico) ----
+  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+  scene.add(ambient);
+  const sun = new THREE.DirectionalLight(0xfff3e0, 1.15);
   scene.add(sun);
-  const rim = new THREE.DirectionalLight(0x5588ff, 0.25);
+  scene.add(sun.target);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.near = 10;
+  sun.shadow.camera.far = 2600;
+  sun.shadow.bias = -0.0006;
+  const SHADOW_FRUSTUM = 750;
+  sun.shadow.camera.left = -SHADOW_FRUSTUM;
+  sun.shadow.camera.right = SHADOW_FRUSTUM;
+  sun.shadow.camera.top = SHADOW_FRUSTUM;
+  sun.shadow.camera.bottom = -SHADOW_FRUSTUM;
+  const rim = new THREE.DirectionalLight(0xdce8ff, 0.25);
   rim.position.set(-400, 200, -300);
   scene.add(rim);
+
+  // Posicion del sol controlada por azimut/altura (grados), para poder
+  // "mover las sombras" con los deslizadores de la interfaz.
+  let sunAzimuth = 130, sunElevation = 45, sunDistance = 900;
+  function updateSunPosition() {
+    const az = sunAzimuth * Math.PI / 180, el = sunElevation * Math.PI / 180;
+    sun.position.set(
+      sunDistance * Math.cos(el) * Math.sin(az),
+      sunDistance * Math.sin(el),
+      sunDistance * Math.cos(el) * Math.cos(az)
+    );
+    sun.target.position.set(0, 0, 0);
+  }
+  updateSunPosition();
 
   // ---- Suelo ----
   let netCenter = { x: 0, y: 0 };
@@ -83,10 +110,11 @@
     const w = (bbox[2] - bbox[0]) * SCALE * 1.4;
     const h = (bbox[3] - bbox[1]) * SCALE * 1.4;
     const geo = new THREE.PlaneGeometry(w, h);
-    const mat = new THREE.MeshStandardMaterial({ color: 0x14171c, roughness: 1, metalness: 0 });
+    const mat = new THREE.MeshStandardMaterial({ color: 0xe4e7ea, roughness: 1, metalness: 0 });
     groundMesh = new THREE.Mesh(geo, mat);
     groundMesh.rotation.x = -Math.PI / 2;
     groundMesh.position.set(0, -0.4, 0);
+    groundMesh.receiveShadow = true;
     sceneRoot.add(groundMesh);
   }
 
@@ -128,15 +156,17 @@
         const nx = -dz / len * HALF_W, nz = dx / len * HALF_W;
         // dos triangulos formando el rectangulo de la calle
         ribbonPos.push(
-          a.x - nx, 0.02, a.z - nz, a.x + nx, 0.02, a.z + nz, b.x + nx, 0.02, b.z + nz,
-          a.x - nx, 0.02, a.z - nz, b.x + nx, 0.02, b.z + nz, b.x - nx, 0.02, b.z - nz
+          a.x - nx, 0.03, a.z - nz, a.x + nx, 0.03, a.z + nz, b.x + nx, 0.03, b.z + nz,
+          a.x - nx, 0.03, a.z - nz, b.x + nx, 0.03, b.z + nz, b.x - nx, 0.03, b.z - nz
         );
       }
     });
     ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(ribbonPos, 3));
     ribbonGeo.computeVertexNormals();
-    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0x2a2f36, roughness: 0.95, side: THREE.DoubleSide });
-    sceneRoot.add(new THREE.Mesh(ribbonGeo, ribbonMat));
+    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xc7ccd1, roughness: 0.95, side: THREE.DoubleSide });
+    const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
+    roadMesh.receiveShadow = true;
+    sceneRoot.add(roadMesh);
   }
 
   // ---- Edificios: extrusion de cada huella (paredes + techo), TODO
@@ -172,8 +202,10 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-    const mat = new THREE.MeshStandardMaterial({ color: 0x3d4450, roughness: 0.85, metalness: 0.05, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ color: 0xf3f4f6, roughness: 0.7, metalness: 0.03, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     sceneRoot.add(mesh);
   }
 
@@ -195,6 +227,9 @@
 
     const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
     const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, trees.length);
+    trunkMesh.castShadow = true;
+    foliageMesh.castShadow = true;
+    foliageMesh.receiveShadow = true;
     const dummyT = new THREE.Object3D();
 
     trees.forEach((t, i) => {
@@ -245,17 +280,19 @@
       catch (e) { tris = []; }
       tris.forEach(([a, b, c]) => {
         positions.push(
-          pts[a].x, 0.03, pts[a].z,
-          pts[b].x, 0.03, pts[b].z,
-          pts[c].x, 0.03, pts[c].z
+          pts[a].x, 0.015, pts[a].z,
+          pts[b].x, 0.015, pts[b].z,
+          pts[c].x, 0.015, pts[c].z
         );
       });
     });
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ color: 0x2f6fa8, roughness: 0.25, metalness: 0.1, transparent: true, opacity: 0.88, side: THREE.DoubleSide });
-    sceneRoot.add(new THREE.Mesh(geo, mat));
+    const mat = new THREE.MeshStandardMaterial({ color: 0x8ec6e8, roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.82, side: THREE.DoubleSide });
+    const waterMesh = new THREE.Mesh(geo, mat);
+    waterMesh.receiveShadow = true;
+    sceneRoot.add(waterMesh);
   }
 
   function loadWaterBodies() {
@@ -272,6 +309,7 @@
   const vehGeo = new THREE.BoxGeometry(0.18, 0.15, 0.45);
   const vehInstanced = new THREE.InstancedMesh(vehGeo, vehMat, VEH_POOL_SIZE);
   vehInstanced.count = 0;
+  vehInstanced.castShadow = true;
   sceneRoot.add(vehInstanced);
   const dummy = new THREE.Object3D();
 
@@ -431,6 +469,19 @@
     rotateOutput.select();
   });
   updateRotation();
+
+  // ---- Control del sol (mover las sombras) ----
+  const sunAzInput = document.getElementById("sunAz"), sunElInput = document.getElementById("sunEl");
+  const sunAzVal = document.getElementById("sunAzVal"), sunElVal = document.getElementById("sunElVal");
+  function onSunChange() {
+    sunAzimuth = parseFloat(sunAzInput.value);
+    sunElevation = parseFloat(sunElInput.value);
+    sunAzVal.textContent = sunAzimuth + "°";
+    sunElVal.textContent = sunElevation + "°";
+    updateSunPosition();
+  }
+  sunAzInput.addEventListener("input", onSunChange);
+  sunElInput.addEventListener("input", onSunChange);
 
   // ---- Loop de animacion ----
   function animate(now) {
