@@ -646,12 +646,28 @@
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
+    return mesh;
   }
   function loadTriMesh(url, color, opts) {
     return fetch(url)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + url); return r.json(); })
-      .then(data => { buildTriMesh(data, color, opts); })
-      .catch(err => console.warn("No se pudo cargar la malla " + url + ":", err));
+      .then(data => buildTriMesh(data, color, opts))
+      .catch(err => { console.warn("No se pudo cargar la malla " + url + ":", err); return null; });
+  }
+
+  // ---- Terreno real (relieve, 0-22m de altura) extraido del modelo Rhino,
+  // en vez de un plano completamente liso. Se mantiene tambien el plano
+  // liso original, un poco mas abajo, como base/respaldo por si el
+  // terreno real no cubre alguna zona del borde. ----
+  let terrainMesh = null;
+  function loadTerrain() {
+    return loadTriMesh("./assets/kennedy_terreno.json", 0xe4e6e2, { roughness: 0.95, metalness: 0 })
+      .then(mesh => {
+        if (!mesh) return;
+        mesh.castShadow = false; // el suelo no necesita proyectar sombra sobre si mismo
+        mesh.position.y += 0.001; // apenas encima del plano liso de respaldo
+        terrainMesh = mesh;
+      });
   }
 
   // ---- Vehiculos: un pool de cajas 3D reutilizables ----
@@ -771,6 +787,7 @@
       loadIntersections();
       loadTriMesh("./assets/kennedy_roofs_flat.json", 0xffffff);    // techos planos con parapeto ya modelado
       loadTriMesh("./assets/kennedy_facades.json", 0xa05a41);       // fachadas verificadas con StreetView
+      loadTerrain();
       return loadVehicles();
     })
     .catch(err => {
