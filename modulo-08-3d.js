@@ -22,14 +22,21 @@
   scene.background = new THREE.Color(0x0b0c0f);
   scene.fog = new THREE.Fog(0x0b0c0f, 400, 2200);
 
-  const camera = new THREE.PerspectiveCamera(55, 1, 1, 6000);
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 6000);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 
+  // Tamano visible (mitad de la altura del encuadre, en unidades de la
+  // escena) para la proyeccion ortogonal — se ajusta al cargar la red.
+  let viewSize = 260;
   function resize() {
     const w = wrap.clientWidth, h = wrap.clientHeight;
     renderer.setSize(w, h, false);
-    camera.aspect = w / h;
+    const aspect = w / h;
+    camera.left = -viewSize * aspect;
+    camera.right = viewSize * aspect;
+    camera.top = viewSize;
+    camera.bottom = -viewSize;
     camera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resize);
@@ -37,9 +44,14 @@
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  controls.maxPolarAngle = Math.PI * 0.49;
-  controls.minDistance = 20;
-  controls.maxDistance = 2200;
+  // Proyeccion paralela (axonometrica): se bloquea el angulo de la camara
+  // en 45 grados fijo, y solo se permite girar alrededor (orbitar en el
+  // plano horizontal) y hacer zoom — no inclinar mas ni menos.
+  controls.minPolarAngle = Math.PI / 4;
+  controls.maxPolarAngle = Math.PI / 4;
+  controls.minZoom = 0.15;
+  controls.maxZoom = 8;
+  controls.enablePan = true;
 
   // ---- Luces ----
   scene.add(new THREE.AmbientLight(0x8899aa, 0.65));
@@ -254,8 +266,10 @@
       buildGround(data.bbox);
       buildRoads(data.edges);
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
-      camera.position.set(w * 0.15, w * 0.35, w * 0.35);
-      controls.target.set(0, 0, 0);
+      const h = (data.bbox[3] - data.bbox[1]) * SCALE;
+      viewSize = Math.max(w, h) * 0.42;
+      resize();
+      setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
       loadBuildings();
       return loadVehicles();
@@ -278,21 +292,24 @@
   });
   speedSelect.addEventListener("change", () => { speed = parseFloat(speedSelect.value); });
 
+  // ---- Vista axonometrica fija: 45 grados de elevacion (bloqueado en
+  // los controles) y 45 grados de acimut, proyeccion en paralelo (sin
+  // fuga de perspectiva). ----
+  function setAxonometricView(distance) {
+    const d = distance || 400;
+    const elev = Math.PI / 4, azim = Math.PI / 4;
+    camera.position.set(
+      d * Math.sin(elev) * Math.sin(azim),
+      d * Math.cos(elev),
+      d * Math.sin(elev) * Math.cos(azim)
+    );
+    controls.target.set(0, 0, 0);
+    camera.zoom = 1;
+    camera.updateProjectionMatrix();
+  }
+
   // ---- Botones de vista ----
-  document.getElementById("viewTop").addEventListener("click", () => {
-    const d = camera.position.length() || 400;
-    camera.position.set(0.1, d, 0.1);
-    controls.target.set(0, 0, 0);
-  });
-  document.getElementById("viewIso").addEventListener("click", () => {
-    const d = (camera.position.length() || 400) * 0.7;
-    camera.position.set(d, d * 0.8, d);
-    controls.target.set(0, 0, 0);
-  });
-  document.getElementById("viewStreet").addEventListener("click", () => {
-    camera.position.set(20, 4, 20);
-    controls.target.set(0, 1, 0);
-  });
+  document.getElementById("viewReset").addEventListener("click", () => setAxonometricView(400));
 
   // ---- Loop de animacion ----
   function animate(now) {
