@@ -632,7 +632,7 @@
 
     const dummy = new THREE.Object3D();
     const crossPos = []; // posiciones de las rayas de cruce peatonal
-    const POLE_H = 4.2 * SCALE, SETBACK = 4.5, CROSS_W = 3.0;
+    const POLE_H = 4.2 * SCALE, SETBACK = 2.6, CROSS_W = 1.0;
     let idx = 0;
     intersections.forEach(inter => {
       const center = toScene(inter.x, inter.y);
@@ -641,8 +641,8 @@
         const ux = dx, uz = -dy;
         const px = -uz, pz = ux; // perpendicular (ancho de la via)
         // Poste del semaforo, a un lado del acceso, cerca de la esquina.
-        const poleX = center.x + ux * (SETBACK - 1.2) + px * 1.6;
-        const poleZ = center.z + uz * (SETBACK - 1.2) + pz * 1.6;
+        const poleX = center.x + ux * (SETBACK - 0.7) + px * 1.1;
+        const poleZ = center.z + uz * (SETBACK - 0.7) + pz * 1.1;
         dummy.position.set(poleX, POLE_H / 2, poleZ);
         dummy.scale.set(1, POLE_H, 1);
         dummy.rotation.set(0, 0, 0);
