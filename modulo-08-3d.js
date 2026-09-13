@@ -626,6 +626,36 @@
       .catch(err => console.warn("No se pudieron cargar los parques:", err));
   }
 
+  // ---- Mallas reales exportadas del modelo Rhino (techos a dos aguas,
+  // techos planos con parapeto ya modelado, fachadas verificadas, agua) —
+  // formato generico {verts:[[x,y,z_metros],...], tris:[[a,b,c],...]}. ----
+  function buildTriMesh(data, color, opts) {
+    const positions = [];
+    const scenePts = data.verts.map(v => {
+      const p = toScene(v[0], v[1]);
+      return { x: p.x, y: v[2] * SCALE, z: p.z };
+    });
+    data.tris.forEach(([a, b, c]) => {
+      const pa = scenePts[a], pb = scenePts[b], pc = scenePts[c];
+      if (!pa || !pb || !pc) return;
+      positions.push(pa.x, pa.y, pa.z, pb.x, pb.y, pb.z, pc.x, pc.y, pc.z);
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0.02, side: THREE.DoubleSide, ...opts });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    sceneRoot.add(mesh);
+  }
+  function loadTriMesh(url, color, opts) {
+    return fetch(url)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + url); return r.json(); })
+      .then(data => { buildTriMesh(data, color, opts); })
+      .catch(err => console.warn("No se pudo cargar la malla " + url + ":", err));
+  }
+
   // ---- Vehiculos: un pool de cajas 3D reutilizables ----
   const VEH_POOL_SIZE = 2800;
   const vehMeshes = [];
@@ -733,6 +763,9 @@
       loadWaterBodies();
       loadManzanas();
       loadParques();
+      loadTriMesh("./assets/kennedy_roofs_gable.json", 0xb5714a);   // tejas a dos aguas (color real del modelo)
+      loadTriMesh("./assets/kennedy_roofs_flat.json", 0xebe5d8);    // techos planos con parapeto ya modelado
+      loadTriMesh("./assets/kennedy_facades.json", 0xa05a41);       // fachadas verificadas con StreetView
       return loadVehicles();
     })
     .catch(err => {
