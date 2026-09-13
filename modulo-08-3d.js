@@ -172,82 +172,6 @@
     const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
     roadMesh.receiveShadow = true;
     sceneRoot.add(roadMesh);
-
-    // Marcas viales: linea central discontinua a lo largo de cada tramo,
-    // y cruces peatonales (rayas) en los cruces (nodos donde se juntan
-    // 3 o mas tramos), para que se vea limpio con detalle tipo render
-    // arquitectonico.
-    const markPos = [];
-    const DASH_LEN = 1.2, GAP_LEN = 1.0, DASH_HALF_W = 0.05;
-    edges.forEach(([kind, pts]) => {
-      for (let i = 0; i < pts.length - 1; i++) {
-        const a = toScene(pts[i][0], pts[i][1]);
-        const b = toScene(pts[i + 1][0], pts[i + 1][1]);
-        const dx = b.x - a.x, dz = b.z - a.z;
-        const len = Math.hypot(dx, dz) || 0.001;
-        const ux = dx / len, uz = dz / len;
-        const nx = -uz * DASH_HALF_W, nz = ux * DASH_HALF_W;
-        let d = 0;
-        while (d < len) {
-          const d2 = Math.min(d + DASH_LEN, len);
-          const p0x = a.x + ux * d, p0z = a.z + uz * d;
-          const p1x = a.x + ux * d2, p1z = a.z + uz * d2;
-          markPos.push(
-            p0x - nx, 0.033, p0z - nz, p0x + nx, 0.033, p0z + nz, p1x + nx, 0.033, p1z + nz,
-            p0x - nx, 0.033, p0z - nz, p1x + nx, 0.033, p1z + nz, p1x - nx, 0.033, p1z - nz
-          );
-          d = d2 + GAP_LEN;
-        }
-      }
-    });
-
-    // Cruces peatonales: nodos donde se juntan 3+ tramos.
-    const nodeDegree = new Map();
-    edges.forEach(([kind, pts]) => {
-      [pts[0], pts[pts.length - 1]].forEach(pt => {
-        const key = pt[0].toFixed(1) + "," + pt[1].toFixed(1);
-        nodeDegree.set(key, (nodeDegree.get(key) || 0) + 1);
-      });
-    });
-    const junctionKeys = new Set();
-    edges.forEach(([kind, pts]) => {
-      [pts[0], pts[pts.length - 1]].forEach(pt => {
-        const key = pt[0].toFixed(1) + "," + pt[1].toFixed(1);
-        if (nodeDegree.get(key) >= 3) junctionKeys.add(key);
-      });
-    });
-    edges.forEach(([kind, pts]) => {
-      const ends = [
-        { pt: pts[0], dirPt: pts[1] },
-        { pt: pts[pts.length - 1], dirPt: pts[pts.length - 2] },
-      ];
-      ends.forEach(({ pt, dirPt }) => {
-        if (!dirPt) return;
-        const key = pt[0].toFixed(1) + "," + pt[1].toFixed(1);
-        if (!junctionKeys.has(key)) return;
-        const a = toScene(pt[0], pt[1]), b = toScene(dirPt[0], dirPt[1]);
-        const dx = b.x - a.x, dz = b.z - a.z;
-        const len = Math.hypot(dx, dz) || 0.001;
-        const ux = dx / len, uz = dz / len;
-        const px = -uz, pz = ux; // perpendicular (ancho de la via)
-        const setback = 2.2, crossW = 1.6, stripeLen = 0.35, stripeGap = 0.25;
-        const baseX = a.x + ux * setback, baseZ = a.z + uz * setback;
-        for (let s = -crossW; s <= crossW; s += stripeLen + stripeGap) {
-          const c0x = baseX + px * s, c0z = baseZ + pz * s;
-          const c1x = c0x + ux * stripeLen, c1z = c0z + uz * stripeLen;
-          const hx = px * 0.35, hz = pz * 0.35;
-          markPos.push(
-            c0x - hx, 0.033, c0z - hz, c0x + hx, 0.033, c0z + hz, c1x + hx, 0.033, c1z + hz,
-            c0x - hx, 0.033, c0z - hz, c1x + hx, 0.033, c1z + hz, c1x - hx, 0.033, c1z - hz
-          );
-        }
-      });
-    });
-    const markGeo = new THREE.BufferGeometry();
-    markGeo.setAttribute("position", new THREE.Float32BufferAttribute(markPos, 3));
-    markGeo.computeVertexNormals();
-    const markMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-    sceneRoot.add(new THREE.Mesh(markGeo, markMat));
   }
 
   // ---- Edificios: extrusion de cada huella (paredes + techo), TODO
@@ -255,6 +179,7 @@
   function buildBuildings(buildings) {
     const positions = [];
     const normals = [];
+    const edgePositions = []; // lineas de borde (contorno del techo + esquinas verticales)
     buildings.forEach(b => {
       const pts = b.pts.map(p => toScene(p[0], p[1]));
       const h = b.h * SCALE;
@@ -270,6 +195,10 @@
           a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
         );
         for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
+        // Borde del techo (linea entre esquinas consecutivas, arriba) y
+        // la esquina vertical (linea de la base al techo).
+        edgePositions.push(a.x, h, a.z, c.x, h, c.z);
+        edgePositions.push(a.x, 0, a.z, a.x, h, a.z);
       }
       // Techo: triangulacion real de poligono (ear-clipping), no un abanico
       // ingenuo desde el primer punto — huellas de edificio no convexas
@@ -293,6 +222,13 @@
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
+
+    // Borde negro/oscuro de cada edificio (contorno del techo + esquinas),
+    // estilo render arquitectonico (edificios blancos con linea de borde).
+    const edgeGeo = new THREE.BufferGeometry();
+    edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.55 });
+    sceneRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
   }
 
   function loadBuildings() {
