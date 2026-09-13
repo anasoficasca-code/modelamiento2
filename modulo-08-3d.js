@@ -7,6 +7,7 @@
   const NET_URL = "./assets/kennedy_net.json";
   const VEHICULOS_JSON_URL = "./assets/kennedy_vehiculos.json";
   const BUILDINGS_URL = "./assets/kennedy_buildings.json";
+  const TREES_URL = "./assets/kennedy_trees_real.json";
   const SCALE = 1 / 10; // las coordenadas del JSON llegan a ~10700 unidades; se escalan para Three.js
 
   const statusOverlay = document.getElementById("statusOverlay");
@@ -170,6 +171,50 @@
       .catch(err => console.warn("No se pudieron cargar los edificios:", err));
   }
 
+  // ---- Arboles: tronco + copa, con altura real proporcional a la altura
+  // registrada de cada arbol (columna Altura_Tot del inventario). Se usan
+  // dos InstancedMesh (tronco y copa) por rendimiento con ~120 mil arboles. ----
+  function buildTrees(trees) {
+    const trunkGeo = new THREE.CylinderGeometry(1, 1, 1, 6);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a4632, roughness: 0.95 });
+    const foliageGeo = new THREE.ConeGeometry(1, 1, 7);
+    const foliageMat = new THREE.MeshStandardMaterial({ color: 0x3f6b3f, roughness: 0.9 });
+
+    const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
+    const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, trees.length);
+    const dummyT = new THREE.Object3D();
+
+    trees.forEach((t, i) => {
+      const [x, y, hMeters] = t;
+      const p = toScene(x, y);
+      const h = hMeters * SCALE;
+      const trunkH = h * 0.22, trunkR = Math.max(0.015, h * 0.02);
+      const foliageH = h * 0.85, foliageR = Math.max(0.12, h * 0.32);
+
+      dummyT.position.set(p.x, trunkH / 2, p.z);
+      dummyT.scale.set(trunkR, trunkH, trunkR);
+      dummyT.rotation.set(0, 0, 0);
+      dummyT.updateMatrix();
+      trunkMesh.setMatrixAt(i, dummyT.matrix);
+
+      dummyT.position.set(p.x, trunkH + foliageH / 2, p.z);
+      dummyT.scale.set(foliageR, foliageH, foliageR);
+      dummyT.updateMatrix();
+      foliageMesh.setMatrixAt(i, dummyT.matrix);
+    });
+    trunkMesh.instanceMatrix.needsUpdate = true;
+    foliageMesh.instanceMatrix.needsUpdate = true;
+    scene.add(trunkMesh);
+    scene.add(foliageMesh);
+  }
+
+  function loadTrees() {
+    return fetch(TREES_URL)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + TREES_URL); return r.json(); })
+      .then(data => { buildTrees(data); })
+      .catch(err => console.warn("No se pudieron cargar los árboles:", err));
+  }
+
   // ---- Vehiculos: un pool de cajas 3D reutilizables ----
   const VEH_POOL_SIZE = 2800;
   const vehMeshes = [];
@@ -272,6 +317,7 @@
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
       loadBuildings();
+      loadTrees();
       return loadVehicles();
     })
     .catch(err => {
