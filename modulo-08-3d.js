@@ -163,7 +163,7 @@
     });
     ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(ribbonPos, 3));
     ribbonGeo.computeVertexNormals();
-    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xe3ded3, roughness: 0.92, side: THREE.DoubleSide });
+    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xb5b8bc, roughness: 0.92, side: THREE.DoubleSide });
     const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
     roadMesh.receiveShadow = true;
     sceneRoot.add(roadMesh);
