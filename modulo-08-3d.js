@@ -204,10 +204,54 @@
 
   // ---- Edificios: extrusion de cada huella (paredes + techo), TODO
   // fusionado en una sola geometria por rendimiento (143 mil edificios). ----
+  // Desplaza cada vertice de un anillo cerrado (poligono con el primer
+  // punto repetido al final) hacia ADENTRO una distancia fija, usando el
+  // promedio de las normales de los 2 segmentos que se juntan en cada
+  // vertice (mismo criterio de "miter" que ya se uso en las vias), para
+  // que las esquinas no se deformen. Devuelve un anillo del mismo tamano
+  // (tambien cerrado).
+  // Area con signo de un anillo cerrado (formula shoelace) - se usa para
+  // detectar si el anillo interior (offset) se invirtio por ser el
+  // edificio demasiado chico para el offset pedido.
+  function signedArea(pts) {
+    let a = 0;
+    for (let i = 0; i < pts.length - 1; i++) a += pts[i].x * pts[i + 1].z - pts[i + 1].x * pts[i].z;
+    return a / 2;
+  }
+
+  function insetRing(pts, dist) {
+    const m = pts.length - 1;
+    if (m < 3) return pts.slice();
+    const segNormalIn = (p, q) => {
+      const dx = q.x - p.x, dz = q.z - p.z, len = Math.hypot(dx, dz) || 0.001;
+      return { x: -dz / len, z: dx / len }; // hacia adentro (opuesta a la de pared)
+    };
+    const out = new Array(m);
+    for (let i = 0; i < m; i++) {
+      const prev = (i - 1 + m) % m, next = (i + 1) % m;
+      const n1 = segNormalIn(pts[prev], pts[i]);
+      const n2 = segNormalIn(pts[i], pts[next]);
+      let ax = n1.x + n2.x, az = n1.z + n2.z;
+      const alen = Math.hypot(ax, az);
+      let nx, nz;
+      if (alen < 0.05) { nx = n1.x; nz = n1.z; }
+      else {
+        ax /= alen; az /= alen;
+        const cosHalf = Math.max(ax * n1.x + az * n1.z, 0.25);
+        nx = ax / cosHalf; nz = az / cosHalf;
+      }
+      out[i] = { x: pts[i].x + nx * dist, z: pts[i].z + nz * dist };
+    }
+    out.push(out[0]);
+    return out;
+  }
+
   function buildBuildings(buildings) {
     const positions = [];
     const normals = [];
     const edgePositions = []; // lineas de borde (contorno del techo + esquinas verticales)
+    const OFFSET = 0.5 * SCALE;   // 0.5 metros reales, en unidades de escena
+    const SUNKEN = 1.0 * SCALE;   // 1 metro real de hundimiento
     buildings.forEach(b => {
       const pts = b.pts.map(p => toScene(p[0], p[1]));
       const h = b.h * SCALE;
@@ -223,21 +267,69 @@
           a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
         );
         for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
-        // Borde del techo (linea entre esquinas consecutivas, arriba) y
-        // la esquina vertical (linea de la base al techo).
-        edgePositions.push(a.x, h, a.z, c.x, h, c.z);
-        edgePositions.push(a.x, 0, a.z, a.x, h, a.z);
+        edgePositions.push(a.x, 0, a.z, a.x, h, a.z); // esquina vertical
       }
-      // Techo: triangulacion real de poligono (ear-clipping), no un abanico
-      // ingenuo desde el primer punto — huellas de edificio no convexas
-      // (formas en L, U, etc) generaban techos deformes con el abanico.
-      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+
+      // Cubierta con parapeto: primero un borde plano de 0.5m (desde el
+      // perimetro real hacia adentro, a la altura del techo), y luego el
+      // area que queda se hunde 1m hacia abajo (pared vertical + piso
+      // hundido), en vez de un techo plano liso. Si el edificio es
+      // demasiado chico para el offset de 0.5m, el anillo interior se
+      // invierte (queda con el area/sentido opuesto) - en ese caso se usa
+      // un techo plano simple en vez de un parapeto roto.
+      const inset = insetRing(pts, OFFSET);
+      const hSunk = h - SUNKEN;
+      const areaOrig = signedArea(pts), areaInset = signedArea(inset);
+      const insetValido = Math.sign(areaOrig) === Math.sign(areaInset) && Math.abs(areaInset) < Math.abs(areaOrig);
+
+      if (!insetValido) {
+        // Techo plano simple (huella completa, sin parapeto).
+        const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+        let tris;
+        try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
+        catch (e) { tris = []; }
+        tris.forEach(([ia, ib, ic]) => {
+          positions.push(
+            pts[ia].x, h, pts[ia].z, pts[ib].x, h, pts[ib].z, pts[ic].x, h, pts[ic].z
+          );
+          for (let k = 0; k < 3; k++) normals.push(0, 1, 0);
+        });
+        return;
+      }
+
+      // Borde/rim plano (perimetro real -> anillo interior, ambos a altura h)
+      for (let i = 0; i < pts.length - 1; i++) {
+        const oa = pts[i], ob = pts[i + 1], ia = inset[i], ib = inset[i + 1];
+        positions.push(
+          oa.x, h, oa.z, ob.x, h, ob.z, ib.x, h, ib.z,
+          oa.x, h, oa.z, ib.x, h, ib.z, ia.x, h, ia.z
+        );
+        for (let k = 0; k < 6; k++) normals.push(0, 1, 0);
+        edgePositions.push(oa.x, h, oa.z, ob.x, h, ob.z); // borde exterior del rim
+      }
+      // Pared vertical del hundimiento (del borde interior del rim hacia abajo)
+      for (let i = 0; i < inset.length - 1; i++) {
+        const a = inset[i], c = inset[i + 1];
+        const dx = c.x - a.x, dz = c.z - a.z;
+        const len = Math.hypot(dx, dz) || 0.001;
+        const nx = dz / len, nz = -dx / len;
+        positions.push(
+          a.x, h, a.z, c.x, h, c.z, c.x, hSunk, c.z,
+          a.x, h, a.z, c.x, hSunk, c.z, a.x, hSunk, a.z
+        );
+        for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
+        edgePositions.push(a.x, h, a.z, a.x, hSunk, a.z); // esquina vertical del hundimiento
+      }
+      // Piso hundido: triangulacion real de poligono (ear-clipping), no un
+      // abanico ingenuo — huellas de edificio no convexas (formas en L, U,
+      // etc) generaban techos deformes con el abanico.
+      const inset2d = inset.map(p => new THREE.Vector2(p.x, p.z));
       let tris;
-      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
+      try { tris = THREE.ShapeUtils.triangulateShape(inset2d, []); }
       catch (e) { tris = []; }
       tris.forEach(([ia, ib, ic]) => {
         positions.push(
-          pts[ia].x, h, pts[ia].z, pts[ib].x, h, pts[ib].z, pts[ic].x, h, pts[ic].z
+          inset[ia].x, hSunk, inset[ia].z, inset[ib].x, hSunk, inset[ib].z, inset[ic].x, hSunk, inset[ic].z
         );
         for (let k = 0; k < 3; k++) normals.push(0, 1, 0);
       });
