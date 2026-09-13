@@ -226,11 +226,21 @@
     bodies.forEach(w => {
       const pts = w.pts.map(p => toScene(p[0], p[1]));
       if (pts.length < 3) return;
-      for (let i = 1; i < pts.length - 1; i++) {
+      // Triangulacion real de poligono (ear-clipping), no un abanico
+      // ingenuo desde un solo punto — los canales y rios son formas
+      // largas y NO convexas, y un abanico simple genera triangulos que
+      // se salen de la forma real (cruzando por fuera del poligono).
+      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+      let tris;
+      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
+      catch (e) { tris = []; }
+      tris.forEach(([a, b, c]) => {
         positions.push(
-          pts[0].x, 0.03, pts[0].z, pts[i].x, 0.03, pts[i].z, pts[i + 1].x, 0.03, pts[i + 1].z
+          pts[a].x, 0.03, pts[a].z,
+          pts[b].x, 0.03, pts[b].z,
+          pts[c].x, 0.03, pts[c].z
         );
-      }
+      });
     });
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
