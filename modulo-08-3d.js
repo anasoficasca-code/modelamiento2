@@ -8,6 +8,7 @@
   const VEHICULOS_JSON_URL = "./assets/kennedy_vehiculos.json";
   const BUILDINGS_URL = "./assets/kennedy_buildings.json";
   const TREES_URL = "./assets/kennedy_trees_real.json";
+  const WATER_URL = "./assets/kennedy_water_bodies.json";
   const SCALE = 1 / 10; // las coordenadas del JSON llegan a ~10700 unidades; se escalan para Three.js
 
   const statusOverlay = document.getElementById("statusOverlay");
@@ -215,6 +216,33 @@
       .catch(err => console.warn("No se pudieron cargar los árboles:", err));
   }
 
+  // ---- Cuerpos de agua: poligonos planos (fan de triangulos) apenas
+  // levantados del suelo, con un material azul semi-transparente. ----
+  function buildWaterBodies(bodies) {
+    const positions = [];
+    bodies.forEach(w => {
+      const pts = w.pts.map(p => toScene(p[0], p[1]));
+      if (pts.length < 3) return;
+      for (let i = 1; i < pts.length - 1; i++) {
+        positions.push(
+          pts[0].x, 0.03, pts[0].z, pts[i].x, 0.03, pts[i].z, pts[i + 1].x, 0.03, pts[i + 1].z
+        );
+      }
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x2f6fa8, roughness: 0.25, metalness: 0.1, transparent: true, opacity: 0.88, side: THREE.DoubleSide });
+    scene.add(new THREE.Mesh(geo, mat));
+  }
+
+  function loadWaterBodies() {
+    return fetch(WATER_URL)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + WATER_URL); return r.json(); })
+      .then(data => { buildWaterBodies(data); })
+      .catch(err => console.warn("No se pudieron cargar los cuerpos de agua:", err));
+  }
+
   // ---- Vehiculos: un pool de cajas 3D reutilizables ----
   const VEH_POOL_SIZE = 2800;
   const vehMeshes = [];
@@ -318,6 +346,7 @@
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
       loadBuildings();
       loadTrees();
+      loadWaterBodies();
       return loadVehicles();
     })
     .catch(err => {
