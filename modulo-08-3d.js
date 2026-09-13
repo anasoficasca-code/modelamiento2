@@ -741,7 +741,7 @@
       loadWaterBodies();
       loadManzanas();
       loadParques();
-      loadTriMesh("./assets/kennedy_roofs_flat.json", 0xebe5d8);    // techos planos con parapeto ya modelado
+      loadTriMesh("./assets/kennedy_roofs_flat.json", 0xffffff);    // techos planos con parapeto ya modelado
       loadTriMesh("./assets/kennedy_facades.json", 0xa05a41);       // fachadas verificadas con StreetView
       return loadVehicles();
     })
