@@ -572,7 +572,7 @@
   function buildParques(parques) {
     const positions = [];
     const uvs = [];
-    const UV_SCALE = 0.025; // tiles mas grandes, se nota menos la costura de repeticion
+    const UV_SCALE = 0.012; // tiles aun mas grandes y textura mas suave, casi homogenea
     parques.forEach(p => {
       const pts = p.pts.map(pt => toScene(pt[0], pt[1]));
       if (pts.length < 3) return;
