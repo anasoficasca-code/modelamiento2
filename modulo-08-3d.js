@@ -511,7 +511,7 @@
       catch (e) { tris = []; }
       tris.forEach(([a, b, c]) => {
         [a, b, c].forEach(idx => {
-          positions.push(pts[idx].x, 0.015, pts[idx].z);
+          positions.push(pts[idx].x, 0.022, pts[idx].z);
           uvs.push(pts[idx].x * UV_SCALE, pts[idx].z * UV_SCALE);
         });
       });
