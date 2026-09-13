@@ -209,7 +209,7 @@
     viaTex.wrapS = THREE.RepeatWrapping;
     viaTex.wrapT = THREE.RepeatWrapping;
     const ribbonMat = new THREE.MeshStandardMaterial({
-      map: viaTex, color: 0x76797d, roughness: 0.85, side: THREE.DoubleSide,
+      map: viaTex, color: 0xb7babd, roughness: 0.85, side: THREE.DoubleSide,
       transparent: true, opacity: 0.7,
     });
     roadMat = ribbonMat;
@@ -521,7 +521,7 @@
     waterTex.wrapS = THREE.RepeatWrapping;
     waterTex.wrapT = THREE.RepeatWrapping;
     const mat = new THREE.MeshStandardMaterial({
-      map: waterTex, color: 0x9cc9dc, roughness: 0.7, metalness: 0,
+      map: waterTex, color: 0x9c9c9c, roughness: 0.7, metalness: 0,
       transparent: true, opacity: 0.75, side: THREE.DoubleSide,
     });
     waterMat = mat;
@@ -591,7 +591,7 @@
     const pastoTex = new THREE.TextureLoader().load("./assets/textura_pasto.jpg");
     pastoTex.wrapS = THREE.RepeatWrapping;
     pastoTex.wrapT = THREE.RepeatWrapping;
-    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xe4ead9, roughness: 0.95, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xadaa90, roughness: 0.95, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
     parqueMat = mat;
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
