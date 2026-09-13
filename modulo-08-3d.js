@@ -220,75 +220,64 @@
   }
 
   // ---- Arboles: tronco + copa, con altura real proporcional a la altura
-  // registrada de cada arbol (columna Altura_Tot del inventario). Se usan
-  // dos "estilos" de copa (redonda y puntiaguda tipo conifera) repartidos
-  // entre los arboles reales, con variacion de color por instancia, para
-  // que se vea mas parecido a una ilustracion con variedad de especies.
-  // Se guarda el mapeo instancia->datos del arbol para poder mostrar su
-  // informacion (especie, altura) al hacer clic. ----
-  let treeMeshes = []; // { mesh (copa), data: [treeRecord, ...] } por cada estilo
+  // registrada de cada arbol (columna Altura_Tot del inventario). Copa en
+  // esfera suave (sin caras planas visibles) para que se vea organica y
+  // no como un bloque poligonal. Se guarda el mapeo instancia->datos del
+  // arbol para poder mostrar su informacion (especie, altura) al hacer clic. ----
+  let treeMeshes = [];
   function buildTrees(trees) {
-    const trunkGeo = new THREE.CylinderGeometry(1, 1, 1, 6);
+    const trunkGeo = new THREE.CylinderGeometry(0.7, 1, 1, 7);
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b5643, roughness: 0.95 });
-    const roundGeo = new THREE.IcosahedronGeometry(1, 1);
-    const pineGeo = new THREE.ConeGeometry(1, 1, 8);
+    // Suficientes segmentos para que se vea redonda y suave, no un
+    // icosaedro/cono de pocas caras (evita el aspecto "low-poly").
+    const foliageGeo = new THREE.SphereGeometry(1, 12, 9);
 
-    // Repartir los arboles en 2 grupos (redondo / conifera) de forma
-    // determinista segun su codigo, para que la mezcla se vea natural.
-    const buckets = [
-      { geo: roundGeo, color: 0x5c8f52, items: [] },
-      { geo: pineGeo, color: 0x3f7047, items: [] },
-    ];
+    const foliageMat = new THREE.MeshStandardMaterial({ color: 0x5f8f57, roughness: 0.95, metalness: 0 });
+    const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
+    const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, trees.length);
+    foliageMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(trees.length * 3), 3);
+    trunkMesh.castShadow = true;
+    foliageMesh.castShadow = true;
+    foliageMesh.receiveShadow = true;
+    const dummyT = new THREE.Object3D();
+    const baseColor = new THREE.Color(0x5f8f57);
+    const tmpColor = new THREE.Color();
+
     trees.forEach((t, i) => {
-      const hash = (t[4] || "").split("").reduce((s, c) => s + c.charCodeAt(0), 0);
-      buckets[hash % 5 < 2 ? 1 : 0].items.push(t);
+      const [x, y, hMeters, , code] = t;
+      const p = toScene(x, y);
+      const h = hMeters * SCALE;
+      const trunkH = h * 0.24, trunkR = Math.max(0.015, h * 0.022);
+      // Ligera variacion de proporcion por arbol (no todas las copas
+      // identicas), aplastando un poco la esfera en Y para que no se vea
+      // una bola perfecta sino un follaje mas natural.
+      const hh = hash2(code);
+      const squash = 0.75 + (hh % 20) / 100; // 0.75 a 0.94
+      const foliageR = Math.max(0.18, h * 0.42) * (0.92 + (hh % 16) / 100);
+      const foliageH = foliageR * 2 * squash;
+
+      dummyT.position.set(p.x, trunkH / 2, p.z);
+      dummyT.scale.set(trunkR, trunkH, trunkR);
+      dummyT.rotation.set(0, 0, 0);
+      dummyT.updateMatrix();
+      trunkMesh.setMatrixAt(i, dummyT.matrix);
+
+      dummyT.position.set(p.x, trunkH + foliageH / 2, p.z);
+      dummyT.scale.set(foliageR, foliageH / 2, foliageR);
+      dummyT.rotation.set(0, (hh % 360) * Math.PI / 180, 0);
+      dummyT.updateMatrix();
+      foliageMesh.setMatrixAt(i, dummyT.matrix);
+
+      const variation = 0.82 + (hh % 36) / 100; // tonos de verde variados
+      tmpColor.copy(baseColor).multiplyScalar(variation);
+      foliageMesh.setColorAt(i, tmpColor);
     });
-
-    treeMeshes = [];
-    buckets.forEach(b => {
-      if (!b.items.length) return;
-      const foliageMat = new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.85, flatShading: true });
-      const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, b.items.length);
-      const foliageMesh = new THREE.InstancedMesh(b.geo, foliageMat, b.items.length);
-      foliageMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(b.items.length * 3), 3);
-      trunkMesh.castShadow = true;
-      foliageMesh.castShadow = true;
-      foliageMesh.receiveShadow = true;
-      const dummyT = new THREE.Object3D();
-      const baseColor = new THREE.Color(b.color);
-      const tmpColor = new THREE.Color();
-
-      b.items.forEach((t, i) => {
-        const [x, y, hMeters] = t;
-        const p = toScene(x, y);
-        const h = hMeters * SCALE;
-        const trunkH = h * 0.22, trunkR = Math.max(0.015, h * 0.02);
-        const foliageH = h * (b.geo === pineGeo ? 0.85 : 0.7);
-        const foliageR = Math.max(0.16, h * (b.geo === pineGeo ? 0.3 : 0.4));
-
-        dummyT.position.set(p.x, trunkH / 2, p.z);
-        dummyT.scale.set(trunkR, trunkH, trunkR);
-        dummyT.rotation.set(0, 0, 0);
-        dummyT.updateMatrix();
-        trunkMesh.setMatrixAt(i, dummyT.matrix);
-
-        dummyT.position.set(p.x, trunkH + foliageH / 2, p.z);
-        dummyT.scale.set(foliageR, foliageH, foliageR);
-        dummyT.rotation.set(0, (hash2(t[4]) % 360) * Math.PI / 180, 0);
-        dummyT.updateMatrix();
-        foliageMesh.setMatrixAt(i, dummyT.matrix);
-
-        const variation = 0.85 + (hash2(t[4]) % 30) / 100;
-        tmpColor.copy(baseColor).multiplyScalar(variation);
-        foliageMesh.setColorAt(i, tmpColor);
-      });
-      trunkMesh.instanceMatrix.needsUpdate = true;
-      foliageMesh.instanceMatrix.needsUpdate = true;
-      foliageMesh.instanceColor.needsUpdate = true;
-      sceneRoot.add(trunkMesh);
-      sceneRoot.add(foliageMesh);
-      treeMeshes.push({ mesh: foliageMesh, data: b.items });
-    });
+    trunkMesh.instanceMatrix.needsUpdate = true;
+    foliageMesh.instanceMatrix.needsUpdate = true;
+    foliageMesh.instanceColor.needsUpdate = true;
+    sceneRoot.add(trunkMesh);
+    sceneRoot.add(foliageMesh);
+    treeMeshes = [{ mesh: foliageMesh, data: trees }];
   }
   function hash2(str) { let h = 0; for (const c of (str || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 
