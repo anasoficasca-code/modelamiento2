@@ -32,7 +32,8 @@
   // no es el eje "arriba" de esta escena); un giro en Y reordena el plano
   // igual mientras deja la altura intacta.
   const sceneRoot = new THREE.Group();
-  sceneRoot.rotation.y = Math.PI;
+  // No se rota el grupo entero — el reacomodo del plano se hace de forma
+  // pura dentro de toScene() (ver abajo), sin tocar la altura de nada.
   scene.add(sceneRoot);
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 6000);
@@ -119,10 +120,12 @@
   }
 
   // Convierte una coordenada del JSON (x,y en el plano, x=este, y=norte
-  // real en UTM) a posicion 3D (x,z en Three.js, y=altura), centrada en
-  // el origen de la escena.
+  // real en UTM) a posicion 3D (x,z en Three.js, y=altura). El eje Z se
+  // invierte (espejo, no rotacion) para que el plano quede orientado
+  // correctamente — esto NO toca la altura (Y) de nada, a diferencia de
+  // rotar el grupo entero.
   function toScene(x, y) {
-    return { x: (x - netCenter.x) * SCALE, z: (y - netCenter.y) * SCALE };
+    return { x: (x - netCenter.x) * SCALE, z: -(y - netCenter.y) * SCALE };
   }
 
   // ---- Red vial: una sola geometria de lineas fusionada (19 mil tramos,
@@ -183,7 +186,7 @@
         const a = pts[i], c = pts[i + 1];
         const dx = c.x - a.x, dz = c.z - a.z;
         const len = Math.hypot(dx, dz) || 0.001;
-        const nx = -dz / len, nz = dx / len; // normal horizontal de la pared (hacia afuera)
+        const nx = dz / len, nz = -dx / len; // normal horizontal de la pared (hacia afuera)
         positions.push(
           a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z,
           a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
@@ -460,7 +463,7 @@
   }
   [rotX, rotY, rotZ].forEach(el => el.addEventListener("input", updateRotation));
   document.getElementById("rotateReset").addEventListener("click", () => {
-    rotX.value = 0; rotY.value = 180; rotZ.value = 0;
+    rotX.value = 0; rotY.value = 0; rotZ.value = 0;
     updateRotation();
   });
   document.getElementById("rotateCopy").addEventListener("click", async () => {
