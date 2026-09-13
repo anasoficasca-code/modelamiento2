@@ -219,65 +219,104 @@
       .catch(err => console.warn("No se pudieron cargar los edificios:", err));
   }
 
-  // ---- Arboles: tronco + copa, con altura real proporcional a la altura
-  // registrada de cada arbol (columna Altura_Tot del inventario). Copa en
-  // esfera suave (sin caras planas visibles) para que se vea organica y
-  // no como un bloque poligonal. Se guarda el mapeo instancia->datos del
-  // arbol para poder mostrar su informacion (especie, altura) al hacer clic. ----
+  // ---- Arboles: se dibujan como "billboards cruzados" (2 tarjetas
+  // perpendiculares) con una textura de arbol realista generada en un
+  // canvas (tronco con ramas + follaje frondoso hecho de muchos circulos
+  // superpuestos), en vez de geometria 3D solida — esta es la tecnica
+  // estandar para tener miles de arboles con aspecto realista sin que la
+  // pagina se ponga lenta. Se generan 3 variantes de textura (una vez,
+  // al inicio) y se reparten entre los ~120 mil arboles reales. ----
+  function makeTreeTexture(seed) {
+    const W = 256, H = 320;
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const ctx = c.getContext("2d");
+    let s = seed;
+    function rnd() { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }
+
+    const trunkTopY = H * 0.42;
+    const trunkBaseW = 10 + rnd() * 5;
+    // Tronco con un par de ramas visibles antes del follaje.
+    ctx.strokeStyle = "#5a4632"; ctx.lineCap = "round";
+    ctx.lineWidth = trunkBaseW;
+    ctx.beginPath(); ctx.moveTo(W / 2, H); ctx.lineTo(W / 2, trunkTopY); ctx.stroke();
+    for (let i = 0; i < 3; i++) {
+      const branchY = H - (H - trunkTopY) * (0.3 + i * 0.25);
+      const dir = i % 2 === 0 ? 1 : -1;
+      ctx.lineWidth = trunkBaseW * (0.5 - i * 0.1);
+      ctx.beginPath();
+      ctx.moveTo(W / 2, branchY);
+      ctx.lineTo(W / 2 + dir * (30 + rnd() * 30), branchY - 40 - rnd() * 30);
+      ctx.stroke();
+    }
+
+    // Follaje: muchos circulos semitransparentes superpuestos, en tonos
+    // de verde variados, para que se vea frondoso y no una sola bola lisa.
+    const greens = ["#3c6b3a", "#4d7f45", "#5f9152", "#6fa561", "#437a4a"];
+    const cx = W / 2, cy = H * 0.34, spread = W * 0.36;
+    ctx.globalAlpha = 0.9;
+    for (let i = 0; i < 90; i++) {
+      const ang = rnd() * Math.PI * 2, rad = Math.pow(rnd(), 0.5) * spread;
+      const px = cx + Math.cos(ang) * rad;
+      const py = cy + Math.sin(ang) * rad * 0.72;
+      const r = 18 + rnd() * 26;
+      ctx.fillStyle = greens[Math.floor(rnd() * greens.length)];
+      ctx.globalAlpha = 0.55 + rnd() * 0.35;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    const tex = new THREE.CanvasTexture(c);
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  // Geometria de "tarjetas cruzadas": dos planos perpendiculares, para que
+  // el arbol se vea bien desde cualquier angulo horizontal sin tener que
+  // reorientar cada billboard hacia la camara en cada cuadro.
+  function makeCrossGeometry() {
+    const geo = new THREE.BufferGeometry();
+    const positions = [
+      -0.5, 0, 0, 0.5, 0, 0, 0.5, 1, 0, -0.5, 0, 0, 0.5, 1, 0, -0.5, 1, 0,
+      0, 0, -0.5, 0, 0, 0.5, 0, 1, 0.5, 0, 0, -0.5, 0, 1, 0.5, 0, 1, -0.5,
+    ];
+    const uvs = [0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1];
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.computeVertexNormals();
+    return geo;
+  }
+
   let treeMeshes = [];
   function buildTrees(trees) {
-    const trunkGeo = new THREE.CylinderGeometry(0.7, 1, 1, 7);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b5643, roughness: 0.95 });
-    // Suficientes segmentos para que se vea redonda y suave, no un
-    // icosaedro/cono de pocas caras (evita el aspecto "low-poly").
-    const foliageGeo = new THREE.SphereGeometry(1, 12, 9);
+    const crossGeo = makeCrossGeometry();
+    const variants = [makeTreeTexture(11), makeTreeTexture(97), makeTreeTexture(233)];
+    const buckets = variants.map(tex => ({ tex, items: [] }));
+    trees.forEach(t => { buckets[hash2(t[4]) % buckets.length].items.push(t); });
 
-    const foliageMat = new THREE.MeshStandardMaterial({ color: 0x5f8f57, roughness: 0.95, metalness: 0 });
-    const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
-    const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, trees.length);
-    foliageMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(trees.length * 3), 3);
-    trunkMesh.castShadow = true;
-    foliageMesh.castShadow = true;
-    foliageMesh.receiveShadow = true;
-    const dummyT = new THREE.Object3D();
-    const baseColor = new THREE.Color(0x5f8f57);
-    const tmpColor = new THREE.Color();
-
-    trees.forEach((t, i) => {
-      const [x, y, hMeters, , code] = t;
-      const p = toScene(x, y);
-      const h = hMeters * SCALE;
-      const trunkH = h * 0.24, trunkR = Math.max(0.015, h * 0.022);
-      // Ligera variacion de proporcion por arbol (no todas las copas
-      // identicas), aplastando un poco la esfera en Y para que no se vea
-      // una bola perfecta sino un follaje mas natural.
-      const hh = hash2(code);
-      const squash = 0.75 + (hh % 20) / 100; // 0.75 a 0.94
-      const foliageR = Math.max(0.18, h * 0.42) * (0.92 + (hh % 16) / 100);
-      const foliageH = foliageR * 2 * squash;
-
-      dummyT.position.set(p.x, trunkH / 2, p.z);
-      dummyT.scale.set(trunkR, trunkH, trunkR);
-      dummyT.rotation.set(0, 0, 0);
-      dummyT.updateMatrix();
-      trunkMesh.setMatrixAt(i, dummyT.matrix);
-
-      dummyT.position.set(p.x, trunkH + foliageH / 2, p.z);
-      dummyT.scale.set(foliageR, foliageH / 2, foliageR);
-      dummyT.rotation.set(0, (hh % 360) * Math.PI / 180, 0);
-      dummyT.updateMatrix();
-      foliageMesh.setMatrixAt(i, dummyT.matrix);
-
-      const variation = 0.82 + (hh % 36) / 100; // tonos de verde variados
-      tmpColor.copy(baseColor).multiplyScalar(variation);
-      foliageMesh.setColorAt(i, tmpColor);
+    treeMeshes = [];
+    buckets.forEach(b => {
+      if (!b.items.length) return;
+      const mat = new THREE.MeshStandardMaterial({
+        map: b.tex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide,
+        roughness: 1, metalness: 0,
+      });
+      const mesh = new THREE.InstancedMesh(crossGeo, mat, b.items.length);
+      mesh.castShadow = true;
+      const dummyT = new THREE.Object3D();
+      b.items.forEach((t, i) => {
+        const [x, y, hMeters, , code] = t;
+        const p = toScene(x, y);
+        const h = Math.max(0.3, hMeters * SCALE);
+        const w = h * (0.55 + (hash2(code) % 20) / 100);
+        dummyT.position.set(p.x, 0, p.z);
+        dummyT.scale.set(w, h, w);
+        dummyT.rotation.set(0, (hash2(code) % 360) * Math.PI / 180, 0);
+        dummyT.updateMatrix();
+        mesh.setMatrixAt(i, dummyT.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+      sceneRoot.add(mesh);
+      treeMeshes.push({ mesh, data: b.items });
     });
-    trunkMesh.instanceMatrix.needsUpdate = true;
-    foliageMesh.instanceMatrix.needsUpdate = true;
-    foliageMesh.instanceColor.needsUpdate = true;
-    sceneRoot.add(trunkMesh);
-    sceneRoot.add(foliageMesh);
-    treeMeshes = [{ mesh: foliageMesh, data: trees }];
   }
   function hash2(str) { let h = 0; for (const c of (str || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 
