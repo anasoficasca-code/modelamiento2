@@ -68,7 +68,7 @@
   controls.minPolarAngle = Math.PI / 4;
   controls.maxPolarAngle = Math.PI / 4;
   controls.minZoom = 0.15;
-  controls.maxZoom = 8;
+  controls.maxZoom = 30;
   controls.enablePan = true;
 
   // ---- Luces (con sombras, tipo render arquitectonico) ----
@@ -762,9 +762,9 @@
     // zoom exactos), en vez de calcularla a partir del tamano de la red.
     // Se verifico que la elevacion sigue siendo exactamente 45° (proyeccion
     // paralela/axonometrica intacta).
-    camera.position.set(337.40, 704.12, 618.46);
-    controls.target.set(148.89, -51.26, -113.02);
-    camera.zoom = 1.108;
+    camera.position.set(56.88, 700.96, 649.09);
+    controls.target.set(178.42, -54.42, -96.45);
+    camera.zoom = 1.0;
     camera.updateProjectionMatrix();
   }
 
