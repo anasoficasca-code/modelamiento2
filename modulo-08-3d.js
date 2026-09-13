@@ -6,6 +6,7 @@
 (() => {
   const NET_URL = "./assets/kennedy_net.json";
   const VEHICULOS_JSON_URL = "./assets/kennedy_vehiculos.json";
+  const BUILDINGS_URL = "./assets/kennedy_buildings.json";
   const SCALE = 1 / 10; // las coordenadas del JSON llegan a ~10700 unidades; se escalan para Three.js
 
   const statusOverlay = document.getElementById("statusOverlay");
@@ -112,6 +113,51 @@
     scene.add(new THREE.Mesh(ribbonGeo, ribbonMat));
   }
 
+  // ---- Edificios: extrusion de cada huella (paredes + techo), TODO
+  // fusionado en una sola geometria por rendimiento (143 mil edificios). ----
+  function buildBuildings(buildings) {
+    const positions = [];
+    const normals = [];
+    buildings.forEach(b => {
+      const pts = b.pts.map(p => toScene(p[0], p[1]));
+      const h = b.h * SCALE;
+      if (pts.length < 4) return; // huella degenerada
+      // Paredes: un rectangulo (2 triangulos) por cada segmento del perimetro
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], c = pts[i + 1];
+        const dx = c.x - a.x, dz = c.z - a.z;
+        const len = Math.hypot(dx, dz) || 0.001;
+        const nx = -dz / len, nz = dx / len; // normal horizontal de la pared
+        positions.push(
+          a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z,
+          a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
+        );
+        for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
+      }
+      // Techo: abanico de triangulos desde el primer punto (aproximacion
+      // razonable para huellas mayormente convexas/rectangulares).
+      for (let i = 1; i < pts.length - 2; i++) {
+        positions.push(
+          pts[0].x, h, pts[0].z, pts[i].x, h, pts[i].z, pts[i + 1].x, h, pts[i + 1].z
+        );
+        for (let k = 0; k < 3; k++) normals.push(0, 1, 0);
+      }
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+    const mat = new THREE.MeshStandardMaterial({ color: 0x3d4450, roughness: 0.85, metalness: 0.05 });
+    const mesh = new THREE.Mesh(geo, mat);
+    scene.add(mesh);
+  }
+
+  function loadBuildings() {
+    return fetch(BUILDINGS_URL)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + BUILDINGS_URL); return r.json(); })
+      .then(data => { buildBuildings(data); })
+      .catch(err => console.warn("No se pudieron cargar los edificios:", err));
+  }
+
   // ---- Vehiculos: un pool de cajas 3D reutilizables ----
   const VEH_POOL_SIZE = 2800;
   const vehMeshes = [];
@@ -210,7 +256,8 @@
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       camera.position.set(w * 0.15, w * 0.35, w * 0.35);
       controls.target.set(0, 0, 0);
-      setStatus("Red cargada. Cargando trayectorias de vehículos…");
+      setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
+      loadBuildings();
       return loadVehicles();
     })
     .catch(err => {
