@@ -79,10 +79,13 @@
     scene.add(groundMesh);
   }
 
-  // Convierte una coordenada del JSON (x,y en el plano) a posicion 3D
-  // (x,z en Three.js, y=altura), centrada en el origen de la escena.
+  // Convierte una coordenada del JSON (x,y en el plano, x=este, y=norte
+  // real en UTM) a posicion 3D (x,z en Three.js, y=altura). El eje Z de
+  // Three.js se invierte respecto al norte real: si no se invierte, el
+  // mapa completo queda en espejo (norte-sur volteado) aunque las
+  // distancias relativas entre elementos se vean bien.
   function toScene(x, y) {
-    return { x: (x - netCenter.x) * SCALE, z: (y - netCenter.y) * SCALE };
+    return { x: (x - netCenter.x) * SCALE, z: -(y - netCenter.y) * SCALE };
   }
 
   // ---- Red vial: una sola geometria de lineas fusionada (19 mil tramos,
