@@ -567,6 +567,27 @@
   // ---- Rotacion manual del mapa completo (X/Y/Z), para que el usuario
   // pueda acomodar la orientacion a mano y luego copiar los grados
   // exactos que quedaron, para dejarlos fijos en el codigo. ----
+  // ---- Vista actual (posicion de camara + zoom), en vivo mientras el
+  // usuario mueve/hace zoom con el mouse (esto es lo que se pide copiar
+  // para "las coordenadas del zoom" — la rotacion de los deslizadores de
+  // abajo es una cosa aparte, no tiene que ver con el mouse). ----
+  const viewOutput = document.getElementById("viewOutput");
+  const viewCopyBtn = document.getElementById("viewCopy");
+  function updateViewOutput() {
+    const p = camera.position, t = controls.target;
+    viewOutput.value =
+      `camera.position.set(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)});\n` +
+      `controls.target.set(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)});\n` +
+      `camera.zoom = ${camera.zoom.toFixed(3)};`;
+  }
+  controls.addEventListener("change", updateViewOutput);
+  viewCopyBtn.addEventListener("click", async () => {
+    updateViewOutput();
+    try { await navigator.clipboard.writeText(viewOutput.value); } catch (err) {}
+    viewOutput.select();
+  });
+  updateViewOutput();
+
   const rotX = document.getElementById("rotX"), rotY = document.getElementById("rotY"), rotZ = document.getElementById("rotZ");
   const rotXVal = document.getElementById("rotXVal"), rotYVal = document.getElementById("rotYVal"), rotZVal = document.getElementById("rotZVal");
   const rotateOutput = document.getElementById("rotateOutput");

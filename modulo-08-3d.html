@@ -137,7 +137,12 @@
     </div>
 
     <div class="rotate-panel" id="rotatePanel">
-      <div class="rotate-row">
+      <p style="margin:0 0 4px; font-size:11px; color:var(--ink-dim);">Vista actual (se actualiza sola mientras mueves/haces zoom con el mouse):</p>
+      <textarea id="viewOutput" rows="4" spellcheck="false" readonly></textarea>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="viewCopy">📋 Copiar vista actual</button>
+      </div>
+      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
         <label>Rotar X <span id="rotXVal">0°</span></label>
         <input type="range" id="rotX" min="-180" max="180" value="0" step="1">
       </div>
@@ -151,7 +156,7 @@
       </div>
       <div class="rotate-row rotate-buttons">
         <button type="button" id="rotateReset">↺ Restablecer rotación</button>
-        <button type="button" id="rotateCopy">📋 Copiar coordenadas</button>
+        <button type="button" id="rotateCopy">📋 Copiar rotación</button>
       </div>
       <textarea id="rotateOutput" rows="2" spellcheck="false" readonly></textarea>
       <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
@@ -198,6 +203,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-08-3d.js?v=2"></script>
+<script src="modulo-08-3d.js?v=3"></script>
 </body>
 </html>
