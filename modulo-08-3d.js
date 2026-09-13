@@ -147,35 +147,56 @@
     const lines = new THREE.LineSegments(geo, mat);
     sceneRoot.add(lines);
 
-    // Una segunda capa mas gruesa "de asfalto" usando tiras (planos delgados)
-    // para que las vias principales se vean como calles, no solo lineas.
+    // Segunda capa mas gruesa "de asfalto" usando una tira continua con
+    // UNION DE ESQUINA (miter) en cada vertice interior — se promedia la
+    // normal de los dos segmentos que se juntan ahi (en vez de tratar cada
+    // segmento como un rectangulo independiente), para que las curvas
+    // queden con un borde continuo y suave, sin muescas/quiebres.
     const ribbonGeo = new THREE.BufferGeometry();
     const ribbonPos = [];
     const HALF_W = 0.9;
     edges.forEach(([kind, pts], edgeIdx) => {
-      // Pequenisimo desfase de altura por tramo de via (no por segmento,
-      // para que cada via quede perfectamente plana a lo largo de si
-      // misma), asi las vias que se superponen justo en una interseccion
-      // o glorieta no quedan EXACTAMENTE a la misma altura, lo que
-      // causaba el efecto "cuarteado" (z-fighting) que se ve en cruces
-      // con muchos tramos convergiendo.
-      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.004;
-      for (let i = 0; i < pts.length - 1; i++) {
-        const a = toScene(pts[i][0], pts[i][1]);
-        const b = toScene(pts[i + 1][0], pts[i + 1][1]);
-        const dx = b.x - a.x, dz = b.z - a.z;
+      // Desfase de altura MUY pequeno por via (no por segmento, para que
+      // cada via quede perfectamente plana a lo largo de si misma), asi
+      // las vias que se cruzan en una interseccion no quedan EXACTAMENTE
+      // coplanares (evita z-fighting). El rango es minusculo para que no
+      // se note como un "escalon" entre una via y la siguiente.
+      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.0006;
+      const n = pts.length;
+      if (n < 2) return;
+      const scenePts = pts.map(p => toScene(p[0], p[1]));
+      const segNormal = (p, q) => {
+        const dx = q.x - p.x, dz = q.z - p.z;
         const len = Math.hypot(dx, dz) || 0.001;
-        const nx = -dz / len * HALF_W, nz = dx / len * HALF_W;
-        // dos triangulos formando el rectangulo de la calle
+        return { x: -dz / len, z: dx / len };
+      };
+      const vertNormals = new Array(n);
+      for (let i = 0; i < n; i++) {
+        if (i === 0) { vertNormals[i] = segNormal(scenePts[0], scenePts[1]); continue; }
+        if (i === n - 1) { vertNormals[i] = segNormal(scenePts[n - 2], scenePts[n - 1]); continue; }
+        const n1 = segNormal(scenePts[i - 1], scenePts[i]);
+        const n2 = segNormal(scenePts[i], scenePts[i + 1]);
+        let ax = n1.x + n2.x, az = n1.z + n2.z;
+        const alen = Math.hypot(ax, az);
+        if (alen < 0.05) { vertNormals[i] = n1; continue; } // giro casi en U, evitar division por ~0
+        ax /= alen; az /= alen;
+        const cosHalf = Math.max(ax * n1.x + az * n1.z, 0.25); // limitar el miter en angulos muy agudos
+        vertNormals[i] = { x: ax / cosHalf, z: az / cosHalf };
+      }
+      for (let i = 0; i < n - 1; i++) {
+        const a = scenePts[i], b = scenePts[i + 1];
+        const na = vertNormals[i], nb = vertNormals[i + 1];
+        const ax = na.x * HALF_W, az = na.z * HALF_W;
+        const bx = nb.x * HALF_W, bz = nb.z * HALF_W;
         ribbonPos.push(
-          a.x - nx, yJitter, a.z - nz, a.x + nx, yJitter, a.z + nz, b.x + nx, yJitter, b.z + nz,
-          a.x - nx, yJitter, a.z - nz, b.x + nx, yJitter, b.z + nz, b.x - nx, yJitter, b.z - nz
+          a.x - ax, yJitter, a.z - az, a.x + ax, yJitter, a.z + az, b.x + bx, yJitter, b.z + bz,
+          a.x - ax, yJitter, a.z - az, b.x + bx, yJitter, b.z + bz, b.x - bx, yJitter, b.z - bz
         );
       }
     });
     ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(ribbonPos, 3));
     ribbonGeo.computeVertexNormals();
-    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0x86898d, roughness: 0.85, side: THREE.DoubleSide });
+    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0x76797d, roughness: 0.85, side: THREE.DoubleSide });
     const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
     roadMesh.receiveShadow = true;
     sceneRoot.add(roadMesh);
@@ -438,7 +459,7 @@
     waterTex.wrapT = THREE.RepeatWrapping;
     const mat = new THREE.MeshStandardMaterial({
       map: waterTex, color: 0xbfe0ee, roughness: 0.2, metalness: 0.05,
-      transparent: true, opacity: 0.9, side: THREE.DoubleSide,
+      transparent: true, opacity: 0.55, side: THREE.DoubleSide,
     });
     const waterMesh = new THREE.Mesh(geo, mat);
     waterMesh.receiveShadow = true;
