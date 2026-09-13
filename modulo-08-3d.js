@@ -146,7 +146,7 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-    const mat = new THREE.MeshStandardMaterial({ color: 0x3d4450, roughness: 0.85, metalness: 0.05 });
+    const mat = new THREE.MeshStandardMaterial({ color: 0x3d4450, roughness: 0.85, metalness: 0.05, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     scene.add(mesh);
   }
@@ -162,7 +162,7 @@
   const VEH_POOL_SIZE = 2800;
   const vehMeshes = [];
   const vehMat = new THREE.MeshStandardMaterial({ color: 0xe2635a, roughness: 0.5, metalness: 0.15 });
-  const vehGeo = new THREE.BoxGeometry(1.6, 0.9, 3.2);
+  const vehGeo = new THREE.BoxGeometry(0.18, 0.15, 0.45);
   const vehInstanced = new THREE.InstancedMesh(vehGeo, vehMat, VEH_POOL_SIZE);
   vehInstanced.count = 0;
   scene.add(vehInstanced);
@@ -214,7 +214,7 @@
       const prev = prevPositions[v.id];
       let angle = 0;
       if (prev) { angle = Math.atan2(p.x - prev.x, p.z - prev.z); }
-      dummy.position.set(p.x, 0.55, p.z);
+      dummy.position.set(p.x, 0.1, p.z);
       dummy.rotation.set(0, angle, 0);
       dummy.updateMatrix();
       vehInstanced.setMatrixAt(i, dummy.matrix);
