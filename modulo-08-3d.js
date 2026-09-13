@@ -396,23 +396,26 @@
     const levels = 6;
     for (let lvl = 0; lvl < levels; lvl++) {
       const t = lvl / (levels - 1); // 0 = abajo, 1 = arriba
-      const branchY = H - (H - trunkTopY) * (0.15 + t * 0.8);
+      const branchY = H - (H - trunkTopY) * (0.35 + t * 0.6);
       const trunkX = baseX + (bendX - baseX) * (0.4 + t * 0.6) * ((H - branchY) / (H - trunkTopY));
-      const branchesInLevel = 2 + Math.floor(rnd() * 2);
-      const levelReach = (60 + t * 90) * (0.8 + rnd() * 0.4); // ramas mas largas arriba
+      const branchesInLevel = 3 + Math.floor(rnd() * 2);
+      const levelReach = (32 + t * 40) * (0.85 + rnd() * 0.3); // copa mas compacta, menos dispersa
       for (let b = 0; b < branchesInLevel; b++) {
         const dir = (b % 2 === 0 ? 1 : -1) * (0.6 + rnd() * 0.5);
         const endX = trunkX + dir * levelReach;
-        const endY = branchY - levelReach * (0.25 + rnd() * 0.25);
+        const endY = branchY - levelReach * (0.2 + rnd() * 0.2);
         ctx.strokeStyle = "#5a4632";
         ctx.lineWidth = Math.max(1.5, trunkBaseW * (0.5 - t * 0.3));
         ctx.beginPath();
         ctx.moveTo(trunkX, branchY);
         ctx.quadraticCurveTo(trunkX + dir * levelReach * 0.5, branchY - levelReach * 0.1, endX, endY);
         ctx.stroke();
-        // Racimo de hojas al final de la rama (y 1-2 mas chicos a medio camino)
-        leafCluster(endX, endY, 34 + rnd() * 26);
-        if (rnd() > 0.4) leafCluster(trunkX + dir * levelReach * 0.55, branchY - levelReach * 0.18, 20 + rnd() * 16);
+        // Racimos de hojas a lo largo de toda la rama (no solo en la
+        // punta), para que la copa se vea llena y unida, sin huecos
+        // dispersos entre el tronco y las hojas.
+        leafCluster(endX, endY, 40 + rnd() * 28);
+        leafCluster(trunkX + dir * levelReach * 0.6, branchY - levelReach * 0.2, 32 + rnd() * 20);
+        leafCluster(trunkX + dir * levelReach * 0.3, branchY - levelReach * 0.08, 26 + rnd() * 16);
       }
     }
     ctx.globalAlpha = 1;
