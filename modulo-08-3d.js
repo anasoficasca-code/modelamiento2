@@ -662,11 +662,12 @@
     return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
   }
 
+  let lastAngle = {}; // rumbo persistente por vehiculo, para no perderlo cuando esta detenido
   function vehiclesAtTime(t) {
     if (!timesteps.length) return [];
-    if (t <= timesteps[0].time) return timesteps[0].vehicles;
+    if (t <= timesteps[0].time) return timesteps[0].vehicles.map(v => ({ id: v.id, x: v.x, y: v.y }));
     const last = timesteps[timesteps.length - 1];
-    if (t >= last.time) return last.vehicles;
+    if (t >= last.time) return last.vehicles.map(v => ({ id: v.id, x: v.x, y: v.y }));
     let lo = 0, hi = timesteps.length - 1;
     while (hi - lo > 1) {
       const mid = (lo + hi) >> 1;
@@ -677,26 +678,32 @@
     const bMap = {}; b.vehicles.forEach(v => bMap[v.id] = v);
     return a.vehicles.map(v => {
       const bv = bMap[v.id];
-      if (!bv) return v;
+      if (!bv) return { id: v.id, x: v.x, y: v.y };
+      // El rumbo se calcula con el DESPLAZAMIENTO REAL entre 2 pasos de
+      // la simulacion (no entre cuadros de animacion): si el vehiculo esta
+      // detenido o casi detenido en una fila (semaforo, trancon), ese
+      // vector es casi cero y dar un angulo con eso sale ruidoso/al azar
+      // (los carros en diagonal de la captura). Solo se actualiza el
+      // angulo cuando el vehiculo se movio una distancia real
+      // significativa; si no, se mantiene el ultimo rumbo conocido.
+      const pa = toScene(v.x, v.y), pb = toScene(bv.x, bv.y);
+      const dx = pb.x - pa.x, dz = pb.z - pa.z;
+      if (Math.hypot(dx, dz) > 0.05) lastAngle[v.id] = Math.atan2(dx, dz);
       return { id: v.id, x: v.x + (bv.x - v.x) * frac, y: v.y + (bv.y - v.y) * frac };
     });
   }
 
-  let prevPositions = {};
   function renderVehiclesAt(t) {
     const vehicles = vehiclesAtTime(t);
     const n = Math.min(vehicles.length, VEH_POOL_SIZE);
     for (let i = 0; i < n; i++) {
       const v = vehicles[i];
       const p = toScene(v.x, v.y);
-      const prev = prevPositions[v.id];
-      let angle = 0;
-      if (prev) { angle = Math.atan2(p.x - prev.x, p.z - prev.z); }
+      const angle = lastAngle[v.id] || 0;
       dummy.position.set(p.x, 0.1, p.z);
       dummy.rotation.set(0, angle, 0);
       dummy.updateMatrix();
       vehInstanced.setMatrixAt(i, dummy.matrix);
-      prevPositions[v.id] = p;
     }
     vehInstanced.count = n;
     vehInstanced.instanceMatrix.needsUpdate = true;
