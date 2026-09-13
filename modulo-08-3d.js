@@ -605,6 +605,93 @@
       .catch(err => console.warn("No se pudieron cargar los parques:", err));
   }
 
+  // ---- Semaforos 3D + cruces peatonales, en un conjunto reducido y bien
+  // espaciado de intersecciones reales (287, fusionando nodos cercanos de
+  // la red vial) — NO en cada nodo donde se juntan tramos, ya que eso
+  // fue un desastre visual antes (SUMO separa carriles en tramos propios,
+  // dando miles de "cruces" falsos). ----
+  function buildIntersections(intersections) {
+    const poleGeo = new THREE.CylinderGeometry(0.025, 0.03, 1, 6);
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x33383d, roughness: 0.6 });
+    const headGeo = new THREE.BoxGeometry(0.09, 0.24, 0.09);
+    const headMat = new THREE.MeshStandardMaterial({ color: 0x1c1f22, roughness: 0.5 });
+    const lightGeo = new THREE.CircleGeometry(0.028, 10);
+    const lightColors = [0xe14b3f, 0xe8b93f, 0x4bb35a];
+
+    let poleCount = 0;
+    intersections.forEach(inter => (poleCount += Math.min(inter.dirs.length, 4)));
+    const poleMesh = new THREE.InstancedMesh(poleGeo, poleMat, poleCount);
+    const headMesh = new THREE.InstancedMesh(headGeo, headMat, poleCount);
+    poleMesh.castShadow = true; headMesh.castShadow = true;
+    const lightMeshes = lightColors.map(color =>
+      new THREE.InstancedMesh(lightGeo, new THREE.MeshBasicMaterial({ color }), poleCount)
+    );
+
+    const dummy = new THREE.Object3D();
+    const crossPos = []; // posiciones de las rayas de cruce peatonal
+    const POLE_H = 3.2 * SCALE, SETBACK = 4.5, CROSS_W = 3.0, STRIPE_LEN = 0.45, STRIPE_GAP = 0.3;
+    let idx = 0;
+    intersections.forEach(inter => {
+      const center = toScene(inter.x, inter.y);
+      inter.dirs.slice(0, 4).forEach(([dx, dy]) => {
+        // direccion real -> direccion en la escena (toScene invierte Y)
+        const ux = dx, uz = -dy;
+        const px = -uz, pz = ux; // perpendicular (ancho de la via)
+        // Poste del semaforo, a un lado del acceso, cerca de la esquina.
+        const poleX = center.x + ux * (SETBACK - 1.2) + px * 1.6;
+        const poleZ = center.z + uz * (SETBACK - 1.2) + pz * 1.6;
+        dummy.position.set(poleX, POLE_H / 2, poleZ);
+        dummy.scale.set(1, POLE_H, 1);
+        dummy.rotation.set(0, 0, 0);
+        dummy.updateMatrix();
+        poleMesh.setMatrixAt(idx, dummy.matrix);
+        const faceAngle = Math.atan2(-ux, -uz); // el semaforo mira hacia el que se acerca
+        dummy.position.set(poleX, POLE_H + 0.14, poleZ);
+        dummy.scale.set(1, 1, 1);
+        dummy.rotation.set(0, faceAngle, 0);
+        dummy.updateMatrix();
+        headMesh.setMatrixAt(idx, dummy.matrix);
+        const lightYs = [POLE_H + 0.2, POLE_H + 0.14, POLE_H + 0.08];
+        lightMeshes.forEach((lm, li) => {
+          dummy.position.set(poleX + Math.sin(faceAngle) * 0.05, lightYs[li], poleZ + Math.cos(faceAngle) * 0.05);
+          dummy.rotation.set(0, faceAngle, 0);
+          dummy.updateMatrix();
+          lm.setMatrixAt(idx, dummy.matrix);
+        });
+        idx++;
+
+        // Cruce peatonal (rayas) atravesando este acceso, antes de llegar
+        // al centro de la interseccion.
+        const baseX = center.x + ux * SETBACK, baseZ = center.z + uz * SETBACK;
+        for (let s = -CROSS_W; s <= CROSS_W; s += STRIPE_LEN + STRIPE_GAP) {
+          const c0x = baseX + px * s, c0z = baseZ + pz * s;
+          const c1x = c0x + ux * STRIPE_LEN, c1z = c0z + uz * STRIPE_LEN;
+          const hx = px * 0.4, hz = pz * 0.4;
+          crossPos.push(
+            c0x - hx, 0.034, c0z - hz, c0x + hx, 0.034, c0z + hz, c1x + hx, 0.034, c1z + hz,
+            c0x - hx, 0.034, c0z - hz, c1x + hx, 0.034, c1z + hz, c1x - hx, 0.034, c1z - hz
+          );
+        }
+      });
+    });
+    poleMesh.instanceMatrix.needsUpdate = true;
+    headMesh.instanceMatrix.needsUpdate = true;
+    lightMeshes.forEach(lm => (lm.instanceMatrix.needsUpdate = true));
+    sceneRoot.add(poleMesh, headMesh, ...lightMeshes);
+
+    const crossGeo = new THREE.BufferGeometry();
+    crossGeo.setAttribute("position", new THREE.Float32BufferAttribute(crossPos, 3));
+    const crossMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+    sceneRoot.add(new THREE.Mesh(crossGeo, crossMat));
+  }
+
+  function loadIntersections() {
+    return fetch("./assets/kennedy_intersecciones.json")
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar intersecciones"); return r.json(); })
+      .then(data => { buildIntersections(data); })
+      .catch(err => console.warn("No se pudieron cargar las intersecciones:", err));
+  }
+
   // ---- Mallas reales exportadas del modelo Rhino (techos a dos aguas,
   // techos planos con parapeto ya modelado, fachadas verificadas, agua) —
   // formato generico {verts:[[x,y,z_metros],...], tris:[[a,b,c],...]}. ----
@@ -749,6 +836,7 @@
       loadWaterBodies();
       loadManzanas();
       loadParques();
+      loadIntersections();
       loadTriMesh("./assets/kennedy_roofs_flat.json", 0xffffff);    // techos planos con parapeto ya modelado
       loadTriMesh("./assets/kennedy_facades.json", 0xa05a41);       // fachadas verificadas con StreetView
       return loadVehicles();
