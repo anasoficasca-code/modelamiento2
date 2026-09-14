@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capa 1 — Hidrología del humedal | Kennedy</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="navigation-unified.css?v=20260824">
+<style>
+  :root{
+    --ink:#e8eaed; --ink-dim:#9aa0a8; --panel:#171a1e; --panel-border:#2a2f36;
+    --accent:#4fd1c5; --bg:#0b0c0f;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:'Segoe UI', system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  .app{ display:flex; min-height:100vh; }
+  main{ flex:1; position:relative; overflow:hidden; }
+
+  .hud-title{ position:absolute; top:18px; left:96px; z-index:6; max-width:520px; }
+  .hud-title h1{ font-size:17px; margin:0 0 4px; }
+  .hud-title p{ font-size:12px; color:var(--ink-dim); margin:0; }
+
+  .stage{ position:absolute; inset:0; }
+  #bgReal{ position:absolute; inset:0; opacity:0; transition:opacity 1.1s ease; }
+  #bgReal img, #bgReal .fallback{ width:100%; height:100%; object-fit:cover; }
+  .fallback{ width:100%; height:100%; background:
+      linear-gradient(0deg, rgba(255,255,255,.04) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px) 0 0/40px 40px,
+      #14171c; }
+
+  svg{ position:absolute; inset:0; width:100%; height:100%; }
+
+  .control-panel{
+    position:absolute; top:18px; right:18px; z-index:6; width:280px;
+    background:rgba(17,20,24,.94); border:1px solid var(--panel-border); border-radius:10px; padding:14px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .control-panel h2{ font-size:13px; margin:0 0 2px; color:var(--ink); }
+  .control-row label{ font-size:11px; color:var(--ink-dim); display:flex; justify-content:space-between; margin-bottom:4px; }
+  .control-row input[type=range]{ width:100%; accent-color:var(--accent); }
+  .phase-buttons{ display:flex; gap:8px; }
+  .phase-buttons button{
+    flex:1; padding:8px; border-radius:8px; border:1px solid var(--panel-border); background:var(--panel);
+    color:var(--ink); font-size:11.5px; cursor:pointer;
+  }
+  .phase-buttons button.active{ background:var(--accent); color:#0b0c0f; border-color:var(--accent); }
+  .phase-buttons button:hover{ background:rgba(255,255,255,.1); }
+
+  .data-panel{
+    position:absolute; bottom:18px; left:96px; z-index:6; display:flex; gap:10px; flex-wrap:wrap; max-width:calc(100% - 300px);
+  }
+  .data-card{
+    background:rgba(17,20,24,.94); border:1px solid var(--panel-border); border-radius:10px; padding:10px 14px; min-width:150px;
+  }
+  .data-card .eyebrow{ font-size:9.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin:0 0 2px; }
+  .data-card .value{ font-size:19px; font-weight:600; color:var(--ink); }
+  .data-card .sub{ font-size:10px; color:var(--ink-dim); margin-top:2px; }
+
+  .legend{
+    position:absolute; bottom:18px; right:18px; z-index:6; font-size:11px; color:var(--ink-dim);
+    background:rgba(17,20,24,.9); border:1px solid var(--panel-border); border-radius:10px; padding:10px 12px;
+    display:flex; flex-direction:column; gap:5px; max-width:230px;
+  }
+  .legend span{ display:flex; align-items:center; gap:7px; }
+  .legend i{ width:12px; height:12px; border-radius:3px; display:inline-block; flex:0 0 auto; }
+
+  .node-label{ font-size:11px; fill:#ffcf5c; font-weight:600; }
+  .zone-label{ font-size:10.5px; fill:#9aa0a8; }
+  .flow-label{ font-size:10px; fill:#7fc7e8; }
+
+  @keyframes dashflow{ to{ stroke-dashoffset:-40; } }
+  .flow-arrow{ stroke-dasharray:6 6; animation:dashflow 1.4s linear infinite; }
+
+  @keyframes pulseNode{ 0%,100%{ r:7; opacity:1; } 50%{ r:10; opacity:.55; } }
+  .critical-node-pulse{ animation:pulseNode 1.8s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar sidebar-icons-only">
+    <a class="brand-icon" href="index.html" title="Bogotá Viva · Inicio" aria-label="Inicio"><i class="fa-solid fa-diagram-project"></i></a>
+    <nav class="icon-nav" aria-label="Módulos">
+      <a href="index.html" class="icon-nav-item" title="Inicio"><i class="fa-solid fa-house"></i></a>
+      <a href="modulo-02.html" class="icon-nav-item" title="02 · Medir la red"><i class="fa-solid fa-chart-simple"></i></a>
+      <a href="modulo-03.html" class="icon-nav-item" title="03 · Discurso vs realidad"><i class="fa-solid fa-eye"></i></a>
+      <a href="modulo-04.html" class="icon-nav-item" title="04 · Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
+      <a href="modulo-05.html" class="icon-nav-item" title="05 · Navegador multiescalar"><i class="fa-solid fa-magnifying-glass-location"></i></a>
+      <a href="modulo-06.html" class="icon-nav-item" title="06 · POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
+      <a href="modulo-07.html" class="icon-nav-item" title="07 · Simulador"><i class="fa-solid fa-flask"></i></a>
+      <a href="modulo-08.html" class="icon-nav-item" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
+      <a href="modulo-08-3d.html" class="icon-nav-item" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
+      <a href="modulo-10-corte.html" class="icon-nav-item" title="10 · Corte axonométrico"><i class="fa-solid fa-scissors"></i></a>
+      <a href="modulo-11-humedal.html" class="icon-nav-item active" title="11 · Hidrología del humedal"><i class="fa-solid fa-water"></i></a>
+      <a href="red-residuos-organicos.html" class="icon-nav-item" title="Problemas de Kennedy"><i class="fa-solid fa-triangle-exclamation"></i></a>
+      <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
+    </nav>
+    <div class="icon-nav-footer">
+      <a href="configuracion.html" class="icon-nav-item" title="Configuración"><i class="fa-solid fa-gear"></i></a>
+      <a href="demo.html" class="icon-nav-item" title="Salir"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hud-title">
+      <h1>Capa 1 — Hidrología del humedal</h1>
+      <p>Nodo topográfico crítico, escorrentías subterráneas y zonificación legal (RH/ZMPA) · mueve el reloj climático para ver la transición de temporada seca a lluvias</p>
+    </div>
+
+    <div class="stage">
+      <div id="bgReal"><div class="fallback"></div></div>
+      <svg id="scene" viewBox="0 0 900 620" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+
+    <div class="control-panel">
+      <h2>Fase de la simulación</h2>
+      <div class="phase-buttons">
+        <button type="button" id="phaseABtn" class="active">Fase A — Esquema</button>
+        <button type="button" id="phaseBBtn">Fase B — Mapa real</button>
+      </div>
+      <div class="control-row">
+        <label>Reloj climático (PMPLL) <span id="seasonLabel">Temporada seca</span></label>
+        <input type="range" id="seasonSlider" min="0" max="100" value="0" step="1">
+      </div>
+      <div class="control-row">
+        <label>Reproducir transición automática</label>
+        <div class="phase-buttons">
+          <button type="button" id="playBtn">▶ Reproducir seca → lluvias</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-panel">
+      <div class="data-card">
+        <p class="eyebrow">PMPLL · Precipitación mensual (OAB)</p>
+        <p class="value" id="valPMPLL">40 mm/mes</p>
+        <p class="sub">Rango real: 40 mm (seca, ene–mar) a 140 mm (pico lluvias, abr–may)</p>
+      </div>
+      <div class="data-card">
+        <p class="eyebrow">CMI · Crecimiento del espejo de agua (ΔA)</p>
+        <p class="value" id="valCMI">+0%</p>
+        <p class="sub">Expansión horizontal real: 35% a 50% de verano a invierno</p>
+      </div>
+      <div class="data-card">
+        <p class="eyebrow">Profundidad (h) — nodo más hondo</p>
+        <p class="value" id="valDepth">0.6 m</p>
+        <p class="sub">Real: 0.6 m en seca a 2.0 m en lluvias</p>
+      </div>
+      <div class="data-card">
+        <p class="eyebrow">VASCE · Recarga freática</p>
+        <p class="value" id="valVASCE">Base</p>
+        <p class="sub">Indicador OAB de flujo subterráneo hacia el acuífero</p>
+      </div>
+    </div>
+
+    <div class="legend" id="legendBox">
+      <span><i style="background:#2f6fa8"></i> Cuerpo de agua (espejo hídrico)</span>
+      <span><i style="background:transparent;border:1.5px dashed #e0b64a"></i> Ronda Hidráulica (RH) — 30 m</span>
+      <span><i style="background:#3f6b3f;opacity:.35"></i> ZMPA — 30 a 270 m</span>
+      <span><i style="background:#7fc7e8"></i> Escorrentía subterránea (flujo freático)</span>
+      <span><i style="background:#ffcf5c"></i> Nodo topográfico crítico (punto más hondo)</span>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  const svg = document.getElementById("scene");
+  const NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, parent){
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+
+  const CX = 430, CY = 330; // centro del humedal en el esquema
+  // Radios base (temporada seca) del espejo de agua, en px del viewBox.
+  const BASE_RX = 150, BASE_RY = 95;
+
+  // ---- Capas base (se dibujan una sola vez) ----
+  const gZMPA = el("g", { id: "gZMPA" }, svg);
+  const gRH = el("g", { id: "gRH" }, svg);
+  const gFlow = el("g", { id: "gFlow" }, svg);
+  const gWater = el("g", { id: "gWater" }, svg);
+  const gUrban = el("g", { id: "gUrban", opacity: 0 }, svg); // edificios/vias esquematicos para la Fase B
+  const gNode = el("g", { id: "gNode" }, svg);
+  const gLabels = el("g", { id: "gLabels" }, svg);
+
+  // ZMPA (franja de 30 a 270m -> en el esquema, un anillo mucho mas ancho)
+  el("ellipse", { cx: CX, cy: CY, rx: BASE_RX + 230, ry: BASE_RY + 165, fill: "#3f6b3f", opacity: 0.22 }, gZMPA);
+  el("ellipse", { cx: CX, cy: CY, rx: BASE_RX + 230, ry: BASE_RY + 165, fill: "none", stroke: "#3f6b3f", "stroke-width": 1.5, "stroke-dasharray": "3 5", opacity: 0.6 }, gZMPA);
+
+  // RH (30m real -> banda visible en el esquema, mas angosta que la ZMPA)
+  const rhEl = el("ellipse", { cx: CX, cy: CY, rx: BASE_RX + 42, ry: BASE_RY + 30, fill: "none", stroke: "#e0b64a", "stroke-width": 2.2, "stroke-dasharray": "8 6" }, gRH);
+
+  // Escorrentias subterraneas: flechas discontinuas animadas, radiando
+  // desde debajo del lecho del humedal hacia afuera (recarga del
+  // acuifero / flujo freatico).
+  el("marker", { id: "arrowFlow", markerWidth: 8, markerHeight: 8, refX: 6, refY: 4, orient: "auto" }, (() => {
+    const defs = el("defs", {}, svg);
+    return defs;
+  })());
+  const defsMarker = svg.querySelector("defs");
+  el("path", { d: "M0,0 L8,4 L0,8 Z", fill: "#7fc7e8" }, defsMarker.querySelector("#arrowFlow"));
+
+  const flowAngles = [200, 230, 260, 290, 320, 340, 20, 40, 60, 100, 140, 160];
+  flowAngles.forEach((deg, i) => {
+    const rad = deg * Math.PI / 180;
+    const r1 = BASE_RX * 0.55;
+    const r2 = BASE_RX + 70;
+    const x1 = CX + Math.cos(rad) * r1 * (BASE_RX/BASE_RY>1?1:1), y1 = CY + Math.sin(rad) * r1 * (BASE_RY/BASE_RX);
+    const x2 = CX + Math.cos(rad) * r2, y2 = CY + Math.sin(rad) * r2 * (BASE_RY/BASE_RX);
+    el("line", {
+      x1, y1, x2, y2, stroke: "#7fc7e8", "stroke-width": 1.6, "marker-end": "url(#arrowFlow)",
+      class: "flow-arrow", opacity: 0.75,
+    }, gFlow);
+  });
+  const flowLabel = el("text", { x: CX + BASE_RX + 90, y: CY + 150, class: "flow-label" }, gLabels);
+  flowLabel.textContent = "Recarga de acuífero / flujo freático subterráneo (VASCE)";
+
+  // Cuerpo de agua (espejo hidrico) - se reescala segun la temporada.
+  const waterEl = el("ellipse", { cx: CX, cy: CY, rx: BASE_RX, ry: BASE_RY, fill: "#2f6fa8", opacity: 0.88 }, gWater);
+  el("ellipse", { cx: CX, cy: CY, rx: BASE_RX, ry: BASE_RY, fill: "none", stroke: "#bfe0ee", "stroke-width": 1, opacity: 0.5, id: "waterOutlineStatic" }, gWater);
+
+  // Nodo topografico critico: en la cota de mayor profundidad de la
+  // cuenca (se ubica un poco al sur-este del centro, como un punto real
+  // de mayor profundidad dentro del espejo de agua, no exactamente el
+  // centroide geometrico).
+  const nodeX = CX + 35, nodeY = CY + 18;
+  el("circle", { cx: nodeX, cy: nodeY, r: 7, fill: "#ffcf5c", stroke: "#7a5c12", "stroke-width": 1.5, class: "critical-node-pulse" }, gNode);
+  el("circle", { cx: nodeX, cy: nodeY, r: 2.5, fill: "#3a2c08" }, gNode);
+  const nodeLabel = el("text", { x: nodeX + 14, y: nodeY - 10, class: "node-label" }, gLabels);
+  nodeLabel.textContent = "Nodo topográfico crítico";
+  const nodeSub = el("text", { x: nodeX + 14, y: nodeY + 6, class: "zone-label" }, gLabels);
+  nodeSub.setAttribute("id", "nodeDepthLabel");
+  nodeSub.textContent = "Cota de mayor profundidad — h = 0.6 m";
+
+  // Etiquetas de zonas
+  const rhLabel = el("text", { x: CX - BASE_RX - 40, y: CY - BASE_RY - 32, class: "zone-label" }, gLabels);
+  rhLabel.textContent = "Ronda Hidráulica (RH) — 30 m";
+  rhLabel.setAttribute("fill", "#e0b64a");
+  const zmpaLabel = el("text", { x: CX - BASE_RX - 210, y: CY - BASE_RY - 150, class: "zone-label" }, gLabels);
+  zmpaLabel.textContent = "ZMPA — Zona de Manejo y Preservación Ambiental (30–270 m)";
+
+  // ---- Urbano esquematico para la Fase B (vias + edificios simples) ----
+  // Una via horizontal que pasa cerca del humedal, y unas manzanas con
+  // edificios, para mostrar como el desborde invernal puede cruzar la RH
+  // e interceptar vias/viviendas.
+  el("rect", { x: 0, y: CY + BASE_RY + 60, width: 900, height: 26, fill: "#8a8f96" }, gUrban);
+  for (let i = 0; i < 5; i++) {
+    el("rect", { x: 40 + i * 170, y: CY + BASE_RY + 66, width: 60, height: 14, fill: "#fff", opacity: 0.6, "stroke-dasharray": "8 6", stroke: "#fff", "stroke-width": 1 }, gUrban);
+  }
+  const housePositions = [
+    [CX + BASE_RX + 60, CY - 10, 46, 34],
+    [CX + BASE_RX + 130, CY + 40, 40, 30],
+    [CX - BASE_RX - 150, CY + 30, 44, 32],
+    [CX - BASE_RX - 90, CY + 90, 38, 28],
+  ];
+  housePositions.forEach(([x, y, w, h]) => {
+    el("rect", { x, y, width: w, height: h, fill: "#e9ebee", stroke: "#3a3f46", "stroke-width": 1 }, gUrban);
+  });
+  const overflowWarning = el("text", { x: CX - 60, y: CY + BASE_RY + 105, class: "zone-label", fill: "#e2635a", "font-weight": "700" }, gLabels);
+  overflowWarning.setAttribute("id", "overflowWarning");
+  overflowWarning.setAttribute("opacity", "0");
+  overflowWarning.textContent = "⚠ El desborde invernal sobrepasa la RH e interseca vías/viviendas";
+
+  // ---- Estado / animacion segun temporada (0 = seca, 100 = lluvias) ----
+  const slider = document.getElementById("seasonSlider");
+  const seasonLabel = document.getElementById("seasonLabel");
+  const valPMPLL = document.getElementById("valPMPLL");
+  const valCMI = document.getElementById("valCMI");
+  const valDepth = document.getElementById("valDepth");
+  const valVASCE = document.getElementById("valVASCE");
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function updateSeason() {
+    const t = parseFloat(slider.value) / 100; // 0 seca -> 1 lluvias
+    const pmpll = lerp(40, 140, t);
+    const cmi = lerp(0, 42.5, t); // 35-50%, usamos 42.5% como valor medio real de referencia, escalado por t
+    const depth = lerp(0.6, 2.0, t);
+    const scale = 1 + (cmi / 100);
+
+    waterEl.setAttribute("rx", BASE_RX * scale);
+    waterEl.setAttribute("ry", BASE_RY * scale);
+    document.getElementById("waterOutlineStatic").setAttribute("rx", BASE_RX * scale);
+    document.getElementById("waterOutlineStatic").setAttribute("ry", BASE_RY * scale);
+
+    valPMPLL.textContent = pmpll.toFixed(0) + " mm/mes";
+    valCMI.textContent = "+" + cmi.toFixed(0) + "%";
+    valDepth.textContent = depth.toFixed(1) + " m";
+    document.getElementById("nodeDepthLabel").textContent = "Cota de mayor profundidad — h = " + depth.toFixed(1) + " m";
+    valVASCE.textContent = t < 0.4 ? "Recarga baja" : t < 0.75 ? "Recarga media" : "Recarga alta";
+
+    seasonLabel.textContent = t < 0.15 ? "Temporada seca" : t < 0.85 ? "Transición" : "Pico de lluvias";
+
+    // Cuando el espejo de agua crece lo suficiente como para pasar la RH
+    // (aprox t>0.55), se muestra la advertencia de desborde (solo tiene
+    // sentido visualmente en la Fase B, con el contexto urbano visible).
+    const overflow = scale * BASE_RX > BASE_RX + 42; // supera el radio de la RH
+    overflowWarning.setAttribute("opacity", (overflow && phaseB) ? "1" : "0");
+  }
+  slider.addEventListener("input", updateSeason);
+
+  // ---- Fases A / B ----
+  let phaseB = false;
+  const bgReal = document.getElementById("bgReal");
+  const phaseABtn = document.getElementById("phaseABtn");
+  const phaseBBtn = document.getElementById("phaseBBtn");
+  function setPhase(isB) {
+    phaseB = isB;
+    phaseABtn.classList.toggle("active", !isB);
+    phaseBBtn.classList.toggle("active", isB);
+    bgReal.style.opacity = isB ? "1" : "0";
+    gUrban.setAttribute("opacity", isB ? "1" : "0");
+    gZMPA.setAttribute("opacity", isB ? "0.6" : "1");
+    updateSeason();
+  }
+  phaseABtn.addEventListener("click", () => setPhase(false));
+  phaseBBtn.addEventListener("click", () => setPhase(true));
+
+  // ---- Reproduccion automatica: seca -> lluvias en ~8s, cruzando a la
+  // Fase B a mitad de camino (transicion de 30 a 60s descrita, aqui
+  // comprimida a una demostracion corta pero completa). ----
+  const playBtn = document.getElementById("playBtn");
+  let playing = false, playT0 = 0;
+  function playFrame(now) {
+    if (!playing) return;
+    const elapsed = (now - playT0) / 1000;
+    const dur = 9; // segundos totales de la demostracion
+    const t = Math.min(elapsed / dur, 1);
+    slider.value = String(Math.round(t * 100));
+    if (t > 0.45 && !phaseB) setPhase(true);
+    if (t <= 0.45 && phaseB) setPhase(false);
+    updateSeason();
+    if (t < 1) requestAnimationFrame(playFrame);
+    else { playing = false; playBtn.textContent = "▶ Reproducir seca → lluvias"; }
+  }
+  playBtn.addEventListener("click", () => {
+    playing = !playing;
+    if (playing) {
+      playBtn.textContent = "⏸ Detener";
+      playT0 = performance.now();
+      requestAnimationFrame(playFrame);
+    } else {
+      playBtn.textContent = "▶ Reproducir seca → lluvias";
+    }
+  });
+
+  updateSeason();
+})();
+</script>
+</body>
+</html>
