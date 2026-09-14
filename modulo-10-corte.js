@@ -45,6 +45,22 @@
   renderer.shadowMap.type = THREE.BasicShadowMap;
   renderer.localClippingEnabled = true; // para la caja de seccion (corte del modelo)
 
+  // Los planos de recorte de la caja de seccion se crean y se ACTIVAN
+  // (aunque sea con un valor lejano que no corta nada todavia) desde ya,
+  // ANTES de construir cualquier edificio/via/etc. En esta version de
+  // Three.js, si los materiales compilan su shader con 0 planos de
+  // recorte y luego se les agregan planos, el recorte no se aplica hasta
+  // recompilar el material — por eso el corte no se veia antes.
+  const secPlanes = {
+    xMin: new THREE.Plane(new THREE.Vector3(1, 0, 0), 1e6),
+    xMax: new THREE.Plane(new THREE.Vector3(-1, 0, 0), 1e6),
+    yMin: new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6),
+    yMax: new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6),
+    zMin: new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6),
+    zMax: new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6),
+  };
+  renderer.clippingPlanes = [secPlanes.xMin, secPlanes.xMax, secPlanes.yMin, secPlanes.yMax, secPlanes.zMin, secPlanes.zMax];
+
   // Tamano visible (mitad de la altura del encuadre, en unidades de la
   // escena) para la proyeccion ortogonal — se ajusta al cargar la red.
   let viewSize = 260;
@@ -1173,16 +1189,9 @@
   // min/max) para cortar el modelo y ver el interior, como una caja de
   // seccion de Rhino/Revit. Los planos se aplican de forma GLOBAL
   // (renderer.clippingPlanes), asi que afectan a todos los materiales sin
-  // tener que tocar cada uno por separado. ----
+  // tener que tocar cada uno por separado. Los planos (secPlanes) ya se
+  // crearon y activaron arriba, junto al renderer. ----
   const SECTION_Y_MAX = 10; // altura maxima considerada (unidades de escena)
-  const secPlanes = {
-    xMin: new THREE.Plane(new THREE.Vector3(1, 0, 0), 1e6),
-    xMax: new THREE.Plane(new THREE.Vector3(-1, 0, 0), 1e6),
-    yMin: new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6),
-    yMax: new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6),
-    zMin: new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6),
-    zMax: new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6),
-  };
   let sectionBoxActive = true; // activo desde el inicio: con los limites en 0-100% no corta nada visible, pero asi no hace falta darle clic a un boton aparte antes de mover los deslizadores
   const secXMin = document.getElementById("secXMin"), secXMax = document.getElementById("secXMax");
   const secYMin = document.getElementById("secYMin"), secYMax = document.getElementById("secYMax");
@@ -1199,15 +1208,21 @@
     const zMax = -halfH + (parseFloat(secZMax.value) / 100) * (2 * halfH);
     const yMin = (parseFloat(secYMin.value) / 100) * SECTION_Y_MAX;
     const yMax = (parseFloat(secYMax.value) / 100) * SECTION_Y_MAX;
-    secPlanes.xMin.constant = -xMin;
-    secPlanes.xMax.constant = xMax;
-    secPlanes.yMin.constant = -yMin;
-    secPlanes.yMax.constant = yMax;
-    secPlanes.zMin.constant = -zMin;
-    secPlanes.zMax.constant = zMax;
-    renderer.clippingPlanes = sectionBoxActive
-      ? [secPlanes.xMin, secPlanes.xMax, secPlanes.yMin, secPlanes.yMax, secPlanes.zMin, secPlanes.zMax]
-      : [];
+    if (sectionBoxActive) {
+      secPlanes.xMin.constant = -xMin;
+      secPlanes.xMax.constant = xMax;
+      secPlanes.yMin.constant = -yMin;
+      secPlanes.yMax.constant = yMax;
+      secPlanes.zMin.constant = -zMin;
+      secPlanes.zMax.constant = zMax;
+    } else {
+      // "Desactivar" no quita los planos del renderer (cambiar la
+      // CANTIDAD de planos obliga a recompilar los materiales y el corte
+      // deja de aplicarse hasta recargar) — en vez de eso, se alejan
+      // muchisimo para que no corten nada visible, mantiendo siempre los
+      // mismos 6 planos activos en el renderer.
+      Object.values(secPlanes).forEach(p => (p.constant = 1e6));
+    }
     secXMinVal.textContent = secXMin.value + "%"; secXMaxVal.textContent = secXMax.value + "%";
     secYMinVal.textContent = secYMin.value + "%"; secYMaxVal.textContent = secYMax.value + "%";
     secZMinVal.textContent = secZMin.value + "%"; secZMaxVal.textContent = secZMax.value + "%";
