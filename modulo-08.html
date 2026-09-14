@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="modulo-08.css">
+<link rel="stylesheet" href="modulo-08.css?v=formula-oneline-v42">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="site-theme.css?v=20260823">
   <script src="modulo-08-data.js"></script>
@@ -17,25 +17,28 @@
 <body>
 <div class="app">
 
-          <aside class="sidebar sidebar-icons-only">
-    <a class="brand-icon" href="index.html" title="Bogotá Viva · Inicio" aria-label="Inicio"><i class="fa-solid fa-diagram-project"></i></a>
-    <nav class="icon-nav" aria-label="Módulos">
-      <a href="index.html" class="icon-nav-item" title="Inicio"><i class="fa-solid fa-house"></i></a>
-      <a href="modulo-02.html" class="icon-nav-item" title="02 · Medir la red"><i class="fa-solid fa-chart-simple"></i></a>
-      <a href="modulo-03.html" class="icon-nav-item" title="03 · Discurso vs realidad"><i class="fa-solid fa-eye"></i></a>
-      <a href="modulo-04.html" class="icon-nav-item" title="04 · Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
-      <a href="modulo-05.html" class="icon-nav-item" title="05 · Navegador multiescalar"><i class="fa-solid fa-magnifying-glass-location"></i></a>
-      <a href="modulo-06.html" class="icon-nav-item" title="06 · POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
-      <a href="modulo-07.html" class="icon-nav-item" title="07 · Simulador"><i class="fa-solid fa-flask"></i></a>
-      <a href="modulo-08.html" class="icon-nav-item active" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
-      <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
-    </nav>
+                          <aside class="sidebar sidebar-icons-only">
+      <a class="brand-icon" href="index.html" title="Bogotá Viva · Inicio" aria-label="Inicio"><i class="fa-solid fa-diagram-project"></i></a>
+      <nav class="icon-nav" aria-label="Módulos">
+        <a href="index.html" class="icon-nav-item" title="Inicio"><i class="fa-solid fa-house"></i></a>
+        <a href="modulo-02.html" class="icon-nav-item" title="02 · Medir la red"><i class="fa-solid fa-chart-simple"></i></a>
+        <a href="modulo-03.html" class="icon-nav-item" title="03 · Discurso vs realidad"><i class="fa-solid fa-eye"></i></a>
+        <a href="modulo-04.html" class="icon-nav-item" title="04 · Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
+        <a href="modulo-05.html" class="icon-nav-item" title="05 · Navegador multiescalar"><i class="fa-solid fa-magnifying-glass-location"></i></a>
+        <a href="modulo-06.html" class="icon-nav-item" title="06 · POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
+        <a href="modulo-07.html" class="icon-nav-item" title="07 · Simulador"><i class="fa-solid fa-flask"></i></a>
+        <a href="modulo-08.html" class="icon-nav-item active" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
+        <a href="modulo-08-3d.html" class="icon-nav-item" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
+        <a href="modulo-10-corte.html" class="icon-nav-item" title="10 · Corte axonométrico"><i class="fa-solid fa-scissors"></i></a>
+        <a href="red-residuos-organicos.html" class="icon-nav-item" title="Problemas de Kennedy"><i class="fa-solid fa-triangle-exclamation"></i></a>
+        <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
+      </nav>
 
-    <div class="icon-nav-footer">
-      <a href="configuracion.html" class="icon-nav-item" title="Configuración"><i class="fa-solid fa-gear"></i></a>
-      <a href="demo.html" class="icon-nav-item" title="Salir"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
-    </div>
-  </aside>
+      <div class="icon-nav-footer">
+        <a href="configuracion.html" class="icon-nav-item" title="Configuración"><i class="fa-solid fa-gear"></i></a>
+        <a href="demo.html" class="icon-nav-item" title="Salir"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+      </div>
+    </aside>
 
   <main class="main">
 
@@ -55,113 +58,11 @@
       <p>Del POT como texto lineal <i class="fa-solid fa-arrow-right-long"></i> a la ciudad como sistema vivo</p>
     </section>
 
-    <!-- RED -->
-    <div class="network-section">
-      <div class="network-header">
-        <div class="network-heading-copy"><h3><i class="fa-solid fa-share-nodes"></i> Red de datos relacionales de la ciudad</h3><p>La ciudad aparece como un campo de datos vivos: <span class="simulator-agent-key">150 nodos generales y dinámicos</span> conectan ecosistemas, infraestructura, cuidado, movilidad, patrimonio, agentes e instituciones.</p></div>
-        <div class="network-controls">
-          <button class="control-btn active" data-view="todas" onclick="filterView('todas')">Todos los nodos</button>
-          <button class="control-btn" data-view="componentes" onclick="filterView('componentes')">Componentes</button>
-          <button class="control-btn" data-view="actores" onclick="filterView('actores')">Agentes y actores</button>
-        </div>
-        <label class="city-data-filter-label" for="cityDataFilter">Datos de la tabla
-          <select id="cityDataFilter" class="city-data-filter" onchange="setCityDataFilter(this.value)">
-            <option value="all" selected>Red completa · 150 nodos</option>
-            <option value="initial">Vista reducida</option>
-            <option value="Sistema hídrico">Sistema hídrico · 19 nodos</option>
-            <option value="Sistema biótico">Sistema biótico · 14 nodos</option>
-            <option value="Sistema físico-urbano">Sistema físico-urbano · 26 nodos</option>
-            <option value="Sistema de movilidad">Sistema de movilidad · 11 nodos</option>
-            <option value="Sistema de cuidado, servicios y espacio público">Sistema de cuidado, servicios y espacio público · 10 nodos</option>
-            <option value="Sistema socioeconómico y de ocupación">Sistema socioeconómico y de ocupación · 22 nodos</option>
-            <option value="Sistema social-comunitario">Sistema social-comunitario · 14 nodos</option>
-            <option value="Sistema patrimonial y de memoria">Sistema patrimonial y de memoria · 10 nodos</option>
-            <option value="Sistema institucional de gestión">Sistema institucional de gestión · 24 nodos</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="network-viz-wrap">
-        <svg id="readerViz" viewBox="0 0 1060 800" preserveAspectRatio="xMidYMid meet"></svg>
-
-        <div class="network-sidebar">
-          <button class="findings-toggle" id="findingsToggle" type="button"><i class="fa-solid fa-lightbulb"></i> Hallazgo y conclusión</button>
-          <div class="findings-side-panel" id="findingsSidePanel" aria-hidden="true">
-            <div class="findings-side-header"><span>Hallazgo y conclusión</span><button class="edge-info-close" id="findingsClose" type="button" aria-label="Cerrar">&times;</button></div>
-            <div class="finding-side-kicker">LO QUE LA RED HACE VISIBLE</div>
-            <h4>El POT no opera como una cadena lineal</h4>
-            <p>La red muestra que una regla territorial solo se vuelve real cuando atraviesa agentes, instituciones, mercados, infraestructuras, mediadores y ecosistemas. Una modificación en vivienda, movilidad o agua redistribuye tiempos, riesgos y posibilidades de acceso.</p>
-            <div class="finding-side-kicker">HALLAZGO</div>
-            <p><strong>La ciudad funciona como un sistema de dependencias cruzadas:</strong> los agentes no recorren objetos aislados, sino cadenas de cuidado, vivienda, transporte, empleo, abastecimiento, salud y evacuación.</p>
-            <div class="finding-side-kicker">CONCLUSIÓN</div>
-            <p>El POT es indispensable como instrumento jurídico, pero insuficiente como modelo explicativo único. La simulación agrega la capa que permite observar la ciudad mientras cambia: quién queda conectado, quién acumula fatiga, qué infraestructura se rompe y cómo responden las comunidades y los ecosistemas.</p>
-            <div class="finding-side-speech"><strong>Qué decir en vivo:</strong><br>“La conclusión de esta red es que la ciudad no se comporta como el texto que la regula. El POT fija reglas y localizaciones; la simulación muestra las relaciones, los efectos acumulados y las decisiones que aparecen cuando esas reglas se encuentran con la vida cotidiana.”</div>
-          </div>
-
-          <aside class="network-legend">
-            <div class="legend-title">Convenciones de la tabla</div>
-            <div class="legend-item legend-static"><span class="legend-dot" style="background:#ffffff;"></span> Bolita = nodo de la tabla</div>
-            <div class="legend-item legend-static"><span class="legend-ic"><i class="fa-solid fa-circle-nodes"></i></span> Ícono = tipo de nodo</div>
-            <div class="legend-item legend-static"><span class="legend-line-sample"></span> Línea continua = relación directa</div>
-            <div class="legend-item legend-static"><span class="legend-line-sample dashed"></span> Línea punteada = relación indirecta</div>
-            <div class="legend-item legend-static"><span class="legend-flow-sample"></span> Puntos móviles = intercambio</div>
-
-            <div class="legend-title">Color = subsistema</div>
-            <div class="legend-item legend-static"><span class="legend-dot" style="background:#43c7d7;"></span> Sistema hídrico</div>
-            <div class="legend-item legend-static"><span class="legend-dot" style="background:#6bcf8f;"></span> Sistema biótico</div>
-            <div class="legend-item legend-static"><span class="legend-dot" style="background:#b7c0cb;"></span> Sistema físico-urbano</div>
-            <div class="legend-item legend-static"><span class="legend-dot" style="background:#f1cf5b;"></span> Sistema de movilidad</div>
-            <div class="legend-item legend-static"><span class="legend-dot" style="background:#c6a0e9;"></span> Sistema de cuidado, servicios y espacio público</div>
-            <div class="legend-item legend-static"><span class="legend-dot" style="background:#e98b67;"></span> Sistema socioeconómico y de ocupación</div>
-            <div class="legend-item legend-static"><span class="legend-dot" style="background:#ef9a4b;"></span> Sistema social-comunitario</div>
-            <div class="legend-item legend-static"><span class="legend-dot" style="background:#f07bb1;"></span> Sistema patrimonial y de memoria</div>
-            <div class="legend-item legend-static"><span class="legend-dot" style="background:#9d8be8;"></span> Sistema institucional de gestión</div>
-
-            <div class="legend-divider"></div>
-            <div class="legend-hint">Los 150 nodos están visibles desde el inicio y ocupan todo el cuadrado. La red incorpora 165 relaciones de la tabla entre 127 nodos conectados. Toca una bolita o una conexión para ver su registro. Al elegir una situación, la red cambia su intensidad y muestra qué procesos se activan.</div>
-          </aside>
-
-
-          <div class="edge-info-panel" id="edgeInfoPanel">
-            <div class="edge-info-header">
-              <span id="edgeInfoTitle">Relación</span>
-              <button class="edge-info-close" id="edgeInfoClose" type="button" aria-label="Cerrar">&times;</button>
-            </div>
-
-            <div class="edge-info-row">
-              <div class="edge-info-label">Nombre</div>
-              <div class="edge-info-value" id="edgeInfoConvencion">—</div>
-            </div>
-            <div class="edge-info-row">
-              <div class="edge-info-label">Subsistema</div>
-              <div class="edge-info-quote" id="edgeInfoEvidencia">—</div>
-              <div class="edge-info-page" id="edgeInfoPage"></div>
-            </div>
-            <div class="edge-info-row">
-              <div class="edge-info-label">Type</div>
-              <div class="edge-info-value" id="edgeInfoActores">—</div>
-            </div>
-            <div class="edge-info-row">
-              <div class="edge-info-label">Registro</div>
-              <div class="edge-info-value" id="edgeInfoSituacion">—</div>
-            </div>
-            <div class="edge-info-row">
-              <div class="edge-info-label">Lectura</div>
-              <div class="edge-info-quote" id="edgeInfoCritica">—</div>
-            </div>
-            <div class="edge-info-live" id="edgeInfoLiveScript">
-              Haz clic en un agente, una conexión o una situación para ver qué decir en vivo.
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- SIMULACIÓN DE MOVILIDAD (SUMO) -->
     <div class="sumo-sim-section">
       <div class="sumo-sim-heading">
         <h3><i class="fa-solid fa-car-side"></i> Simulación de movilidad (SUMO)</h3>
-        <p>Trayectorias vehiculares simuladas sobre la red vial real de Kennedy, exportadas desde SUMO (<code>osm.net.xml</code> + <code>trazado.xml</code>).</p>
+        <p>Simulación de contaminación auditiva y su efecto en el desplazamiento de la fauna</p>
       </div>
       <div class="sumo-sim-card">
         <div class="sumo-canvas-wrap" id="sumoCanvasWrap">
@@ -171,42 +72,19 @@
           <div class="sumo-sim-overlay" id="sumoStatus">Cargando red vial…</div>
           <div class="sumo-agents-card">
             <strong><i class="fa-solid fa-users-gear"></i> Agentes</strong>
-            <ul>
-              <li><b>Vehículos:</b> Generan flujo de tráfico, congestión y emisión de ruido al desplazarse por la red.</li>
-              <li><b>Mirlas (<i>Turdus fuscater</i>):</b> Generan rutas de desplazamiento y escape, decidiendo por dónde moverse según la resistencia del paisaje y los niveles de ruido.</li>
-            </ul>
+            <div class="sumo-agents-grid">
+              <div class="sumo-agent-col" data-agent="vehiculos" role="button" tabindex="0" aria-haspopup="dialog" aria-controls="agentFormulaModal">
+                <div class="sumo-agent-col-title"><i class="fa-solid fa-car"></i> Vehículos <i class="fa-solid fa-square-root-variable sumo-agent-formula-icon"></i></div>
+                <p>Generan flujo de tráfico, congestión y emisión de ruido al desplazarse por la red.</p>
+              </div>
+              <div class="sumo-agent-col" data-agent="mirlas" role="button" tabindex="0" aria-haspopup="dialog" aria-controls="agentFormulaModal">
+                <div class="sumo-agent-col-title"><i class="fa-solid fa-dove"></i> Mirlas <em>(Turdus fuscater)</em> <i class="fa-solid fa-square-root-variable sumo-agent-formula-icon"></i></div>
+                <p>Generan rutas de desplazamiento y escape, decidiendo por dónde moverse según la resistencia del paisaje y los niveles de ruido.</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Rotación GLOBAL del mapa: gira calles, árboles y vehículos
-             TODOS JUNTOS, para corregir que el mapa se vea acostado/en
-             diagonal. Cuando quede recto, copia el número y pégamelo. -->
-        <div class="sumo-reference-panel">
-          <strong><i class="fa-solid fa-compass"></i> Enderezar el mapa completo</strong>
-          <label>Rotación <input id="sumoMapRotation" type="range" min="-90" max="90" step="0.5" value="0"></label>
-          <button type="button" class="sumo-btn" id="sumoMapRotationReset" title="Restablecer"><i class="fa-solid fa-rotate-left"></i></button>
-          <span id="sumoMapRotationStatus">Mueve la barra hasta que el mapa se vea derecho, no acostado.</span>
-          <div class="sumo-reference-coords">
-            <button type="button" class="sumo-btn" id="sumoMapRotationCopy" title="Copiar ángulo"><i class="fa-solid fa-copy"></i> Copiar ángulo de rotación</button>
-            <textarea id="sumoMapRotationOutput" rows="1" spellcheck="false" placeholder="Aquí aparecerá el ángulo final..."></textarea>
-          </div>
-        </div>
-
-        <!-- Distorsión de 4 esquinas de los árboles (como "Distort" de
-             Photoshop): activa el modo, aparecen 4 puntos en las esquinas
-             de la malla, arrastra cada uno por separado; arrastrar fuera
-             de un punto mueve todo junto. -->
-        <div class="sumo-reference-panel">
-          <strong><i class="fa-solid fa-tree"></i> Distorsionar árboles (4 esquinas)</strong>
-          <button type="button" class="sumo-btn" id="sumoTreeMoveMode" title="Activar distorsión/mover"><i class="fa-solid fa-arrows-up-down-left-right"></i></button>
-          <button type="button" class="sumo-btn" id="sumoTreeDistortReset" title="Restablecer"><i class="fa-solid fa-rotate-left"></i></button>
-          <label>Escala de la capa <input id="sumoTreeSizeScale" type="range" min="0.05" max="5" step="0.05" value="0.95"></label>
-          <span id="sumoTreeDistortStatus">Activa el modo: arrastra cualquiera de los 4 puntos naranjas para distorsionar, o arrastra en otra parte para mover todo junto. Las coordenadas de abajo se actualizan solas mientras arrastras.</span>
-          <div class="sumo-reference-coords">
-            <button type="button" class="sumo-btn" id="sumoTreeDistortCopy" title="Copiar coordenadas"><i class="fa-solid fa-copy"></i> Copiar coordenadas de cambio</button>
-            <textarea id="sumoTreeDistortOutput" rows="3" spellcheck="false" placeholder="Aquí aparecerán las 4 esquinas..."></textarea>
-          </div>
-        </div>
         <div class="sumo-sim-controls">
           <button type="button" id="sumoPlayPause" class="sumo-btn" aria-label="Reproducir / pausar"><i class="fa-solid fa-play"></i></button>
           <input type="range" id="sumoTimeSlider" min="0" max="1000" value="0" step="1" disabled>
@@ -226,7 +104,11 @@
         <!-- Modelo ilustrativo "¿qué pasaría si...?": NO es una re-simulación
              real de SUMO (no hay backend). Es una manipulación visual sobre
              los mismos vehículos ya grabados. -->
-        <div class="sumo-whatif-panel">
+        <!-- Editar el escenario: mitad izquierda los vehículos, mitad derecha
+             las mirlas; debajo, a lo ancho, las convenciones de ruido. -->
+        <div class="sumo-escenario-row">
+        <div class="sumo-whatif-panel sumo-escenario-col">
+          <h4><i class="fa-solid fa-car-side"></i> Vehículos</h4>
           <p class="whatif-disclaimer"><i class="fa-solid fa-circle-info"></i> Modelo ilustrativo/conceptual — no es una re-simulación real de SUMO (este sitio no tiene un servidor que pueda correr SUMO en vivo). Multiplica visualmente los vehículos ya grabados y desvía a los que pasarían por la vía cerrada.</p>
           <label class="whatif-slider-label">
             Demanda vehicular: <span id="sumoDemandVal">0%</span> (0% = modelo base)
@@ -243,6 +125,32 @@
           <p id="sumoWhatifStatus" class="whatif-disclaimer">Sin cambios — mostrando el modelo base.</p>
         </div>
 
+        <!-- Capa de mirlas (Turdus fuscater): agentes que cruzan de oriente
+             a occidente buscando árboles donde alimentarse y descansar. -->
+        <div class="birds-legend sumo-escenario-col">
+          <h4>
+            <i class="fa-solid fa-dove"></i> Mirlas (<i>Turdus fuscater</i>) y árboles atractores
+            <label class="noise-toggle-label"><input type="checkbox" id="sumoBirdToggle"> Mostrar capa</label>
+          </h4>
+          <label class="whatif-slider-label birds-slider-label">
+            Número de mirlas: <span id="sumoBirdCountVal">60</span>
+            <input type="range" id="sumoBirdSlider" min="10" max="200" value="60" step="5">
+          </label>
+          <label class="whatif-slider-label birds-slider-label">
+            Aumentar cobertura vegetal: <span id="sumoVegVal">+0%</span>
+            <input type="range" id="sumoVegSlider" min="0" max="500" value="0" step="25">
+            <small>Árboles atractores activos: <span id="sumoVegCount">—</span> — todos reales del Arbolado Urbano de Kennedy (hay 12.935 de estas tres especies; el modelo trabaja con una muestra repartida y esta barra la amplía).</small>
+          </label>
+          <p class="birds-legend-note birds-noise-note"><i class="fa-solid fa-volume-high"></i> <b>Umbral crítico de 60&nbsp;dB(A)</b> (Caltrans).</p>
+          <div class="birds-legend-row">
+            <span><i class="birds-dot" style="background:#b06bff"></i> <b>Saúco</b> · alimento favorito (bayas): cambian bruscamente el rumbo</span>
+            <span><i class="birds-dot" style="background:#ff5fa8"></i> <b>Capulí</b> · atractor intermedio por frutos andinos</span>
+            <span><i class="birds-dot" style="background:#25d0a0"></i> <b>Urapán</b> · sin frutos comestibles: solo percha para descansar</span>
+          </div>
+        </div>
+
+        </div><!-- /sumo-escenario-row -->
+
         <!-- Leyenda de la capa de ruido: el color cambia con el nivel de
              tráfico/ruido, pero la transparencia es SIEMPRE la misma. -->
         <div class="noise-scale-legend">
@@ -258,29 +166,56 @@
             <div class="noise-scale-swatch" style="background:rgba(230,74,25,.42)"></div><span>80–90</span>
             <div class="noise-scale-swatch" style="background:rgba(211,47,47,.42)"></div><span>&gt; 90 dB(A)</span>
           </div>
-          <details class="noise-formula-details">
-            <summary>Ver fórmula y reglas de cálculo</summary>
-            <p><strong>Motor acústico real (CNOSSOS-EU)</strong> — implementado, pendiente solo de los coeficientes oficiales:</p>
-            <ol>
-              <li><strong>Velocidad real:</strong> se deriva de la propia posición de cada vehículo en SUMO entre dos instantes consecutivos (no es un dato inventado).</li>
-              <li><strong>Emisión de cada vehículo</strong> (Directiva (UE) 2015/996, Cap. 2.2): ruido de rodadura <code>L_WR = A_R + B_R·log10(v)</code> + ruido de propulsión <code>L_WP = A_P + B_P·(v−70)/70</code>, sumados de forma energética: <code>L_W = 10·log10(10^(L_WR/10) + 10^(L_WP/10))</code>.</li>
-              <li><strong>Propagación:</strong> atenuación por divergencia geométrica de fuente puntual, en metros reales del mapa: <code>A_div = 20·log10(d) + 11</code> (~6 dB menos cada vez que se duplica la distancia).</li>
-              <li><strong>Suma de varios vehículos</strong> en un mismo punto: suma energética, no aritmética: <code>L_total = 10·log10(Σ 10^(Lᵢ/10))</code>.</li>
-              <li>Falta un solo dato para activarlo: la tabla oficial de coeficientes <code>A_R, B_R, A_P, B_P</code> (Categoría 1) de la Directiva — mientras no esté, el mapa usa el método visual de abajo, sin ningún cambio de color ni transparencia.</li>
-            </ol>
-            <p><strong>Método visual actual</strong> (mientras se completa el motor real):</p>
-            <ol>
-              <li><strong>Mancha por vehículo:</strong> cada vehículo genera un círculo de influencia (degradado radial, blanco en el centro y transparente en el borde) alrededor de su posición actual.</li>
-              <li><strong>Acumulación:</strong> donde se superponen las manchas de varios vehículos cercanos, la intensidad se suma (modo "lighter" del canvas) — más vehículos juntos = mayor intensidad acumulada en esa zona.</li>
-              <li><strong>Intensidad → color:</strong> la intensidad acumulada (0 a 1) se eleva a la potencia 2.4 (<code>t = intensidad^2.4</code>) antes de mapearse a color, para que haga falta bastante acumulación de tráfico para llegar al rojo.</li>
-              <li><strong>Color:</strong> ese valor <code>t</code> se interpola de forma continua entre 6 colores de referencia (amarillo claro → amarillo → naranja claro → naranja → rojo anaranjado → rojo).</li>
-              <li><strong>Transparencia:</strong> siempre la misma (42%) en toda la capa — nunca cambia según el nivel de ruido, solo cambia el color.</li>
-              <li><strong>Suavizado:</strong> el resultado se calcula en baja resolución y se dibuja agrandado con desenfoque (blur), para que se vea como una superficie continua.</li>
-            </ol>
-
-            <p class="noise-formula-note">Es un proxy visual de carga de tráfico, no una medición acústica real en decibeles.</p>
-          </details>
+          <div class="noise-formula-details">
+            <button type="button" class="noise-formula-toggle" id="noiseFormulaToggle" aria-haspopup="dialog" aria-controls="noiseFormulaModal">
+              <i class="fa-solid fa-square-root-variable"></i> Ver fórmula y reglas de cálculo
+            </button>
+          </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Pop-up con la fórmula, encima de la pantalla de la simulación -->
+    <div class="noise-formula-modal" id="noiseFormulaModal" hidden>
+      <div class="noise-formula-modal-backdrop" id="noiseFormulaModalBackdrop"></div>
+      <div class="noise-formula-modal-box" role="dialog" aria-modal="true" aria-labelledby="noiseFormulaModalTitle">
+        <div class="noise-formula-modal-head">
+          <h4 id="noiseFormulaModalTitle"><i class="fa-solid fa-square-root-variable"></i> Fórmula y reglas de cálculo</h4>
+          <button type="button" class="noise-formula-modal-close" id="noiseFormulaModalClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="noise-formula-modal-body">
+          <p><strong>Motor acústico real (CNOSSOS-EU)</strong> — implementado, pendiente solo de los coeficientes oficiales:</p>
+          <ol>
+            <li><strong>Velocidad real:</strong> se deriva de la propia posición de cada vehículo en SUMO entre dos instantes consecutivos (no es un dato inventado).</li>
+            <li><strong>Emisión de cada vehículo</strong> (Directiva (UE) 2015/996, Cap. 2.2): ruido de rodadura <code>L_WR = A_R + B_R·log10(v)</code> + ruido de propulsión <code>L_WP = A_P + B_P·(v−70)/70</code>, sumados de forma energética: <code>L_W = 10·log10(10^(L_WR/10) + 10^(L_WP/10))</code>.</li>
+            <li><strong>Propagación:</strong> atenuación por divergencia geométrica de fuente puntual, en metros reales del mapa: <code>A_div = 20·log10(d) + 11</code> (~6 dB menos cada vez que se duplica la distancia).</li>
+            <li><strong>Suma de varios vehículos</strong> en un mismo punto: suma energética, no aritmética: <code>L_total = 10·log10(Σ 10^(Lᵢ/10))</code>.</li>
+            <li>Falta un solo dato para activarlo: la tabla oficial de coeficientes <code>A_R, B_R, A_P, B_P</code> (Categoría 1) de la Directiva — mientras no esté, el mapa usa el método visual de abajo, sin ningún cambio de color ni transparencia.</li>
+          </ol>
+          <p><strong>Método visual actual</strong> (mientras se completa el motor real):</p>
+          <ol>
+            <li><strong>Mancha por vehículo:</strong> cada vehículo genera un círculo de influencia (degradado radial, blanco en el centro y transparente en el borde) alrededor de su posición actual.</li>
+            <li><strong>Acumulación:</strong> donde se superponen las manchas de varios vehículos cercanos, la intensidad se suma (modo "lighter" del canvas) — más vehículos juntos = mayor intensidad acumulada en esa zona.</li>
+            <li><strong>Intensidad → color:</strong> la intensidad acumulada (0 a 1) se eleva a la potencia 2.4 (<code>t = intensidad^2.4</code>) antes de mapearse a color, para que haga falta bastante acumulación de tráfico para llegar al rojo.</li>
+            <li><strong>Color:</strong> ese valor <code>t</code> se interpola de forma continua entre 6 colores de referencia (amarillo claro → amarillo → naranja claro → naranja → rojo anaranjado → rojo).</li>
+            <li><strong>Transparencia:</strong> siempre la misma (42%) en toda la capa — nunca cambia según el nivel de ruido, solo cambia el color.</li>
+            <li><strong>Suavizado:</strong> el resultado se calcula en baja resolución y se dibuja agrandado con desenfoque (blur), para que se vea como una superficie continua.</li>
+          </ol>
+          <p class="noise-formula-note">Es un proxy visual de carga de tráfico, no una medición acústica real en decibeles.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pop-up con la fórmula del agente (Vehículos o Mirlas) que se haya
+         clicado en la tarjeta "Agentes" -->
+    <div class="noise-formula-modal" id="agentFormulaModal" hidden>
+      <div class="noise-formula-modal-backdrop" id="agentFormulaModalBackdrop"></div>
+      <div class="noise-formula-modal-box" role="dialog" aria-modal="true" aria-labelledby="agentFormulaModalTitle">
+        <div class="noise-formula-modal-head">
+          <h4 id="agentFormulaModalTitle"><i class="fa-solid fa-square-root-variable"></i> Fórmula del agente</h4>
+          <button type="button" class="noise-formula-modal-close" id="agentFormulaModalClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="noise-formula-modal-body" id="agentFormulaModalBody"></div>
       </div>
     </div>
 
@@ -289,6 +224,6 @@
 </div>
 
 <script src="modulo-08.js"></script>
-<script src="modulo-08-sumo.js?v=corners-perfect-v32"></script>
+<script src="modulo-08-sumo.js?v=cobertura-vegetal-v39"></script>
 </body>
 </html>

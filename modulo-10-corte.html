@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corte axonométrico — Kennedy</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="navigation-unified.css?v=20260824">
+<style>
+  :root{
+    --bg:#0b0c0f; --panel:rgba(255,255,255,.06); --panel-border:rgba(255,255,255,.12);
+    --ink:#e8ecf1; --ink-dim:#8b96a5; --accent:#24c8bd;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{ background:var(--bg); color:var(--ink); font-family:Inter,Arial,sans-serif; overflow:hidden; }
+  .app{ display:flex; min-height:100vh; }
+  .main{ flex:1; position:relative; min-width:0; }
+  #sceneWrap{ position:absolute; inset:0; }
+  #sceneCanvas{ position:absolute; inset:0; display:block; width:100%; height:100%; }
+
+  .hud-title{
+    position:absolute; top:18px; left:18px; z-index:5; pointer-events:none;
+  }
+  .hud-title h1{ font-size:15px; font-weight:600; margin:0 0 3px; }
+  .hud-title p{ font-size:11.5px; color:var(--ink-dim); margin:0; }
+
+  .status-overlay{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:13px; color:var(--ink-dim); background:rgba(11,12,15,.6); z-index:8; text-align:center; padding:20px;
+  }
+  .status-overlay.hide{ display:none; }
+
+  .controls-bar{
+    position:absolute; left:50%; bottom:20px; transform:translateX(-50%); z-index:6;
+    display:flex; align-items:center; gap:12px; padding:10px 16px; border-radius:14px;
+    background:rgba(17,20,24,.9); border:1px solid var(--panel-border); backdrop-filter:blur(6px);
+    max-width:92vw;
+  }
+  .controls-bar button{
+    width:34px; height:34px; border-radius:50%; border:1px solid var(--panel-border); background:var(--panel);
+    color:var(--ink); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px;
+  }
+  .controls-bar button:hover{ background:rgba(255,255,255,.12); }
+  .controls-bar input[type=range]{ width:min(38vw,340px); accent-color:var(--accent); }
+  .controls-bar .time-label{ font-size:11.5px; color:var(--ink-dim); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .controls-bar select{
+    background:var(--panel); color:var(--ink); border:1px solid var(--panel-border); border-radius:8px;
+    font-size:11.5px; padding:5px 8px;
+  }
+
+  .view-buttons{
+    position:absolute; top:18px; right:18px; z-index:6; display:flex; flex-direction:column; gap:6px;
+  }
+  .view-buttons button{
+    padding:8px 12px; border-radius:9px; border:1px solid var(--panel-border); background:rgba(17,20,24,.85);
+    color:var(--ink); font-size:11.5px; cursor:pointer; text-align:left;
+  }
+  .view-buttons button:hover{ background:rgba(255,255,255,.1); }
+
+  .legend{
+    position:absolute; bottom:78px; left:18px; z-index:5; font-size:11px; color:var(--ink-dim);
+    background:rgba(17,20,24,.8); border:1px solid var(--panel-border); border-radius:10px; padding:10px 12px;
+    display:flex; flex-direction:column; gap:5px;
+  }
+  .legend span{ display:flex; align-items:center; gap:7px; }
+  .legend i{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+
+  .right-panels-wrap{
+    position:absolute; top:70px; right:18px; z-index:6; width:220px;
+    max-height:calc(100vh - 90px); overflow-y:auto;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .rotate-panel{
+    position:static; width:100%;
+    background:rgba(17,20,24,.92); border:1px solid var(--panel-border); border-radius:10px; padding:12px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .rotate-row{ display:flex; flex-direction:column; gap:4px; }
+  .rotate-row label{ font-size:11px; color:var(--ink-dim); display:flex; justify-content:space-between; }
+  .rotate-row input[type=range]{ width:100%; accent-color:var(--accent); }
+  .rotate-row.rotate-buttons{ flex-direction:row; gap:8px; }
+  .rotate-row button{
+    flex:1; padding:7px 8px; border-radius:8px; border:1px solid var(--panel-border); background:var(--panel);
+    color:var(--ink); font-size:10.5px; cursor:pointer;
+  }
+  .rotate-row button:hover{ background:rgba(255,255,255,.12); }
+  #rotateOutput{
+    width:100%; resize:vertical; font-family:monospace; font-size:10.5px; padding:6px; border-radius:6px;
+    border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
+  }
+  input[type=color]{
+    width:34px; height:24px; padding:0; border:1px solid var(--panel-border); border-radius:5px;
+    background:none; cursor:pointer;
+  }
+  #colorOutput{
+    width:100%; resize:vertical; font-family:monospace; font-size:10.5px; padding:6px; border-radius:6px;
+    border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
+  }
+
+  .draw-panel{
+    position:absolute; top:70px; left:96px; z-index:110; width:230px;
+    max-height:calc(100vh - 90px); overflow-y:auto;
+    background:rgba(17,20,24,.92); border:1px solid var(--panel-border); border-radius:10px; padding:12px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .draw-panel #drawToggle.active, .draw-panel #treePlantToggle.active{ background:var(--accent); color:#0b0c0f; border-color:var(--accent); }
+  #sectionBoxToggle.active{ background:var(--accent); color:#0b0c0f; border-color:var(--accent); }
+  .draw-hint{ font-size:10px; color:var(--ink-dim); margin:0; line-height:1.4; }
+  #drawOutput, #treePlantOutput{
+    width:100%; resize:vertical; font-family:monospace; font-size:10px; padding:6px; border-radius:6px;
+    border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
+  }
+
+  .tree-info{
+    position:absolute; left:50%; top:70px; transform:translateX(-50%) translateY(-10px); z-index:20;
+    width:min(300px, 88vw); background:rgba(17,20,24,.97); border:1px solid var(--panel-border);
+    border-radius:12px; padding:16px 18px; box-shadow:0 10px 30px rgba(0,0,0,.5);
+    opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;
+  }
+  .tree-info.show{ opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0); }
+  .tree-info-close{
+    position:absolute; top:10px; right:10px; width:24px; height:24px; border-radius:50%;
+    border:1px solid var(--panel-border); background:var(--panel); color:var(--ink-dim);
+    cursor:pointer; font-size:12px;
+  }
+  .tree-info-kind{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-dim); margin:0 0 4px; }
+  .tree-info h3{ font-size:14px; margin:0 26px 6px 0; color:var(--ink); }
+  .tree-info p#treeInfoDetails{ font-size:12px; color:var(--ink-dim); margin:0; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="app">
+                  <aside class="sidebar sidebar-icons-only">
+      <a class="brand-icon" href="index.html" title="Bogotá Viva · Inicio" aria-label="Inicio"><i class="fa-solid fa-diagram-project"></i></a>
+      <nav class="icon-nav" aria-label="Módulos">
+        <a href="index.html" class="icon-nav-item" title="Inicio"><i class="fa-solid fa-house"></i></a>
+        <a href="modulo-02.html" class="icon-nav-item" title="02 · Medir la red"><i class="fa-solid fa-chart-simple"></i></a>
+        <a href="modulo-03.html" class="icon-nav-item" title="03 · Discurso vs realidad"><i class="fa-solid fa-eye"></i></a>
+        <a href="modulo-04.html" class="icon-nav-item" title="04 · Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
+        <a href="modulo-05.html" class="icon-nav-item" title="05 · Navegador multiescalar"><i class="fa-solid fa-magnifying-glass-location"></i></a>
+        <a href="modulo-06.html" class="icon-nav-item" title="06 · POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
+        <a href="modulo-07.html" class="icon-nav-item" title="07 · Simulador"><i class="fa-solid fa-flask"></i></a>
+        <a href="modulo-08.html" class="icon-nav-item" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
+        <a href="modulo-08-3d.html" class="icon-nav-item" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
+        <a href="modulo-10-corte.html" class="icon-nav-item active" title="10 · Corte axonométrico"><i class="fa-solid fa-scissors"></i></a>
+        <a href="red-residuos-organicos.html" class="icon-nav-item" title="Problemas de Kennedy"><i class="fa-solid fa-triangle-exclamation"></i></a>
+        <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
+      </nav>
+
+      <div class="icon-nav-footer">
+        <a href="configuracion.html" class="icon-nav-item" title="Configuración"><i class="fa-solid fa-gear"></i></a>
+        <a href="demo.html" class="icon-nav-item" title="Salir"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+      </div>
+    </aside>
+  <main class="main">
+    <div id="sceneWrap">
+      <canvas id="sceneCanvas"></canvas>
+    </div>
+
+    <div class="hud-title">
+      <h1>Corte axonométrico — Kennedy</h1>
+      <p>Proyección axonométrica a 35° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista</p>
+    </div>
+
+    <div class="draw-panel" id="drawPanel">
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="drawToggle">✏️ Dibujar zona verde</button>
+      </div>
+      <p class="draw-hint">Con el modo activo, haz clic sobre el mapa para ir marcando puntos. Doble clic para cerrar la forma.</p>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="drawUndo">↺ Quitar último punto</button>
+        <button type="button" id="drawClear">🗑️ Limpiar</button>
+      </div>
+      <textarea id="drawOutput" rows="6" spellcheck="false" readonly placeholder="Los puntos que marques aparecen aquí…"></textarea>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="drawCopy">📋 Copiar coordenadas</button>
+      </div>
+      <div class="rotate-row rotate-buttons" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
+        <button type="button" id="treePlantToggle">🌳 Plantar árboles</button>
+      </div>
+      <p class="draw-hint">Con el modo activo, cada clic marca un árbol nuevo (no se conectan con lineas).</p>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="treePlantUndo">↺ Quitar último</button>
+        <button type="button" id="treePlantClear">🗑️ Limpiar</button>
+      </div>
+      <textarea id="treePlantOutput" rows="6" spellcheck="false" readonly placeholder="Los árboles que agregues aparecen aquí…"></textarea>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="treePlantCopy">📋 Copiar coordenadas</button>
+      </div>
+    </div>
+
+    <div class="view-buttons">
+      <button type="button" id="viewReset">Restablecer vista axonométrica</button>
+    </div>
+
+    <div class="right-panels-wrap">
+
+    <div class="rotate-panel" id="rotatePanel">
+      <p style="margin:0 0 4px; font-size:11px; color:var(--ink-dim);">Vista actual (se actualiza sola mientras mueves/haces zoom con el mouse):</p>
+      <textarea id="viewOutput" rows="4" spellcheck="false" readonly></textarea>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="viewCopy">📋 Copiar vista actual</button>
+      </div>
+      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
+        <label>Rotar X <span id="rotXVal">0°</span></label>
+        <input type="range" id="rotX" min="-180" max="180" value="0" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Rotar Y <span id="rotYVal">0°</span></label>
+        <input type="range" id="rotY" min="-180" max="180" value="0" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Rotar Z <span id="rotZVal">0°</span></label>
+        <input type="range" id="rotZ" min="-180" max="180" value="0" step="1">
+      </div>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="rotateReset">↺ Restablecer rotación</button>
+        <button type="button" id="rotateCopy">📋 Copiar rotación</button>
+      </div>
+      <textarea id="rotateOutput" rows="2" spellcheck="false" readonly></textarea>
+      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
+        <label>Sol — acimut <span id="sunAzVal">130°</span></label>
+        <input type="range" id="sunAz" min="0" max="360" value="130" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Sol — altura <span id="sunElVal">45°</span></label>
+        <input type="range" id="sunEl" min="5" max="85" value="45" step="1">
+      </div>
+      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border); flex-direction:row; align-items:center; justify-content:space-between;">
+        <label style="display:inline;">Color del agua</label>
+        <input type="color" id="colorAgua" value="#9c9c9c">
+      </div>
+      <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
+        <label style="display:inline;">Color de las vías</label>
+        <input type="color" id="colorVia" value="#b7babd">
+      </div>
+      <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
+        <label style="display:inline;">Color de lo verde</label>
+        <input type="color" id="colorVerde" value="#adaa90">
+      </div>
+      <textarea id="colorOutput" rows="3" spellcheck="false" readonly></textarea>
+      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
+        <label>Cruce/semáforo — distancia al centro <span id="interSetbackVal">1.3</span></label>
+        <input type="range" id="interSetback" min="0.5" max="8" value="1.3" step="0.1">
+      </div>
+      <div class="rotate-row">
+        <label>Ancho del cruce peatonal <span id="interCrossWVal">1.0</span></label>
+        <input type="range" id="interCrossW" min="0.3" max="4" value="1.0" step="0.1">
+      </div>
+      <div class="rotate-row">
+        <label>Separación del poste <span id="interPoleOffVal">1.1</span></label>
+        <input type="range" id="interPoleOff" min="0.3" max="4" value="1.1" step="0.1">
+      </div>
+    </div>
+
+    <div class="rotate-panel" id="sectionBoxPanel" style="top:70px;">
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="sectionBoxToggle" class="active">✂️ Desactivar caja de sección</button>
+      </div>
+      <p class="draw-hint">El corte ya está activo — mueve cualquiera de los 6 límites y el modelo se corta al instante.</p>
+      <div class="rotate-row">
+        <label>X mínimo <span id="secXMinVal">58%</span></label>
+        <input type="range" id="secXMin" min="0" max="100" value="58" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>X máximo <span id="secXMaxVal">67%</span></label>
+        <input type="range" id="secXMax" min="0" max="100" value="67" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Y mínimo (piso) <span id="secYMinVal">0%</span></label>
+        <input type="range" id="secYMin" min="0" max="100" value="0" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Y máximo (altura) <span id="secYMaxVal">100%</span></label>
+        <input type="range" id="secYMax" min="0" max="100" value="100" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Z mínimo <span id="secZMinVal">39%</span></label>
+        <input type="range" id="secZMin" min="0" max="100" value="39" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Z máximo <span id="secZMaxVal">54%</span></label>
+        <input type="range" id="secZMax" min="0" max="100" value="54" step="1">
+      </div>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="sectionBoxReset">↺ Restablecer</button>
+        <button type="button" id="sectionBoxCopy">📋 Copiar coordenadas</button>
+      </div>
+      <textarea id="sectionBoxOutput" rows="4" spellcheck="false" readonly></textarea>
+    </div>
+    </div>
+
+    <div class="legend">
+      <span><i style="background:#e2635a"></i> Vehículo</span>
+      <span><i style="background:#b7babd"></i> Vía</span>
+      <span><i style="background:#ffffff"></i> Edificio</span>
+      <span><i style="background:#5c8f52"></i> Árbol</span>
+      <span><i style="background:#bfe0ee"></i> Cuerpo de agua</span>
+      <span><i style="background:#8a8f96"></i> Manzana</span>
+      <span><i style="background:#adaa90"></i> Parque/zona verde</span>
+      <span><i style="background:#e14b3f"></i> Semáforo</span>
+      <span><i style="background:#b5714a"></i> Techo a dos aguas</span>
+      <span><i style="background:#ffffff"></i> Techo plano/parapeto</span>
+    </div>
+
+    <div class="controls-bar">
+      <button type="button" id="playPause" aria-label="Reproducir / pausar"><i class="fa-solid fa-play"></i></button>
+      <input type="range" id="timeSlider" min="0" max="1000" value="0" step="1" disabled>
+      <span class="time-label" id="timeLabel">00:00 / 00:00</span>
+      <select id="speedSelect">
+        <option value="1">1×</option>
+        <option value="2" selected>2×</option>
+        <option value="4">4×</option>
+        <option value="8">8×</option>
+      </select>
+    </div>
+
+    <div class="status-overlay" id="statusOverlay">Cargando red vial…</div>
+
+    <div class="tree-info" id="treeInfo">
+      <button type="button" class="tree-info-close" id="treeInfoClose">✕</button>
+      <p class="tree-info-kind">Árbol</p>
+      <h3 id="treeInfoName"></h3>
+      <p id="treeInfoDetails"></p>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="modulo-10-corte.js?v=14"></script>
+</body>
+</html>
