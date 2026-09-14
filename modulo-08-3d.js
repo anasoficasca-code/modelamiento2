@@ -109,6 +109,7 @@
   // ---- Suelo ----
   let netCenter = { x: 0, y: 0 };
   let roadMat = null, waterMat = null, parqueMat = null; // referencias para los selectores de color en vivo
+  let waterTexRef = null, waterBumpRef = null; // texturas de agua, animadas en el loop de render
   let buildingEdgeMat = null; // referencia para ajustar su opacidad segun el zoom
   let groundMesh = null;
 
@@ -443,9 +444,22 @@
     const waterTex = new THREE.TextureLoader().load("./assets/textura_agua2.jpg");
     waterTex.wrapS = THREE.RepeatWrapping;
     waterTex.wrapT = THREE.RepeatWrapping;
+    waterTexRef = waterTex;
+    // Segunda copia de la misma textura, usada como relieve (bump map) en
+    // vez de color: le da micro-relieve a la superficie para que capte
+    // la luz de forma irregular (brillos/reflejos que cambian segun el
+    // angulo), como agua real — una superficie perfectamente lisa se ve
+    // "plana"/pintada, no renderizada. Se anima a otra velocidad/escala
+    // que la capa de color, simulando dos capas de oleaje superpuestas.
+    const bumpTex = new THREE.TextureLoader().load("./assets/textura_agua2.jpg");
+    bumpTex.wrapS = THREE.RepeatWrapping;
+    bumpTex.wrapT = THREE.RepeatWrapping;
+    bumpTex.repeat.set(2.3, 2.3);
+    waterBumpRef = bumpTex;
     const mat = new THREE.MeshStandardMaterial({
-      map: waterTex, color: 0x9c9c9c, roughness: 0.7, metalness: 0,
-      transparent: true, opacity: 0.75, side: THREE.DoubleSide,
+      map: waterTex, bumpMap: bumpTex, bumpScale: 0.12,
+      color: 0x7ec9d6, roughness: 0.18, metalness: 0.15,
+      transparent: true, opacity: 0.82, side: THREE.DoubleSide,
     });
     waterMat = mat;
     const waterMesh = new THREE.Mesh(geo, mat);
@@ -1128,6 +1142,17 @@
     if (buildingEdgeMat) {
       const t = Math.min(Math.max((camera.zoom - 1) / 4, 0), 1);
       buildingEdgeMat.opacity = 0.35 + t * 0.45;
+    }
+    // Agua con movimiento: se desplaza lentamente la textura de color Y
+    // la capa de relieve (bump) a velocidades/escalas DISTINTAS entre si,
+    // simulando dos capas de oleaje superpuestas.
+    if (waterTexRef) {
+      waterTexRef.offset.x = (now * 0.000018) % 1;
+      waterTexRef.offset.y = (now * 0.000012) % 1;
+    }
+    if (waterBumpRef) {
+      waterBumpRef.offset.x = (now * -0.000027) % 1;
+      waterBumpRef.offset.y = (now * 0.000021) % 1;
     }
     controls.update();
     renderer.render(scene, camera);

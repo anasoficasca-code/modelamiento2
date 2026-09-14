@@ -463,6 +463,7 @@
   // ---- Cuerpos de agua: poligonos planos (fan de triangulos) apenas
   // levantados del suelo, con un material azul semi-transparente. ----
   let waterTexRef = null; // referencia para animar el desplazamiento de la textura (efecto de agua en movimiento)
+  let waterBumpRef = null; // capa de relieve (bump), animada a otra velocidad para el efecto de oleaje
   function buildWaterBodies(bodies) {
     const positions = [];
     const uvs = [];
@@ -493,12 +494,25 @@
     waterTex.wrapS = THREE.RepeatWrapping;
     waterTex.wrapT = THREE.RepeatWrapping;
     waterTexRef = waterTex;
+    // Segunda copia de la misma textura, usada como relieve (bump map) en
+    // vez de color: le da micro-relieve a la superficie para que capte
+    // la luz de forma irregular (brillos/reflejos que cambian segun el
+    // angulo), como agua real — una superficie perfectamente lisa se ve
+    // "plana"/pintada, no renderizada. Se anima a una velocidad y escala
+    // DISTINTA a la capa de color, para que el patron no se repita igual
+    // y parezca mas organico (dos capas de oleaje superpuestas).
+    const bumpTex = new THREE.TextureLoader().load("./assets/textura_agua2.jpg");
+    bumpTex.wrapS = THREE.RepeatWrapping;
+    bumpTex.wrapT = THREE.RepeatWrapping;
+    bumpTex.repeat.set(2.3, 2.3);
+    waterBumpRef = bumpTex;
     // Agua de verdad: azul-verdoso tipo humedal (no gris), con brillo bajo
     // (poco "roughness") para que capte reflejos de luz como agua real, y
     // la textura se anima (desplazamiento de UV en el loop de render) para
     // que se vea con movimiento, no una superficie estatica.
     const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
-      map: waterTex, color: 0x7ec9d6, roughness: 0.22, metalness: 0.1,
+      map: waterTex, bumpMap: bumpTex, bumpScale: 0.12,
+      color: 0x7ec9d6, roughness: 0.18, metalness: 0.15,
       transparent: true, opacity: 0.82, side: THREE.DoubleSide,
     });
     waterMat = mat;
@@ -1185,12 +1199,17 @@
       const t = Math.min(Math.max((camera.zoom - 1) / 4, 0), 1);
       buildingEdgeMat.opacity = 0.35 + t * 0.45;
     }
-    // Agua con movimiento: se desplaza lentamente la textura (dos
-    // velocidades distintas en X/Y para que no se vea un desfile en
-    // linea recta) simulando el flujo/oleaje suave de un humedal real.
+    // Agua con movimiento: se desplaza lentamente la textura de color Y
+    // la capa de relieve (bump) a velocidades/escalas DISTINTAS entre si,
+    // simulando dos capas de oleaje superpuestas (asi el brillo/reflejo
+    // cambia con el tiempo de forma organica, no un desfile en linea recta).
     if (waterTexRef) {
       waterTexRef.offset.x = (now * 0.000018) % 1;
       waterTexRef.offset.y = (now * 0.000012) % 1;
+    }
+    if (waterBumpRef) {
+      waterBumpRef.offset.x = (now * -0.000027) % 1;
+      waterBumpRef.offset.y = (now * 0.000021) % 1;
     }
     controls.update();
     renderer.render(scene, camera);
