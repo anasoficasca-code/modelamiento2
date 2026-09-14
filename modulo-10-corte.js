@@ -155,7 +155,18 @@
 
   // ---- Red vial: una sola geometria de lineas fusionada (19 mil tramos,
   // asi que se combina TODO en un unico BufferGeometry por rendimiento) ----
-  function buildRoads(edges) {
+  let rawEdgesData = null;
+  let currentRoadMeshes = []; // [lines, roadMesh] para poder quitarlos y reconstruir
+  function buildRoads(edges, boxFilter) {
+    currentRoadMeshes.forEach(m => { sceneRoot.remove(m); m.geometry.dispose(); });
+    currentRoadMeshes = [];
+    if (boxFilter) {
+      edges = edges.filter(([kind, pts]) => {
+        const mid = pts[Math.floor(pts.length / 2)];
+        const p = toScene(mid[0], mid[1]);
+        return p.x >= boxFilter.xMin && p.x <= boxFilter.xMax && p.z >= boxFilter.zMin && p.z <= boxFilter.zMax;
+      });
+    }
     const positions = [];
     edges.forEach(([kind, pts]) => {
       for (let i = 0; i < pts.length - 1; i++) {
@@ -169,6 +180,7 @@
     const mat = new THREE.LineBasicMaterial({ color: 0x4a545e, transparent: true, opacity: 0.85 });
     const lines = new THREE.LineSegments(geo, mat);
     sceneRoot.add(lines);
+    currentRoadMeshes.push(lines);
 
     // Segunda capa mas gruesa "de asfalto" usando una tira continua con
     // UNION DE ESQUINA (miter) en cada vertice interior — se promedia la
@@ -237,6 +249,7 @@
     const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
     roadMesh.receiveShadow = true;
     sceneRoot.add(roadMesh);
+    currentRoadMeshes.push(roadMesh);
   }
 
   // ---- Edificios: extrusion de cada huella (paredes + techo), TODO
@@ -283,14 +296,25 @@
     return out;
   }
 
-  function buildBuildings(buildings) {
+  let rawBuildingsData = null;
+  let currentBuildingMesh = null, currentBuildingEdgeMesh = null;
+  function buildBuildings(buildings, boxFilter) {
+    if (currentBuildingMesh) { sceneRoot.remove(currentBuildingMesh); currentBuildingMesh.geometry.dispose(); }
+    if (currentBuildingEdgeMesh) { sceneRoot.remove(currentBuildingEdgeMesh); currentBuildingEdgeMesh.geometry.dispose(); }
     const positions = [];
     const normals = [];
     const edgePositions = []; // lineas de borde: perimetro del techo + perimetro de la base + esquinas verticales (para que se lea el volumen completo), nada de lineas interiores
     buildings.forEach(b => {
       const pts = b.pts.map(p => toScene(p[0], p[1]));
-      const h = b.h * SCALE;
+      let h = b.h * SCALE;
       if (pts.length < 4) return; // huella degenerada
+      if (boxFilter) {
+        const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+        const cz = pts.reduce((s, p) => s + p.z, 0) / pts.length;
+        if (cx < boxFilter.xMin || cx > boxFilter.xMax || cz < boxFilter.zMin || cz > boxFilter.zMax) return;
+        if (h < boxFilter.yMin) return; // el edificio no alcanza ni la altura minima de la caja
+        h = Math.min(h, boxFilter.yMax); // recorta la altura visible al maximo de la caja
+      }
       // Paredes: un rectangulo (2 triangulos) por cada segmento del perimetro
       for (let i = 0; i < pts.length - 1; i++) {
         const a = pts[i], c = pts[i + 1];
@@ -332,6 +356,7 @@
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
+    currentBuildingMesh = mesh;
 
     // Borde oscuro de cada edificio: perimetro del techo + esquinas
     // verticales (sin lineas internas), para que se lea como un volumen
@@ -340,15 +365,18 @@
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
     const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.55 });
     buildingEdgeMat = edgeMat;
-    sceneRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
+    const edgeMesh = new THREE.LineSegments(edgeGeo, edgeMat);
+    sceneRoot.add(edgeMesh);
+    currentBuildingEdgeMesh = edgeMesh;
   }
 
   function loadBuildings() {
     return fetch(BUILDINGS_URL)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + BUILDINGS_URL); return r.json(); })
-      .then(data => { buildBuildings(data); })
+      .then(data => { rawBuildingsData = data; buildBuildings(data); })
       .catch(err => console.warn("No se pudieron cargar los edificios:", err));
   }
+
 
   // ---- Arboles: se dibujan como "billboards cruzados" (2 tarjetas
   // perpendiculares) con una foto real de un arbol (fondo quitado),
@@ -823,6 +851,7 @@
     .then(data => {
       netCenter = { x: (data.bbox[0] + data.bbox[2]) / 2, y: (data.bbox[1] + data.bbox[3]) / 2 };
       buildGround(data.bbox);
+      rawEdgesData = data.edges;
       buildRoads(data.edges);
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       const h = (data.bbox[3] - data.bbox[1]) * SCALE;
@@ -1237,16 +1266,39 @@
   }
   [secXMin, secXMax, secYMin, secYMax, secZMin, secZMax].forEach(el => {
     el.addEventListener("input", () => { updateSectionBox(); });
+    el.addEventListener("change", () => { rebuildFilteredGeometry(); });
   });
+  // Reconstruye de verdad la geometria de edificios y vias, dejando solo
+  // lo que cae dentro de la caja de seccion (filtro geometrico real sobre
+  // los datos originales) — esto se hace al SOLTAR el deslizador (evento
+  // change), no en cada arrastre, porque reconstruir 143 mil edificios es
+  // pesado. El recorte por planos de shader (arriba) tambien se deja
+  // puesto por si acaso, pero este filtro geometrico es el que de verdad
+  // garantiza el corte.
+  function rebuildFilteredGeometry() {
+    const halfW = sceneExtentW / 2 * 1.4, halfH = sceneExtentH / 2 * 1.4;
+    const xMin = -halfW + (parseFloat(secXMin.value) / 100) * (2 * halfW);
+    const xMax = -halfW + (parseFloat(secXMax.value) / 100) * (2 * halfW);
+    const zMin = -halfH + (parseFloat(secZMin.value) / 100) * (2 * halfH);
+    const zMax = -halfH + (parseFloat(secZMax.value) / 100) * (2 * halfH);
+    const yMin = (parseFloat(secYMin.value) / 100) * SECTION_Y_MAX;
+    const yMax = (parseFloat(secYMax.value) / 100) * SECTION_Y_MAX;
+    const isFullRange = secXMin.value == 0 && secXMax.value == 100 && secYMin.value == 0 && secYMax.value == 100 && secZMin.value == 0 && secZMax.value == 100;
+    const boxFilter = (sectionBoxActive && !isFullRange) ? { xMin, xMax, zMin, zMax, yMin, yMax } : null;
+    if (rawBuildingsData) buildBuildings(rawBuildingsData, boxFilter);
+    if (rawEdgesData) buildRoads(rawEdgesData, boxFilter);
+  }
   document.getElementById("sectionBoxToggle").addEventListener("click", (e) => {
     sectionBoxActive = !sectionBoxActive;
     e.target.classList.toggle("active", sectionBoxActive);
     e.target.textContent = sectionBoxActive ? "✂️ Desactivar caja de sección" : "✂️ Activar caja de sección";
     updateSectionBox();
+    rebuildFilteredGeometry();
   });
   document.getElementById("sectionBoxReset").addEventListener("click", () => {
     secXMin.value = 0; secXMax.value = 100; secYMin.value = 0; secYMax.value = 100; secZMin.value = 0; secZMax.value = 100;
     updateSectionBox();
+    rebuildFilteredGeometry();
   });
   document.getElementById("sectionBoxCopy").addEventListener("click", async () => {
     updateSectionBox();
