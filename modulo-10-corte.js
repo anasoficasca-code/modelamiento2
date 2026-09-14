@@ -1183,7 +1183,7 @@
     zMin: new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6),
     zMax: new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6),
   };
-  let sectionBoxActive = false;
+  let sectionBoxActive = true; // activo desde el inicio: con los limites en 0-100% no corta nada visible, pero asi no hace falta darle clic a un boton aparte antes de mover los deslizadores
   const secXMin = document.getElementById("secXMin"), secXMax = document.getElementById("secXMax");
   const secYMin = document.getElementById("secYMin"), secYMax = document.getElementById("secYMax");
   const secZMin = document.getElementById("secZMin"), secZMax = document.getElementById("secZMax");
