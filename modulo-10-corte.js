@@ -97,11 +97,11 @@
   scene.add(sun);
   scene.add(sun.target);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(4096, 4096);
   sun.shadow.camera.near = 10;
   sun.shadow.camera.far = 2600;
-  sun.shadow.bias = -0.00015;
-  sun.shadow.normalBias = 0.35; // reduce el parpadeo/artefactos de sombra (shadow acne)
+  sun.shadow.bias = -0.0003;
+  sun.shadow.normalBias = 0.6; // reduce el parpadeo/artefactos de sombra (shadow acne) - subido para mas margen
   const SHADOW_FRUSTUM = 750;
   sun.shadow.camera.left = -SHADOW_FRUSTUM;
   sun.shadow.camera.right = SHADOW_FRUSTUM;
@@ -198,7 +198,7 @@
       // las vias que se cruzan en una interseccion no quedan EXACTAMENTE
       // coplanares (evita z-fighting). El rango es minusculo para que no
       // se note como un "escalon" entre una via y la siguiente.
-      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.0006;
+      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.0025;
       const n = pts.length;
       if (n < 2) return;
       const scenePts = pts.map(p => toScene(p[0], p[1]));
@@ -458,6 +458,7 @@
 
   // ---- Cuerpos de agua: poligonos planos (fan de triangulos) apenas
   // levantados del suelo, con un material azul semi-transparente. ----
+  let waterTexRef = null; // referencia para animar el desplazamiento de la textura (efecto de agua en movimiento)
   function buildWaterBodies(bodies) {
     const positions = [];
     const uvs = [];
@@ -487,9 +488,14 @@
     const waterTex = new THREE.TextureLoader().load("./assets/textura_agua2.jpg");
     waterTex.wrapS = THREE.RepeatWrapping;
     waterTex.wrapT = THREE.RepeatWrapping;
+    waterTexRef = waterTex;
+    // Agua de verdad: azul-verdoso tipo humedal (no gris), con brillo bajo
+    // (poco "roughness") para que capte reflejos de luz como agua real, y
+    // la textura se anima (desplazamiento de UV en el loop de render) para
+    // que se vea con movimiento, no una superficie estatica.
     const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
-      map: waterTex, color: 0x9c9c9c, roughness: 0.7, metalness: 0,
-      transparent: true, opacity: 0.75, side: THREE.DoubleSide,
+      map: waterTex, color: 0x5f9aa8, roughness: 0.28, metalness: 0.15,
+      transparent: true, opacity: 0.82, side: THREE.DoubleSide,
     });
     waterMat = mat;
     const waterMesh = new THREE.Mesh(geo, mat);
@@ -1174,6 +1180,13 @@
     if (buildingEdgeMat) {
       const t = Math.min(Math.max((camera.zoom - 1) / 4, 0), 1);
       buildingEdgeMat.opacity = 0.35 + t * 0.45;
+    }
+    // Agua con movimiento: se desplaza lentamente la textura (dos
+    // velocidades distintas en X/Y para que no se vea un desfile en
+    // linea recta) simulando el flujo/oleaje suave de un humedal real.
+    if (waterTexRef) {
+      waterTexRef.offset.x = (now * 0.000018) % 1;
+      waterTexRef.offset.y = (now * 0.000012) % 1;
     }
     controls.update();
     renderer.render(scene, camera);
