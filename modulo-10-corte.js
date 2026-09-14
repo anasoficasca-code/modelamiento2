@@ -1264,8 +1264,13 @@
       `Y (altura, m): ${(yMin / SCALE).toFixed(1)} a ${(yMax / SCALE).toFixed(1)}\n` +
       `Z: ${secZMin.value}% a ${secZMax.value}%  (real ${Math.round(Math.min(r0[1],r1[1]))} a ${Math.round(Math.max(r0[1],r1[1]))})`;
   }
+  let lastRebuildAt = 0;
   [secXMin, secXMax, secYMin, secYMax, secZMin, secZMax].forEach(el => {
-    el.addEventListener("input", () => { updateSectionBox(); });
+    el.addEventListener("input", () => {
+      updateSectionBox();
+      const now = performance.now();
+      if (now - lastRebuildAt > 150) { lastRebuildAt = now; rebuildFilteredGeometry(); }
+    });
     el.addEventListener("change", () => { rebuildFilteredGeometry(); });
   });
   // Reconstruye de verdad la geometria de edificios y vias, dejando solo
