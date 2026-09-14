@@ -401,24 +401,18 @@
   let treeInstanceData = null; // {x,z,w,h} por instancia, para recalcular el billboard al girar la camara
   let treeMesh = null; // la tarjeta con la foto (para el detalle realista)
   function buildTrees(trees) {
-    const planeGeo = makePlaneGeometry();
     const treeTex = new THREE.TextureLoader().load("./assets/arbol_real2.png");
-    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
-      map: treeTex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide,
-      roughness: 1, metalness: 0,
-    });
-    const mesh = new THREE.InstancedMesh(planeGeo, mat, trees.length);
-    treeMesh = mesh;
 
-    // Volumen 3D real (no solo la tarjeta con la foto): tronco (cilindro)
-    // + copa (esfera achatada, verde solido) - esto le da forma de
-    // verdad al arbol desde CUALQUIER angulo (incluso desde arriba o de
-    // canto), con sombra propia correcta, y no solo una tarjeta plana.
-    // La foto se ve encima para el detalle realista desde el frente.
+    // Arbol como volumen 3D real: tronco (cilindro) + copa en una esfera
+    // con la FOTO real aplicada (no un color solido tipo "bola verde"),
+    // asi se ve con volumen real desde cualquier angulo pero con el
+    // aspecto de la foto, no una bola de color aparte.
     const trunkGeo = new THREE.CylinderGeometry(0.7, 1, 1, 6);
     const trunkMat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0x6b5643, roughness: 0.95 });
-    const foliageGeo = new THREE.IcosahedronGeometry(1, 1);
-    const foliageMat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0x5f8f52, roughness: 0.9, flatShading: true });
+    const foliageGeo = new THREE.SphereGeometry(1, 12, 10);
+    const foliageMat = new THREE.MeshStandardMaterial({
+      clippingPlanes: sectionClipPlanesArr, map: treeTex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.95,
+    });
     const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
     const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, trees.length);
     trunkMesh.castShadow = true;
@@ -450,28 +444,8 @@
     });
     trunkMesh.instanceMatrix.needsUpdate = true;
     foliageMesh.instanceMatrix.needsUpdate = true;
-    sceneRoot.add(trunkMesh, foliageMesh, mesh);
-    treeMeshes = [{ mesh, data: trees }];
-    updateTreeBillboards();
-  }
-  // Recalcula la rotacion de TODAS las tarjetas para que miren hacia la
-  // camara actual. Con camara ortografica la direccion hacia la camara es
-  // la misma sin importar la posicion en el suelo, asi que un solo angulo
-  // (el acimut actual de la camara) sirve para todas las instancias.
-  const dummyT = new THREE.Object3D();
-  function updateTreeBillboards() {
-    if (!treeMesh || !treeInstanceData) return;
-    const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z;
-    const faceAngle = Math.atan2(dx, dz);
-    for (let i = 0; i < treeInstanceData.length; i++) {
-      const d = treeInstanceData[i];
-      dummyT.position.set(d.x, 0, d.z);
-      dummyT.scale.set(d.w, d.h, d.w);
-      dummyT.rotation.set(0, faceAngle, 0);
-      dummyT.updateMatrix();
-      treeMesh.setMatrixAt(i, dummyT.matrix);
-    }
-    treeMesh.instanceMatrix.needsUpdate = true;
+    sceneRoot.add(trunkMesh, foliageMesh);
+    treeMeshes = [{ mesh: foliageMesh, data: trees }];
   }
   function hash2(str) { let h = 0; for (const c of (str || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 
@@ -923,17 +897,6 @@
       `camera.zoom = ${camera.zoom.toFixed(3)};`;
   }
   controls.addEventListener("change", updateViewOutput);
-  // Reorientar los billboards de los arboles hacia la camara cuando gira,
-  // pero limitado en frecuencia (no en cada evento, que dispara muy
-  // seguido durante un arrastre) para no recalcular 120 mil matrices por
-  // cuadro y volver lenta la pagina.
-  let lastTreeBillboardUpdate = 0;
-  controls.addEventListener("change", () => {
-    const now = performance.now();
-    if (now - lastTreeBillboardUpdate < 120) return;
-    lastTreeBillboardUpdate = now;
-    updateTreeBillboards();
-  });
   viewCopyBtn.addEventListener("click", async () => {
     updateViewOutput();
     try { await navigator.clipboard.writeText(viewOutput.value); } catch (err) {}
