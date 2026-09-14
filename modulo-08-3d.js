@@ -354,7 +354,7 @@
   let treeMesh = null; // la tarjeta con la foto (para el detalle realista)
   function buildTrees(trees) {
     const planeGeo = makePlaneGeometry();
-    const treeTex = new THREE.TextureLoader().load("./assets/arbol_real.png");
+    const treeTex = new THREE.TextureLoader().load("./assets/arbol_real2.png");
     const mat = new THREE.MeshStandardMaterial({
       map: treeTex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide,
       roughness: 1, metalness: 0,
@@ -383,7 +383,7 @@
       const [x, y, hMeters, , code] = t;
       const p = toScene(x, y);
       const h = Math.max(0.3, hMeters * SCALE);
-      const w = h * (0.72 + (hash2(code) % 20) / 100);
+      const w = h * (0.93 + (hash2(code) % 20) / 100 - 0.1);
       treeInstanceData[i] = { x: p.x, z: p.z, w, h };
 
       const trunkH = h * 0.22, trunkR = Math.max(0.02, h * 0.025);
