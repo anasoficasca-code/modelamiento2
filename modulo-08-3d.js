@@ -367,8 +367,12 @@
     });
     const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
     const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, trees.length);
-    trunkMesh.castShadow = true;
-    foliageMesh.castShadow = true;
+    // Sin sombra proyectada (se pidio antes que los arboles no tuvieran
+    // sombra propia - ademas, al ser tan chicos frente al tamano del mapa
+    // de sombras del sol, se veian como bloques/cubos feos, no una sombra
+    // real de arbol).
+    trunkMesh.castShadow = false;
+    foliageMesh.castShadow = false;
     foliageMesh.receiveShadow = true;
 
     treeInstanceData = new Array(trees.length);
@@ -445,7 +449,7 @@
     });
     waterMat = mat;
     const waterMesh = new THREE.Mesh(geo, mat);
-    waterMesh.receiveShadow = true;
+    waterMesh.receiveShadow = false; // sin sombras encima (se veian como parches/bloques feos sobre el agua)
     sceneRoot.add(waterMesh);
   }
 

@@ -415,8 +415,12 @@
     });
     const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
     const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, trees.length);
-    trunkMesh.castShadow = true;
-    foliageMesh.castShadow = true;
+    // Sin sombra proyectada (se pidio antes que los arboles no tuvieran
+    // sombra propia - ademas, al ser tan chicos frente al tamano del mapa
+    // de sombras del sol, se veian como bloques/cubos feos, no una sombra
+    // real de arbol).
+    trunkMesh.castShadow = false;
+    foliageMesh.castShadow = false;
     foliageMesh.receiveShadow = true;
 
     treeInstanceData = new Array(trees.length);
@@ -494,12 +498,12 @@
     // la textura se anima (desplazamiento de UV en el loop de render) para
     // que se vea con movimiento, no una superficie estatica.
     const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
-      map: waterTex, color: 0x5f9aa8, roughness: 0.28, metalness: 0.15,
+      map: waterTex, color: 0x7ec9d6, roughness: 0.22, metalness: 0.1,
       transparent: true, opacity: 0.82, side: THREE.DoubleSide,
     });
     waterMat = mat;
     const waterMesh = new THREE.Mesh(geo, mat);
-    waterMesh.receiveShadow = true;
+    waterMesh.receiveShadow = false; // sin sombras encima (se veian como parches/bloques feos sobre el agua)
     sceneRoot.add(waterMesh);
   }
 
