@@ -373,7 +373,7 @@
   function loadBuildings() {
     return fetch(BUILDINGS_URL)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + BUILDINGS_URL); return r.json(); })
-      .then(data => { rawBuildingsData = data; buildBuildings(data); })
+      .then(data => { rawBuildingsData = data; rebuildFilteredGeometry(); })
       .catch(err => console.warn("No se pudieron cargar los edificios:", err));
   }
 
@@ -852,11 +852,11 @@
       netCenter = { x: (data.bbox[0] + data.bbox[2]) / 2, y: (data.bbox[1] + data.bbox[3]) / 2 };
       buildGround(data.bbox);
       rawEdgesData = data.edges;
-      buildRoads(data.edges);
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       const h = (data.bbox[3] - data.bbox[1]) * SCALE;
       sceneExtentW = w; sceneExtentH = h;
       if (typeof updateSectionBox === "function") updateSectionBox();
+      rebuildFilteredGeometry();
       viewSize = Math.max(w, h) * 0.14;
       resize();
       setAxonometricView(w);
@@ -1301,7 +1301,7 @@
     rebuildFilteredGeometry();
   });
   document.getElementById("sectionBoxReset").addEventListener("click", () => {
-    secXMin.value = 0; secXMax.value = 100; secYMin.value = 0; secYMax.value = 100; secZMin.value = 0; secZMax.value = 100;
+    secXMin.value = 58; secXMax.value = 67; secYMin.value = 0; secYMax.value = 100; secZMin.value = 39; secZMax.value = 54;
     updateSectionBox();
     rebuildFilteredGeometry();
   });
