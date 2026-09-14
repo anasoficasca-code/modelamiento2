@@ -59,7 +59,8 @@
     zMin: new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6),
     zMax: new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6),
   };
-  renderer.clippingPlanes = [secPlanes.xMin, secPlanes.xMax, secPlanes.yMin, secPlanes.yMax, secPlanes.zMin, secPlanes.zMax];
+  const sectionClipPlanesArr = [secPlanes.xMin, secPlanes.xMax, secPlanes.yMin, secPlanes.yMax, secPlanes.zMin, secPlanes.zMax];
+  renderer.clippingPlanes = sectionClipPlanesArr;
 
   // Tamano visible (mitad de la altura del encuadre, en unidades de la
   // escena) para la proyeccion ortogonal — se ajusta al cargar la red.
@@ -135,7 +136,7 @@
     const w = (bbox[2] - bbox[0]) * SCALE * 1.4;
     const h = (bbox[3] - bbox[1]) * SCALE * 1.4;
     const geo = new THREE.PlaneGeometry(w, h);
-    const mat = new THREE.MeshStandardMaterial({ color: 0xeceeef, roughness: 1, metalness: 0 });
+    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xeceeef, roughness: 1, metalness: 0 });
     groundMesh = new THREE.Mesh(geo, mat);
     groundMesh.rotation.x = -Math.PI / 2;
     groundMesh.position.set(0, -0.4, 0);
@@ -228,7 +229,7 @@
     const viaTex = new THREE.TextureLoader().load("./assets/textura_via.jpg");
     viaTex.wrapS = THREE.RepeatWrapping;
     viaTex.wrapT = THREE.RepeatWrapping;
-    const ribbonMat = new THREE.MeshStandardMaterial({
+    const ribbonMat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
       map: viaTex, color: 0xb7babd, roughness: 0.85, side: THREE.DoubleSide,
       transparent: true, opacity: 0.7,
     });
@@ -326,7 +327,7 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0.03, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xffffff, roughness: 0.6, metalness: 0.03, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -374,7 +375,7 @@
   function buildTrees(trees) {
     const planeGeo = makePlaneGeometry();
     const treeTex = new THREE.TextureLoader().load("./assets/arbol_real.png");
-    const mat = new THREE.MeshStandardMaterial({
+    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
       map: treeTex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide,
       roughness: 1, metalness: 0,
     });
@@ -387,9 +388,9 @@
     // canto), con sombra propia correcta, y no solo una tarjeta plana.
     // La foto se ve encima para el detalle realista desde el frente.
     const trunkGeo = new THREE.CylinderGeometry(0.7, 1, 1, 6);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b5643, roughness: 0.95 });
+    const trunkMat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0x6b5643, roughness: 0.95 });
     const foliageGeo = new THREE.IcosahedronGeometry(1, 1);
-    const foliageMat = new THREE.MeshStandardMaterial({ color: 0x5f8f52, roughness: 0.9, flatShading: true });
+    const foliageMat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0x5f8f52, roughness: 0.9, flatShading: true });
     const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
     const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, trees.length);
     trunkMesh.castShadow = true;
@@ -484,7 +485,7 @@
     const waterTex = new THREE.TextureLoader().load("./assets/textura_agua2.jpg");
     waterTex.wrapS = THREE.RepeatWrapping;
     waterTex.wrapT = THREE.RepeatWrapping;
-    const mat = new THREE.MeshStandardMaterial({
+    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
       map: waterTex, color: 0x9c9c9c, roughness: 0.7, metalness: 0,
       transparent: true, opacity: 0.75, side: THREE.DoubleSide,
     });
@@ -555,7 +556,7 @@
     const pastoTex = new THREE.TextureLoader().load("./assets/textura_pasto.jpg");
     pastoTex.wrapS = THREE.RepeatWrapping;
     pastoTex.wrapT = THREE.RepeatWrapping;
-    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xadaa90, roughness: 0.95, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, map: pastoTex, color: 0xadaa90, roughness: 0.95, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
     parqueMat = mat;
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
@@ -583,9 +584,9 @@
     intersectionMeshes = [];
 
     const poleGeo = new THREE.CylinderGeometry(0.05, 0.06, 1, 6);
-    const poleMat = new THREE.MeshStandardMaterial({ color: 0x33383d, roughness: 0.6 });
+    const poleMat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0x33383d, roughness: 0.6 });
     const headGeo = new THREE.BoxGeometry(0.16, 0.42, 0.16);
-    const headMat = new THREE.MeshStandardMaterial({ color: 0x1c1f22, roughness: 0.5 });
+    const headMat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0x1c1f22, roughness: 0.5 });
     const lightGeo = new THREE.CircleGeometry(0.06, 10);
     const lightColors = [0xe14b3f, 0xe8b93f, 0x4bb35a];
 
@@ -595,7 +596,7 @@
     const headMesh = new THREE.InstancedMesh(headGeo, headMat, poleCount);
     poleMesh.castShadow = true; headMesh.castShadow = true;
     const lightMeshes = lightColors.map(color =>
-      new THREE.InstancedMesh(lightGeo, new THREE.MeshBasicMaterial({ color }), poleCount)
+      new THREE.InstancedMesh(lightGeo, new THREE.MeshBasicMaterial({ clippingPlanes: sectionClipPlanesArr, color }), poleCount)
     );
 
     const dummy = new THREE.Object3D();
@@ -658,7 +659,7 @@
 
     const crossGeo = new THREE.BufferGeometry();
     crossGeo.setAttribute("position", new THREE.Float32BufferAttribute(crossPos, 3));
-    const crossMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+    const crossMat = new THREE.MeshBasicMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xffffff, side: THREE.DoubleSide });
     const crossMesh = new THREE.Mesh(crossGeo, crossMat);
     sceneRoot.add(crossMesh);
     intersectionMeshes.push(crossMesh);
@@ -691,7 +692,7 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0.02, side: THREE.DoubleSide, ...opts });
+    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color, roughness: 0.75, metalness: 0.02, side: THREE.DoubleSide, ...opts });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -723,7 +724,7 @@
   // ---- Vehiculos: un pool de cajas 3D reutilizables ----
   const VEH_POOL_SIZE = 2800;
   const vehMeshes = [];
-  const vehMat = new THREE.MeshStandardMaterial({ color: 0xe2635a, roughness: 0.5, metalness: 0.15 });
+  const vehMat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xe2635a, roughness: 0.5, metalness: 0.15 });
   const vehGeo = new THREE.BoxGeometry(0.18, 0.15, 0.45);
   const vehInstanced = new THREE.InstancedMesh(vehGeo, vehMat, VEH_POOL_SIZE);
   vehInstanced.count = 0;
@@ -1058,7 +1059,7 @@
   const plantToggleBtn = document.getElementById("treePlantToggle");
   const plantOutput = document.getElementById("treePlantOutput");
   const markerGeo = new THREE.SphereGeometry(0.12, 8, 6);
-  const markerMat = new THREE.MeshBasicMaterial({ color: 0x3ddc5a });
+  const markerMat = new THREE.MeshBasicMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0x3ddc5a });
   function updatePlantOutput() {
     if (!plantedPoints.length) { plantOutput.value = ""; return; }
     plantOutput.value = JSON.stringify(plantedPoints.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]));
