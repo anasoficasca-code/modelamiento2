@@ -308,7 +308,10 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0.03, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xffffff, roughness: 0.6, metalness: 0.03, side: THREE.DoubleSide,
+      polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, // evita z-fighting con las lineas de borde (que quedan exactamente sobre la superficie)
+    });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -1141,7 +1144,7 @@
     // se atenuan progresivamente lejos y se ven bien definidas de cerca.
     if (buildingEdgeMat) {
       const t = Math.min(Math.max((camera.zoom - 1) / 4, 0), 1);
-      buildingEdgeMat.opacity = 0.35 + t * 0.45;
+      buildingEdgeMat.opacity = 0.22 + t * 0.5;
     }
     // Agua con movimiento: se desplaza lentamente la textura de color Y
     // la capa de relieve (bump) a velocidades/escalas DISTINTAS entre si,
