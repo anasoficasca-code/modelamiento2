@@ -195,39 +195,6 @@
     </div>
 
     <div class="right-panels-wrap">
-    <div class="rotate-panel" id="sectionBoxPanel" style="top:70px;">
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="sectionBoxToggle">✂️ Activar caja de sección</button>
-      </div>
-      <p class="draw-hint">Corta el modelo para ver el interior — mueve los 6 límites para acomodar la caja.</p>
-      <div class="rotate-row">
-        <label>X mínimo <span id="secXMinVal">0%</span></label>
-        <input type="range" id="secXMin" min="0" max="100" value="0" step="1">
-      </div>
-      <div class="rotate-row">
-        <label>X máximo <span id="secXMaxVal">100%</span></label>
-        <input type="range" id="secXMax" min="0" max="100" value="100" step="1">
-      </div>
-      <div class="rotate-row">
-        <label>Y mínimo (piso) <span id="secYMinVal">0%</span></label>
-        <input type="range" id="secYMin" min="0" max="100" value="0" step="1">
-      </div>
-      <div class="rotate-row">
-        <label>Y máximo (altura) <span id="secYMaxVal">100%</span></label>
-        <input type="range" id="secYMax" min="0" max="100" value="100" step="1">
-      </div>
-      <div class="rotate-row">
-        <label>Z mínimo <span id="secZMinVal">0%</span></label>
-        <input type="range" id="secZMin" min="0" max="100" value="0" step="1">
-      </div>
-      <div class="rotate-row">
-        <label>Z máximo <span id="secZMaxVal">100%</span></label>
-        <input type="range" id="secZMax" min="0" max="100" value="100" step="1">
-      </div>
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="sectionBoxReset">↺ Restablecer</button>
-      </div>
-    </div>
 
     <div class="rotate-panel" id="rotatePanel">
       <p style="margin:0 0 4px; font-size:11px; color:var(--ink-dim);">Vista actual (se actualiza sola mientras mueves/haces zoom con el mouse):</p>
@@ -284,6 +251,40 @@
       <div class="rotate-row">
         <label>Separación del poste <span id="interPoleOffVal">1.1</span></label>
         <input type="range" id="interPoleOff" min="0.3" max="4" value="1.1" step="0.1">
+      </div>
+    </div>
+
+    <div class="rotate-panel" id="sectionBoxPanel" style="top:70px;">
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="sectionBoxToggle">✂️ Activar caja de sección</button>
+      </div>
+      <p class="draw-hint">Corta el modelo para ver el interior — mueve los 6 límites para acomodar la caja.</p>
+      <div class="rotate-row">
+        <label>X mínimo <span id="secXMinVal">0%</span></label>
+        <input type="range" id="secXMin" min="0" max="100" value="0" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>X máximo <span id="secXMaxVal">100%</span></label>
+        <input type="range" id="secXMax" min="0" max="100" value="100" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Y mínimo (piso) <span id="secYMinVal">0%</span></label>
+        <input type="range" id="secYMin" min="0" max="100" value="0" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Y máximo (altura) <span id="secYMaxVal">100%</span></label>
+        <input type="range" id="secYMax" min="0" max="100" value="100" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Z mínimo <span id="secZMinVal">0%</span></label>
+        <input type="range" id="secZMin" min="0" max="100" value="0" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Z máximo <span id="secZMaxVal">100%</span></label>
+        <input type="range" id="secZMax" min="0" max="100" value="100" step="1">
+      </div>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="sectionBoxReset">↺ Restablecer</button>
       </div>
     </div>
     </div>
