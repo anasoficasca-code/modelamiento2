@@ -810,6 +810,7 @@
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       const h = (data.bbox[3] - data.bbox[1]) * SCALE;
       sceneExtentW = w; sceneExtentH = h;
+      if (typeof updateSectionBox === "function") updateSectionBox();
       viewSize = Math.max(w, h) * 0.14;
       resize();
       setAxonometricView(w);
@@ -1189,8 +1190,8 @@
   const secXMinVal = document.getElementById("secXMinVal"), secXMaxVal = document.getElementById("secXMaxVal");
   const secYMinVal = document.getElementById("secYMinVal"), secYMaxVal = document.getElementById("secYMaxVal");
   const secZMinVal = document.getElementById("secZMinVal"), secZMaxVal = document.getElementById("secZMaxVal");
+  const sectionBoxOutput = document.getElementById("sectionBoxOutput");
   function updateSectionBox() {
-    if (!sectionBoxActive) { renderer.clippingPlanes = []; return; }
     const halfW = sceneExtentW / 2 * 1.4, halfH = sceneExtentH / 2 * 1.4; // mismo margen que el suelo (*1.4)
     const xMin = -halfW + (parseFloat(secXMin.value) / 100) * (2 * halfW);
     const xMax = -halfW + (parseFloat(secXMax.value) / 100) * (2 * halfW);
@@ -1204,18 +1205,22 @@
     secPlanes.yMax.constant = yMax;
     secPlanes.zMin.constant = -zMin;
     secPlanes.zMax.constant = zMax;
-    renderer.clippingPlanes = [secPlanes.xMin, secPlanes.xMax, secPlanes.yMin, secPlanes.yMax, secPlanes.zMin, secPlanes.zMax];
+    renderer.clippingPlanes = sectionBoxActive
+      ? [secPlanes.xMin, secPlanes.xMax, secPlanes.yMin, secPlanes.yMax, secPlanes.zMin, secPlanes.zMax]
+      : [];
     secXMinVal.textContent = secXMin.value + "%"; secXMaxVal.textContent = secXMax.value + "%";
     secYMinVal.textContent = secYMin.value + "%"; secYMaxVal.textContent = secYMax.value + "%";
     secZMinVal.textContent = secZMin.value + "%"; secZMaxVal.textContent = secZMax.value + "%";
+    // Coordenadas reales (mismo sistema que los archivos de datos), para
+    // poder copiar y pegar la caja de seccion exacta.
+    const r0 = sceneToReal(xMin, zMin), r1 = sceneToReal(xMax, zMax);
+    sectionBoxOutput.value =
+      `X: ${secXMin.value}% a ${secXMax.value}%  (real ${Math.round(Math.min(r0[0],r1[0]))} a ${Math.round(Math.max(r0[0],r1[0]))})\n` +
+      `Y (altura, m): ${(yMin / SCALE).toFixed(1)} a ${(yMax / SCALE).toFixed(1)}\n` +
+      `Z: ${secZMin.value}% a ${secZMax.value}%  (real ${Math.round(Math.min(r0[1],r1[1]))} a ${Math.round(Math.max(r0[1],r1[1]))})`;
   }
   [secXMin, secXMax, secYMin, secYMax, secZMin, secZMax].forEach(el => {
-    el.addEventListener("input", () => {
-      secXMinVal.textContent = secXMin.value + "%"; secXMaxVal.textContent = secXMax.value + "%";
-      secYMinVal.textContent = secYMin.value + "%"; secYMaxVal.textContent = secYMax.value + "%";
-      secZMinVal.textContent = secZMin.value + "%"; secZMaxVal.textContent = secZMax.value + "%";
-      updateSectionBox();
-    });
+    el.addEventListener("input", () => { updateSectionBox(); });
   });
   document.getElementById("sectionBoxToggle").addEventListener("click", (e) => {
     sectionBoxActive = !sectionBoxActive;
@@ -1227,6 +1232,12 @@
     secXMin.value = 0; secXMax.value = 100; secYMin.value = 0; secYMax.value = 100; secZMin.value = 0; secZMax.value = 100;
     updateSectionBox();
   });
+  document.getElementById("sectionBoxCopy").addEventListener("click", async () => {
+    updateSectionBox();
+    try { await navigator.clipboard.writeText(sectionBoxOutput.value); } catch (err) {}
+    sectionBoxOutput.select();
+  });
+  updateSectionBox();
 
   resize();
   requestAnimationFrame(animate);
