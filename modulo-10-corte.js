@@ -506,14 +506,13 @@
     bumpTex.wrapT = THREE.RepeatWrapping;
     bumpTex.repeat.set(2.3, 2.3);
     waterBumpRef = bumpTex;
-    // Agua de verdad: azul-verdoso tipo humedal (no gris), con brillo bajo
-    // (poco "roughness") para que capte reflejos de luz como agua real, y
-    // la textura se anima (desplazamiento de UV en el loop de render) para
-    // que se vea con movimiento, no una superficie estatica.
+    // Agua con la textura real que subio el usuario, SIN tinte de color
+    // dominando encima (blanco = la textura se ve tal cual es), solo con
+    // brillo bajo para que capte reflejos de luz como agua real.
     const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
       map: waterTex, bumpMap: bumpTex, bumpScale: 0.12,
-      color: 0x7ec9d6, roughness: 0.18, metalness: 0.15,
-      transparent: true, opacity: 0.82, side: THREE.DoubleSide,
+      color: 0xffffff, roughness: 0.22, metalness: 0.08,
+      transparent: true, opacity: 0.92, side: THREE.DoubleSide,
     });
     waterMat = mat;
     const waterMesh = new THREE.Mesh(geo, mat);
@@ -1192,13 +1191,9 @@
       timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(maxT)}`;
       renderVehiclesAt(currentTime);
     }
-    // Las lineas de borde de los edificios se ven como una masa oscura
-    // cuando hay muchas superpuestas al alejar la camara (zoom bajo) -
-    // se atenuan progresivamente lejos y se ven bien definidas de cerca.
-    if (buildingEdgeMat) {
-      const t = Math.min(Math.max((camera.zoom - 1) / 4, 0), 1);
-      buildingEdgeMat.opacity = 0.35 + t * 0.45;
-    }
+    // Lineas de borde de edificios: opacidad FIJA, no cambia con el zoom
+    // (se pidio que no aparezcan/desaparezcan ni cambien de grosor al
+    // acercar o alejar la camara).
     // Agua con movimiento: se desplaza lentamente la textura de color Y
     // la capa de relieve (bump) a velocidades/escalas DISTINTAS entre si,
     // simulando dos capas de oleaje superpuestas (asi el brillo/reflejo
