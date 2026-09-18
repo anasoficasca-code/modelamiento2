@@ -1081,6 +1081,7 @@
     });
   });
 
+  const netGooLayer = document.getElementById("netGooLayer");
   const netSvg = document.getElementById("netSvg");
   const netLabelLayer = document.getElementById("netLabelLayer");
   const netPanel = document.getElementById("netPanel");
@@ -1099,6 +1100,14 @@
     netLabelLayer.appendChild(d);
     return d;
   }
+  function makeBlob(diameter, color) {
+    const d = document.createElement("div");
+    d.className = "net-blob";
+    d.style.width = d.style.height = diameter + "px";
+    d.style.background = color;
+    netGooLayer.appendChild(d);
+    return d;
+  }
   const projVec = new THREE.Vector3();
   function projectPoint(realX, realY, worldY) {
     const p = toScene(realX, realY);
@@ -1113,24 +1122,24 @@
   }
 
   let openMacroId = null;
-  const macroEls = {}; // id -> {circle, num, label}
-  let subEls = null; // {circles:{}, lines:[], labels:{}}
+  const macroEls = {}; // id -> {blob, num, label}
+  let subEls = null; // {blobs:{}, lines:[], labels:{}}
 
+  const MACRO_D = 46; // diametro de las burbujas macro (px)
   MACRO.forEach((m, i) => {
-    const circle = svgEl("circle", { class: "macro-circle", r: 16, fill: m.color });
-    circle.addEventListener("click", (e) => { e.stopPropagation(); toggleMacro(m.id); });
-    netSvg.appendChild(circle);
+    const blob = makeBlob(MACRO_D, m.color);
+    blob.addEventListener("click", (e) => { e.stopPropagation(); toggleMacro(m.id); });
     const num = svgEl("text", { class: "macro-num" });
     num.textContent = i + 1;
     netSvg.appendChild(num);
     const label = makeLabel(m.corto);
-    macroEls[m.id] = { circle, num, label };
+    macroEls[m.id] = { blob, num, label };
   });
 
   function clearSubNetwork() {
     if (!subEls) return;
-    Object.values(subEls.circles).forEach(c => c.remove());
-    subEls.lines.forEach(l => l.remove());
+    Object.values(subEls.blobs).forEach(c => c.remove());
+    subEls.lines.forEach(l => l.el.remove());
     Object.values(subEls.labels).forEach(l => l.remove());
     subEls = null;
   }
@@ -1142,7 +1151,8 @@
     netCloseSubBtn.classList.add("show");
     const sub = SUBNETS[id];
     const m = macroById[id];
-    subEls = { circles: {}, lines: [], labels: {} };
+    subEls = { blobs: {}, lines: [], labels: {} };
+    const SUB_D = 30; // diametro de las burbujas de causas (px)
     // Lineas: del macro a cada causa, y entre causas segun su relacion
     sub.nodes.forEach(n => {
       const line = svgEl("line", { class: "net-line", stroke: m.color, "stroke-width": 1.6, "stroke-opacity": 0.55 });
@@ -1151,15 +1161,14 @@
     });
     sub.rel.forEach(r => {
       const a = sub.nodes.find(n => n.id === r.from), b = sub.nodes.find(n => n.id === r.to);
-      const line = svgEl("line", { class: "net-line", stroke: m.color, "stroke-width": 2, "stroke-opacity": 0.8, "marker-end": "url(#netArrow)" });
+      const line = svgEl("line", { class: "net-line", stroke: m.color, "stroke-width": 2.2, "stroke-opacity": 0.85, "marker-end": "url(#netArrow)" });
       netSvg.insertBefore(line, netSvg.firstChild);
       subEls.lines.push({ el: line, from: a, to: b });
     });
     sub.nodes.forEach(n => {
-      const c = svgEl("circle", { class: "sub-circle", r: 8, fill: m.color });
-      c.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(id, n.id); });
-      netSvg.appendChild(c);
-      subEls.circles[n.id] = c;
+      const blob = makeBlob(SUB_D, m.color);
+      blob.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(id, n.id); });
+      subEls.blobs[n.id] = blob;
       subEls.labels[n.id] = makeLabel(n.t.length > 46 ? n.t.slice(0, 44) + "…" : n.t);
     });
     updateNetPositions();
@@ -1188,7 +1197,7 @@
       <p class="panel-kind">Problemática</p>
       <h2>${m.full}</h2>
       <div class="block"><b>Ubicación real</b><div class="rel-chip">Localizada en sus coordenadas geográficas reales sobre el mapa de Kennedy</div></div>
-      <div class="block"><b>Causas internas</b><p style="font-size:12px;color:var(--ink-dim);margin:0;">Toca cualquier círculo pequeño conectado para ver el detalle de esa causa.</p></div>
+      <div class="block"><b>Causas internas</b><p style="font-size:12px;color:var(--ink-dim);margin:0;">Toca cualquier burbuja conectada para ver el detalle de esa causa.</p></div>
     `;
     netPanel.classList.add("open");
   }
@@ -1209,24 +1218,28 @@
     netPanel.classList.add("open");
   }
 
+  function placeBlob(blob, x, y, visible) {
+    blob.style.left = x + "px"; blob.style.top = y + "px";
+    blob.style.opacity = visible ? "1" : "0";
+  }
   function updateNetPositions() {
     MACRO.forEach((m, i) => {
       const p = projectPoint(m.x, m.y, 0.3);
       const els = macroEls[m.id];
-      els.circle.setAttribute("cx", p.x); els.circle.setAttribute("cy", p.y);
+      placeBlob(els.blob, p.x, p.y, p.visible);
       els.num.setAttribute("x", p.x); els.num.setAttribute("y", p.y);
-      els.label.style.left = p.x + "px"; els.label.style.top = (p.y - 20) + "px";
+      els.label.style.left = p.x + "px"; els.label.style.top = (p.y - MACRO_D / 2 - 6) + "px";
       const visible = p.visible ? "1" : "0";
-      els.circle.setAttribute("opacity", visible); els.num.setAttribute("opacity", visible);
+      els.num.setAttribute("opacity", visible);
       els.label.style.opacity = visible;
     });
     if (subEls) {
       const sub = SUBNETS[openMacroId];
-      const byId = {}; sub.nodes.forEach(n => byId[n.id] = n);
       sub.nodes.forEach(n => {
         const p = projectPoint(n.x, n.y, 0.25);
-        subEls.circles[n.id].setAttribute("cx", p.x); subEls.circles[n.id].setAttribute("cy", p.y);
-        subEls.labels[n.id].style.left = p.x + "px"; subEls.labels[n.id].style.top = (p.y - 14) + "px";
+        placeBlob(subEls.blobs[n.id], p.x, p.y, p.visible);
+        subEls.labels[n.id].style.left = p.x + "px"; subEls.labels[n.id].style.top = (p.y - 22) + "px";
+        subEls.labels[n.id].style.opacity = p.visible ? "1" : "0";
       });
       subEls.lines.forEach(l => {
         const pa = projectPoint(l.from.x, l.from.y, 0.25);

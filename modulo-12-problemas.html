@@ -123,12 +123,15 @@
   .tree-info p#treeInfoDetails{ font-size:12px; color:var(--ink-dim); margin:0; line-height:1.5; }
 
   /* ---- Conectografia: red de problematicas UBICADA sobre el mapa 3D real
-  (no una red suelta/abstracta aparte) ---- */
-  #netSvg{ position:absolute; inset:0; width:100%; height:100%; z-index:12; pointer-events:none; }
-  #netSvg .macro-circle{ cursor:pointer; pointer-events:auto; stroke:#fff; stroke-width:2; filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)); }
-  #netSvg .macro-circle:hover{ filter:drop-shadow(0 2px 10px rgba(0,0,0,.6)); }
-  #netSvg .macro-num{ font-family:'Segoe UI',sans-serif; font-weight:700; fill:#fff; text-anchor:middle; dominant-baseline:central; pointer-events:none; font-size:13px; }
-  #netSvg .sub-circle{ cursor:pointer; pointer-events:auto; stroke:#fff; stroke-width:1.5; opacity:.95; }
+  (no una red suelta/abstracta aparte), con el mismo aspecto organico
+  (burbujas goo) que la red original, pero en su posicion geografica real ---- */
+  #netGooLayer{ position:absolute; inset:0; width:100%; height:100%; z-index:11; filter:url(#netGoo); pointer-events:none; }
+  .net-blob{
+    position:absolute; top:0; left:0; border-radius:50%; transform:translate(-50%,-50%);
+    pointer-events:auto; cursor:pointer; transition:opacity .25s ease;
+  }
+  #netSvg{ position:absolute; inset:0; width:100%; height:100%; z-index:12; pointer-events:none; overflow:visible; }
+  #netSvg .macro-num{ font-family:'Segoe UI',sans-serif; font-weight:700; fill:#fff; text-anchor:middle; dominant-baseline:central; pointer-events:none; font-size:14px; text-shadow:0 1px 3px rgba(0,0,0,.6); }
   #netSvg .net-line{ stroke-linecap:round; fill:none; }
   #netLabelLayer{ position:absolute; inset:0; z-index:13; pointer-events:none; }
   .net-label{
@@ -258,6 +261,16 @@
     </div>
 
     <!-- Conectografia: red de problematicas ubicada sobre el mapa 3D real -->
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <filter id="netGoo">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+          <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 17 -8" result="goo" />
+          <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+        </filter>
+      </defs>
+    </svg>
+    <div id="netGooLayer"></div>
     <svg id="netSvg"></svg>
     <div id="netLabelLayer"></div>
     <button type="button" id="netCloseSubBtn">✕ Cerrar causas internas</button>
@@ -270,6 +283,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-12-problemas.js?v=1"></script>
+<script src="modulo-12-problemas.js?v=2"></script>
 </body>
 </html>
