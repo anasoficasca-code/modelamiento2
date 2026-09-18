@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulación 3D de tránsito — Kennedy</title>
+<title>Problemáticas de Kennedy — Corabastos</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="navigation-unified.css?v=20260824">
 <style>
@@ -121,6 +121,43 @@
   .tree-info-kind{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-dim); margin:0 0 4px; }
   .tree-info h3{ font-size:14px; margin:0 26px 6px 0; color:var(--ink); }
   .tree-info p#treeInfoDetails{ font-size:12px; color:var(--ink-dim); margin:0; line-height:1.5; }
+
+  /* ---- Conectografia: red de problematicas UBICADA sobre el mapa 3D real
+  (no una red suelta/abstracta aparte) ---- */
+  #netSvg{ position:absolute; inset:0; width:100%; height:100%; z-index:12; pointer-events:none; }
+  #netSvg .macro-circle{ cursor:pointer; pointer-events:auto; stroke:#fff; stroke-width:2; filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)); }
+  #netSvg .macro-circle:hover{ filter:drop-shadow(0 2px 10px rgba(0,0,0,.6)); }
+  #netSvg .macro-num{ font-family:'Segoe UI',sans-serif; font-weight:700; fill:#fff; text-anchor:middle; dominant-baseline:central; pointer-events:none; font-size:13px; }
+  #netSvg .sub-circle{ cursor:pointer; pointer-events:auto; stroke:#fff; stroke-width:1.5; opacity:.95; }
+  #netSvg .net-line{ stroke-linecap:round; fill:none; }
+  #netLabelLayer{ position:absolute; inset:0; z-index:13; pointer-events:none; }
+  .net-label{
+    position:absolute; transform:translate(-50%,-100%); font-family:'Segoe UI',sans-serif;
+    background:rgba(11,12,15,.88); color:#e8eaed; padding:3px 8px; border-radius:6px; font-size:10.5px;
+    white-space:nowrap; max-width:170px; overflow:hidden; text-overflow:ellipsis; pointer-events:none;
+    border:1px solid rgba(255,255,255,.15);
+  }
+  #netPanel{
+    position:absolute; top:0; right:0; bottom:0; z-index:20; width:min(360px,90vw);
+    background:#111418; border-left:1px solid var(--panel-border); box-shadow:-14px 0 40px rgba(0,0,0,.35);
+    padding:24px 22px; overflow-y:auto; transform:translateX(100%); transition:transform .3s cubic-bezier(.2,.8,.2,1);
+  }
+  #netPanel.open{ transform:translateX(0); }
+  #netPanel .panel-close{
+    position:absolute; top:16px; right:16px; width:28px; height:28px; border-radius:50%; border:1px solid var(--panel-border);
+    background:var(--panel); color:var(--ink-dim); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px;
+  }
+  #netPanel .panel-kind{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin:0 0 8px; }
+  #netPanel h2{ font-size:15px; font-weight:600; margin:0 28px 4px 0; line-height:1.4; color:var(--ink); }
+  #netPanel .block{ margin-top:14px; padding-top:14px; border-top:1px solid var(--panel-border); }
+  #netPanel .block b{ display:block; font-size:10.5px; color:var(--ink-dim); font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em; }
+  #netPanel .rel-chip{ display:block; padding:8px 11px; margin-bottom:6px; border-radius:8px; background:rgba(226,99,90,.1); border:1px solid rgba(226,99,90,.3); font-size:11.5px; color:var(--ink); }
+  #netCloseSubBtn{
+    position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:15;
+    padding:9px 16px; border-radius:999px; border:1px solid var(--panel-border); background:var(--panel);
+    font-size:11.5px; font-weight:600; color:var(--ink); cursor:pointer; display:none;
+  }
+  #netCloseSubBtn.show{ display:block; }
 </style>
 </head>
 <body>
@@ -136,9 +173,9 @@
         <a href="modulo-06.html" class="icon-nav-item" title="06 · POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
         <a href="modulo-07.html" class="icon-nav-item" title="07 · Simulador"><i class="fa-solid fa-flask"></i></a>
         <a href="modulo-08.html" class="icon-nav-item" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
-        <a href="modulo-08-3d.html" class="icon-nav-item active" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
+        <a href="modulo-08-3d.html" class="icon-nav-item" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
         <a href="modulo-10-corte.html" class="icon-nav-item" title="10 · Corte axonométrico"><i class="fa-solid fa-scissors"></i></a>
-        <a href="modulo-12-problemas.html" class="icon-nav-item" title="12 · Problemáticas Corabastos"><i class="fa-solid fa-triangle-exclamation"></i></a>
+        <a href="modulo-12-problemas.html" class="icon-nav-item active" title="12 · Problemáticas Corabastos"><i class="fa-solid fa-triangle-exclamation"></i></a>
         <a href="red-residuos-organicos.html" class="icon-nav-item" title="Red de problemáticas"><i class="fa-solid fa-diagram-project"></i></a>
         <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
       </nav>
@@ -154,8 +191,8 @@
     </div>
 
     <div class="hud-title">
-      <h1>Simulación 3D de tránsito — Kennedy</h1>
-      <p>Proyección axonométrica a 45° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista</p>
+      <h1>Problemáticas de Kennedy — Corabastos</h1>
+      <p>8 problemáticas ubicadas en su lugar real · clic en un círculo para ver su red de causas, localizada en el mismo mapa</p>
     </div>
 
     <div class="view-buttons">
@@ -219,11 +256,20 @@
       <h3 id="treeInfoName"></h3>
       <p id="treeInfoDetails"></p>
     </div>
+
+    <!-- Conectografia: red de problematicas ubicada sobre el mapa 3D real -->
+    <svg id="netSvg"></svg>
+    <div id="netLabelLayer"></div>
+    <button type="button" id="netCloseSubBtn">✕ Cerrar causas internas</button>
+    <aside id="netPanel">
+      <button type="button" class="panel-close" id="netPanelClose">✕</button>
+      <div id="netPanelBody"></div>
+    </aside>
   </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-08-3d.js?v=55"></script>
+<script src="modulo-12-problemas.js?v=1"></script>
 </body>
 </html>
