@@ -157,61 +157,12 @@
       <p>Proyección axonométrica a 45° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista</p>
     </div>
 
-    <div class="draw-panel" id="drawPanel">
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="drawToggle">✏️ Dibujar zona verde</button>
-      </div>
-      <p class="draw-hint">Con el modo activo, haz clic sobre el mapa para ir marcando puntos. Doble clic para cerrar la forma.</p>
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="drawUndo">↺ Quitar último punto</button>
-        <button type="button" id="drawClear">🗑️ Limpiar</button>
-      </div>
-      <textarea id="drawOutput" rows="6" spellcheck="false" readonly placeholder="Los puntos que marques aparecen aquí…"></textarea>
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="drawCopy">📋 Copiar coordenadas</button>
-      </div>
-      <div class="rotate-row rotate-buttons" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
-        <button type="button" id="treePlantToggle">🌳 Plantar árboles</button>
-      </div>
-      <p class="draw-hint">Con el modo activo, cada clic marca un árbol nuevo (no se conectan con lineas).</p>
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="treePlantUndo">↺ Quitar último</button>
-        <button type="button" id="treePlantClear">🗑️ Limpiar</button>
-      </div>
-      <textarea id="treePlantOutput" rows="6" spellcheck="false" readonly placeholder="Los árboles que agregues aparecen aquí…"></textarea>
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="treePlantCopy">📋 Copiar coordenadas</button>
-      </div>
-    </div>
-
     <div class="view-buttons">
       <button type="button" id="viewReset">Restablecer vista axonométrica</button>
     </div>
 
     <div class="rotate-panel" id="rotatePanel">
-      <p style="margin:0 0 4px; font-size:11px; color:var(--ink-dim);">Vista actual (se actualiza sola mientras mueves/haces zoom con el mouse):</p>
-      <textarea id="viewOutput" rows="4" spellcheck="false" readonly></textarea>
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="viewCopy">📋 Copiar vista actual</button>
-      </div>
-      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
-        <label>Rotar X <span id="rotXVal">0°</span></label>
-        <input type="range" id="rotX" min="-180" max="180" value="0" step="1">
-      </div>
       <div class="rotate-row">
-        <label>Rotar Y <span id="rotYVal">0°</span></label>
-        <input type="range" id="rotY" min="-180" max="180" value="0" step="1">
-      </div>
-      <div class="rotate-row">
-        <label>Rotar Z <span id="rotZVal">0°</span></label>
-        <input type="range" id="rotZ" min="-180" max="180" value="0" step="1">
-      </div>
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="rotateReset">↺ Restablecer rotación</button>
-        <button type="button" id="rotateCopy">📋 Copiar rotación</button>
-      </div>
-      <textarea id="rotateOutput" rows="2" spellcheck="false" readonly></textarea>
-      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
         <label>Sol — acimut <span id="sunAzVal">130°</span></label>
         <input type="range" id="sunAz" min="0" max="360" value="130" step="1">
       </div>
@@ -232,18 +183,6 @@
         <input type="color" id="colorVerde" value="#adaa90">
       </div>
       <textarea id="colorOutput" rows="3" spellcheck="false" readonly></textarea>
-      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
-        <label>Cruce/semáforo — distancia al centro <span id="interSetbackVal">1.3</span></label>
-        <input type="range" id="interSetback" min="0.5" max="8" value="1.3" step="0.1">
-      </div>
-      <div class="rotate-row">
-        <label>Ancho del cruce peatonal <span id="interCrossWVal">1.0</span></label>
-        <input type="range" id="interCrossW" min="0.3" max="4" value="1.0" step="0.1">
-      </div>
-      <div class="rotate-row">
-        <label>Separación del poste <span id="interPoleOffVal">1.1</span></label>
-        <input type="range" id="interPoleOff" min="0.3" max="4" value="1.1" step="0.1">
-      </div>
     </div>
 
     <div class="legend">
@@ -284,6 +223,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-08-3d.js?v=54"></script>
+<script src="modulo-08-3d.js?v=55"></script>
 </body>
 </html>
