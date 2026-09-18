@@ -322,7 +322,7 @@
     // real y no una silueta plana.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.55 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.25 });
     buildingEdgeMat = edgeMat;
     sceneRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
   }
@@ -461,7 +461,7 @@
     waterBumpRef = bumpTex;
     const mat = new THREE.MeshStandardMaterial({
       map: waterTex, bumpMap: bumpTex, bumpScale: 0.12,
-      color: 0x7ec9d6, roughness: 0.18, metalness: 0.15,
+      color: 0x9c9c9c, roughness: 0.18, metalness: 0.15,
       transparent: true, opacity: 0.82, side: THREE.DoubleSide,
     });
     waterMat = mat;
@@ -943,13 +943,9 @@
       timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(maxT)}`;
       renderVehiclesAt(currentTime);
     }
-    // Las lineas de borde de los edificios se ven como una masa oscura
-    // cuando hay muchas superpuestas al alejar la camara (zoom bajo) -
-    // se atenuan progresivamente lejos y se ven bien definidas de cerca.
-    if (buildingEdgeMat) {
-      const t = Math.min(Math.max((camera.zoom - 1) / 4, 0), 1);
-      buildingEdgeMat.opacity = 0.22 + t * 0.5;
-    }
+    // Lineas de borde de edificios: opacidad FIJA y baja, no cambia con
+    // el zoom (asi no se ven gruesas/densas cuando no se esta haciendo
+    // zoom, y no cambian de aspecto al acercar/alejar la camara).
     // Agua con movimiento: se desplaza lentamente la textura de color Y
     // la capa de relieve (bump) a velocidades/escalas DISTINTAS entre si,
     // simulando dos capas de oleaje superpuestas.
