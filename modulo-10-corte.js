@@ -127,6 +127,7 @@
 
   // ---- Suelo ----
   let netCenter = { x: 0, y: 0 };
+  function sceneToReal(x, z) { return [x / SCALE + netCenter.x, -z / SCALE + netCenter.y]; }
   let sceneExtentW = 100, sceneExtentH = 100; // ancho/alto de la escena en unidades (para la caja de seccion)
   let roadMat = null, waterMat = null, parqueMat = null; // referencias para los selectores de color en vivo
   let buildingEdgeMat = null; // referencia para ajustar su opacidad segun el zoom
@@ -903,51 +904,6 @@
   // ---- Botones de vista ----
   document.getElementById("viewReset").addEventListener("click", () => setAxonometricView(400));
 
-  // ---- Rotacion manual del mapa completo (X/Y/Z), para que el usuario
-  // pueda acomodar la orientacion a mano y luego copiar los grados
-  // exactos que quedaron, para dejarlos fijos en el codigo. ----
-  // ---- Vista actual (posicion de camara + zoom), en vivo mientras el
-  // usuario mueve/hace zoom con el mouse (esto es lo que se pide copiar
-  // para "las coordenadas del zoom" — la rotacion de los deslizadores de
-  // abajo es una cosa aparte, no tiene que ver con el mouse). ----
-  const viewOutput = document.getElementById("viewOutput");
-  const viewCopyBtn = document.getElementById("viewCopy");
-  function updateViewOutput() {
-    const p = camera.position, t = controls.target;
-    viewOutput.value =
-      `camera.position.set(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)});\n` +
-      `controls.target.set(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)});\n` +
-      `camera.zoom = ${camera.zoom.toFixed(3)};`;
-  }
-  controls.addEventListener("change", updateViewOutput);
-  viewCopyBtn.addEventListener("click", async () => {
-    updateViewOutput();
-    try { await navigator.clipboard.writeText(viewOutput.value); } catch (err) {}
-    viewOutput.select();
-  });
-  updateViewOutput();
-
-  const rotX = document.getElementById("rotX"), rotY = document.getElementById("rotY"), rotZ = document.getElementById("rotZ");
-  const rotXVal = document.getElementById("rotXVal"), rotYVal = document.getElementById("rotYVal"), rotZVal = document.getElementById("rotZVal");
-  const rotateOutput = document.getElementById("rotateOutput");
-  function updateRotation() {
-    const dx = parseFloat(rotX.value), dy = parseFloat(rotY.value), dz = parseFloat(rotZ.value);
-    sceneRoot.rotation.set(dx * Math.PI / 180, dy * Math.PI / 180, dz * Math.PI / 180);
-    rotXVal.textContent = dx + "°"; rotYVal.textContent = dy + "°"; rotZVal.textContent = dz + "°";
-    rotateOutput.value = `sceneRoot.rotation.set(\n  ${(dx * Math.PI / 180).toFixed(4)}, // X: ${dx}°\n  ${(dy * Math.PI / 180).toFixed(4)}, // Y: ${dy}°\n  ${(dz * Math.PI / 180).toFixed(4)}  // Z: ${dz}°\n);`;
-  }
-  [rotX, rotY, rotZ].forEach(el => el.addEventListener("input", updateRotation));
-  document.getElementById("rotateReset").addEventListener("click", () => {
-    rotX.value = 0; rotY.value = 0; rotZ.value = 0;
-    updateRotation();
-  });
-  document.getElementById("rotateCopy").addEventListener("click", async () => {
-    updateRotation();
-    try { await navigator.clipboard.writeText(rotateOutput.value); } catch (err) {}
-    rotateOutput.select();
-  });
-  updateRotation();
-
   // ---- Control del sol (mover las sombras) ----
   const sunAzInput = document.getElementById("sunAz"), sunElInput = document.getElementById("sunEl");
   const sunAzVal = document.getElementById("sunAzVal"), sunElVal = document.getElementById("sunElVal");
@@ -984,163 +940,8 @@
   });
   updateColorOutput();
 
-  // ---- Deslizadores para acomodar semaforos/cruces peatonales a mano.
-  // El numero se actualiza al instante; la geometria (mas pesada) se
-  // reconstruye al soltar el deslizador (evento "change"), no en cada
-  // tick del arrastre, para que se sienta fluido. ----
-  const interSetback = document.getElementById("interSetback");
-  const interCrossW = document.getElementById("interCrossW");
-  const interPoleOff = document.getElementById("interPoleOff");
-  const interSetbackVal = document.getElementById("interSetbackVal");
-  const interCrossWVal = document.getElementById("interCrossWVal");
-  const interPoleOffVal = document.getElementById("interPoleOffVal");
-  function onInterInput() {
-    interSetbackVal.textContent = interSetback.value;
-    interCrossWVal.textContent = interCrossW.value;
-    interPoleOffVal.textContent = interPoleOff.value;
-  }
-  function onInterChange() {
-    interParams.setback = parseFloat(interSetback.value);
-    interParams.crossW = parseFloat(interCrossW.value);
-    interParams.poleOffset = parseFloat(interPoleOff.value);
-    rebuildIntersections();
-  }
-  [interSetback, interCrossW, interPoleOff].forEach(el => {
-    el.addEventListener("input", onInterInput);
-    el.addEventListener("change", onInterChange);
-  });
-
-  // ---- Herramienta de dibujo: clic para ir marcando puntos sobre el
-  // mapa (como la pluma de Photoshop), y mostrar las coordenadas REALES
-  // (mismo sistema que usan los demas archivos de datos) para copiar y
-  // pegar, por ejemplo para trazar una nueva zona verde a mano. ----
-  const raycaster = new THREE.Raycaster();
-  let drawMode = false;
-  let drawPoints = []; // [[x,y], ...] en coordenadas reales (no de escena)
-  let drawLineMesh = null;
-  const drawToggleBtn = document.getElementById("drawToggle");
-  const drawOutput = document.getElementById("drawOutput");
-  function sceneToReal(x, z) {
-    return [x / SCALE + netCenter.x, -z / SCALE + netCenter.y];
-  }
-  function updateDrawOutput() {
-    if (!drawPoints.length) { drawOutput.value = ""; return; }
-    drawOutput.value = JSON.stringify(drawPoints.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]));
-  }
-  function updateDrawLine() {
-    if (drawLineMesh) { sceneRoot.remove(drawLineMesh); drawLineMesh.geometry.dispose(); drawLineMesh = null; }
-    if (drawPoints.length < 2) return;
-    const positions = [];
-    for (let i = 0; i < drawPoints.length - 1; i++) {
-      const a = toScene(drawPoints[i][0], drawPoints[i][1]);
-      const b = toScene(drawPoints[i + 1][0], drawPoints[i + 1][1]);
-      positions.push(a.x, 0.05, a.z, b.x, 0.05, b.z);
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    const mat = new THREE.LineBasicMaterial({ color: 0xffcc33, linewidth: 2 });
-    drawLineMesh = new THREE.LineSegments(geo, mat);
-    sceneRoot.add(drawLineMesh);
-  }
-  drawToggleBtn.addEventListener("click", () => {
-    drawMode = !drawMode;
-    if (drawMode && treePlantMode) { plantToggleBtn.click(); } // los 2 modos no se mezclan
-    drawToggleBtn.classList.toggle("active", drawMode);
-    drawToggleBtn.textContent = drawMode ? "✏️ Dibujando… (clic para salir)" : "✏️ Dibujar zona verde";
-    controls.enabled = !drawMode && !treePlantMode; // no girar la camara mientras se dibuja
-  });
-  document.getElementById("drawUndo").addEventListener("click", () => {
-    drawPoints.pop();
-    updateDrawLine();
-    updateDrawOutput();
-  });
-  document.getElementById("drawClear").addEventListener("click", () => {
-    drawPoints = [];
-    updateDrawLine();
-    updateDrawOutput();
-  });
-  document.getElementById("drawCopy").addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(drawOutput.value); } catch (err) {}
-    drawOutput.select();
-  });
-
-  // ---- Modo "plantar arboles": cada clic marca un punto nuevo (no se
-  // conectan con lineas), con un pequeño marcador verde visible, y las
-  // coordenadas reales quedan listas para copiar y pegar. ----
-  let treePlantMode = false;
-  let plantedPoints = [];
-  let plantedMarkersGroup = new THREE.Group();
-  sceneRoot.add(plantedMarkersGroup);
-  const plantToggleBtn = document.getElementById("treePlantToggle");
-  const plantOutput = document.getElementById("treePlantOutput");
-  const markerGeo = new THREE.SphereGeometry(0.12, 8, 6);
-  const markerMat = new THREE.MeshBasicMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0x3ddc5a });
-  function updatePlantOutput() {
-    if (!plantedPoints.length) { plantOutput.value = ""; return; }
-    plantOutput.value = JSON.stringify(plantedPoints.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]));
-  }
-  function updatePlantMarkers() {
-    plantedMarkersGroup.clear();
-    plantedPoints.forEach(([rx, ry]) => {
-      const p = toScene(rx, ry);
-      const m = new THREE.Mesh(markerGeo, markerMat);
-      m.position.set(p.x, 0.15, p.z);
-      plantedMarkersGroup.add(m);
-    });
-  }
-  plantToggleBtn.addEventListener("click", () => {
-    treePlantMode = !treePlantMode;
-    if (treePlantMode && drawMode) { drawToggleBtn.click(); } // los 2 modos no se mezclan
-    plantToggleBtn.classList.toggle("active", treePlantMode);
-    plantToggleBtn.textContent = treePlantMode ? "🌳 Plantando… (clic para salir)" : "🌳 Plantar árboles";
-    controls.enabled = !treePlantMode && !drawMode;
-  });
-  document.getElementById("treePlantUndo").addEventListener("click", () => {
-    plantedPoints.pop();
-    updatePlantMarkers();
-    updatePlantOutput();
-  });
-  document.getElementById("treePlantClear").addEventListener("click", () => {
-    plantedPoints = [];
-    updatePlantMarkers();
-    updatePlantOutput();
-  });
-  document.getElementById("treePlantCopy").addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(plantOutput.value); } catch (err) {}
-    plantOutput.select();
-  });
-
-  renderer.domElement.addEventListener("click", (e) => {
-    if (!drawMode && !treePlantMode) return;
-    const rect = renderer.domElement.getBoundingClientRect();
-    const ndc = new THREE.Vector2(
-      ((e.clientX - rect.left) / rect.width) * 2 - 1,
-      -((e.clientY - rect.top) / rect.height) * 2 + 1
-    );
-    raycaster.setFromCamera(ndc, camera);
-    const targets = [groundMesh].filter(Boolean);
-    const hits = raycaster.intersectObjects(targets);
-    if (!hits.length) return;
-    const p = hits[0].point;
-    if (treePlantMode) {
-      plantedPoints.push(sceneToReal(p.x, p.z));
-      updatePlantMarkers();
-      updatePlantOutput();
-      return;
-    }
-    drawPoints.push(sceneToReal(p.x, p.z));
-    updateDrawLine();
-    updateDrawOutput();
-  });
-  renderer.domElement.addEventListener("dblclick", (e) => {
-    if (!drawMode || drawPoints.length < 3) return;
-    e.preventDefault();
-    drawPoints.push(drawPoints[0]); // cerrar la forma repitiendo el primer punto
-    updateDrawLine();
-    updateDrawOutput();
-  });
-
   // ---- Clic en un arbol: muestra su informacion (especie, altura) ----
+  const raycaster = new THREE.Raycaster();
   const mouseNdc = new THREE.Vector2();
   const treeInfo = document.getElementById("treeInfo");
   const treeInfoName = document.getElementById("treeInfoName");
@@ -1154,7 +955,6 @@
     const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
     downAt = null;
     if (moved > 6) return; // fue un arrastre de camara, no un clic
-    if (drawMode) return; // el modo dibujo tiene su propio manejador de clic
     if (!treeMeshes.length) return;
     const rect = renderer.domElement.getBoundingClientRect();
     mouseNdc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
