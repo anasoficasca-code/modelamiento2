@@ -803,7 +803,7 @@
       loadWaterBodies();
       loadManzanas();
       loadParques();
-      loadIntersections();
+      // loadIntersections(); // quitado: semaforos/cruces peatonales, a pedido del usuario
       loadTriMesh("./assets/kennedy_roofs_flat.json", 0xffffff);    // techos planos con parapeto ya modelado
       loadTriMesh("./assets/kennedy_facades.json", 0xa05a41);       // fachadas verificadas con StreetView
       // loadTerrain(); // quitado a pedido del usuario, vuelve al plano liso

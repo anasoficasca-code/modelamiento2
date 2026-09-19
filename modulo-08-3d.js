@@ -425,55 +425,113 @@
       .catch(err => console.warn("No se pudieron cargar los árboles:", err));
   }
 
-  // ---- Mapa de ruido: mismos datos e indice ya calculado que en el
-  // modulo 8 en 2D (modulo-08-noise.js, a partir del flujo vehicular y la
-  // velocidad promedio de la simulacion SUMO), pero dibujado aqui como
-  // una cinta 3D sobre cada via, coloreada segun el mismo indice y los
-  // mismos umbrales/colores que en 2D. Empieza oculto (toggle en el panel).
-  let noiseMesh = null;
-  const NOISE_URL = "./assets/kennedy_noise_local.json";
-  function noiseColor(score) {
-    if (score < 12) return 0x2e7d5b;
-    if (score < 18) return 0x8bc34a;
-    if (score < 24) return 0xf1c40f;
-    if (score < 32) return 0xe67e22;
-    return 0xe5484d;
-  }
-  function buildNoise(edges) {
-    const positions = [];
-    const colors = [];
-    const HALF_W = 1.0; // un poco mas ancho que la via, para que se note la cinta de color encima
-    edges.forEach(edge => {
-      const pts = edge.pts.map(p => toScene(p[0], p[1]));
-      if (pts.length < 2) return;
-      const c = new THREE.Color(noiseColor(edge.noise));
-      for (let i = 0; i < pts.length - 1; i++) {
-        const a = pts[i], b = pts[i + 1];
-        const dx = b.x - a.x, dz = b.z - a.z;
-        const len = Math.hypot(dx, dz) || 0.001;
-        const nx = -dz / len * HALF_W, nz = dx / len * HALF_W;
-        const y = 0.05; // apenas encima de la via, para que se vea como una capa
-        positions.push(
-          a.x - nx, y, a.z - nz, a.x + nx, y, a.z + nz, b.x + nx, y, b.z + nz,
-          a.x - nx, y, a.z - nz, b.x + nx, y, b.z + nz, b.x - nx, y, b.z - nz
-        );
-        for (let k = 0; k < 6; k++) colors.push(c.r, c.g, c.b);
+  // ---- Mapa de ruido REAL en vivo: igual que en el modulo 8 en 2D
+  // (modulo-08-noise.js -> computeNoiseField), se recalcula en cada
+  // instante de la simulacion a partir de donde estan los vehiculos DE
+  // VERDAD en ese momento (no un valor fijo por via) — manchas de
+  // intensidad alrededor de cada carro, acumuladas con "lighter" en un
+  // canvas, luego coloreadas amarillo->rojo con el MISMO alpha fijo
+  // (0.42) que en 2D, sin importar el nivel. Empieza oculto.
+  const NOISE_ALPHA = 0.42;
+  const NOISE_BUF_W = 260, NOISE_BUF_H = 180; // resolucion baja a proposito, mancha continua no puntos
+  const NOISE_COLOR_STOPS = [
+    { t: 0.00, rgb: [255, 247, 179] }, { t: 0.20, rgb: [255, 224, 76] },
+    { t: 0.40, rgb: [255, 179, 77] }, { t: 0.60, rgb: [245, 124, 0] },
+    { t: 0.80, rgb: [230, 74, 25] }, { t: 1.00, rgb: [211, 47, 47] },
+  ];
+  function noiseColorAt(t) {
+    t = Math.max(0, Math.min(1, t));
+    for (let i = 0; i < NOISE_COLOR_STOPS.length - 1; i++) {
+      const a = NOISE_COLOR_STOPS[i], b = NOISE_COLOR_STOPS[i + 1];
+      if (t >= a.t && t <= b.t) {
+        const f = (t - a.t) / (b.t - a.t || 1);
+        return [Math.round(a.rgb[0] + (b.rgb[0] - a.rgb[0]) * f), Math.round(a.rgb[1] + (b.rgb[1] - a.rgb[1]) * f), Math.round(a.rgb[2] + (b.rgb[2] - a.rgb[2]) * f)];
       }
-    });
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-    const mat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+    }
+    return NOISE_COLOR_STOPS[NOISE_COLOR_STOPS.length - 1].rgb;
+  }
+  let noiseMesh = null, noiseTexture = null, noiseGroundW = 0, noiseGroundH = 0, noiseOriginX = 0, noiseOriginY = 0;
+  const noiseBufCanvas = document.createElement("canvas");
+  noiseBufCanvas.width = NOISE_BUF_W; noiseBufCanvas.height = NOISE_BUF_H;
+  const noiseBufCtx = noiseBufCanvas.getContext("2d", { willReadFrequently: true });
+  let noiseFieldImg = null; // se reusa para que las mirlas lean el mismo campo real
+  function buildNoiseGround(bbox) {
+    noiseOriginX = bbox[0]; noiseOriginY = bbox[1];
+    noiseGroundW = bbox[2] - bbox[0]; noiseGroundH = bbox[3] - bbox[1];
+    const c0 = toScene(bbox[0], bbox[1]), c1 = toScene(bbox[2], bbox[3]);
+    const w = Math.abs(c1.x - c0.x), h = Math.abs(c1.z - c0.z);
+    const geo = new THREE.PlaneGeometry(w, h);
+    noiseTexture = new THREE.CanvasTexture(noiseBufCanvas);
+    const mat = new THREE.MeshBasicMaterial({ map: noiseTexture, transparent: true, opacity: 1, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.visible = false; // oculto por defecto, se activa con el boton del panel
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set((c0.x + c1.x) / 2, 0.06, (c0.z + c1.z) / 2);
+    mesh.visible = false;
     sceneRoot.add(mesh);
     noiseMesh = mesh;
   }
-  function loadNoise() {
-    return fetch(NOISE_URL)
-      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + NOISE_URL); return r.json(); })
-      .then(data => { buildNoise(data); buildNoiseField(data); })
-      .catch(err => console.warn("No se pudo cargar el mapa de ruido:", err));
+  // Radio de mancha por vehiculo (metros reales) — como no se tiene aqui
+  // la clasificacion local/mid/major por cercania a cada vehiculo (si en
+  // 2D), se usa un radio intermedio razonable, igual para todos.
+  const NOISE_VEH_RADIUS_M = 55;
+  let lastNoiseCompute = 0;
+  function computeLiveNoiseField(vehicles, now) {
+    if (!noiseGroundW || (now - lastNoiseCompute < 140)) return;
+    lastNoiseCompute = now;
+    noiseBufCtx.clearRect(0, 0, NOISE_BUF_W, NOISE_BUF_H);
+    noiseBufCtx.globalCompositeOperation = "lighter";
+    const sx = NOISE_BUF_W / noiseGroundW, sy = NOISE_BUF_H / noiseGroundH;
+    const blobR = NOISE_VEH_RADIUS_M * sx;
+    vehicles.forEach(v => {
+      const bx = (v.x - noiseOriginX) * sx, by = NOISE_BUF_H - (v.y - noiseOriginY) * sy;
+      const grad = noiseBufCtx.createRadialGradient(bx, by, 0, bx, by, blobR);
+      grad.addColorStop(0, "rgba(255,255,255,0.9)");
+      grad.addColorStop(1, "rgba(255,255,255,0)");
+      noiseBufCtx.fillStyle = grad;
+      noiseBufCtx.beginPath(); noiseBufCtx.arc(bx, by, blobR, 0, Math.PI * 2); noiseBufCtx.fill();
+    });
+    noiseBufCtx.globalCompositeOperation = "source-over";
+    const img = noiseBufCtx.getImageData(0, 0, NOISE_BUF_W, NOISE_BUF_H);
+    const data = img.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const intensity = data[i + 3] / 255;
+      if (intensity < 0.02) { data[i + 3] = 0; continue; }
+      const t = Math.min(1, Math.pow(intensity, 2.4));
+      const [r, g, b] = noiseColorAt(t);
+      data[i] = r; data[i + 1] = g; data[i + 2] = b;
+      data[i + 3] = Math.round(NOISE_ALPHA * 255); // alpha SIEMPRE el mismo, solo cambia el color
+    }
+    noiseFieldImg = img;
+    if (noiseMesh && noiseMesh.visible) {
+      noiseBufCtx.putImageData(img, 0, 0);
+      noiseTexture.needsUpdate = true;
+    }
+  }
+  // Lectura del campo real en un punto del mundo (mismas coordenadas que
+  // usan los arboles/mirlas), para que las mirlas huyan del ruido de
+  // donde estan los carros DE VERDAD en este instante, no un valor fijo.
+  const NOISE_DB_BASE = 40, NOISE_DB_SPAN = 52;
+  function noiseDbAt(x, y) {
+    if (!noiseFieldImg || !noiseGroundW) return NOISE_DB_BASE;
+    const bx = Math.floor(((x - noiseOriginX) / noiseGroundW) * NOISE_BUF_W);
+    const by = Math.floor(NOISE_BUF_H - ((y - noiseOriginY) / noiseGroundH) * NOISE_BUF_H);
+    if (bx < 0 || by < 0 || bx >= NOISE_BUF_W || by >= NOISE_BUF_H) return NOISE_DB_BASE;
+    const idx = (by * NOISE_BUF_W + bx) * 4;
+    const raw = noiseFieldImg.data[idx + 3] / 255; // el alpha ya no sirve de intensidad (quedo fijo); se usa el brillo del color en su lugar
+    const bright = (noiseFieldImg.data[idx] + noiseFieldImg.data[idx + 1] + noiseFieldImg.data[idx + 2]) / (3 * 255);
+    if (raw < 0.01) return NOISE_DB_BASE;
+    // mientras mas cerca de rojo (stop final), mas alto: se aproxima con
+    // la distancia de color a "amarillo claro" (stop inicial, ruido bajo).
+    const t = 1 - bright; // aprox: colores mas oscuros/rojos = mas ruido
+    return NOISE_DB_BASE + NOISE_DB_SPAN * Math.max(0, Math.min(1, t * 1.6));
+  }
+  function noiseEscapeDir(x, y) {
+    const paso = (noiseGroundW / NOISE_BUF_W) * 3;
+    const gx = noiseDbAt(x + paso, y) - noiseDbAt(x - paso, y);
+    const gy = noiseDbAt(x, y + paso) - noiseDbAt(x, y - paso);
+    const m = Math.hypot(gx, gy);
+    if (m < 1e-4) return null;
+    return [-gx / m, -gy / m];
   }
 
   // ============================================================
@@ -540,58 +598,21 @@
     }
     return best ? { arbol: best, dist: bestDist } : null;
   }
-  // Campo de ruido REAL (misma fuente que el mapa de ruido de la
-  // superficie): rejilla gruesa con el promedio de indice de ruido de
-  // las vias reales cercanas a cada celda, convertido a dB(A) aprox.
-  const NOISE_FIELD_CELL = 120; // metros reales por celda
-  let noiseFieldGrid = null;
-  function buildNoiseField(edges) {
-    noiseFieldGrid = new Map();
-    const add = (cx, cy, val) => {
-      const key = cx + "," + cy;
-      const cur = noiseFieldGrid.get(key);
-      if (cur) { cur.sum += val; cur.n++; } else noiseFieldGrid.set(key, { sum: val, n: 1 });
-    };
-    edges.forEach(e => {
-      e.pts.forEach(p => {
-        const cx = Math.floor(p[0] / NOISE_FIELD_CELL), cy = Math.floor(p[1] / NOISE_FIELD_CELL);
-        add(cx, cy, e.noise);
-      });
-    });
-  }
-  function noiseDbAt(x, y) {
-    if (!noiseFieldGrid) return 40;
-    const cx = Math.floor(x / NOISE_FIELD_CELL), cy = Math.floor(y / NOISE_FIELD_CELL);
-    const cell = noiseFieldGrid.get(cx + "," + cy);
-    // el indice de ruido de kennedy_noise.json va de 0 a ~52; se mapea a
-    // un rango de dB(A) razonable (40 a 92) para poder compararlo con el
-    // umbral critico real de 60 dB(A) (Caltrans).
-    const idx = cell ? cell.sum / cell.n : 4;
-    return 40 + (idx / 52) * 52;
-  }
-  function noiseEscapeDir(x, y) {
-    const paso = NOISE_FIELD_CELL * 0.6;
-    const gx = noiseDbAt(x + paso, y) - noiseDbAt(x - paso, y);
-    const gy = noiseDbAt(x, y + paso) - noiseDbAt(x, y - paso);
-    const m = Math.hypot(gx, gy);
-    if (m < 1e-4) return null;
-    return [-gx / m, -gy / m];
-  }
 
   function makeBirdSprite(colorHex) {
-    const c = document.createElement("canvas"); c.width = 32; c.height = 32;
+    const c = document.createElement("canvas"); c.width = 64; c.height = 64;
     const ctx = c.getContext("2d");
-    ctx.translate(16, 16);
+    ctx.translate(32, 32);
     ctx.fillStyle = "#20222c";
-    ctx.beginPath(); ctx.ellipse(0, 0, 6, 3.4, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#eef2f7"; ctx.lineWidth = 1.4; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(-7, -6); ctx.lineTo(1, 0); ctx.lineTo(-7, 6); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0, 0, 13, 7.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#eef2f7"; ctx.lineWidth = 2.6; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-15, -13); ctx.lineTo(2, 0); ctx.lineTo(-15, 13); ctx.stroke();
     ctx.fillStyle = "#f2a93b";
-    ctx.beginPath(); ctx.arc(6.5, 0, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(14, 0, 3.6, 0, Math.PI * 2); ctx.fill();
     if (colorHex != null) {
       ctx.strokeStyle = "#" + colorHex.toString(16).padStart(6, "0");
-      ctx.globalAlpha = 0.85; ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 0.85; ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.arc(0, 0, 24, 0, Math.PI * 2); ctx.stroke();
     }
     const tex = new THREE.CanvasTexture(c);
     return tex;
@@ -673,7 +694,7 @@
       const origen = i < refugeCount ? "refugio" : (i % 2 ? "humedal" : "oriente");
       const b = makeBirdAgent(origen);
       const sprite = new THREE.Sprite(spriteMat.clone());
-      sprite.scale.set(1.1, 1.1, 1);
+      sprite.scale.set(6, 6, 1);
       birdsGroup.add(sprite);
       b.sprite = sprite;
       birds.push(b);
@@ -689,7 +710,7 @@
     birds.forEach(b => {
       const p = toScene(b.x, b.y);
       const bat = Math.sin(b.phase) * (b.rest > 0 ? 0.15 : 0.3);
-      b.sprite.position.set(p.x, 1.6 + bat, p.z);
+      b.sprite.position.set(p.x, 3.2 + bat, p.z);
       b.sprite.material.color.set(b.estresada ? 0xff6b4d : 0xffffff);
     });
   }
@@ -1046,6 +1067,7 @@
     }
     vehInstanced.count = n;
     vehInstanced.instanceMatrix.needsUpdate = true;
+    computeLiveNoiseField(vehicles, performance.now());
   }
 
   function finishLoadingTimesteps() {
@@ -1076,6 +1098,7 @@
     .then(data => {
       netCenter = { x: (data.bbox[0] + data.bbox[2]) / 2, y: (data.bbox[1] + data.bbox[3]) / 2 };
       buildGround(data.bbox);
+      buildNoiseGround(data.bbox);
       buildRoads(data.edges);
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       const h = (data.bbox[3] - data.bbox[1]) * SCALE;
@@ -1085,12 +1108,12 @@
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
       loadBuildings();
       loadTrees();
-      loadNoise();
+      // loadNoise(); // reemplazado por el campo de ruido EN VIVO (computeLiveNoiseField), calculado a partir de la posicion real de los vehiculos
       buildBirds();
       loadWaterBodies();
       loadManzanas();
       loadParques();
-      loadIntersections();
+      // loadIntersections(); // quitado: semaforos/cruces peatonales, a pedido del usuario
       loadTriMesh("./assets/kennedy_roofs_flat.json", 0xffffff);    // techos planos con parapeto ya modelado
       loadTriMesh("./assets/kennedy_facades.json", 0xa05a41);       // fachadas verificadas con StreetView
       // loadTerrain(); // quitado a pedido del usuario, vuelve al plano liso
