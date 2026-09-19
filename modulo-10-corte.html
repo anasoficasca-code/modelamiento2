@@ -16,7 +16,7 @@
   body{ background:var(--bg); color:var(--ink); font-family:Inter,Arial,sans-serif; overflow:hidden; }
   .app{ display:flex; min-height:100vh; }
   .main{ flex:1; position:relative; min-width:0; }
-  #sceneWrap{ position:absolute; inset:0; }
+  #sceneWrap{ position:relative; width:100%; aspect-ratio:16/9; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
   #sceneCanvas{ position:absolute; inset:0; display:block; width:100%; height:100%; }
 
   .hud-title{
@@ -146,15 +146,15 @@
   por lineas punteadas verticales entre las puntas de cada rombo, con su
   titulo inclinado "de pie" junto a la punta derecha ---- */
   #explodedStack{
-    position:absolute; top:2%; left:50%; transform:translateX(-50%); z-index:9;
-    width:46vw; max-width:560px; display:flex; flex-direction:column; align-items:center;
-    pointer-events:none;
+    position:absolute; top:1%; left:50%; transform:translateX(-50%); z-index:9;
+    width:42vw; max-width:520px; display:flex; flex-direction:column; align-items:center;
   }
   .exploded-layer{
     position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-9%;
     clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-    background:rgba(255,255,255,.94);
+    background:rgba(255,255,255,.94); pointer-events:none;
   }
+  #layerBase{ background:#eceeef; z-index:1; }
   .exploded-layer canvas{ width:100%; height:100%; display:block; pointer-events:auto; }
   .exploded-layer .axo-label{ font-size:15px; bottom:14%; right:6%; transform: rotate(-26deg); }
   #layerNatural .axo-label{ cursor:pointer; pointer-events:auto; }
@@ -162,7 +162,6 @@
   .exploded-connector{
     position:absolute; z-index:7; border-left:1.5px dashed rgba(10,10,10,.4); width:0; pointer-events:none;
   }
-  #connectorToBaseL, #connectorToBaseR{ height:62vh; }
 
   /* ---- Modal de detalle de la Escala Natural: 4 capas explotadas
   adicionales, mismo estilo de rombos apilados ---- */
@@ -213,10 +212,6 @@
       </nav>
     </aside>
   <main class="main">
-    <div id="sceneWrap">
-      <canvas id="sceneCanvas"></canvas>
-    </div>
-
     <div class="hud-title">
       <h1>Corte axonométrico — Kennedy</h1>
       <p>Proyección axonométrica a 35° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista</p>
@@ -323,10 +318,6 @@
       <p id="treeInfoDetails"></p>
     </div>
 
-    <div class="axo-label" id="axoLabelBottom">KENNEDY</div>
-    <div class="exploded-connector" id="connectorToBaseL" style="left:calc(50% - 46vw/2 + 46vw*0.02); top:2%;"></div>
-    <div class="exploded-connector" id="connectorToBaseR" style="left:calc(50% + 46vw/2 - 46vw*0.02); top:2%;"></div>
-
     <div id="explodedStack">
       <div class="exploded-connector" style="left:2%; top:0; height:100%;"></div>
       <div class="exploded-connector" style="left:98%; top:0; height:100%;"></div>
@@ -341,6 +332,12 @@
       <div class="exploded-layer" id="layerTecnologica">
         <canvas id="canvasTecnologica"></canvas>
         <div class="axo-label">ESCALA TECNOLÓGICA</div>
+      </div>
+      <div class="exploded-layer" id="layerBase">
+        <div id="sceneWrap">
+          <canvas id="sceneCanvas"></canvas>
+        </div>
+        <div class="axo-label" id="axoLabelBottom">KENNEDY</div>
       </div>
     </div>
 
