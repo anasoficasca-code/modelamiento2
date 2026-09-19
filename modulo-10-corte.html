@@ -16,7 +16,7 @@
   body{ background:var(--bg); color:var(--ink); font-family:Inter,Arial,sans-serif; overflow:hidden; }
   .app{ display:flex; min-height:100vh; }
   .main{ flex:1; position:relative; min-width:0; }
-  #sceneWrap{ position:relative; width:100%; aspect-ratio:16/9; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+  #sceneWrap{ position:absolute; inset:0; }
   #sceneCanvas{ position:absolute; inset:0; display:block; width:100%; height:100%; }
 
   .hud-title{
@@ -138,31 +138,7 @@
     transform-origin:left center;
     transform: rotate(-32deg);
   }
-  #axoLabelBottom{ font-size:26px; bottom:9%; right:6%; }
-
-  /* ---- Pila de capas explotadas (Escala natural / cultural /
-  tecnologica), como el diagrama de referencia: rombos APILADOS
-  verticalmente, CENTRADOS uno sobre el otro (mismo eje X), conectados
-  por lineas punteadas verticales entre las puntas de cada rombo, con su
-  titulo inclinado "de pie" junto a la punta derecha ---- */
-  #explodedStack{
-    position:absolute; top:1%; left:50%; transform:translateX(-50%); z-index:9;
-    width:42vw; max-width:520px; display:flex; flex-direction:column; align-items:center;
-  }
-  .exploded-layer{
-    position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-9%;
-    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-    background:rgba(255,255,255,.94); pointer-events:none;
-  }
-  #layerBase{ background:#eceeef; z-index:1; }
-  .exploded-layer canvas{ width:100%; height:100%; display:block; pointer-events:auto; }
-  .exploded-layer .axo-label{ font-size:15px; bottom:14%; right:6%; transform: rotate(-26deg); }
-  #layerNatural{ cursor:pointer; pointer-events:auto; }
-  #layerNatural:hover{ filter:brightness(1.06); }
-  #layerNatural .axo-label{ cursor:pointer; }
-  .exploded-connector{
-    position:absolute; z-index:7; border-left:1.5px dashed rgba(10,10,10,.4); width:0; pointer-events:none;
-  }
+  #axoLabelBottom{ font-size:26px; bottom:9%; right:6%; cursor:pointer; }
 
   /* ---- Modal de detalle de la Escala Natural: 4 capas explotadas
   adicionales, mismo estilo de rombos apilados ---- */
@@ -213,6 +189,10 @@
       </nav>
     </aside>
   <main class="main">
+    <div id="sceneWrap">
+      <canvas id="sceneCanvas"></canvas>
+    </div>
+
     <div class="hud-title">
       <h1>Corte axonométrico — Kennedy</h1>
       <p>Proyección axonométrica a 35° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista</p>
@@ -250,6 +230,9 @@
 
     <div class="rotate-panel" id="sectionBoxPanel" style="top:70px;">
       <div class="rotate-row rotate-buttons">
+        <button type="button" id="naturalDetailBtn">🌿 Escala natural — ver ciclo detallado</button>
+      </div>
+      <div class="rotate-row rotate-buttons" style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--panel-border);">
         <button type="button" id="sectionBoxToggle" class="active">✂️ Desactivar caja de sección</button>
       </div>
       <p class="draw-hint">El corte ya está activo — mueve cualquiera de los 6 límites y el modelo se corta al instante.</p>
@@ -319,28 +302,7 @@
       <p id="treeInfoDetails"></p>
     </div>
 
-    <div id="explodedStack">
-      <div class="exploded-connector" style="left:2%; top:0; height:100%;"></div>
-      <div class="exploded-connector" style="left:98%; top:0; height:100%;"></div>
-      <div class="exploded-layer" id="layerNatural">
-        <canvas id="canvasNatural"></canvas>
-        <div class="axo-label" id="labelEscalaNatural">ESCALA NATURAL</div>
-      </div>
-      <div class="exploded-layer" id="layerCultural">
-        <canvas id="canvasCultural"></canvas>
-        <div class="axo-label">ESCALA CULTURAL</div>
-      </div>
-      <div class="exploded-layer" id="layerTecnologica">
-        <canvas id="canvasTecnologica"></canvas>
-        <div class="axo-label">ESCALA TECNOLÓGICA</div>
-      </div>
-      <div class="exploded-layer" id="layerBase">
-        <div id="sceneWrap">
-          <canvas id="sceneCanvas"></canvas>
-        </div>
-        <div class="axo-label" id="axoLabelBottom">KENNEDY</div>
-      </div>
-    </div>
+    <div class="axo-label" id="axoLabelBottom">KENNEDY</div>
 
     <div id="naturalDetailModal">
       <div class="modal-title">
@@ -386,6 +348,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=34"></script>
+<script src="modulo-10-corte.js?v=35"></script>
 </body>
 </html>
