@@ -243,7 +243,7 @@
     viaTex.wrapS = THREE.RepeatWrapping;
     viaTex.wrapT = THREE.RepeatWrapping;
     const ribbonMat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
-      map: viaTex, color: 0xb7babd, roughness: 0.85, side: THREE.DoubleSide,
+      map: viaTex, color: 0xc0453f, roughness: 0.85, side: THREE.DoubleSide,
       transparent: true, opacity: 0.7,
     });
     roadMat = ribbonMat;
