@@ -23,7 +23,7 @@
   const canvas = document.getElementById("sceneCanvas");
   const wrap = document.getElementById("sceneWrap");
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xf3f4f5);
+  scene.background = new THREE.Color(0xffffff);
   scene.fog = new THREE.Fog(0xf3f4f5, 900, 3200);
   // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
   // se agrega a este grupo, no directamente a la escena, para poder
