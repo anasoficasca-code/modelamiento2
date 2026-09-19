@@ -1540,6 +1540,82 @@
         }
       });
 
+      // ---- Cobertura vegetal REAL (2014, shapefile Cober_vege_humedales
+      // del Jardin Botanico de Bogota, filtrado a Humedal El Burro: 305
+      // poligonos, 6 tipos de cobertura) ----
+      const COBERTURA_COLOR = {
+        "Arbustales": 0x4c7a3d, "Vegetación Herbácea": 0x8fae4a, "Areas Endurecidas": 0x9a9a9a,
+        "Espejo de Agua": 0x5f8fae, "Pastos": 0xb8c47a, "Vegetación Acuática": 0x2f9e6f,
+      };
+      const miniVeg = setupMini("canvasNdVeg");
+      const miniVegCiclo = setupMini("canvasNdVegCiclo");
+      const vegViewSize = viewSize * 1.15;
+      miniVeg.resizeMini(vegViewSize); miniVegCiclo.resizeMini(vegViewSize);
+      pointMiniCamera(miniVeg, { x: target.x, y: 0, z: target.z }, camDist, 40);
+      pointMiniCamera(miniVegCiclo, { x: target.x, y: 0, z: target.z }, camDist, 40);
+      window.addEventListener("resize", () => { miniVeg.resizeMini(vegViewSize); miniVegCiclo.resizeMini(vegViewSize); });
+
+      let vegAcuaticaMeshes = []; // {mesh, rawPts, centro} - las unicas que se animan en el ciclo estacional
+      fetch("./assets/burro_vegetacion.json").then(r => r.json()).then(poligonos => {
+        function buildPoly(p, sceneRootTarget, opacity) {
+          const pts = p.pts.map(pt => toSceneNd(pt[0], pt[1]));
+          if (pts.length < 3) return null;
+          const pts2d = pts.map(pt => new THREE.Vector2(pt.x, pt.z));
+          let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
+          const positions = [];
+          tris.forEach(([a, b, c]) => [a, b, c].forEach(idx => positions.push(pts[idx].x, 0.01, pts[idx].z)));
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+          const mat = new THREE.MeshBasicMaterial({ color: COBERTURA_COLOR[p.cobertura] || 0x999999, transparent: true, opacity: opacity, side: THREE.DoubleSide });
+          const mesh = new THREE.Mesh(geo, mat);
+          sceneRootTarget.add(mesh);
+          return mesh;
+        }
+        // Capa 1: cobertura vegetal estatica (mapa real completo)
+        poligonos.forEach(p => buildPoly(p, miniVeg.sceneRoot, 0.92));
+
+        // Capa 2: ciclo estacional — las coberturas de suelo (arbustales,
+        // pastos, herbacea, areas endurecidas) quedan fijas de fondo; las
+        // acuaticas (espejo de agua + vegetacion acuatica) se vuelven a
+        // reconstruir cada mes, creciendo/encogiendo con el MISMO ciclo
+        // hidrico real que ya se calculo para el humedal.
+        poligonos.forEach(p => {
+          if (p.cobertura === "Espejo de Agua" || p.cobertura === "Vegetación Acuática") {
+            const cx = p.pts.reduce((s, pt) => s + pt[0], 0) / p.pts.length;
+            const cy = p.pts.reduce((s, pt) => s + pt[1], 0) / p.pts.length;
+            vegAcuaticaMeshes.push({ raw: p, centro: { x: cx, y: cy }, mesh: null });
+          } else {
+            buildPoly(p, miniVegCiclo.sceneRoot, 0.55); // fondo tenue, no cambia
+          }
+        });
+        rebuildVegCiclo(HUMEDAL_CICLO[0].expansion_pct);
+      });
+      function rebuildVegCiclo(expansionPct) {
+        const scale = 1 + expansionPct / 100 * 0.6;
+        vegAcuaticaMeshes.forEach(v => {
+          if (v.mesh) { miniVegCiclo.sceneRoot.remove(v.mesh); v.mesh.geometry.dispose(); }
+          const pts = v.raw.pts.map(pt => {
+            const ex = v.centro.x + (pt[0] - v.centro.x) * scale, ey = v.centro.y + (pt[1] - v.centro.y) * scale;
+            return toSceneNd(ex, ey);
+          });
+          const pts2d = pts.map(pt => new THREE.Vector2(pt.x, pt.z));
+          let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
+          const positions = [];
+          tris.forEach(([a, b, c]) => [a, b, c].forEach(idx => positions.push(pts[idx].x, 0.015, pts[idx].z)));
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+          const mat = new THREE.MeshBasicMaterial({ color: COBERTURA_COLOR[v.raw.cobertura], transparent: true, opacity: 0.92, side: THREE.DoubleSide });
+          v.mesh = new THREE.Mesh(geo, mat);
+          miniVegCiclo.sceneRoot.add(v.mesh);
+        });
+      }
+      function animateVeg() {
+        requestAnimationFrame(animateVeg);
+        miniVeg.renderer.render(miniVeg.scene, miniVeg.camera);
+        miniVegCiclo.renderer.render(miniVegCiclo.scene, miniVegCiclo.camera);
+      }
+      requestAnimationFrame(animateVeg);
+
       // Aves: 3 sprites volando hacia el humedal
       const birdTex = makeBirdSprite();
       const birdMat = new THREE.SpriteMaterial({ map: birdTex, transparent: true });
@@ -1560,6 +1636,7 @@
           const d = HUMEDAL_CICLO[ndMonthIdx];
           const prev = HUMEDAL_CICLO[prevIdx];
           rebuildElBurroNd(d.expansion_pct);
+          rebuildVegCiclo(d.expansion_pct);
           const delta = d.expansion_pct - prev.expansion_pct;
           pctBadgeEl.textContent = (delta >= 0 ? "▲ +" : "▼ ") + delta.toFixed(1) + "%";
           pctBadgeEl.style.color = delta >= 0 ? "#2ecf7a" : "#e2635a";

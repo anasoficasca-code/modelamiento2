@@ -359,18 +359,35 @@
           <canvas id="canvasNdAves"></canvas>
           <div class="axo-label">AVES SEGÚN LA TEMPORADA</div>
         </div>
+        <div class="exploded-layer" id="ndLayerVeg">
+          <canvas id="canvasNdVeg"></canvas>
+          <div class="axo-label">COBERTURA VEGETAL</div>
+        </div>
+        <div class="exploded-layer" id="ndLayerVegCiclo">
+          <canvas id="canvasNdVegCiclo"></canvas>
+          <div class="axo-label">CICLO ESTACIONAL DE LA VEGETACIÓN</div>
+        </div>
       </div>
       <p style="max-width:52vw; font-size:10.5px; color:#8b96a5; text-align:center; margin-top:14px; line-height:1.6;">
         Fuente hídrica: Canal Castilla (principal afluente real del Humedal El Burro, cuenca del río Fucha) · Secretaría Distrital de Ambiente.
         Especies: <i>Porphyrio martinica</i> (Tingua azul / Calamón morado, documentada en Bogotá de octubre a abril, coincide con los meses de mayor nivel de agua) y
         <i>Rallus semiplumbeus</i> (Tingua bogotana, especie endémica de patas cortas que camina sobre vegetación flotante en temporada seca).
+        Cobertura vegetal: levantamiento real 2014 (shapefile Cober_vege_humedales, Jardín Botánico de Bogotá), 305 polígonos del Humedal El Burro.
       </p>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; max-width:52vw; margin-top:8px; font-size:10px; color:#c3cad2;">
+        <span><i style="display:inline-block;width:9px;height:9px;background:#4c7a3d;border-radius:2px;margin-right:4px;"></i>Arbustales</span>
+        <span><i style="display:inline-block;width:9px;height:9px;background:#8fae4a;border-radius:2px;margin-right:4px;"></i>Vegetación herbácea</span>
+        <span><i style="display:inline-block;width:9px;height:9px;background:#b8c47a;border-radius:2px;margin-right:4px;"></i>Pastos</span>
+        <span><i style="display:inline-block;width:9px;height:9px;background:#2f9e6f;border-radius:2px;margin-right:4px;"></i>Vegetación acuática</span>
+        <span><i style="display:inline-block;width:9px;height:9px;background:#5f8fae;border-radius:2px;margin-right:4px;"></i>Espejo de agua</span>
+        <span><i style="display:inline-block;width:9px;height:9px;background:#9a9a9a;border-radius:2px;margin-right:4px;"></i>Áreas endurecidas</span>
+      </div>
     </div>
   </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=29"></script>
+<script src="modulo-10-corte.js?v=30"></script>
 </body>
 </html>
