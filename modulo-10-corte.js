@@ -1366,3 +1366,244 @@
     })
     .catch(err => console.warn("No se pudieron cargar las capas explotadas:", err));
 })();
+
+// ============================================================
+// Detalle de la ESCALA NATURAL (se abre al hacer clic en el titulo):
+// 2 capas explotadas adicionales, investigadas con datos reales:
+//   1) Crecimiento y flujo del agua: el mismo ciclo anual del Humedal
+//      El Burro, con el porcentaje de crecimiento en vivo junto a una
+//      flecha, y el flujo animado desde su afluente real documentado
+//      (Canal Castilla, cuenca del rio Fucha - Secretaria Distrital de
+//      Ambiente) hasta el humedal.
+//   2) Aves segun la temporada: Porphyrio martinica (Tingua azul /
+//      Calamon morado), documentada en Bogota de octubre a abril
+//      -coincide con los meses de mas agua del ciclo calculado- y
+//      Rallus semiplumbeus (Tingua bogotana, endemica, patas cortas,
+//      camina sobre vegetacion flotante) en temporada seca.
+// ============================================================
+(function () {
+  const SCALE = 1 / 10;
+  const ELEV = 35 * Math.PI / 180;
+  const HUMEDAL_CICLO = [
+    { mes: 1, nombre: "Ene", expansion_pct: 41.7, profundidad_m: 1.32 },
+    { mes: 2, nombre: "Feb", expansion_pct: 42.6, profundidad_m: 1.39 },
+    { mes: 3, nombre: "Mar", expansion_pct: 46.7, profundidad_m: 1.73 },
+    { mes: 4, nombre: "Abr", expansion_pct: 50.0, profundidad_m: 2.00 },
+    { mes: 5, nombre: "May", expansion_pct: 47.4, profundidad_m: 1.78 },
+    { mes: 6, nombre: "Jun", expansion_pct: 41.5, profundidad_m: 1.30 },
+    { mes: 7, nombre: "Jul", expansion_pct: 37.7, profundidad_m: 0.99 },
+    { mes: 8, nombre: "Ago", expansion_pct: 34.1, profundidad_m: 0.69 },
+    { mes: 9, nombre: "Sep", expansion_pct: 33.0, profundidad_m: 0.60 },
+    { mes: 10, nombre: "Oct", expansion_pct: 38.6, profundidad_m: 1.06 },
+    { mes: 11, nombre: "Nov", expansion_pct: 43.8, profundidad_m: 1.49 },
+    { mes: 12, nombre: "Dic", expansion_pct: 43.3, profundidad_m: 1.45 },
+  ];
+  // Oct-Abr (meses de mas agua, documentado real): Tingua azul / Calamon
+  // morado. May-Sep (temporada seca): Tingua bogotana, endemica.
+  function especieDelMes(mes) {
+    const humeda = mes >= 10 || mes <= 4;
+    return humeda
+      ? { nombre: "Tingua azul (Calamón morado)", cientifico: "Porphyrio martinica", color: "#3d5fd6", colorSec: "#7a4fc9", pico: "#e2635a", patas: "#e8b23b", patasLen: 1.5 }
+      : { nombre: "Tingua bogotana", cientifico: "Rallus semiplumbeus", color: "#7a6a4a", colorSec: "#5c5038", pico: "#c0392b", patas: "#c0392b", patasLen: 0.9 };
+  }
+
+  function setupMini(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 6000);
+    const scene = new THREE.Scene();
+    const sceneRoot = new THREE.Group();
+    scene.add(sceneRoot);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+    function resizeMini(viewSize) {
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
+      renderer.setSize(w, h, false);
+      const aspect = w / h;
+      camera.left = -viewSize * aspect; camera.right = viewSize * aspect;
+      camera.top = viewSize; camera.bottom = -viewSize;
+      camera.updateProjectionMatrix();
+    }
+    return { canvas, renderer, camera, scene, sceneRoot, resizeMini };
+  }
+  function pointMiniCamera(mini, target, distance, azimuthDeg) {
+    const az = azimuthDeg * Math.PI / 180;
+    mini.camera.position.set(
+      target.x + Math.cos(az) * Math.cos(ELEV) * distance,
+      target.y + Math.sin(ELEV) * distance,
+      target.z + Math.sin(az) * Math.cos(ELEV) * distance
+    );
+    mini.camera.lookAt(target.x, target.y, target.z);
+    mini.camera.updateProjectionMatrix();
+  }
+  function makeBirdSprite() {
+    const c = document.createElement("canvas"); c.width = 32; c.height = 32;
+    const ctx = c.getContext("2d");
+    ctx.translate(16, 16);
+    ctx.fillStyle = "#20222c";
+    ctx.beginPath(); ctx.ellipse(0, 0, 6, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#eef2f7"; ctx.lineWidth = 1.4; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-7, -6); ctx.lineTo(1, 0); ctx.lineTo(-7, 6); ctx.stroke();
+    return new THREE.CanvasTexture(c);
+  }
+
+  let initialized = false;
+  let miniAgua, miniAves, elBurroPts, elBurroCentro, canalPts, waterMatNd, elBurroMeshNd;
+  let ndMonthIdx = 0, ndLastStep = 0;
+  const netCenterRef = { x: 0, y: 0 };
+  const HUMEDAL_X = 6017.9, HUMEDAL_Y = 1980.2;
+
+  function toSceneNd(x, y) { return { x: (x - netCenterRef.x) * SCALE, z: -(y - netCenterRef.y) * SCALE }; }
+
+  function rebuildElBurroNd(expansionPct) {
+    if (!elBurroPts) return;
+    if (elBurroMeshNd) { miniAgua.sceneRoot.remove(elBurroMeshNd); elBurroMeshNd.geometry.dispose(); }
+    const scale = 1 + expansionPct / 100 * 0.6;
+    const pts = elBurroPts.map(p => {
+      const ex = elBurroCentro.x + (p[0] - elBurroCentro.x) * scale, ey = elBurroCentro.y + (p[1] - elBurroCentro.y) * scale;
+      return toSceneNd(ex, ey);
+    });
+    const positions = [];
+    const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+    let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
+    tris.forEach(([a, b, c]) => [a, b, c].forEach(idx => positions.push(pts[idx].x, 0.01, pts[idx].z)));
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    elBurroMeshNd = new THREE.Mesh(geo, waterMatNd);
+    miniAgua.sceneRoot.add(elBurroMeshNd);
+  }
+
+  let pctBadgeEl, depthBadgeEl, especieBadgeEl;
+  const flowMarkers = [];
+  function initScenes() {
+    if (initialized) return;
+    initialized = true;
+
+    // badges de texto (HTML superpuesto, mas legible que texto en canvas 3D)
+    const layerAgua = document.getElementById("ndLayerAgua");
+    pctBadgeEl = document.createElement("div"); pctBadgeEl.className = "nd-arrow-pct"; pctBadgeEl.style.color = "#2ecf7a";
+    pctBadgeEl.style.left = "58%"; pctBadgeEl.style.top = "30%";
+    layerAgua.appendChild(pctBadgeEl);
+    depthBadgeEl = document.createElement("div"); depthBadgeEl.className = "nd-badge";
+    depthBadgeEl.style.left = "6%"; depthBadgeEl.style.top = "8%";
+    layerAgua.appendChild(depthBadgeEl);
+
+    const layerAves = document.getElementById("ndLayerAves");
+    especieBadgeEl = document.createElement("div"); especieBadgeEl.className = "nd-badge";
+    especieBadgeEl.style.left = "6%"; especieBadgeEl.style.top = "8%"; especieBadgeEl.style.maxWidth = "220px";
+    layerAves.appendChild(especieBadgeEl);
+
+    fetch("./assets/kennedy_net.json").then(r => r.json()).then(net => {
+      netCenterRef.x = (net.bbox[0] + net.bbox[2]) / 2;
+      netCenterRef.y = (net.bbox[1] + net.bbox[3]) / 2;
+      const w = (net.bbox[2] - net.bbox[0]) * SCALE, h = (net.bbox[3] - net.bbox[1]) * SCALE;
+      const target = toSceneNd(HUMEDAL_X, HUMEDAL_Y);
+      const viewSize = Math.max(w, h) * 0.09;
+      const camDist = Math.max(w, h) * 0.5;
+
+      miniAgua = setupMini("canvasNdAgua");
+      miniAgua.resizeMini(viewSize);
+      pointMiniCamera(miniAgua, { x: target.x, y: 0, z: target.z }, camDist, 40);
+      window.addEventListener("resize", () => miniAgua.resizeMini(viewSize));
+
+      miniAves = setupMini("canvasNdAves");
+      miniAves.resizeMini(viewSize);
+      pointMiniCamera(miniAves, { x: target.x, y: 0, z: target.z }, camDist, 40);
+      window.addEventListener("resize", () => miniAves.resizeMini(viewSize));
+
+      fetch("./assets/kennedy_water_bodies.json").then(r => r.json()).then(bodies => {
+        const burro = bodies.find(b => b.nombre === "Humedal El Burro");
+        const canal = bodies.find(b => b.nombre === "Canal Castilla");
+        elBurroPts = burro.pts;
+        elBurroCentro = { x: burro.pts.reduce((s, p) => s + p[0], 0) / burro.pts.length, y: burro.pts.reduce((s, p) => s + p[1], 0) / burro.pts.length };
+        canalPts = canal.pts;
+
+        waterMatNd = new THREE.MeshBasicMaterial({ color: 0x6f95a8, side: THREE.DoubleSide, transparent: true, opacity: 0.88 });
+        rebuildElBurroNd(HUMEDAL_CICLO[0].expansion_pct);
+
+        // Canal Castilla, como linea real (afluente principal documentado)
+        const canalScenePts = canalPts.map(p => toSceneNd(p[0], p[1]));
+        const canalGeoPos = [];
+        for (let i = 0; i < canalScenePts.length - 1; i++) canalGeoPos.push(canalScenePts[i].x, 0.02, canalScenePts[i].z, canalScenePts[i + 1].x, 0.02, canalScenePts[i + 1].z);
+        const canalGeo = new THREE.BufferGeometry();
+        canalGeo.setAttribute("position", new THREE.Float32BufferAttribute(canalGeoPos, 3));
+        miniAgua.sceneRoot.add(new THREE.LineSegments(canalGeo, new THREE.LineBasicMaterial({ color: 0x3d6fa0, transparent: true, opacity: 0.85 })));
+
+        // Marcadores de flujo animados, moviendose del canal hacia el humedal
+        const flowGeo = new THREE.ConeGeometry(1.1, 2.6, 5);
+        const flowMat = new THREE.MeshBasicMaterial({ color: 0x66c6ff });
+        for (let i = 0; i < 4; i++) {
+          const mesh = new THREE.Mesh(flowGeo, flowMat);
+          miniAgua.sceneRoot.add(mesh);
+          flowMarkers.push({ mesh, t: i / 4 });
+        }
+      });
+
+      // Aves: 3 sprites volando hacia el humedal
+      const birdTex = makeBirdSprite();
+      const birdMat = new THREE.SpriteMaterial({ map: birdTex, transparent: true });
+      const birds = [];
+      for (let i = 0; i < 3; i++) {
+        const sprite = new THREE.Sprite(birdMat.clone());
+        sprite.scale.set(4, 4, 1);
+        miniAves.sceneRoot.add(sprite);
+        birds.push({ sprite, phase: i * 2.1, speed: 0.5 + i * 0.08 });
+      }
+
+      function animateAgua(now) {
+        requestAnimationFrame(animateAgua);
+        if (now - ndLastStep > 1600) {
+          ndLastStep = now;
+          const prevIdx = ndMonthIdx;
+          ndMonthIdx = (ndMonthIdx + 1) % 12;
+          const d = HUMEDAL_CICLO[ndMonthIdx];
+          const prev = HUMEDAL_CICLO[prevIdx];
+          rebuildElBurroNd(d.expansion_pct);
+          const delta = d.expansion_pct - prev.expansion_pct;
+          pctBadgeEl.textContent = (delta >= 0 ? "▲ +" : "▼ ") + delta.toFixed(1) + "%";
+          pctBadgeEl.style.color = delta >= 0 ? "#2ecf7a" : "#e2635a";
+          depthBadgeEl.innerHTML = `<b>${d.nombre}</b><br>Espejo de agua: ${d.expansion_pct.toFixed(1)}%<br>Profundidad: ${d.profundidad_m.toFixed(2)} m`;
+          const esp = especieDelMes(d.mes);
+          especieBadgeEl.innerHTML = `<b>${esp.nombre}</b><br><i>${esp.cientifico}</i><br>${d.mes >= 10 || d.mes <= 4 ? "Temporada húmeda — aguas más profundas" : "Temporada seca — vegetación flotante"}`;
+        }
+        flowMarkers.forEach((f, i) => {
+          f.t += 0.0028;
+          if (f.t > 1) f.t -= 1;
+          const a = canalPts[canalPts.length - 1], b = [HUMEDAL_X, HUMEDAL_Y];
+          const rx = a[0] + (b[0] - a[0]) * f.t, ry = a[1] + (b[1] - a[1]) * f.t;
+          const p = toSceneNd(rx, ry);
+          f.mesh.position.set(p.x, 0.4, p.z);
+          const dx = b[0] - a[0], dz = -(b[1] - a[1]);
+          f.mesh.rotation.set(0, Math.atan2(dx, dz) * -1, 0);
+          f.mesh.rotation.x = Math.PI / 2;
+        });
+        miniAgua.renderer.render(miniAgua.scene, miniAgua.camera);
+      }
+      requestAnimationFrame(animateAgua);
+
+      function animateAves(now) {
+        requestAnimationFrame(animateAves);
+        const t = now * 0.00035;
+        const esp = especieDelMes(HUMEDAL_CICLO[ndMonthIdx].mes);
+        birds.forEach(b => {
+          const ang = t * b.speed + b.phase;
+          const r = viewSize * 0.55;
+          const x = target.x + Math.cos(ang) * r;
+          const z = target.z + Math.sin(ang * 1.2) * r * 0.6;
+          b.sprite.position.set(x, viewSize * 0.18 + Math.sin(ang * 3) * viewSize * 0.03, z);
+          b.sprite.material.color.set(esp.color);
+        });
+        miniAves.renderer.render(miniAves.scene, miniAves.camera);
+      }
+      requestAnimationFrame(animateAves);
+    });
+  }
+
+  const modal = document.getElementById("naturalDetailModal");
+  document.getElementById("labelEscalaNatural").addEventListener("click", () => {
+    modal.classList.add("open");
+    initScenes();
+  });
+  document.getElementById("naturalDetailClose").addEventListener("click", () => modal.classList.remove("open"));
+})();

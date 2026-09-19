@@ -157,10 +157,37 @@
   }
   .exploded-layer canvas{ width:100%; height:100%; display:block; pointer-events:auto; }
   .exploded-layer .axo-label{ font-size:15px; bottom:14%; right:6%; transform: rotate(-26deg); }
+  #layerNatural .axo-label{ cursor:pointer; pointer-events:auto; }
+  #layerNatural .axo-label:hover{ color:#1c6b4a; }
   .exploded-connector{
     position:absolute; z-index:7; border-left:1.5px dashed rgba(10,10,10,.4); width:0; pointer-events:none;
   }
   #connectorToBaseL, #connectorToBaseR{ height:62vh; }
+
+  /* ---- Modal de detalle de la Escala Natural: 4 capas explotadas
+  adicionales, mismo estilo de rombos apilados ---- */
+  #naturalDetailModal{
+    position:fixed; inset:0; z-index:50; background:rgba(6,7,9,.94);
+    display:none; align-items:center; justify-content:center; flex-direction:column;
+  }
+  #naturalDetailModal.open{ display:flex; }
+  #naturalDetailModal .modal-title{ position:absolute; top:22px; left:50%; transform:translateX(-50%); text-align:center; color:#fff; }
+  #naturalDetailModal .modal-title h2{ font-family:'Space Grotesk',sans-serif; font-size:19px; margin:0 0 3px; }
+  #naturalDetailModal .modal-title p{ font-size:11.5px; color:#9aa3ad; margin:0; }
+  #naturalDetailModal .modal-close{
+    position:absolute; top:20px; right:26px; width:36px; height:36px; border-radius:50%;
+    border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.08); color:#fff;
+    font-size:16px; cursor:pointer;
+  }
+  #naturalDetailStack{ display:flex; flex-direction:column; align-items:center; width:52vw; max-width:640px; }
+  #naturalDetailStack .exploded-layer{ background:#0b0c0f; margin-bottom:-9%; }
+  #naturalDetailStack .axo-label{ color:#fff; }
+  .nd-badge{
+    position:absolute; z-index:6; background:rgba(6,7,9,.85); border:1px solid rgba(255,255,255,.18);
+    border-radius:10px; padding:7px 11px; color:#fff; font-size:11px; line-height:1.5; pointer-events:none;
+  }
+  .nd-badge b{ font-family:'Space Grotesk',sans-serif; font-size:13px; }
+  .nd-arrow-pct{ position:absolute; z-index:6; font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:15px; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.6); }
 
 </style>
 </head>
@@ -305,7 +332,7 @@
       <div class="exploded-connector" style="left:98%; top:0; height:100%;"></div>
       <div class="exploded-layer" id="layerNatural">
         <canvas id="canvasNatural"></canvas>
-        <div class="axo-label">ESCALA NATURAL</div>
+        <div class="axo-label" id="labelEscalaNatural">ESCALA NATURAL</div>
       </div>
       <div class="exploded-layer" id="layerCultural">
         <canvas id="canvasCultural"></canvas>
@@ -316,11 +343,34 @@
         <div class="axo-label">ESCALA TECNOLÓGICA</div>
       </div>
     </div>
+
+    <div id="naturalDetailModal">
+      <div class="modal-title">
+        <h2>Escala natural — detalle</h2>
+        <p>Ciclo hídrico del Humedal El Burro y llegada de aves según la temporada</p>
+      </div>
+      <button type="button" class="modal-close" id="naturalDetailClose">✕</button>
+      <div id="naturalDetailStack">
+        <div class="exploded-layer" id="ndLayerAgua">
+          <canvas id="canvasNdAgua"></canvas>
+          <div class="axo-label">CRECIMIENTO Y FLUJO DEL AGUA</div>
+        </div>
+        <div class="exploded-layer" id="ndLayerAves">
+          <canvas id="canvasNdAves"></canvas>
+          <div class="axo-label">AVES SEGÚN LA TEMPORADA</div>
+        </div>
+      </div>
+      <p style="max-width:52vw; font-size:10.5px; color:#8b96a5; text-align:center; margin-top:14px; line-height:1.6;">
+        Fuente hídrica: Canal Castilla (principal afluente real del Humedal El Burro, cuenca del río Fucha) · Secretaría Distrital de Ambiente.
+        Especies: <i>Porphyrio martinica</i> (Tingua azul / Calamón morado, documentada en Bogotá de octubre a abril, coincide con los meses de mayor nivel de agua) y
+        <i>Rallus semiplumbeus</i> (Tingua bogotana, especie endémica de patas cortas que camina sobre vegetación flotante en temporada seca).
+      </p>
+    </div>
   </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=28"></script>
+<script src="modulo-10-corte.js?v=29"></script>
 </body>
 </html>
