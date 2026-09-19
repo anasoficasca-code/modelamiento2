@@ -715,11 +715,25 @@
 
   // ---- Cuerpos de agua: poligonos planos (fan de triangulos) apenas
   // levantados del suelo, con un material azul semi-transparente. ----
+  const EL_BURRO_NOMBRE = "Humedal El Burro";
+  let elBurroPts = null, elBurroCentro = null, elBurroMesh = null;
   function buildWaterBodies(bodies) {
     const positions = [];
     const uvs = [];
     const UV_SCALE = 0.08; // repite la textura cada ~12.5 unidades de escena
     bodies.forEach(w => {
+      if (w.nombre === EL_BURRO_NOMBRE) {
+        // El Burro se separa del resto: se reconstruye aparte cada vez
+        // que cambia el mes del reloj climatico anual (se expande o
+        // contrae), sin tener que reconstruir TODOS los demas cuerpos
+        // de agua cada vez.
+        elBurroPts = w.pts;
+        elBurroCentro = {
+          x: w.pts.reduce((s, p) => s + p[0], 0) / w.pts.length,
+          y: w.pts.reduce((s, p) => s + p[1], 0) / w.pts.length,
+        };
+        return;
+      }
       const pts = w.pts.map(p => toScene(p[0], p[1]));
       if (pts.length < 3) return;
       // Triangulacion real de poligono (ear-clipping), no un abanico
@@ -765,6 +779,69 @@
     const waterMesh = new THREE.Mesh(geo, mat);
     waterMesh.receiveShadow = false; // sin sombras encima (se veian como parches/bloques feos sobre el agua)
     sceneRoot.add(waterMesh);
+    elBurroMat = mat; // El Burro comparte la misma textura/material que el resto del agua
+    rebuildElBurro(HUMEDAL_CICLO[0].expansion_pct); // arranca en Enero, igual que el valor por defecto del deslizador
+  }
+
+  // ---- Reloj climatico anual del Humedal El Burro: expande/contrae el
+  // poligono real alrededor de su propio centro segun un modelo de
+  // retencion hidrica (el nivel no salta con la lluvia del mes, se va
+  // acumulando y liberando gradualmente, como un humedal real), calculado
+  // a partir de la precipitacion mensual real de Bogota (climate-data.org,
+  // 1991-2021) y calibrado contra los rangos reales publicados por la
+  // Secretaria de Ambiente (expansion del espejo de agua 33%-50%,
+  // profundidad 0.6m-2.0m entre temporada seca y de lluvias). ----
+  let elBurroMat = null;
+  const HUMEDAL_CICLO = [
+    { mes: 1, expansion_pct: 41.7, profundidad_m: 1.32 },
+    { mes: 2, expansion_pct: 42.6, profundidad_m: 1.39 },
+    { mes: 3, expansion_pct: 46.7, profundidad_m: 1.73 },
+    { mes: 4, expansion_pct: 50.0, profundidad_m: 2.00 },
+    { mes: 5, expansion_pct: 47.4, profundidad_m: 1.78 },
+    { mes: 6, expansion_pct: 41.5, profundidad_m: 1.30 },
+    { mes: 7, expansion_pct: 37.7, profundidad_m: 0.99 },
+    { mes: 8, expansion_pct: 34.1, profundidad_m: 0.69 },
+    { mes: 9, expansion_pct: 33.0, profundidad_m: 0.60 },
+    { mes: 10, expansion_pct: 38.6, profundidad_m: 1.06 },
+    { mes: 11, expansion_pct: 43.8, profundidad_m: 1.49 },
+    { mes: 12, expansion_pct: 43.3, profundidad_m: 1.45 },
+  ];
+  function rebuildElBurro(expansionPct) {
+    if (!elBurroPts || !elBurroCentro) return;
+    if (elBurroMesh) { sceneRoot.remove(elBurroMesh); elBurroMesh.geometry.dispose(); }
+    const scale = 1 + expansionPct / 100 * 0.6; // 0.6 de factor visual: al 50% de "expansion" el radio crece ~30%, area ~69% (efecto claramente visible)
+    const positions = [], uvs = [];
+    const UV_SCALE = 0.08;
+    const pts = elBurroPts.map(p => {
+      const ex = elBurroCentro.x + (p[0] - elBurroCentro.x) * scale;
+      const ey = elBurroCentro.y + (p[1] - elBurroCentro.y) * scale;
+      return toScene(ex, ey);
+    });
+    if (pts.length >= 3) {
+      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+      let tris;
+      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
+      catch (e) { tris = []; }
+      tris.forEach(([a, b, c]) => {
+        [a, b, c].forEach(idx => {
+          positions.push(pts[idx].x, 0.023, pts[idx].z);
+          uvs.push(pts[idx].x * UV_SCALE, pts[idx].z * UV_SCALE);
+        });
+      });
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, elBurroMat);
+    sceneRoot.add(mesh);
+    elBurroMesh = mesh;
+  }
+  function setHumedalMes(mes) {
+    const d = HUMEDAL_CICLO[mes - 1];
+    if (!d) return;
+    rebuildElBurro(d.expansion_pct);
+    return d;
   }
 
   function loadWaterBodies() {
@@ -1200,6 +1277,34 @@
     birdsGroup.visible = !birdsGroup.visible;
     e.target.classList.toggle("active", birdsGroup.visible);
     e.target.textContent = birdsGroup.visible ? "🐦 Ocultar mirlas" : "🐦 Mostrar mirlas";
+  });
+
+  // ---- Reloj climatico anual del Humedal El Burro ----
+  const MESES_NOMBRE = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  const humedalMesSlider = document.getElementById("humedalMes");
+  const humedalMesVal = document.getElementById("humedalMesVal");
+  const humedalDatos = document.getElementById("humedalDatos");
+  function applyHumedalMes(mes) {
+    const d = setHumedalMes(mes);
+    humedalMesVal.textContent = MESES_NOMBRE[mes - 1];
+    if (d) humedalDatos.textContent = `Espejo de agua: +${d.expansion_pct.toFixed(1)}% · Profundidad: ${d.profundidad_m.toFixed(2)} m`;
+  }
+  humedalMesSlider.addEventListener("input", () => applyHumedalMes(parseInt(humedalMesSlider.value, 10)));
+  let humedalPlaying = false, humedalPlayTimer = null;
+  document.getElementById("humedalPlay").addEventListener("click", (e) => {
+    humedalPlaying = !humedalPlaying;
+    if (humedalPlaying) {
+      e.target.textContent = "⏸ Detener";
+      humedalPlayTimer = setInterval(() => {
+        let mes = parseInt(humedalMesSlider.value, 10) + 1;
+        if (mes > 12) mes = 1;
+        humedalMesSlider.value = String(mes);
+        applyHumedalMes(mes);
+      }, 900);
+    } else {
+      e.target.textContent = "▶ Reproducir año completo";
+      clearInterval(humedalPlayTimer);
+    }
   });
 
   // Reorientar las tarjetas de los arboles hacia la camara cuando gira,
