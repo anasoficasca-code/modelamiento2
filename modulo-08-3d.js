@@ -467,6 +467,127 @@
       .catch(err => console.warn("No se pudo cargar el mapa de ruido:", err));
   }
 
+  // ---- Red biotica del Humedal La Vaca (misma red del "Sistema biotico
+  // del humedal" del modulo 07 en 2D: vegetacion, aves migratorias, aves
+  // residentes, insectos, aranas, agua y refugios, con sus relaciones),
+  // llevada a 3D y ubicada en la posicion real del humedal. Incluye las
+  // mismas 2 aves migratorias volando en un recorrido, y 2 aves
+  // residentes con un leve balanceo, que ya existian animadas en 2D. ----
+  const HUMEDAL_X = 6017.9, HUMEDAL_Y = 1980.2; // centro real del Humedal La Vaca
+  const BIO_RADIUS = 85; // metros reales de radio para desplegar la red alrededor del centro
+  const BIO_NODES = [
+    { id: "vegetacion", label: "Vegetación", px: 50, py: 50, color: "#4caf7d" },
+    { id: "migratorias", label: "Aves migratorias", px: 14, py: 22, color: "#5b8ad6" },
+    { id: "residentes", label: "Aves residentes", px: 14, py: 78, color: "#45b8c4" },
+    { id: "insectos", label: "Insectos", px: 86, py: 22, color: "#e8a33d" },
+    { id: "aranas", label: "Arañas", px: 86, py: 78, color: "#9b7ede" },
+    { id: "agua", label: "Agua y humedad", px: 50, py: 16, color: "#2f6fa8" },
+    { id: "refugio", label: "Refugios y hábitats", px: 50, py: 84, color: "#8fae4a" },
+  ];
+  const BIO_EDGES = [
+    { a: "agua", b: "vegetacion", label: "humedad" },
+    { a: "agua", b: "migratorias", label: "descanso" },
+    { a: "agua", b: "residentes", label: "permanencia" },
+    { a: "vegetacion", b: "migratorias", label: "refugio" },
+    { a: "vegetacion", b: "residentes", label: "alimento" },
+    { a: "vegetacion", b: "insectos", label: "polinización" },
+    { a: "vegetacion", b: "aranas", label: "microhábitat" },
+    { a: "migratorias", b: "refugio", label: "desplazamiento" },
+    { a: "residentes", b: "refugio", label: "anidación" },
+    { a: "insectos", b: "aranas", label: "depredación" },
+    { a: "insectos", b: "migratorias", label: "recurso trófico" },
+    { a: "residentes", b: "insectos", label: "alimentación" },
+    { a: "aranas", b: "refugio", label: "control biológico" },
+  ];
+  BIO_NODES.forEach(n => {
+    n.realX = HUMEDAL_X + (n.px - 50) / 50 * BIO_RADIUS;
+    n.realY = HUMEDAL_Y + (n.py - 50) / 50 * BIO_RADIUS;
+  });
+  const bioById = {}; BIO_NODES.forEach(n => bioById[n.id] = n);
+
+  let bioGroup = null, bioMigratoryBirds = [], bioResidentBirds = [];
+  function makeBirdTexture() {
+    const c = document.createElement("canvas"); c.width = 64; c.height = 64;
+    const ctx = c.getContext("2d");
+    ctx.translate(32, 32);
+    ctx.fillStyle = "#1c1f22";
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.quadraticCurveTo(-22, -16, -30, -2);
+    ctx.quadraticCurveTo(-14, -6, 0, 2);
+    ctx.quadraticCurveTo(14, -6, 30, -2);
+    ctx.quadraticCurveTo(22, -16, 0, -4);
+    ctx.closePath();
+    ctx.fill();
+    const tex = new THREE.CanvasTexture(c);
+    return tex;
+  }
+  function buildBioticNetwork() {
+    bioGroup = new THREE.Group();
+    bioGroup.visible = false;
+    const Y_NODE = 0.4, Y_LINE = 0.38;
+    // Lineas de relacion entre nodos
+    const linePositions = [];
+    BIO_EDGES.forEach(e => {
+      const a = bioById[e.a], b = bioById[e.b];
+      const pa = toScene(a.realX, a.realY), pb = toScene(b.realX, b.realY);
+      linePositions.push(pa.x, Y_LINE, pa.z, pb.x, Y_LINE, pb.z);
+    });
+    const lineGeo = new THREE.BufferGeometry();
+    lineGeo.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x8fe0c2, transparent: true, opacity: 0.6 });
+    bioGroup.add(new THREE.LineSegments(lineGeo, lineMat));
+    // Nodos como esferas (burbujas), tamano segun cuantas conexiones tiene
+    const degree = {}; BIO_NODES.forEach(n => degree[n.id] = 0);
+    BIO_EDGES.forEach(e => { degree[e.a]++; degree[e.b]++; });
+    BIO_NODES.forEach(n => {
+      const r = 0.9 + degree[n.id] * 0.25;
+      const geo = new THREE.SphereGeometry(r, 16, 12);
+      const mat = new THREE.MeshStandardMaterial({ color: n.color, roughness: 0.7, transparent: true, opacity: 0.88 });
+      const mesh = new THREE.Mesh(geo, mat);
+      const p = toScene(n.realX, n.realY);
+      mesh.position.set(p.x, Y_NODE, p.z);
+      bioGroup.add(mesh);
+    });
+    // Aves migratorias: 2 volando en un recorrido (loop suave, con
+    // aleteo/inclinacion), igual que la animacion original en 2D.
+    const birdTex = makeBirdTexture();
+    const birdMat = new THREE.SpriteMaterial({ map: birdTex, transparent: true });
+    for (let i = 0; i < 2; i++) {
+      const sprite = new THREE.Sprite(birdMat.clone());
+      sprite.scale.set(1.6, 1.6, 1);
+      bioGroup.add(sprite);
+      bioMigratoryBirds.push({ sprite, phase: i * Math.PI, speed: i === 0 ? 1 : 0.82 });
+    }
+    // Aves residentes: 2 quietas cerca del nodo "residentes"/"refugio",
+    // con un leve balanceo vertical.
+    const restNode = bioById.residentes;
+    for (let i = 0; i < 2; i++) {
+      const sprite = new THREE.Sprite(birdMat.clone());
+      sprite.scale.set(1.3, 1.3, 1);
+      const p = toScene(restNode.realX + i * 4, restNode.realY + i * 3);
+      sprite.position.set(p.x, 1.0, p.z);
+      bioGroup.add(sprite);
+      bioResidentBirds.push({ sprite, baseY: 1.0, phase: i * Math.PI });
+    }
+    sceneRoot.add(bioGroup);
+  }
+  function updateBioticNetwork(now) {
+    if (!bioGroup || !bioGroup.visible) return;
+    const t = now * 0.0004;
+    const center = toScene(HUMEDAL_X, HUMEDAL_Y);
+    bioMigratoryBirds.forEach(b => {
+      const ang = t * b.speed + b.phase;
+      const r = BIO_RADIUS * SCALE * 0.7;
+      const x = center.x + Math.cos(ang) * r;
+      const z = center.z + Math.sin(ang * 1.3) * r * 0.6;
+      b.sprite.position.set(x, 1.6 + Math.sin(ang * 2) * 0.3, z);
+    });
+    bioResidentBirds.forEach(b => {
+      b.sprite.position.y = b.baseY + Math.sin(now * 0.003 + b.phase) * 0.12;
+    });
+  }
+
   // ---- Cuerpos de agua: poligonos planos (fan de triangulos) apenas
   // levantados del suelo, con un material azul semi-transparente. ----
   function buildWaterBodies(bodies) {
@@ -859,6 +980,7 @@
       loadBuildings();
       loadTrees();
       loadNoise();
+      buildBioticNetwork();
       loadWaterBodies();
       loadManzanas();
       loadParques();
@@ -946,6 +1068,12 @@
     e.target.classList.toggle("active", noiseMesh.visible);
     e.target.textContent = noiseMesh.visible ? "🔇 Ocultar mapa de ruido" : "🔊 Mostrar mapa de ruido";
   });
+  document.getElementById("bioToggle").addEventListener("click", (e) => {
+    if (!bioGroup) return;
+    bioGroup.visible = !bioGroup.visible;
+    e.target.classList.toggle("active", bioGroup.visible);
+    e.target.textContent = bioGroup.visible ? "🐦 Ocultar red biótica del humedal" : "🐦 Mostrar red biótica del humedal";
+  });
 
   // ---- Herramienta de dibujo: clic para ir marcando puntos sobre el
   // mapa (como la pluma de Photoshop), y mostrar las coordenadas REALES
@@ -1016,6 +1144,7 @@
       waterBumpRef.offset.x = (now * -0.000027) % 1;
       waterBumpRef.offset.y = (now * 0.000021) % 1;
     }
+    updateBioticNetwork(now);
     controls.update();
     renderer.render(scene, camera);
   }
