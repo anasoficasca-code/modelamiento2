@@ -984,8 +984,8 @@
         { id:"s1_4", t:"Descalce entre las ventanas de comercialización de bodegas y los itinerarios nocturnos del transporte regional" },
         { id:"s1_5", t:"Ausencia de control de flujo en los portones perimetrales de acceso" },
         { id:"s1_6", t:"Desincronización de planes operativos entre la UAESP, operadores de aseo y Corabastos" },
-      ], rel:[ {from:"s1_1",to:"s1_2"},{from:"s1_2",to:"s1_4"},{from:"s1_1",to:"s1_3"},{from:"s1_3",to:"s1_5"},{from:"s1_2",to:"s1_6"},{from:"s1_6",to:"s1_2",loop:true} ],
-      loopNote:"La descoordinación en calle refuerza la falta de acuerdos formales" },
+      ], rel:[ {from:"s1_1",to:"s1_2", pol:"+" },{from:"s1_2",to:"s1_4", pol:"+" },{from:"s1_1",to:"s1_3", pol:"+" },{from:"s1_3",to:"s1_5", pol:"+" },{from:"s1_2",to:"s1_6", pol:"+" },{from:"s1_6",to:"s1_2",loop:true, pol:"+" } ],
+      loopNote:"La descoordinación en calle refuerza la falta de acuerdos formales", loopType:"R" },
     m2: { nodes:[
         { id:"s2_1", t:"Recepción diaria concentrada de 11.500 toneladas de alimentos en 1.500 camiones pesados" },
         { id:"s2_2", t:"Diseño geométrico de portones de acceso a 90 grados sin carriles de desaceleración" },
@@ -993,8 +993,8 @@
         { id:"s2_4", t:"Invasión y bloqueo de las áreas de acopio interno por parqueo vehicular no regulado" },
         { id:"s2_5", t:"Mezcla no zonificada de cargue y descargue en los mismos callejones de circulación interna" },
         { id:"s2_6", t:"Inmovilización vehicular en las vías internas de la central" },
-      ], rel:[ {from:"s2_1",to:"s2_3"},{from:"s2_2",to:"s2_6"},{from:"s2_5",to:"s2_4"},{from:"s2_4",to:"s2_3"},{from:"s2_3",to:"s2_6"},{from:"s2_6",to:"s2_4",loop:true} ],
-      loopNote:"El trancón interno atrapa camiones sobre las áreas de parqueo y acopio, anulando el espacio disponible" },
+      ], rel:[ {from:"s2_1",to:"s2_3", pol:"+" },{from:"s2_2",to:"s2_6", pol:"+" },{from:"s2_5",to:"s2_4", pol:"+" },{from:"s2_4",to:"s2_3", pol:"+" },{from:"s2_3",to:"s2_6", pol:"+" },{from:"s2_6",to:"s2_4",loop:true, pol:"+" } ],
+      loopNote:"El trancón interno atrapa camiones sobre las áreas de parqueo y acopio, anulando el espacio disponible", loopType:"R" },
     m3: { nodes:[
         { id:"s3_1", t:"Convergencia obligada de flujos intermunicipales de carga por Calle 13, Autopista Sur y Vía al Llano" },
         { id:"s3_2", t:"Ausencia de plataformas logísticas de filtrado y puertos secos en los bordes de Bogotá" },
@@ -1004,8 +1004,8 @@
         { id:"s3_6", t:"Operaciones informales de cargue y descargue en vía pública" },
         { id:"s3_7", t:"Invasión de calzadas por vehículos de tracción humana (VTH) y cargadores de oficio" },
         { id:"s3_8", t:"Bloqueo físico de la circulación en la Av. Ciudad de Cali, Av. de las Américas y Av. Agoberto Mejía" },
-      ], rel:[ {from:"s3_2",to:"s3_1"},{from:"s3_1",to:"s3_5"},{from:"s3_3",to:"s3_8"},{from:"s3_4",to:"s3_8"},{from:"s3_5",to:"s3_6"},{from:"s3_6",to:"s3_7"},{from:"s3_7",to:"s3_8"},{from:"s3_8",to:"s3_5",loop:true} ],
-      loopNote:"El colapso de las avenidas principales impide el paso hacia los portones, represando más camiones en las calles residenciales" },
+      ], rel:[ {from:"s3_2",to:"s3_1", pol:"+" },{from:"s3_1",to:"s3_5", pol:"+" },{from:"s3_3",to:"s3_8", pol:"+" },{from:"s3_4",to:"s3_8", pol:"+" },{from:"s3_5",to:"s3_6", pol:"+" },{from:"s3_6",to:"s3_7", pol:"+" },{from:"s3_7",to:"s3_8", pol:"+" },{from:"s3_8",to:"s3_5",loop:true, pol:"+" } ],
+      loopNote:"El colapso de las avenidas principales impide el paso hacia los portones, represando más camiones en las calles residenciales", loopType:"R" },
     m4: { nodes:[
         { id:"s4_1", t:"Concentración y descarte masivo de biomasa vegetal sin clasificación en origen" },
         { id:"s4_2", t:"Saturación de la capacidad de contención en contenedores internos de Corabastos" },
@@ -1015,8 +1015,8 @@
         { id:"s4_6", t:"Desplazamiento de la selección manual («puchero») y descarte a la calzada vehicular de la Diagonal 38 Sur" },
         { id:"s4_7", t:"Descalce entre los horarios de venta comercial y la frecuencia de recolección de la UAESP" },
         { id:"s4_8", t:"Acumulación de residuos sólidos y biomasa en descomposición sobre la vía pública" },
-      ], rel:[ {from:"s4_1",to:"s4_2"},{from:"s4_2",to:"s4_5"},{from:"s4_3",to:"s4_8"},{from:"s4_4",to:"s4_6"},{from:"s4_5",to:"s4_6"},{from:"s4_7",to:"s4_8"},{from:"s4_6",to:"s4_8"},{from:"s4_8",to:"s4_2",loop:true} ],
-      loopNote:"La basura acumulada en las aceras desborda los contenedores de los bordes, colapsando el sistema de retiro interno" },
+      ], rel:[ {from:"s4_1",to:"s4_2", pol:"+" },{from:"s4_2",to:"s4_5", pol:"+" },{from:"s4_3",to:"s4_8", pol:"+" },{from:"s4_4",to:"s4_6", pol:"+" },{from:"s4_5",to:"s4_6", pol:"+" },{from:"s4_7",to:"s4_8", pol:"+" },{from:"s4_6",to:"s4_8", pol:"+" },{from:"s4_8",to:"s4_2",loop:true, pol:"+" } ],
+      loopNote:"La basura acumulada en las aceras desborda los contenedores de los bordes, colapsando el sistema de retiro interno", loopType:"R" },
     m5: { nodes:[
         { id:"s5_1", t:"Presión comercial e industrial de Corabastos, Cervecería Bavaria y talleres sobre el entorno urbano" },
         { id:"s5_2", t:"Inexistencia de franjas urbanas de amortiguación o mitigación de impactos entre la central y el barrio" },
@@ -1024,16 +1024,16 @@
         { id:"s5_4", t:"Proliferación de pequeños talleres metalmecánicos y de soldadura no regulados" },
         { id:"s5_5", t:"Ocupación indebida de andenes por exhibición de mercancía, guacales y carretas" },
         { id:"s5_6", t:"Deterioro del pavimento y sobrecarga de la infraestructura de servicios en María Paz" },
-      ], rel:[ {from:"s5_2",to:"s5_1"},{from:"s5_1",to:"s5_3"},{from:"s5_1",to:"s5_4"},{from:"s5_3",to:"s5_5"},{from:"s5_5",to:"s5_6"},{from:"s5_6",to:"s5_3",loop:true} ],
-      loopNote:"El deterioro físico del barrio expulsa el uso residencial y abarata el suelo para el alquiler de más bodegas informales" },
+      ], rel:[ {from:"s5_2",to:"s5_1", pol:"+" },{from:"s5_1",to:"s5_3", pol:"+" },{from:"s5_1",to:"s5_4", pol:"+" },{from:"s5_3",to:"s5_5", pol:"+" },{from:"s5_5",to:"s5_6", pol:"+" },{from:"s5_6",to:"s5_3",loop:true, pol:"+" } ],
+      loopNote:"El deterioro físico del barrio expulsa el uso residencial y abarata el suelo para el alquiler de más bodegas informales", loopType:"R" },
     m6: { nodes:[
         { id:"s6_1", t:"Contratación informal y trabajo a destajo operado por intermediarios" },
         { id:"s6_2", t:"Ausencia de Estaciones de Clasificación y Aprovechamiento (ECA) e infraestructura pública limpia" },
         { id:"s6_3", t:"Acarreo informal de reciclaje y carga en vehículos de tracción humana (VTH / carretas de madera)" },
         { id:"s6_4", t:"Exposición a vectores y riesgos biológicos por manipulación no protegida de biomasa podrida" },
         { id:"s6_5", t:"Estigmatización social y persecución administrativa a trabajadores informales" },
-      ], rel:[ {from:"s6_1",to:"s6_3"},{from:"s6_2",to:"s6_3"},{from:"s6_3",to:"s6_4"},{from:"s6_3",to:"s6_5"},{from:"s6_5",to:"s6_1",loop:true} ],
-      loopNote:"La marginalización bloquea el acceso a esquemas de empleo formal, reduciendo las alternativas al pago por bulto a destajo" },
+      ], rel:[ {from:"s6_1",to:"s6_3", pol:"+" },{from:"s6_2",to:"s6_3", pol:"+" },{from:"s6_3",to:"s6_4", pol:"+" },{from:"s6_3",to:"s6_5", pol:"+" },{from:"s6_5",to:"s6_1",loop:true, pol:"+" } ],
+      loopNote:"La marginalización bloquea el acceso a esquemas de empleo formal, reduciendo las alternativas al pago por bulto a destajo", loopType:"R" },
     m7: { nodes:[
         { id:"s7_1", t:"Generación masiva de lixiviados ácidos por descomposición de biomasa vegetal acumulada" },
         { id:"s7_2", t:"Vertimiento de aguas de lavado de bodegas, carnes y verduras con alta carga orgánica y grasa" },
@@ -1042,16 +1042,16 @@
         { id:"s7_5", t:"Conexión errada de tuberías servidas al alcantarillado pluvial urbano" },
         { id:"s7_6", t:"Escorrentía de lixiviados desde las calzadas de la Diagonal 38 Sur hacia los colectores del humedal" },
         { id:"s7_7", t:"Anoxia, eutrofización y carga bacteriana en los canales y vaso de agua" },
-      ], rel:[ {from:"s7_1",to:"s7_6"},{from:"s7_2",to:"s7_5"},{from:"s7_3",to:"s7_5"},{from:"s7_4",to:"s7_5"},{from:"s7_5",to:"s7_7"},{from:"s7_6",to:"s7_7"},{from:"s7_7",to:"s7_6",loop:true} ],
-      loopNote:"El colapso biológico del agua anula la capacidad natural de autodepuración del canal, estancando los nuevos lixiviados en los bordes superficiales" },
+      ], rel:[ {from:"s7_1",to:"s7_6", pol:"+" },{from:"s7_2",to:"s7_5", pol:"+" },{from:"s7_3",to:"s7_5", pol:"+" },{from:"s7_4",to:"s7_5", pol:"+" },{from:"s7_5",to:"s7_7", pol:"+" },{from:"s7_6",to:"s7_7", pol:"+" },{from:"s7_7",to:"s7_6",loop:true, pol:"+" } ],
+      loopNote:"El colapso biológico del agua anula la capacidad natural de autodepuración del canal, estancando los nuevos lixiviados en los bordes superficiales", loopType:"R" },
     m8: { nodes:[
         { id:"s8_1", t:"Relleno e invasión histórica de la ronda hidráulica por desarrollo urbano informal" },
         { id:"s8_2", t:"Cerramiento perimetral rígido de Corabastos funcionando como barrera biofísica" },
         { id:"s8_3", t:"Disposición no controlada de escombros, llantas y residuos sólidos en la franja ambiental" },
         { id:"s8_4", t:"Reducción del espejo de agua y pérdida de capacidad de amortiguación de inundaciones" },
         { id:"s8_5", t:"Interrupción de la conectividad biológica entre el Humedal La Vaca y el Parque Cayetano Cañizares" },
-      ], rel:[ {from:"s8_1",to:"s8_4"},{from:"s8_2",to:"s8_5"},{from:"s8_3",to:"s8_4"},{from:"s8_4",to:"s8_5"},{from:"s8_5",to:"s8_3",loop:true} ],
-      loopNote:"La desconexión ecosistémica desvaloriza la percepción social del humedal, convirtiendo sus bordes en puntos clandestinos de arrojo de escombros" },
+      ], rel:[ {from:"s8_1",to:"s8_4", pol:"+" },{from:"s8_2",to:"s8_5", pol:"+" },{from:"s8_3",to:"s8_4", pol:"+" },{from:"s8_4",to:"s8_5", pol:"+" },{from:"s8_5",to:"s8_3",loop:true, pol:"+" } ],
+      loopNote:"La desconexión ecosistémica desvaloriza la percepción social del humedal, convirtiendo sus bordes en puntos clandestinos de arrojo de escombros", loopType:"R" },
   };
   // Posicion real (aproximada) de cada causa: un pequeno desplazamiento
   // alrededor de su problematica macro (misma logica que un mapa de
@@ -1153,6 +1153,20 @@
       const line = svgEl("line", { class: "net-line", stroke: m.color, "stroke-width": 2.2, "stroke-opacity": 0.85, "marker-end": "url(#netArrow)" });
       netSvg.insertBefore(line, netSvg.firstChild);
       subEls.lines.push({ el: line, from: a, to: b });
+      // Signo de polaridad (+/-), obligatorio en un diagrama causal
+      // correcto: indica si al aumentar la causa aumenta (+) o disminuye
+      // (-) el efecto.
+      const polText = svgEl("text", { class: "net-pol", "text-anchor": "middle", "dominant-baseline": "central", "font-size": 14, "font-weight": 800, fill: "#fff", stroke: "#0b0c0f", "stroke-width": 3, "paint-order": "stroke" });
+      polText.textContent = r.pol || "+";
+      netSvg.appendChild(polText);
+      subEls.lines.push({ el: polText, from: a, to: b, isPol: true });
+      // Etiqueta de bucle (R/B) sobre el enlace que cierra el ciclo
+      if (r.loop) {
+        const badge = svgEl("text", { class: "net-loopbadge", "text-anchor": "middle", "font-size": 12, "font-weight": 800, fill: m.color, stroke: "#0b0c0f", "stroke-width": 3.2, "paint-order": "stroke" });
+        badge.textContent = "↻ " + (sub.loopType || "R");
+        netSvg.appendChild(badge);
+        subEls.lines.push({ el: badge, from: a, to: b, isLoopBadge: true });
+      }
     });
     sub.nodes.forEach(n => {
       const blob = makeBlob(SUB_D, m.color);
@@ -1162,12 +1176,14 @@
     });
     updateNetPositions();
     openMacroPanel(id);
+    document.getElementById("cldLegend").style.display = "block";
   }
   function closeSub() {
     clearSubNetwork();
     openMacroId = null;
     netCloseSubBtn.classList.remove("show");
     netPanel.classList.remove("open");
+    document.getElementById("cldLegend").style.display = "none";
   }
   netCloseSubBtn.addEventListener("click", closeSub);
   document.getElementById("netPanelClose").addEventListener("click", () => netPanel.classList.remove("open"));
@@ -1233,8 +1249,16 @@
       subEls.lines.forEach(l => {
         const pa = projectPoint(l.from.x, l.from.y, 0.25);
         const pb = projectPoint(l.to.x, l.to.y, 0.25);
-        l.el.setAttribute("x1", pa.x); l.el.setAttribute("y1", pa.y);
-        l.el.setAttribute("x2", pb.x); l.el.setAttribute("y2", pb.y);
+        if (l.isPol) {
+          l.el.setAttribute("x", pa.x + (pb.x - pa.x) * 0.72);
+          l.el.setAttribute("y", pa.y + (pb.y - pa.y) * 0.72);
+        } else if (l.isLoopBadge) {
+          l.el.setAttribute("x", pa.x + (pb.x - pa.x) * 0.42);
+          l.el.setAttribute("y", pa.y + (pb.y - pa.y) * 0.42 - 12);
+        } else {
+          l.el.setAttribute("x1", pa.x); l.el.setAttribute("y1", pa.y);
+          l.el.setAttribute("x2", pb.x); l.el.setAttribute("y2", pb.y);
+        }
       });
     }
   }

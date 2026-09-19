@@ -273,6 +273,11 @@
     <svg id="netSvg"></svg>
     <div id="netLabelLayer"></div>
     <button type="button" id="netCloseSubBtn">✕ Cerrar causas internas</button>
+    <div id="cldLegend" style="display:none; position:absolute; bottom:70px; left:96px; z-index:15; font-size:11px; color:#0b0c0f; background:rgba(255,255,255,.94); border-radius:10px; padding:9px 12px; max-width:230px; line-height:1.5; box-shadow:0 4px 16px rgba(0,0,0,.25);">
+      <b>Notación del diagrama causal</b><br>
+      <b>+</b> junto a una flecha: si la causa aumenta, el efecto también aumenta<br>
+      <b>↻ R</b> sobre un ciclo cerrado: bucle reforzador (círculo vicioso)
+    </div>
     <aside id="netPanel">
       <button type="button" class="panel-close" id="netPanelClose">✕</button>
       <div id="netPanelBody"></div>
@@ -282,6 +287,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-12-problemas.js?v=9"></script>
+<script src="modulo-12-problemas.js?v=10"></script>
 </body>
 </html>
