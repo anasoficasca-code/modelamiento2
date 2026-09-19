@@ -23,7 +23,7 @@
   const canvas = document.getElementById("sceneCanvas");
   const wrap = document.getElementById("sceneWrap");
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xf3f4f5);
+  scene.background = new THREE.Color(0x000000);
   scene.fog = new THREE.Fog(0xf3f4f5, 900, 3200);
   // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
   // se agrega a este grupo, no directamente a la escena, para poder
@@ -547,7 +547,7 @@
     // brillo bajo para que capte reflejos de luz como agua real.
     const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
       map: waterTex, bumpMap: bumpTex, bumpScale: 0.12,
-      color: 0x97a5af, roughness: 0.18, metalness: 0.15,
+      color: 0x8f9498, roughness: 0.18, metalness: 0.15,
       transparent: true, opacity: 0.82, side: THREE.DoubleSide,
     });
     waterMat = mat;
