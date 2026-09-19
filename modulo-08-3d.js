@@ -322,7 +322,7 @@
     // real y no una silueta plana.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.25 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.15 });
     buildingEdgeMat = edgeMat;
     sceneRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
   }
