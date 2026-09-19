@@ -38,7 +38,7 @@
   // pura dentro de toScene() (ver abajo), sin tocar la altura de nada.
   scene.add(sceneRoot);
 
-  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 6000);
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
@@ -369,9 +369,7 @@
           a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
         );
         for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
-        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // perimetro del techo
-        edgePositions.push(a.x, 0, a.z, c.x, 0, c.z); // perimetro de la base (donde toca el piso)
-        edgePositions.push(a.x, 0, a.z, a.x, h, a.z); // esquina vertical (para que se lea el volumen)
+        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // solo el perimetro del techo (forma simplificada)
       }
 
       // Techo plano simple (sin parapeto sintetico): las mallas REALES de
@@ -394,7 +392,7 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xffffff, roughness: 0.6, metalness: 0.03, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xffffff, roughness: 0.6, metalness: 0.03, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 2 });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -406,7 +404,7 @@
     // real y no una silueta plana.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.2 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.14 });
     buildingEdgeMat = edgeMat;
     const edgeMesh = new THREE.LineSegments(edgeGeo, edgeMat);
     sceneRoot.add(edgeMesh);
@@ -1183,7 +1181,7 @@
     const canvas = document.getElementById(canvasId);
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 6000);
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
     const scene = new THREE.Scene();
     const sceneRoot = new THREE.Group();
     scene.add(sceneRoot);
@@ -1411,7 +1409,7 @@
     const canvas = document.getElementById(canvasId);
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 6000);
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
     const scene = new THREE.Scene();
     const sceneRoot = new THREE.Group();
     scene.add(sceneRoot);

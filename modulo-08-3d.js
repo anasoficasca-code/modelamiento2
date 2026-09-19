@@ -38,7 +38,7 @@
   // pura dentro de toScene() (ver abajo), sin tocar la altura de nada.
   scene.add(sceneRoot);
 
-  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 6000);
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
@@ -308,7 +308,7 @@
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
     const mat = new THREE.MeshStandardMaterial({
       color: 0xffffff, roughness: 0.6, metalness: 0.03, side: THREE.DoubleSide,
-      polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, // evita z-fighting con las lineas de borde (que quedan exactamente sobre la superficie)
+      polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 2, // evita z-fighting con las lineas de borde (que quedan exactamente sobre la superficie)
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
@@ -320,7 +320,7 @@
     // real y no una silueta plana.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.2 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.14 });
     buildingEdgeMat = edgeMat;
     sceneRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
   }
