@@ -35,6 +35,13 @@
   .level-title h2{ font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:600; margin:0; color:var(--ink-dark); }
   .level-title p{ margin:2px 0 0; font-size:11px; color:var(--ink-dim); }
 
+  .cld-legend{
+    position:absolute; bottom:18px; left:18px; z-index:6; font-size:11px; color:var(--ink-dim);
+    background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.08); border-radius:10px; padding:10px 13px;
+    max-width:250px; line-height:1.5; box-shadow:0 4px 16px rgba(0,0,0,.08);
+  }
+  .cld-legend b{ color:var(--ink-dark); }
+
   .stage{ position:absolute; inset:0; width:100%; height:100%; }
   .goo-layer{ position:absolute; inset:0; filter:url(#goo); }
   .arrows-svg{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
@@ -118,6 +125,11 @@
   <h2 id="levelTitleText"></h2>
   <p id="levelSubText"></p>
 </div>
+<div class="cld-legend">
+  <b>Notación del diagrama causal</b><br>
+  <b>+</b> junto a una flecha: si la causa aumenta, el efecto también aumenta<br>
+  <b>↻ R</b> sobre un ciclo cerrado: bucle reforzador — un círculo vicioso que se retroalimenta a sí mismo
+</div>
 
 <div class="stage" id="stage">
   <svg width="0" height="0" style="position:absolute">
@@ -180,10 +192,11 @@
         { id:"s1_6", t:"Desincronización de planes operativos entre la UAESP, operadores de aseo y Corabastos" },
       ],
       rel: [
-        { from:"s1_1", to:"s1_2" }, { from:"s1_2", to:"s1_4" }, { from:"s1_1", to:"s1_3" },
-        { from:"s1_3", to:"s1_5" }, { from:"s1_2", to:"s1_6" }, { from:"s1_6", to:"s1_2", loop:true },
+        { from:"s1_1", to:"s1_2", pol:"+" }, { from:"s1_2", to:"s1_4", pol:"+" }, { from:"s1_1", to:"s1_3", pol:"+" },
+        { from:"s1_3", to:"s1_5", pol:"+" }, { from:"s1_2", to:"s1_6", pol:"+" }, { from:"s1_6", to:"s1_2", loop:true, pol:"+" },
       ],
       loopNote: "La descoordinación en calle refuerza la falta de acuerdos formales",
+      loopType: "R",
     },
     m2: {
       nodes: [
@@ -195,10 +208,11 @@
         { id:"s2_6", t:"Inmovilización vehicular en las vías internas de la central" },
       ],
       rel: [
-        { from:"s2_1", to:"s2_3" }, { from:"s2_2", to:"s2_6" }, { from:"s2_5", to:"s2_4" },
-        { from:"s2_4", to:"s2_3" }, { from:"s2_3", to:"s2_6" }, { from:"s2_6", to:"s2_4", loop:true },
+        { from:"s2_1", to:"s2_3", pol:"+" }, { from:"s2_2", to:"s2_6", pol:"+" }, { from:"s2_5", to:"s2_4", pol:"+" },
+        { from:"s2_4", to:"s2_3", pol:"+" }, { from:"s2_3", to:"s2_6", pol:"+" }, { from:"s2_6", to:"s2_4", loop:true, pol:"+" },
       ],
       loopNote: "El trancón interno atrapa camiones sobre las áreas de parqueo y acopio, anulando el espacio disponible",
+      loopType: "R",
     },
     m3: {
       nodes: [
@@ -212,11 +226,12 @@
         { id:"s3_8", t:"Bloqueo físico de la circulación en la Av. Ciudad de Cali, Av. de las Américas y Av. Agoberto Mejía" },
       ],
       rel: [
-        { from:"s3_2", to:"s3_1" }, { from:"s3_1", to:"s3_5" }, { from:"s3_3", to:"s3_8" },
-        { from:"s3_4", to:"s3_8" }, { from:"s3_5", to:"s3_6" }, { from:"s3_6", to:"s3_7" },
-        { from:"s3_7", to:"s3_8" }, { from:"s3_8", to:"s3_5", loop:true },
+        { from:"s3_2", to:"s3_1", pol:"+" }, { from:"s3_1", to:"s3_5", pol:"+" }, { from:"s3_3", to:"s3_8", pol:"+" },
+        { from:"s3_4", to:"s3_8", pol:"+" }, { from:"s3_5", to:"s3_6", pol:"+" }, { from:"s3_6", to:"s3_7", pol:"+" },
+        { from:"s3_7", to:"s3_8", pol:"+" }, { from:"s3_8", to:"s3_5", loop:true, pol:"+" },
       ],
       loopNote: "El colapso de las avenidas principales impide el paso hacia los portones, represando más camiones en las calles residenciales",
+      loopType: "R",
     },
     m4: {
       nodes: [
@@ -230,11 +245,12 @@
         { id:"s4_8", t:"Acumulación de residuos sólidos y biomasa en descomposición sobre la vía pública" },
       ],
       rel: [
-        { from:"s4_1", to:"s4_2" }, { from:"s4_2", to:"s4_5" }, { from:"s4_3", to:"s4_8" },
-        { from:"s4_4", to:"s4_6" }, { from:"s4_5", to:"s4_6" }, { from:"s4_7", to:"s4_8" },
-        { from:"s4_6", to:"s4_8" }, { from:"s4_8", to:"s4_2", loop:true },
+        { from:"s4_1", to:"s4_2", pol:"+" }, { from:"s4_2", to:"s4_5", pol:"+" }, { from:"s4_3", to:"s4_8", pol:"+" },
+        { from:"s4_4", to:"s4_6", pol:"+" }, { from:"s4_5", to:"s4_6", pol:"+" }, { from:"s4_7", to:"s4_8", pol:"+" },
+        { from:"s4_6", to:"s4_8", pol:"+" }, { from:"s4_8", to:"s4_2", loop:true, pol:"+" },
       ],
       loopNote: "La basura acumulada en las aceras desborda los contenedores de los bordes, colapsando el sistema de retiro interno",
+      loopType: "R",
     },
     m5: {
       nodes: [
@@ -246,10 +262,11 @@
         { id:"s5_6", t:"Deterioro del pavimento y sobrecarga de la infraestructura de servicios en María Paz" },
       ],
       rel: [
-        { from:"s5_2", to:"s5_1" }, { from:"s5_1", to:"s5_3" }, { from:"s5_1", to:"s5_4" },
-        { from:"s5_3", to:"s5_5" }, { from:"s5_5", to:"s5_6" }, { from:"s5_6", to:"s5_3", loop:true },
+        { from:"s5_2", to:"s5_1", pol:"+" }, { from:"s5_1", to:"s5_3", pol:"+" }, { from:"s5_1", to:"s5_4", pol:"+" },
+        { from:"s5_3", to:"s5_5", pol:"+" }, { from:"s5_5", to:"s5_6", pol:"+" }, { from:"s5_6", to:"s5_3", loop:true, pol:"+" },
       ],
       loopNote: "El deterioro físico del barrio expulsa el uso residencial y abarata el suelo para el alquiler de más bodegas informales",
+      loopType: "R",
     },
     m6: {
       nodes: [
@@ -260,10 +277,11 @@
         { id:"s6_5", t:"Estigmatización social y persecución administrativa a trabajadores informales" },
       ],
       rel: [
-        { from:"s6_1", to:"s6_3" }, { from:"s6_2", to:"s6_3" }, { from:"s6_3", to:"s6_4" },
-        { from:"s6_3", to:"s6_5" }, { from:"s6_5", to:"s6_1", loop:true },
+        { from:"s6_1", to:"s6_3", pol:"+" }, { from:"s6_2", to:"s6_3", pol:"+" }, { from:"s6_3", to:"s6_4", pol:"+" },
+        { from:"s6_3", to:"s6_5", pol:"+" }, { from:"s6_5", to:"s6_1", loop:true, pol:"+" },
       ],
       loopNote: "La marginalización bloquea el acceso a esquemas de empleo formal, reduciendo las alternativas al pago por bulto a destajo",
+      loopType: "R",
     },
     m7: {
       nodes: [
@@ -276,11 +294,12 @@
         { id:"s7_7", t:"Anoxia, eutrofización y carga bacteriana en los canales y vaso de agua" },
       ],
       rel: [
-        { from:"s7_1", to:"s7_6" }, { from:"s7_2", to:"s7_5" }, { from:"s7_3", to:"s7_5" },
-        { from:"s7_4", to:"s7_5" }, { from:"s7_5", to:"s7_7" }, { from:"s7_6", to:"s7_7" },
-        { from:"s7_7", to:"s7_6", loop:true },
+        { from:"s7_1", to:"s7_6", pol:"+" }, { from:"s7_2", to:"s7_5", pol:"+" }, { from:"s7_3", to:"s7_5", pol:"+" },
+        { from:"s7_4", to:"s7_5", pol:"+" }, { from:"s7_5", to:"s7_7", pol:"+" }, { from:"s7_6", to:"s7_7", pol:"+" },
+        { from:"s7_7", to:"s7_6", loop:true, pol:"+" },
       ],
       loopNote: "El colapso biológico del agua anula la capacidad natural de autodepuración del canal, estancando los nuevos lixiviados en los bordes superficiales",
+      loopType: "R",
     },
     m8: {
       nodes: [
@@ -291,10 +310,11 @@
         { id:"s8_5", t:"Interrupción de la conectividad biológica entre el Humedal La Vaca y el Parque Cayetano Cañizares" },
       ],
       rel: [
-        { from:"s8_1", to:"s8_4" }, { from:"s8_2", to:"s8_5" }, { from:"s8_3", to:"s8_4" },
-        { from:"s8_4", to:"s8_5" }, { from:"s8_5", to:"s8_3", loop:true },
+        { from:"s8_1", to:"s8_4", pol:"+" }, { from:"s8_2", to:"s8_5", pol:"+" }, { from:"s8_3", to:"s8_4", pol:"+" },
+        { from:"s8_4", to:"s8_5", pol:"+" }, { from:"s8_5", to:"s8_3", loop:true, pol:"+" },
       ],
       loopNote: "La desconexión ecosistémica desvaloriza la percepción social del humedal, convirtiendo sus bordes en puntos clandestinos de arrojo de escombros",
+      loopType: "R",
     },
   };
   const macroById = {}; MACRO.forEach(m => macroById[m.id] = m);
@@ -453,6 +473,7 @@
   }
 
   function buildNetwork(nodes, rel, byIdMap, opts) {
+    const loopType = opts.loopType || "R";
     clearNetwork();
     activeNodes = nodes; activeRel = rel;
     const colorOf = opts.colorOf || (() => "var(--node)");
@@ -558,6 +579,44 @@
       line.setAttribute("stroke-opacity", "0.85");
       line.setAttribute("marker-end", `url(#arrow-${markerKey})`);
       arrowsSvg.appendChild(line); arrowEls.push(line);
+
+      // Signo de polaridad (+/-), elemento OBLIGATORIO de un diagrama
+      // causal correcto (metodologia de Dinamica de Sistemas / Senge):
+      // indica si un aumento en la causa aumenta (+) o disminuye (-) el
+      // efecto. Se ubica cerca de la punta de la flecha.
+      const polX = a.x + ux * dist * 0.72, polY = a.y + uy * dist * 0.72;
+      const polText = document.createElementNS(SVGNS, "text");
+      polText.setAttribute("x", polX); polText.setAttribute("y", polY);
+      polText.setAttribute("text-anchor", "middle");
+      polText.setAttribute("dominant-baseline", "central");
+      polText.setAttribute("font-size", "15");
+      polText.setAttribute("font-weight", "800");
+      polText.setAttribute("fill", "#fff");
+      polText.setAttribute("stroke", "#0b0c0f");
+      polText.setAttribute("stroke-width", "3");
+      polText.setAttribute("paint-order", "stroke");
+      polText.textContent = r.pol || "+";
+      arrowsSvg.appendChild(polText); arrowEls.push(polText);
+
+      // Etiqueta de bucle (R = reforzador, B = balanceador), el otro
+      // elemento obligatorio: se multiplica la polaridad de TODOS los
+      // enlaces del bucle (numero par de "-" = R, impar = B). En esta
+      // red, todos los bucles documentados son circulos viciosos de
+      // refuerzo (R).
+      if (r.loop) {
+        const midX = a.x + ux * dist * 0.42, midY = a.y + uy * dist * 0.42;
+        const badge = document.createElementNS(SVGNS, "text");
+        badge.setAttribute("x", midX); badge.setAttribute("y", midY - 14);
+        badge.setAttribute("text-anchor", "middle");
+        badge.setAttribute("font-size", "13");
+        badge.setAttribute("font-weight", "800");
+        badge.setAttribute("fill", arrowColorRaw);
+        badge.setAttribute("stroke", "#0b0c0f");
+        badge.setAttribute("stroke-width", "3.4");
+        badge.setAttribute("paint-order", "stroke");
+        badge.textContent = "↻ " + (loopType || "R");
+        arrowsSvg.appendChild(badge); arrowEls.push(badge);
+      }
     });
   }
 
@@ -577,7 +636,7 @@
     const sub = SUBNETS[macroId];
     const byId = {}; sub.nodes.forEach(n => byId[n.id] = n);
     const macroColor = macroById[macroId].color;
-    buildNetwork(sub.nodes, sub.rel, byId, { maxR: 66, wFrac: 0.09, colorOf: () => macroColor });
+    buildNetwork(sub.nodes, sub.rel, byId, { maxR: 66, wFrac: 0.09, colorOf: () => macroColor, loopType: sub.loopType });
     levelTitleText.textContent = macroById[macroId].full;
     levelSubText.textContent = "Causas internas de esta problemática — toca una causa para ver más";
     backBtn.textContent = "← Volver a las 8 problemáticas";
@@ -664,7 +723,7 @@
     place(centerLabel, mainW() / 2, mainH() / 2 + 10);
     place(hitCenter, mainW() / 2, mainH() / 2 + 10);
     if (level === "macro") buildNetwork(MACRO, MACRO_REL, macroById, { maxR: 78, wFrac: 0.1, colorOf: (id) => macroById[id].color });
-    else if (level === "detail") { const sub = SUBNETS[currentDetailId]; const byId = {}; sub.nodes.forEach(n => byId[n.id] = n); const macroColor = macroById[currentDetailId].color; buildNetwork(sub.nodes, sub.rel, byId, { maxR: 66, wFrac: 0.09, colorOf: () => macroColor }); }
+    else if (level === "detail") { const sub = SUBNETS[currentDetailId]; const byId = {}; sub.nodes.forEach(n => byId[n.id] = n); const macroColor = macroById[currentDetailId].color; buildNetwork(sub.nodes, sub.rel, byId, { maxR: 66, wFrac: 0.09, colorOf: () => macroColor, loopType: sub.loopType }); }
   });
 })();
 </script>
