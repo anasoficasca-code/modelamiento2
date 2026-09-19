@@ -143,6 +143,48 @@
     groundMesh.position.set(0, -0.4, 0);
     groundMesh.receiveShadow = true;
     sceneRoot.add(groundMesh);
+    buildAxoBorder(-w / 2, w / 2, -h / 2, h / 2);
+  }
+
+  // ---- Marco/borde negro grueso alrededor del area VISIBLE actual (como
+  // en los diagramas explotados de referencia: cada plano/capa lleva un
+  // contorno negro solido bien marcado) — sigue los limites de la caja de
+  // seccion cuando esta activa (que es lo que en verdad se ve), no todo
+  // el terreno completo (que quedaria muy lejos del recorte y no se
+  // notaria). Se hace con geometria 3D real (no una linea, que WebGL
+  // ignora el grosor) para que el grosor se vea bien sin importar el
+  // angulo o el zoom. ----
+  let axoBorderMesh = null;
+  function buildAxoBorder(xMin, xMax, zMin, zMax) {
+    if (axoBorderMesh) { sceneRoot.remove(axoBorderMesh); axoBorderMesh.geometry.dispose(); }
+    const w = xMax - xMin, h = zMax - zMin;
+    const THICK = Math.max(w, h) * 0.006; // mas grueso que antes, para que se note claramente como en el referente
+    const Y = -0.399; // justo encima del suelo, evita z-fighting
+    const corners = [
+      [xMin, zMin], [xMax, zMin], [xMax, zMax], [xMin, zMax],
+    ];
+    const positions = [];
+    for (let i = 0; i < 4; i++) {
+      const a = corners[i], b = corners[(i + 1) % 4];
+      const dx = b[0] - a[0], dz = b[1] - a[1];
+      const len = Math.hypot(dx, dz) || 0.001;
+      const nx = -dz / len * THICK, nz = dx / len * THICK;
+      // Rectangulo un poco mas largo que el lado (se extiende THICK de
+      // mas en cada punta) para que las 4 esquinas queden bien cerradas,
+      // sin huecos en las uniones.
+      const ex = dx / len * THICK, ez = dz / len * THICK;
+      const a2 = [a[0] - ex, a[1] - ez], b2 = [b[0] + ex, b[1] + ez];
+      positions.push(
+        a2[0] - nx, Y, a2[1] - nz, a2[0] + nx, Y, a2[1] + nz, b2[0] + nx, Y, b2[1] + nz,
+        a2[0] - nx, Y, a2[1] - nz, b2[0] + nx, Y, b2[1] + nz, b2[0] - nx, Y, b2[1] - nz
+      );
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    const mat = new THREE.MeshBasicMaterial({ color: 0x0a0a0a, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geo, mat);
+    sceneRoot.add(mesh);
+    axoBorderMesh = mesh;
   }
 
   // Convierte una coordenada del JSON (x,y en el plano, x=este, y=norte
@@ -1079,6 +1121,11 @@
     const boxFilter = (sectionBoxActive && !isFullRange) ? { xMin, xMax, zMin, zMax, yMin, yMax } : null;
     if (rawBuildingsData) buildBuildings(rawBuildingsData, boxFilter);
     if (rawEdgesData) buildRoads(rawEdgesData, boxFilter);
+    // El borde negro sigue el area de la caja de seccion (lo que en
+    // verdad se ve), no el terreno completo (que quedaria muy lejos del
+    // recorte y no se notaria).
+    if (boxFilter) buildAxoBorder(xMin, xMax, zMin, zMax);
+    else buildAxoBorder(-halfW, halfW, -halfH, halfH);
   }
   document.getElementById("sectionBoxToggle").addEventListener("click", (e) => {
     sectionBoxActive = !sectionBoxActive;
