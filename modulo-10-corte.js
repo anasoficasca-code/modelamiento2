@@ -1476,3 +1476,141 @@
   });
   document.getElementById("naturalDetailClose").addEventListener("click", () => modal.classList.remove("open"));
 })();
+
+// ============================================================
+// 3 replicas de la MISMA axonometria completa (edificios, vias, agua,
+// arboles), apiladas arriba de la base — igual concepto que el
+// referente (el mismo modelo repetido), con las vias en color gris
+// normal (no rojo) y SIN el borde negro (que solo lleva la base).
+// ============================================================
+(function () {
+  const SCALE = 1 / 10;
+  const ELEV = 35 * Math.PI / 180;
+  function setupReplica(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.shadowMap.enabled = false;
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
+    const sceneRoot = new THREE.Group();
+    scene.add(sceneRoot);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+    sun.position.set(80, 140, 60);
+    scene.add(sun);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; controls.dampingFactor = 0.1;
+    controls.minPolarAngle = controls.maxPolarAngle = 55 * Math.PI / 180;
+    controls.enablePan = false;
+    controls.minZoom = 0.4; controls.maxZoom = 14;
+    function resizeR(viewSize) {
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
+      renderer.setSize(w, h, false);
+      const aspect = w / h;
+      camera.left = -viewSize * aspect; camera.right = viewSize * aspect;
+      camera.top = viewSize; camera.bottom = -viewSize;
+      camera.updateProjectionMatrix();
+    }
+    return { canvas, renderer, camera, scene, sceneRoot, controls, resizeR };
+  }
+  function pointReplicaCamera(r, target, distance, azimuthDeg) {
+    const az = azimuthDeg * Math.PI / 180;
+    r.camera.position.set(
+      target.x + Math.cos(az) * Math.cos(ELEV) * distance,
+      target.y + Math.sin(ELEV) * distance,
+      target.z + Math.sin(az) * Math.cos(ELEV) * distance
+    );
+    r.camera.lookAt(target.x, target.y, target.z);
+    r.camera.updateProjectionMatrix();
+  }
+
+  const replicas = [setupReplica("canvasReplica1"), setupReplica("canvasReplica2"), setupReplica("canvasReplica3")];
+
+  Promise.all([
+    fetch("./assets/kennedy_net.json").then(r => r.json()),
+    fetch("./assets/kennedy_buildings.json").then(r => r.json()),
+    fetch("./assets/kennedy_water_bodies.json").then(r => r.json()),
+  ]).then(([net, buildings, waterBodies]) => {
+    const netCenter = { x: (net.bbox[0] + net.bbox[2]) / 2, y: (net.bbox[1] + net.bbox[3]) / 2 };
+    function toScene(x, y) { return { x: (x - netCenter.x) * SCALE, z: -(y - netCenter.y) * SCALE }; }
+    const w = (net.bbox[2] - net.bbox[0]) * SCALE, h = (net.bbox[3] - net.bbox[1]) * SCALE;
+    const viewSize = Math.max(w, h) * 0.36;
+    const camDist = Math.max(w, h) * 1.7;
+
+    // ---- Geometria compartida: se construye UNA sola vez y se agrega
+    // como nuevo Mesh (misma BufferGeometry, distinto material si hace
+    // falta) a cada una de las 3 replicas — evita reconstruir 243 mil
+    // edificios x3, solo se paga el costo de subir el buffer a la GPU
+    // 3 veces en vez de tambien recalcular toda la geometria 3 veces. ----
+    const roadPositions = [];
+    net.edges.forEach(([kind, pts]) => {
+      const sp = pts.map(p => toScene(p[0], p[1]));
+      for (let i = 0; i < sp.length - 1; i++) roadPositions.push(sp[i].x, 0.03, sp[i].z, sp[i + 1].x, 0.03, sp[i + 1].z);
+    });
+    const roadGeo = new THREE.BufferGeometry();
+    roadGeo.setAttribute("position", new THREE.Float32BufferAttribute(roadPositions, 3));
+
+    const buildPositions = [], buildNormals = [];
+    // Muestra representativa (no los 243 mil completos): con 3 replicas
+    // simultaneas + la base ya cargada, subir la geometria completa 2
+    // veces mas arriesgaba trabar el navegador (~15 millones de vertices
+    // solo en edificios). Se prioriza mantener los edificios MAS ALTOS
+    // (los que mas se notan a esta escala) y se toma 1 de cada 3 del resto.
+    const buildingsSample = buildings.filter((b, i) => b.h > 15 || i % 3 === 0);
+    buildingsSample.forEach(b => {
+      const pts = b.pts.map(p => toScene(p[0], p[1]));
+      const h = b.h * SCALE;
+      if (pts.length < 4) return;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], c = pts[i + 1];
+        const dx = c.x - a.x, dz = c.z - a.z;
+        const len = Math.hypot(dx, dz) || 0.001;
+        const nx = dz / len, nz = -dx / len;
+        buildPositions.push(a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z, a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z);
+        for (let k = 0; k < 6; k++) buildNormals.push(nx, 0, nz);
+      }
+      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+      let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
+      tris.forEach(([ia, ib, ic]) => {
+        buildPositions.push(pts[ia].x, h, pts[ia].z, pts[ib].x, h, pts[ib].z, pts[ic].x, h, pts[ic].z);
+        for (let k = 0; k < 3; k++) buildNormals.push(0, 1, 0);
+      });
+    });
+    const buildGeo = new THREE.BufferGeometry();
+    buildGeo.setAttribute("position", new THREE.Float32BufferAttribute(buildPositions, 3));
+    buildGeo.setAttribute("normal", new THREE.Float32BufferAttribute(buildNormals, 3));
+
+    const waterPositions = [];
+    waterBodies.forEach(wbody => {
+      const pts = wbody.pts.map(p => toScene(p[0], p[1]));
+      if (pts.length < 3) return;
+      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+      let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
+      tris.forEach(([a, b, c]) => [a, b, c].forEach(idx => waterPositions.push(pts[idx].x, 0.02, pts[idx].z)));
+    });
+    const waterGeo = new THREE.BufferGeometry();
+    waterGeo.setAttribute("position", new THREE.Float32BufferAttribute(waterPositions, 3));
+
+    const roadMat = new THREE.LineBasicMaterial({ color: 0x9099a3, transparent: true, opacity: 0.75 }); // gris normal, NO rojo
+    const buildMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.65, metalness: 0.02, side: THREE.DoubleSide });
+    const waterMat = new THREE.MeshBasicMaterial({ color: 0x8f9498, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+
+    replicas.forEach((r, i) => {
+      r.sceneRoot.add(new THREE.LineSegments(roadGeo, roadMat));
+      r.sceneRoot.add(new THREE.Mesh(buildGeo, buildMat));
+      r.sceneRoot.add(new THREE.Mesh(waterGeo, waterMat));
+      r.resizeR(viewSize);
+      pointReplicaCamera(r, { x: 0, y: 0, z: 0 }, camDist, 40);
+      window.addEventListener("resize", () => r.resizeR(viewSize));
+    });
+
+    function animateReplicas() {
+      requestAnimationFrame(animateReplicas);
+      replicas.forEach(r => { r.controls.update(); r.renderer.render(r.scene, r.camera); });
+    }
+    requestAnimationFrame(animateReplicas);
+  }).catch(err => console.warn("No se pudieron cargar las replicas:", err));
+})();

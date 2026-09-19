@@ -140,6 +140,20 @@
   }
   #axoLabelBottom{ font-size:26px; bottom:9%; right:6%; cursor:pointer; }
 
+  /* ---- 3 copias de la MISMA axonometria, apiladas arriba de la base
+  (igual concepto que el referente: el mismo modelo repetido en capas) ---- */
+  #replicaStack{
+    position:absolute; top:1%; left:50%; transform:translateX(-50%); z-index:9;
+    width:40vw; max-width:480px; display:flex; flex-direction:column; align-items:center;
+    pointer-events:none;
+  }
+  .replica-layer{
+    position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-9%;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    background:#ffffff; pointer-events:auto;
+  }
+  .replica-layer canvas{ width:100%; height:100%; display:block; }
+
   /* ---- Modal de detalle de la Escala Natural: 4 capas explotadas
   adicionales, mismo estilo de rombos apilados ---- */
   #naturalDetailModal{
@@ -304,6 +318,12 @@
 
     <div class="axo-label" id="axoLabelBottom">KENNEDY</div>
 
+    <div id="replicaStack">
+      <div class="replica-layer"><canvas id="canvasReplica1"></canvas></div>
+      <div class="replica-layer"><canvas id="canvasReplica2"></canvas></div>
+      <div class="replica-layer"><canvas id="canvasReplica3"></canvas></div>
+    </div>
+
     <div id="naturalDetailModal">
       <div class="modal-title">
         <h2>Escala natural — detalle</h2>
@@ -348,6 +368,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=35"></script>
+<script src="modulo-10-corte.js?v=36"></script>
 </body>
 </html>
