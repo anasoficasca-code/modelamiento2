@@ -356,56 +356,62 @@
   let treeMeshes = [];
   let treeInstanceData = null; // {x,z,w,h} por instancia, para recalcular el billboard al girar la camara
   let treeMesh = null; // la tarjeta con la foto (para el detalle realista)
+  function makePlaneGeometry() {
+    const geo = new THREE.BufferGeometry();
+    const positions = [-0.5, 0, 0, 0.5, 0, 0, 0.5, 1, 0, -0.5, 0, 0, 0.5, 1, 0, -0.5, 1, 0];
+    const uvs = [0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1];
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.computeVertexNormals();
+    return geo;
+  }
   function buildTrees(trees) {
     const treeTex = new THREE.TextureLoader().load("./assets/arbol_real3.png");
-
-    // Arbol como volumen 3D real: tronco (cilindro) + copa en una esfera
-    // con la FOTO real aplicada (no un color solido tipo "bola verde"),
-    // asi se ve con volumen real desde cualquier angulo pero con el
-    // aspecto de la foto, no una bola de color aparte.
-    const trunkGeo = new THREE.CylinderGeometry(0.7, 1, 1, 6);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b5643, roughness: 0.95 });
-    const foliageGeo = new THREE.SphereGeometry(1, 12, 10);
-    const foliageMat = new THREE.MeshStandardMaterial({
+    // Tarjeta plana (billboard) con la foto real completa (ya incluye
+    // tronco y copa) — se pidio que se vea igual que la foto, no un
+    // volumen 3D armado con esfera+cilindro por separado, que se veia
+    // raro con esta imagen especifica. La tarjeta se reorienta para
+    // mirar siempre hacia la camara (ver updateTreeBillboards), y como
+    // la camara es ortografica y esta fija a 45°, un solo angulo sirve
+    // para las 120 mil instancias.
+    const planeGeo = makePlaneGeometry();
+    const mat = new THREE.MeshStandardMaterial({
       map: treeTex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.95,
     });
-    const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
-    const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, trees.length);
-    // Sin sombra proyectada (se pidio antes que los arboles no tuvieran
-    // sombra propia - ademas, al ser tan chicos frente al tamano del mapa
-    // de sombras del sol, se veian como bloques/cubos feos, no una sombra
-    // real de arbol).
-    trunkMesh.castShadow = false;
-    foliageMesh.castShadow = false;
-    foliageMesh.receiveShadow = true;
+    const mesh = new THREE.InstancedMesh(planeGeo, mat, trees.length);
+    mesh.castShadow = false;
+    treeMesh = mesh;
 
     treeInstanceData = new Array(trees.length);
-    const dummyV = new THREE.Object3D();
     trees.forEach((t, i) => {
       const [x, y, hMeters, , code] = t;
       const p = toScene(x, y);
       const h = Math.max(0.3, hMeters * SCALE);
       const w = h * (1.1 + (hash2(code) % 20) / 100 - 0.1);
       treeInstanceData[i] = { x: p.x, z: p.z, w, h };
-
-      const trunkH = h * 0.22, trunkR = Math.max(0.02, h * 0.025);
-      dummyV.position.set(p.x, trunkH / 2, p.z);
-      dummyV.scale.set(trunkR, trunkH, trunkR);
-      dummyV.rotation.set(0, 0, 0);
-      dummyV.updateMatrix();
-      trunkMesh.setMatrixAt(i, dummyV.matrix);
-
-      const foliageR = w * 0.42, foliageH = h * 0.62;
-      dummyV.position.set(p.x, trunkH + foliageH / 2, p.z);
-      dummyV.scale.set(foliageR, foliageH / 2, foliageR);
-      dummyV.rotation.set(0, (hash2(code) % 360) * Math.PI / 180, 0);
-      dummyV.updateMatrix();
-      foliageMesh.setMatrixAt(i, dummyV.matrix);
     });
-    trunkMesh.instanceMatrix.needsUpdate = true;
-    foliageMesh.instanceMatrix.needsUpdate = true;
-    sceneRoot.add(trunkMesh, foliageMesh);
-    treeMeshes = [{ mesh: foliageMesh, data: trees }];
+    sceneRoot.add(mesh);
+    treeMeshes = [{ mesh, data: trees }];
+    updateTreeBillboards();
+  }
+  // Recalcula la rotacion de TODAS las tarjetas para que miren hacia la
+  // camara actual. Con camara ortografica la direccion hacia la camara es
+  // la misma sin importar la posicion en el suelo, asi que un solo angulo
+  // (el acimut actual de la camara) sirve para todas las instancias.
+  const dummyT = new THREE.Object3D();
+  function updateTreeBillboards() {
+    if (!treeMesh || !treeInstanceData) return;
+    const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z;
+    const faceAngle = Math.atan2(dx, dz);
+    for (let i = 0; i < treeInstanceData.length; i++) {
+      const d = treeInstanceData[i];
+      dummyT.position.set(d.x, 0, d.z);
+      dummyT.scale.set(d.w, d.h, d.w);
+      dummyT.rotation.set(0, faceAngle, 0);
+      dummyT.updateMatrix();
+      treeMesh.setMatrixAt(i, dummyT.matrix);
+    }
+    treeMesh.instanceMatrix.needsUpdate = true;
   }
   function hash2(str) { let h = 0; for (const c of (str || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 
@@ -1073,6 +1079,16 @@
     bioGroup.visible = !bioGroup.visible;
     e.target.classList.toggle("active", bioGroup.visible);
     e.target.textContent = bioGroup.visible ? "🐦 Ocultar red biótica del humedal" : "🐦 Mostrar red biótica del humedal";
+  });
+
+  // Reorientar las tarjetas de los arboles hacia la camara cuando gira,
+  // limitado en frecuencia para no recalcular 120 mil matrices por cuadro.
+  let lastTreeBillboardUpdate = 0;
+  controls.addEventListener("change", () => {
+    const now = performance.now();
+    if (now - lastTreeBillboardUpdate < 120) return;
+    lastTreeBillboardUpdate = now;
+    updateTreeBillboards();
   });
 
   // ---- Herramienta de dibujo: clic para ir marcando puntos sobre el
