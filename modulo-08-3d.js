@@ -416,6 +416,57 @@
       .catch(err => console.warn("No se pudieron cargar los árboles:", err));
   }
 
+  // ---- Mapa de ruido: mismos datos e indice ya calculado que en el
+  // modulo 8 en 2D (modulo-08-noise.js, a partir del flujo vehicular y la
+  // velocidad promedio de la simulacion SUMO), pero dibujado aqui como
+  // una cinta 3D sobre cada via, coloreada segun el mismo indice y los
+  // mismos umbrales/colores que en 2D. Empieza oculto (toggle en el panel).
+  let noiseMesh = null;
+  const NOISE_URL = "./assets/kennedy_noise_local.json";
+  function noiseColor(score) {
+    if (score < 12) return 0x2e7d5b;
+    if (score < 18) return 0x8bc34a;
+    if (score < 24) return 0xf1c40f;
+    if (score < 32) return 0xe67e22;
+    return 0xe5484d;
+  }
+  function buildNoise(edges) {
+    const positions = [];
+    const colors = [];
+    const HALF_W = 1.0; // un poco mas ancho que la via, para que se note la cinta de color encima
+    edges.forEach(edge => {
+      const pts = edge.pts.map(p => toScene(p[0], p[1]));
+      if (pts.length < 2) return;
+      const c = new THREE.Color(noiseColor(edge.noise));
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1];
+        const dx = b.x - a.x, dz = b.z - a.z;
+        const len = Math.hypot(dx, dz) || 0.001;
+        const nx = -dz / len * HALF_W, nz = dx / len * HALF_W;
+        const y = 0.05; // apenas encima de la via, para que se vea como una capa
+        positions.push(
+          a.x - nx, y, a.z - nz, a.x + nx, y, a.z + nz, b.x + nx, y, b.z + nz,
+          a.x - nx, y, a.z - nz, b.x + nx, y, b.z + nz, b.x - nx, y, b.z - nz
+        );
+        for (let k = 0; k < 6; k++) colors.push(c.r, c.g, c.b);
+      }
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    const mat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.visible = false; // oculto por defecto, se activa con el boton del panel
+    sceneRoot.add(mesh);
+    noiseMesh = mesh;
+  }
+  function loadNoise() {
+    return fetch(NOISE_URL)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + NOISE_URL); return r.json(); })
+      .then(data => { buildNoise(data); })
+      .catch(err => console.warn("No se pudo cargar el mapa de ruido:", err));
+  }
+
   // ---- Cuerpos de agua: poligonos planos (fan de triangulos) apenas
   // levantados del suelo, con un material azul semi-transparente. ----
   function buildWaterBodies(bodies) {
@@ -807,6 +858,7 @@
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
       loadBuildings();
       loadTrees();
+      loadNoise();
       loadWaterBodies();
       loadManzanas();
       loadParques();
@@ -887,6 +939,13 @@
     updateColorOutput();
   });
   updateColorOutput();
+
+  document.getElementById("noiseToggle").addEventListener("click", (e) => {
+    if (!noiseMesh) return;
+    noiseMesh.visible = !noiseMesh.visible;
+    e.target.classList.toggle("active", noiseMesh.visible);
+    e.target.textContent = noiseMesh.visible ? "🔇 Ocultar mapa de ruido" : "🔊 Mostrar mapa de ruido";
+  });
 
   // ---- Herramienta de dibujo: clic para ir marcando puntos sobre el
   // mapa (como la pluma de Photoshop), y mostrar las coordenadas REALES
