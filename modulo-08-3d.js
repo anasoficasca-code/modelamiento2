@@ -167,7 +167,7 @@
       // las vias que se cruzan en una interseccion no quedan EXACTAMENTE
       // coplanares (evita z-fighting). El rango es minusculo para que no
       // se note como un "escalon" entre una via y la siguiente.
-      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.0006;
+      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.006;
       const n = pts.length;
       if (n < 2) return;
       const scenePts = pts.map(p => toScene(p[0], p[1]));
@@ -283,9 +283,7 @@
           a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
         );
         for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
-        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // perimetro del techo
-        edgePositions.push(a.x, 0, a.z, c.x, 0, c.z); // perimetro de la base (donde toca el piso)
-        edgePositions.push(a.x, 0, a.z, a.x, h, a.z); // esquina vertical (para que se lea el volumen)
+        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // solo el perimetro del techo (forma simplificada, menos lineas = menos "gris" acumulado)
       }
 
       // Techo plano simple (sin parapeto sintetico): las mallas REALES de
