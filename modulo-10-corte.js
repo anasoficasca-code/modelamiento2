@@ -199,7 +199,7 @@
       // las vias que se cruzan en una interseccion no quedan EXACTAMENTE
       // coplanares (evita z-fighting). El rango es minusculo para que no
       // se note como un "escalon" entre una via y la siguiente.
-      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.0025;
+      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.006;
       const n = pts.length;
       if (n < 2) return;
       const scenePts = pts.map(p => toScene(p[0], p[1]));
