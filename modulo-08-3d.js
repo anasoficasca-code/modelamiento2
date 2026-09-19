@@ -418,7 +418,10 @@
   function loadTrees() {
     return fetch(TREES_URL)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + TREES_URL); return r.json(); })
-      .then(data => { buildTrees(data); })
+      .then(data => {
+        buildTrees(data);
+        birdTreesGrid = buildBirdTreeGrid(sampleAttractorTrees(data));
+      })
       .catch(err => console.warn("No se pudieron cargar los árboles:", err));
   }
 
@@ -469,128 +472,225 @@
   function loadNoise() {
     return fetch(NOISE_URL)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + NOISE_URL); return r.json(); })
-      .then(data => { buildNoise(data); })
+      .then(data => { buildNoise(data); buildNoiseField(data); })
       .catch(err => console.warn("No se pudo cargar el mapa de ruido:", err));
   }
 
-  // ---- Red biotica del Humedal La Vaca (misma red del "Sistema biotico
-  // del humedal" del modulo 07 en 2D: vegetacion, aves migratorias, aves
-  // residentes, insectos, aranas, agua y refugios, con sus relaciones),
-  // llevada a 3D y ubicada en la posicion real del humedal. Incluye las
-  // mismas 2 aves migratorias volando en un recorrido, y 2 aves
-  // residentes con un leve balanceo, que ya existian animadas en 2D. ----
+  // ============================================================
+  // MIRLAS (Turdus fuscater) — puerto fiel de la simulacion real de
+  // agentes que ya existe en 2D (modulo-08-sumo.js): aves que se
+  // desplazan de oriente (Cerros Orientales) a occidente (humedales),
+  // atraidas por arboles reales de 3 especies (Sauco, Cerezo/capuli,
+  // Urapan-Fresno) del Arbolado Urbano real de Kennedy, huyendo de las
+  // zonas con mas de 60 dB(A) de ruido (usando el mismo indice real de
+  // ruido ya cargado), con un grupo residente en un refugio fijo.
+  // ============================================================
   const HUMEDAL_X = 6017.9, HUMEDAL_Y = 1980.2; // centro real del Humedal La Vaca
-  const BIO_RADIUS = 85; // metros reales de radio para desplegar la red alrededor del centro
-  const BIO_NODES = [
-    { id: "vegetacion", label: "Vegetación", px: 50, py: 50, color: "#4caf7d" },
-    { id: "migratorias", label: "Aves migratorias", px: 14, py: 22, color: "#5b8ad6" },
-    { id: "residentes", label: "Aves residentes", px: 14, py: 78, color: "#45b8c4" },
-    { id: "insectos", label: "Insectos", px: 86, py: 22, color: "#e8a33d" },
-    { id: "aranas", label: "Arañas", px: 86, py: 78, color: "#9b7ede" },
-    { id: "agua", label: "Agua y humedad", px: 50, py: 16, color: "#2f6fa8" },
-    { id: "refugio", label: "Refugios y hábitats", px: 50, py: 84, color: "#8fae4a" },
-  ];
-  const BIO_EDGES = [
-    { a: "agua", b: "vegetacion", label: "humedad" },
-    { a: "agua", b: "migratorias", label: "descanso" },
-    { a: "agua", b: "residentes", label: "permanencia" },
-    { a: "vegetacion", b: "migratorias", label: "refugio" },
-    { a: "vegetacion", b: "residentes", label: "alimento" },
-    { a: "vegetacion", b: "insectos", label: "polinización" },
-    { a: "vegetacion", b: "aranas", label: "microhábitat" },
-    { a: "migratorias", b: "refugio", label: "desplazamiento" },
-    { a: "residentes", b: "refugio", label: "anidación" },
-    { a: "insectos", b: "aranas", label: "depredación" },
-    { a: "insectos", b: "migratorias", label: "recurso trófico" },
-    { a: "residentes", b: "insectos", label: "alimentación" },
-    { a: "aranas", b: "refugio", label: "control biológico" },
-  ];
-  BIO_NODES.forEach(n => {
-    n.realX = HUMEDAL_X + (n.px - 50) / 50 * BIO_RADIUS;
-    n.realY = HUMEDAL_Y + (n.py - 50) / 50 * BIO_RADIUS;
-  });
-  const bioById = {}; BIO_NODES.forEach(n => bioById[n.id] = n);
+  const BIRD_TREE_SPECIES = {
+    "Sauco": { key: "sauco", color: 0xb06bff, weight: 1.0, base: 260 },
+    "Cerezo, capuli": { key: "capuli", color: 0xff5fa8, weight: 0.76, base: 200 },
+    "Urapán, Fresno": { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 },
+  };
+  const BIRD_VISION = 14, BIRD_ARRIVE = 1.4, BIRD_WIND = 2.6, BIRD_MAX_SPEED = 7.8;
+  const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 50;
+  const REFUGE_X = 3600, REFUGE_Y = 1000, REFUGE_R = 220; // esquina noroeste real del area de Kennedy
+  let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null;
+  let noiseEdgesRaw = null; // se reusan los mismos datos reales de ruido ya cargados
 
-  let bioGroup = null, bioMigratoryBirds = [], bioResidentBirds = [];
-  function makeBirdTexture() {
-    const c = document.createElement("canvas"); c.width = 64; c.height = 64;
+  function sampleAttractorTrees(trees) {
+    const porEspecie = {};
+    trees.forEach(t => {
+      const meta = BIRD_TREE_SPECIES[t[3]];
+      if (meta) (porEspecie[meta.key] || (porEspecie[meta.key] = [])).push({ x: t[0], y: t[1], meta });
+    });
+    const out = [];
+    Object.keys(porEspecie).forEach(k => {
+      const lista = porEspecie[k];
+      const meta = lista[0].meta;
+      const paso = Math.max(1, Math.floor(lista.length / meta.base));
+      for (let i = 0; i < lista.length; i += paso) out.push(lista[i]);
+    });
+    return out;
+  }
+  const BIRD_CELL = 25; // metros reales por celda de la rejilla de arboles
+  function buildBirdTreeGrid(attractors) {
+    const grid = new Map();
+    attractors.forEach(t => {
+      const key = Math.floor(t.x / BIRD_CELL) + "," + Math.floor(t.y / BIRD_CELL);
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key).push(t);
+    });
+    return grid;
+  }
+  function bestTreeNear(grid, x, y) {
+    const r = BIRD_VISION * 10; // convertir de unidades de escena (SCALE=0.1) a metros reales
+    const cx0 = Math.floor((x - r) / BIRD_CELL), cx1 = Math.floor((x + r) / BIRD_CELL);
+    const cy0 = Math.floor((y - r) / BIRD_CELL), cy1 = Math.floor((y + r) / BIRD_CELL);
+    let best = null, bestScore = 0, bestDist = 0;
+    for (let cx = cx0; cx <= cx1; cx++) for (let cy = cy0; cy <= cy1; cy++) {
+      const celda = grid.get(cx + "," + cy);
+      if (!celda) continue;
+      celda.forEach(t => {
+        const dx = t.x - x, dy = t.y - y, d2 = dx * dx + dy * dy;
+        if (d2 > r * r) return;
+        const d = Math.sqrt(d2) || 0.001;
+        const score = t.meta.weight / d;
+        if (score > bestScore) { bestScore = score; best = t; bestDist = d; }
+      });
+    }
+    return best ? { arbol: best, dist: bestDist } : null;
+  }
+  // Campo de ruido REAL (misma fuente que el mapa de ruido de la
+  // superficie): rejilla gruesa con el promedio de indice de ruido de
+  // las vias reales cercanas a cada celda, convertido a dB(A) aprox.
+  const NOISE_FIELD_CELL = 120; // metros reales por celda
+  let noiseFieldGrid = null;
+  function buildNoiseField(edges) {
+    noiseFieldGrid = new Map();
+    const add = (cx, cy, val) => {
+      const key = cx + "," + cy;
+      const cur = noiseFieldGrid.get(key);
+      if (cur) { cur.sum += val; cur.n++; } else noiseFieldGrid.set(key, { sum: val, n: 1 });
+    };
+    edges.forEach(e => {
+      e.pts.forEach(p => {
+        const cx = Math.floor(p[0] / NOISE_FIELD_CELL), cy = Math.floor(p[1] / NOISE_FIELD_CELL);
+        add(cx, cy, e.noise);
+      });
+    });
+  }
+  function noiseDbAt(x, y) {
+    if (!noiseFieldGrid) return 40;
+    const cx = Math.floor(x / NOISE_FIELD_CELL), cy = Math.floor(y / NOISE_FIELD_CELL);
+    const cell = noiseFieldGrid.get(cx + "," + cy);
+    // el indice de ruido de kennedy_noise.json va de 0 a ~52; se mapea a
+    // un rango de dB(A) razonable (40 a 92) para poder compararlo con el
+    // umbral critico real de 60 dB(A) (Caltrans).
+    const idx = cell ? cell.sum / cell.n : 4;
+    return 40 + (idx / 52) * 52;
+  }
+  function noiseEscapeDir(x, y) {
+    const paso = NOISE_FIELD_CELL * 0.6;
+    const gx = noiseDbAt(x + paso, y) - noiseDbAt(x - paso, y);
+    const gy = noiseDbAt(x, y + paso) - noiseDbAt(x, y - paso);
+    const m = Math.hypot(gx, gy);
+    if (m < 1e-4) return null;
+    return [-gx / m, -gy / m];
+  }
+
+  function makeBirdSprite(colorHex) {
+    const c = document.createElement("canvas"); c.width = 32; c.height = 32;
     const ctx = c.getContext("2d");
-    ctx.translate(32, 32);
-    ctx.fillStyle = "#1c1f22";
-    ctx.beginPath();
-    ctx.moveTo(0, -4);
-    ctx.quadraticCurveTo(-22, -16, -30, -2);
-    ctx.quadraticCurveTo(-14, -6, 0, 2);
-    ctx.quadraticCurveTo(14, -6, 30, -2);
-    ctx.quadraticCurveTo(22, -16, 0, -4);
-    ctx.closePath();
-    ctx.fill();
+    ctx.translate(16, 16);
+    ctx.fillStyle = "#20222c";
+    ctx.beginPath(); ctx.ellipse(0, 0, 6, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#eef2f7"; ctx.lineWidth = 1.4; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-7, -6); ctx.lineTo(1, 0); ctx.lineTo(-7, 6); ctx.stroke();
+    ctx.fillStyle = "#f2a93b";
+    ctx.beginPath(); ctx.arc(6.5, 0, 1.8, 0, Math.PI * 2); ctx.fill();
+    if (colorHex != null) {
+      ctx.strokeStyle = "#" + colorHex.toString(16).padStart(6, "0");
+      ctx.globalAlpha = 0.85; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.stroke();
+    }
     const tex = new THREE.CanvasTexture(c);
     return tex;
   }
-  function buildBioticNetwork() {
-    bioGroup = new THREE.Group();
-    bioGroup.visible = false;
-    const Y_NODE = 0.4, Y_LINE = 0.38;
-    // Lineas de relacion entre nodos
-    const linePositions = [];
-    BIO_EDGES.forEach(e => {
-      const a = bioById[e.a], b = bioById[e.b];
-      const pa = toScene(a.realX, a.realY), pb = toScene(b.realX, b.realY);
-      linePositions.push(pa.x, Y_LINE, pa.z, pb.x, Y_LINE, pb.z);
-    });
-    const lineGeo = new THREE.BufferGeometry();
-    lineGeo.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x8fe0c2, transparent: true, opacity: 0.6 });
-    bioGroup.add(new THREE.LineSegments(lineGeo, lineMat));
-    // Nodos como esferas (burbujas), tamano segun cuantas conexiones tiene
-    const degree = {}; BIO_NODES.forEach(n => degree[n.id] = 0);
-    BIO_EDGES.forEach(e => { degree[e.a]++; degree[e.b]++; });
-    BIO_NODES.forEach(n => {
-      const r = 0.9 + degree[n.id] * 0.25;
-      const geo = new THREE.SphereGeometry(r, 16, 12);
-      const mat = new THREE.MeshStandardMaterial({ color: n.color, roughness: 0.7, transparent: true, opacity: 0.88 });
-      const mesh = new THREE.Mesh(geo, mat);
-      const p = toScene(n.realX, n.realY);
-      mesh.position.set(p.x, Y_NODE, p.z);
-      bioGroup.add(mesh);
-    });
-    // Aves migratorias: 2 volando en un recorrido (loop suave, con
-    // aleteo/inclinacion), igual que la animacion original en 2D.
-    const birdTex = makeBirdTexture();
-    const birdMat = new THREE.SpriteMaterial({ map: birdTex, transparent: true });
-    for (let i = 0; i < 2; i++) {
-      const sprite = new THREE.Sprite(birdMat.clone());
-      sprite.scale.set(1.6, 1.6, 1);
-      bioGroup.add(sprite);
-      bioMigratoryBirds.push({ sprite, phase: i * Math.PI, speed: i === 0 ? 1 : 0.82 });
+  function makeBirdAgent(origen) {
+    let x, y;
+    if (origen === "refugio") {
+      const a = Math.random() * Math.PI * 2, r = Math.random() * REFUGE_R;
+      x = REFUGE_X + Math.cos(a) * r; y = REFUGE_Y + Math.sin(a) * r;
+    } else if (origen === "humedal") {
+      x = HUMEDAL_X + (Math.random() - 0.5) * 200; y = HUMEDAL_Y + (Math.random() - 0.5) * 200;
+    } else { // oriente: borde este real del area de Kennedy
+      x = 10500 + Math.random() * 150; y = 500 + Math.random() * 5500;
     }
-    // Aves residentes: 2 quietas cerca del nodo "residentes"/"refugio",
-    // con un leve balanceo vertical.
-    const restNode = bioById.residentes;
-    for (let i = 0; i < 2; i++) {
-      const sprite = new THREE.Sprite(birdMat.clone());
-      sprite.scale.set(1.3, 1.3, 1);
-      const p = toScene(restNode.realX + i * 4, restNode.realY + i * 3);
-      sprite.position.set(p.x, 1.0, p.z);
-      bioGroup.add(sprite);
-      bioResidentBirds.push({ sprite, baseY: 1.0, phase: i * Math.PI });
-    }
-    sceneRoot.add(bioGroup);
+    const residente = origen === "refugio";
+    return {
+      x, y, vx: residente ? (Math.random() - 0.5) * 2.2 : -(2.6 + Math.random() * 2.6),
+      vy: (Math.random() - 0.5) * (residente ? 2.2 : 1.2),
+      rest: 0, cooldown: 0, restColor: null, residente, estresada: false, phase: Math.random() * 6.28,
+      sprite: null,
+    };
   }
-  function updateBioticNetwork(now) {
-    if (!bioGroup || !bioGroup.visible) return;
-    const t = now * 0.0004;
-    const center = toScene(HUMEDAL_X, HUMEDAL_Y);
-    bioMigratoryBirds.forEach(b => {
-      const ang = t * b.speed + b.phase;
-      const r = BIO_RADIUS * SCALE * 0.7;
-      const x = center.x + Math.cos(ang) * r;
-      const z = center.z + Math.sin(ang * 1.3) * r * 0.6;
-      b.sprite.position.set(x, 1.6 + Math.sin(ang * 2) * 0.3, z);
-    });
-    bioResidentBirds.forEach(b => {
-      b.sprite.position.y = b.baseY + Math.sin(now * 0.003 + b.phase) * 0.12;
+  function updateBirdAgent(b, dt) {
+    b.phase += dt * 9;
+    if (b.rest > 0) {
+      b.rest -= dt;
+      b.vx += (Math.random() - 0.5) * 12 * dt; b.vy += (Math.random() - 0.5) * 12 * dt;
+      const freno = Math.pow(0.02, dt);
+      b.vx *= freno; b.vy *= freno;
+      const sp = Math.hypot(b.vx, b.vy);
+      if (sp > BIRD_REST_SPEED) { b.vx = (b.vx / sp) * BIRD_REST_SPEED; b.vy = (b.vy / sp) * BIRD_REST_SPEED; }
+    } else if (b.residente) {
+      if (b.cooldown > 0) b.cooldown -= dt;
+      b.vx += (Math.random() - 0.5) * 8 * dt; b.vy += (Math.random() - 0.5) * 8 * dt;
+      const d = Math.hypot(b.x - REFUGE_X, b.y - REFUGE_Y);
+      if (d > REFUGE_R) {
+        const ux = (REFUGE_X - b.x) / d, uy = (REFUGE_Y - b.y) / d;
+        b.vx += ux * 11 * dt; b.vy += uy * 11 * dt;
+      }
+      const sp = Math.hypot(b.vx, b.vy);
+      if (sp > 4) { b.vx = (b.vx / sp) * 4; b.vy = (b.vy / sp) * 4; }
+    } else {
+      if (b.cooldown > 0) b.cooldown -= dt;
+      b.vx -= BIRD_WIND * dt;
+      b.vy += Math.sin(b.phase * 0.28) * 0.7 * dt;
+      const hallazgo = birdTreesGrid ? bestTreeNear(birdTreesGrid, b.x, b.y) : null;
+      if (hallazgo && b.cooldown <= 0) {
+        const { arbol, dist } = hallazgo;
+        const ux = (arbol.x - b.x) / dist, uy = (arbol.y - b.y) / dist;
+        const esSauco = arbol.meta.key === "sauco";
+        const fuerza = arbol.meta.weight * (esSauco ? 20 : 11);
+        b.vx += ux * fuerza * dt; b.vy += uy * fuerza * dt;
+        if (dist < BIRD_ARRIVE * 10) {
+          b.rest = 2 + Math.random(); b.restColor = arbol.meta.color; b.cooldown = 7;
+        }
+      }
+      const sp = Math.hypot(b.vx, b.vy);
+      if (sp > BIRD_MAX_SPEED) { b.vx = (b.vx / sp) * BIRD_MAX_SPEED; b.vy = (b.vy / sp) * BIRD_MAX_SPEED; }
+    }
+    const db = noiseDbAt(b.x, b.y);
+    const exceso = Math.max(0, db - BIRD_NOISE_DB);
+    b.estresada = exceso > 0;
+    if (exceso > 0) {
+      const u = noiseEscapeDir(b.x, b.y);
+      if (u) { b.vx += BIRD_K_REP * exceso * u[0] * dt; b.vy += BIRD_K_REP * exceso * u[1] * dt; }
+      if (b.rest > 0) { b.rest = 0; b.cooldown = Math.max(b.cooldown, 3); }
+    }
+    b.x += b.vx * dt * 10; // *10 para pasar de unidades/seg "logicas" a metros/seg reales
+    b.y += b.vy * dt * 10;
+    // sale por el occidente real (x chico): vuelve a entrar por oriente
+    if (b.x < 500) Object.assign(b, makeBirdAgent(b.residente ? "refugio" : "oriente"), { sprite: b.sprite });
+  }
+  function buildBirds() {
+    birdsGroup = new THREE.Group();
+    birdsGroup.visible = false;
+    const spriteMat = new THREE.SpriteMaterial({ map: makeBirdSprite(null), transparent: true });
+    const refugeCount = Math.max(4, Math.round(BIRD_COUNT * 0.15));
+    for (let i = 0; i < BIRD_COUNT; i++) {
+      const origen = i < refugeCount ? "refugio" : (i % 2 ? "humedal" : "oriente");
+      const b = makeBirdAgent(origen);
+      const sprite = new THREE.Sprite(spriteMat.clone());
+      sprite.scale.set(1.1, 1.1, 1);
+      birdsGroup.add(sprite);
+      b.sprite = sprite;
+      birds.push(b);
+    }
+    sceneRoot.add(birdsGroup);
+  }
+  let lastBirdUpdate = 0;
+  function updateBirds(now) {
+    if (!birdsGroup || !birdsGroup.visible) return;
+    const dt = lastBirdUpdate ? Math.min(0.05, (now - lastBirdUpdate) / 1000) : 0;
+    lastBirdUpdate = now;
+    if (dt > 0) birds.forEach(b => updateBirdAgent(b, dt));
+    birds.forEach(b => {
+      const p = toScene(b.x, b.y);
+      const bat = Math.sin(b.phase) * (b.rest > 0 ? 0.15 : 0.3);
+      b.sprite.position.set(p.x, 1.6 + bat, p.z);
+      b.sprite.material.color.set(b.estresada ? 0xff6b4d : 0xffffff);
     });
   }
 
@@ -986,7 +1086,7 @@
       loadBuildings();
       loadTrees();
       loadNoise();
-      buildBioticNetwork();
+      buildBirds();
       loadWaterBodies();
       loadManzanas();
       loadParques();
@@ -1075,10 +1175,10 @@
     e.target.textContent = noiseMesh.visible ? "🔇 Ocultar mapa de ruido" : "🔊 Mostrar mapa de ruido";
   });
   document.getElementById("bioToggle").addEventListener("click", (e) => {
-    if (!bioGroup) return;
-    bioGroup.visible = !bioGroup.visible;
-    e.target.classList.toggle("active", bioGroup.visible);
-    e.target.textContent = bioGroup.visible ? "🐦 Ocultar red biótica del humedal" : "🐦 Mostrar red biótica del humedal";
+    if (!birdsGroup) return;
+    birdsGroup.visible = !birdsGroup.visible;
+    e.target.classList.toggle("active", birdsGroup.visible);
+    e.target.textContent = birdsGroup.visible ? "🐦 Ocultar mirlas" : "🐦 Mostrar mirlas";
   });
 
   // Reorientar las tarjetas de los arboles hacia la camara cuando gira,
@@ -1160,7 +1260,7 @@
       waterBumpRef.offset.x = (now * -0.000027) % 1;
       waterBumpRef.offset.y = (now * 0.000021) % 1;
     }
-    updateBioticNetwork(now);
+    updateBirds(now);
     controls.update();
     renderer.render(scene, camera);
   }
