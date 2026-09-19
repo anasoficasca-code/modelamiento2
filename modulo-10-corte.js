@@ -505,7 +505,7 @@
     // brillo bajo para que capte reflejos de luz como agua real.
     const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
       map: waterTex, bumpMap: bumpTex, bumpScale: 0.12,
-      color: 0x9c9c9c, roughness: 0.18, metalness: 0.15,
+      color: 0x97a5af, roughness: 0.18, metalness: 0.15,
       transparent: true, opacity: 0.82, side: THREE.DoubleSide,
     });
     waterMat = mat;
