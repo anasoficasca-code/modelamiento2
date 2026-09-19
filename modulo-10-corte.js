@@ -364,7 +364,7 @@
     // real y no una silueta plana.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.3 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.2 });
     buildingEdgeMat = edgeMat;
     const edgeMesh = new THREE.LineSegments(edgeGeo, edgeMat);
     sceneRoot.add(edgeMesh);
@@ -512,8 +512,8 @@
     // brillo bajo para que capte reflejos de luz como agua real.
     const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
       map: waterTex, bumpMap: bumpTex, bumpScale: 0.12,
-      color: 0xffffff, roughness: 0.22, metalness: 0.08,
-      transparent: true, opacity: 0.92, side: THREE.DoubleSide,
+      color: 0x8ec5d6, roughness: 0.2, metalness: 0.1,
+      transparent: true, opacity: 0.88, side: THREE.DoubleSide,
     });
     waterMat = mat;
     const waterMesh = new THREE.Mesh(geo, mat);

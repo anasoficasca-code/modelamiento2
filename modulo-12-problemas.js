@@ -322,7 +322,7 @@
     // real y no una silueta plana.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.15 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.2 });
     buildingEdgeMat = edgeMat;
     sceneRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
   }
@@ -461,8 +461,8 @@
     waterBumpRef = bumpTex;
     const mat = new THREE.MeshStandardMaterial({
       map: waterTex, bumpMap: bumpTex, bumpScale: 0.12,
-      color: 0x9c9c9c, roughness: 0.18, metalness: 0.15,
-      transparent: true, opacity: 0.82, side: THREE.DoubleSide,
+      color: 0x8ec5d6, roughness: 0.2, metalness: 0.1,
+      transparent: true, opacity: 0.88, side: THREE.DoubleSide,
     });
     waterMat = mat;
     const waterMesh = new THREE.Mesh(geo, mat);
