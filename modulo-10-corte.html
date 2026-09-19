@@ -134,24 +134,33 @@
   .axo-label{
     position:absolute; z-index:8; pointer-events:none;
     font-family:'Space Grotesk','Segoe UI',sans-serif; font-weight:800;
-    color:#0a0a0a; letter-spacing:.04em; white-space:nowrap;
+    color:#0a0a0a; letter-spacing:.03em; white-space:nowrap;
     transform-origin:left center;
-    transform: rotate(-19deg) skewX(14deg);
+    transform: rotate(-32deg);
   }
   #axoLabelBottom{ font-size:26px; bottom:9%; right:6%; }
 
   /* ---- Pila de capas explotadas (Escala natural / cultural /
-  tecnologica), sobre la base (el corte 3D interactivo completo abajo),
-  igual que el diagrama de referencia (varias capas romboides apiladas,
-  conectadas por lineas punteadas, con su propio titulo inclinado) ---- */
-  #explodedStack{ position:absolute; top:14px; right:18px; z-index:9; width:300px; display:flex; flex-direction:column; }
-  .exploded-layer{ position:relative; width:100%; height:150px; margin-bottom:-26px; }
-  .exploded-layer canvas{ width:100%; height:100%; display:block; }
-  .exploded-layer .axo-label{ font-size:14px; bottom:6px; right:2%; transform: rotate(-14deg) skewX(10deg); }
-  .exploded-connector{
-    position:absolute; z-index:8; border-left:1.5px dashed rgba(10,10,10,.45);
-    width:0; pointer-events:none;
+  tecnologica), como el diagrama de referencia: rombos APILADOS
+  verticalmente, CENTRADOS uno sobre el otro (mismo eje X), conectados
+  por lineas punteadas verticales entre las puntas de cada rombo, con su
+  titulo inclinado "de pie" junto a la punta derecha ---- */
+  #explodedStack{
+    position:absolute; top:2%; left:50%; transform:translateX(-50%); z-index:9;
+    width:46vw; max-width:560px; display:flex; flex-direction:column; align-items:center;
+    pointer-events:none;
   }
+  .exploded-layer{
+    position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-9%;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    background:rgba(255,255,255,.94);
+  }
+  .exploded-layer canvas{ width:100%; height:100%; display:block; pointer-events:auto; }
+  .exploded-layer .axo-label{ font-size:15px; bottom:14%; right:6%; transform: rotate(-26deg); }
+  .exploded-connector{
+    position:absolute; z-index:7; border-left:1.5px dashed rgba(10,10,10,.4); width:0; pointer-events:none;
+  }
+  #connectorToBaseL, #connectorToBaseR{ height:62vh; }
 
 </style>
 </head>
@@ -288,8 +297,12 @@
     </div>
 
     <div class="axo-label" id="axoLabelBottom">KENNEDY</div>
+    <div class="exploded-connector" id="connectorToBaseL" style="left:calc(50% - 46vw/2 + 46vw*0.02); top:2%;"></div>
+    <div class="exploded-connector" id="connectorToBaseR" style="left:calc(50% + 46vw/2 - 46vw*0.02); top:2%;"></div>
 
     <div id="explodedStack">
+      <div class="exploded-connector" style="left:2%; top:0; height:100%;"></div>
+      <div class="exploded-connector" style="left:98%; top:0; height:100%;"></div>
       <div class="exploded-layer" id="layerNatural">
         <canvas id="canvasNatural"></canvas>
         <div class="axo-label">ESCALA NATURAL</div>
