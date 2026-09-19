@@ -158,7 +158,7 @@
   function buildAxoBorder(xMin, xMax, zMin, zMax) {
     if (axoBorderMesh) { sceneRoot.remove(axoBorderMesh); axoBorderMesh.geometry.dispose(); }
     const w = xMax - xMin, h = zMax - zMin;
-    const THICK = Math.max(w, h) * 0.006; // mas grueso que antes, para que se note claramente como en el referente
+    const THICK = Math.max(w, h) * 0.012; // aun mas grueso, para que se vea claramente bold como en el referente
     const Y = -0.399; // justo encima del suelo, evita z-fighting
     const corners = [
       [xMin, zMin], [xMax, zMin], [xMax, zMax], [xMin, zMax],
