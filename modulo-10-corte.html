@@ -157,8 +157,9 @@
   #layerBase{ background:#eceeef; z-index:1; }
   .exploded-layer canvas{ width:100%; height:100%; display:block; pointer-events:auto; }
   .exploded-layer .axo-label{ font-size:15px; bottom:14%; right:6%; transform: rotate(-26deg); }
-  #layerNatural .axo-label{ cursor:pointer; pointer-events:auto; }
-  #layerNatural .axo-label:hover{ color:#1c6b4a; }
+  #layerNatural{ cursor:pointer; pointer-events:auto; }
+  #layerNatural:hover{ filter:brightness(1.06); }
+  #layerNatural .axo-label{ cursor:pointer; }
   .exploded-connector{
     position:absolute; z-index:7; border-left:1.5px dashed rgba(10,10,10,.4); width:0; pointer-events:none;
   }
@@ -385,6 +386,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=31"></script>
+<script src="modulo-10-corte.js?v=32"></script>
 </body>
 </html>

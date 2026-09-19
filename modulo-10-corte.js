@@ -1187,6 +1187,14 @@
     scene.add(sceneRoot);
     const amb = new THREE.AmbientLight(0xffffff, 1.0);
     scene.add(amb);
+    // Zoom + orbita horizontal, igual que la base (35 grados fijo), para
+    // que las 4 capas se sientan igual de interactivas.
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; controls.dampingFactor = 0.1;
+    controls.minPolarAngle = controls.maxPolarAngle = 55 * Math.PI / 180;
+    controls.enablePan = false;
+    controls.minZoom = 0.4; controls.maxZoom = 12;
+    controls.zoomSpeed = 1.1;
     function resizeMini(viewSize) {
       const rect = canvas.getBoundingClientRect();
       const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
@@ -1196,7 +1204,20 @@
       camera.top = viewSize; camera.bottom = -viewSize;
       camera.updateProjectionMatrix();
     }
-    return { canvas, renderer, camera, scene, sceneRoot, resizeMini };
+    return { canvas, renderer, camera, scene, sceneRoot, controls, resizeMini };
+  }
+  // Base compartida (vias, igual en las 4 capas): solo cambia la
+  // simulacion que se resalta encima, la referencia de fondo es la misma.
+  function addRoadsBase(mini, net, toScene) {
+    const positions = [];
+    net.edges.forEach(([kind, pts]) => {
+      const scenePts = pts.map(p => toScene(p[0], p[1]));
+      for (let i = 0; i < scenePts.length - 1; i++) positions.push(scenePts[i].x, 0, scenePts[i].z, scenePts[i + 1].x, 0, scenePts[i + 1].z);
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    const mat = new THREE.LineBasicMaterial({ color: 0x9099a3, transparent: true, opacity: 0.55 });
+    mini.sceneRoot.add(new THREE.LineSegments(geo, mat));
   }
   function pointMiniCamera(mini, target, distance, azimuthDeg) {
     const az = azimuthDeg * Math.PI / 180;
@@ -1223,6 +1244,7 @@
       miniNat.resizeMini(viewSize);
       pointMiniCamera(miniNat, { x: 0, y: 0, z: 0 }, camDist, 40);
       window.addEventListener("resize", () => miniNat.resizeMini(viewSize));
+      addRoadsBase(miniNat, net, toScene); // misma base de vias que las otras 3 capas, para orientarse
       let natElBurroMesh = null, natElBurroPts = null, natElBurroCentro = null, natWaterMat = null;
       fetch("./assets/kennedy_water_bodies.json").then(r => r.json()).then(bodies => {
         const positions = [], uvs = [];
@@ -1274,6 +1296,7 @@
           natMesIdx = (natMesIdx + 1) % 12;
           rebuildNatElBurro(HUMEDAL_CICLO_MINI[natMesIdx]);
         }
+        miniNat.controls.update();
         miniNat.renderer.render(miniNat.scene, miniNat.camera);
       }
       requestAnimationFrame(animateNatural);
@@ -1304,6 +1327,7 @@
       });
       function animateCultural() {
         requestAnimationFrame(animateCultural);
+        miniCul.controls.update();
         miniCul.renderer.render(miniCul.scene, miniCul.camera);
       }
       requestAnimationFrame(animateCultural);
@@ -1358,6 +1382,7 @@
           vehMini.count = n;
           vehMini.instanceMatrix.needsUpdate = true;
         }
+        miniTec.controls.update();
         miniTec.renderer.render(miniTec.scene, miniTec.camera);
       }
       requestAnimationFrame(animateTecnologica);
@@ -1676,7 +1701,7 @@
   }
 
   const modal = document.getElementById("naturalDetailModal");
-  document.getElementById("labelEscalaNatural").addEventListener("click", () => {
+  document.getElementById("layerNatural").addEventListener("click", () => {
     modal.classList.add("open");
     initScenes();
   });
