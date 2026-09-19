@@ -357,7 +357,7 @@
   let treeInstanceData = null; // {x,z,w,h} por instancia, para recalcular el billboard al girar la camara
   let treeMesh = null; // la tarjeta con la foto (para el detalle realista)
   function buildTrees(trees) {
-    const treeTex = new THREE.TextureLoader().load("./assets/arbol_real2.png");
+    const treeTex = new THREE.TextureLoader().load("./assets/arbol_real3.png");
 
     // Arbol como volumen 3D real: tronco (cilindro) + copa en una esfera
     // con la FOTO real aplicada (no un color solido tipo "bola verde"),
@@ -385,7 +385,7 @@
       const [x, y, hMeters, , code] = t;
       const p = toScene(x, y);
       const h = Math.max(0.3, hMeters * SCALE);
-      const w = h * (0.93 + (hash2(code) % 20) / 100 - 0.1);
+      const w = h * (1.1 + (hash2(code) % 20) / 100 - 0.1);
       treeInstanceData[i] = { x: p.x, z: p.z, w, h };
 
       const trunkH = h * 0.22, trunkR = Math.max(0.02, h * 0.025);
