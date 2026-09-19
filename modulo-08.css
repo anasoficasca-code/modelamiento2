@@ -343,8 +343,12 @@ body {
 .edge-info-panel.visible { display: block; }
 .edge-info-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 #edgeInfoTitle { font-family: 'Space Grotesk', sans-serif; font-size: 12.5px; font-weight: 700; color: var(--teal); line-height: 1.3; }
-.edge-info-close { background: none; border: none; color: var(--text-faint); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 0 0 6px; flex-shrink: 0; }
-.edge-info-close:hover { color: var(--pink); }
+.edge-info-close {
+  flex-shrink: 0; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.25); border-radius: 50%;
+  color: var(--text-faint); font-size: 16px; line-height: 1; cursor: pointer; padding: 0;
+}
+.edge-info-close:hover { color: var(--pink); background: rgba(255,255,255,.15); }
 
 .edge-info-row { margin-bottom: 10px; }
 .edge-info-row:last-child { margin-bottom: 0; }
@@ -787,14 +791,31 @@ footer span { color: var(--teal); }
   color: #76fff0; font-family: monospace; font-size: 11px; padding: 8px; resize: vertical;
 }
 .sumo-agents-card {
-  position: absolute; top: 12px; right: 12px; z-index: 15; max-width: 260px;
+  position: absolute; top: 12px; right: 12px; z-index: 15; max-width: 420px;
   padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,176,32,.45);
   background: rgba(8,12,10,.94); color: #f2ece3; box-shadow: 0 6px 16px rgba(0,0,0,.4);
 }
 .sumo-agents-card strong { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #ffb020; margin-bottom: 6px; }
-.sumo-agents-card ul { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 6px; }
-.sumo-agents-card li { font-size: 11px; line-height: 1.5; color: rgba(242,236,227,.9); }
-@media (max-width: 720px) { .sumo-agents-card { max-width: calc(100% - 24px); font-size: 10.5px; } }
+.sumo-agents-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.sumo-agent-col { padding: 0 10px; }
+.sumo-agent-col:first-child { padding-left: 0; border-right: 1px solid rgba(255,176,32,.25); }
+.sumo-agent-col:last-child { padding-right: 0; }
+.sumo-agent-col-title { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: #ffcf7a; margin-bottom: 4px; }
+.sumo-agent-col-title em { font-weight: 500; font-style: italic; opacity: .85; font-size: 10.5px; }
+.sumo-agent-col p { margin: 0; font-size: 11px; line-height: 1.5; color: rgba(242,236,227,.9); }
+.sumo-agent-col[data-agent] {
+  cursor: pointer; border-radius: 6px; transition: background .15s ease;
+}
+.sumo-agent-col[data-agent]:hover, .sumo-agent-col[data-agent]:focus-visible {
+  background: rgba(255,176,32,.10); outline: none;
+}
+.sumo-agent-formula-icon { margin-left: auto; font-size: 9.5px; opacity: .65; }
+@media (max-width: 720px) {
+  .sumo-agents-card { max-width: calc(100% - 24px); font-size: 10.5px; }
+  .sumo-agents-grid { grid-template-columns: 1fr; gap: 10px; }
+  .sumo-agent-col:first-child { border-right: none; border-bottom: 1px solid rgba(255,176,32,.25); padding-bottom: 8px; }
+  .sumo-agent-col { padding: 0; }
+}
 .sumo-canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .sumo-sim-overlay {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -839,6 +860,7 @@ footer span { color: var(--teal); }
 .noise-scale-legend {
   padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-alt);
   display: flex; flex-direction: column; gap: 8px;
+  margin-top: -8px;
 }
 .noise-scale-legend h4 { margin: 0; font-size: 11.5px; color: var(--text-dim); font-weight: 600; display: flex; align-items: center; gap: 6px; justify-content: space-between; }
 .noise-toggle-label { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; cursor: pointer; }
@@ -847,10 +869,62 @@ footer span { color: var(--teal); }
 .noise-scale-swatch { width: 20px; height: 14px; border-radius: 3px; border: 1px solid rgba(255,255,255,.15); background-color: #05070a; }
 .noise-scale-row span { margin-right: 10px; }
 .noise-formula-details { font-size: 11px; color: var(--text-dim); }
-.noise-formula-details summary { cursor: pointer; color: #ffb020; font-weight: 600; padding: 2px 0; }
-.noise-formula-details ol { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; line-height: 1.5; }
-.noise-formula-details code { background: #05070a; border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: #76fff0; font-size: 10.5px; }
+.noise-formula-toggle {
+  cursor: pointer; color: #ffb020; font-weight: 600; padding: 2px 0;
+  background: none; border: none; font-size: 11px; font-family: inherit;
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* Pop-up de la fórmula: a un lado, sobre el borde izquierdo de la
+   pantalla, sin oscurecer ni tapar el resto (la simulación queda visible
+   y usable detrás). Sin telón de fondo: se cierra con la X o Escape. */
+.noise-formula-modal { position: fixed; top: 0; left: 0; height: 100%; z-index: 500; display: flex; align-items: center; justify-content: flex-start; padding: 20px; pointer-events: none; }
+.noise-formula-modal[hidden] { display: none; }
+.noise-formula-modal-backdrop { display: none; }
+.noise-formula-modal-box {
+  position: relative; z-index: 1; width: min(480px, 92vw); max-height: min(80vh, 720px); overflow-y: auto;
+  background: var(--panel-alt); border: 1px solid #ffb020; border-radius: 12px;
+  padding: 18px 20px; box-shadow: 0 20px 60px rgba(0,0,0,.55), 0 0 24px rgba(255,176,32,.12);
+  font-size: 11px; color: var(--text-dim);
+  pointer-events: auto;
+}
+.noise-formula-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.noise-formula-modal-head h4 { margin: 0; font-size: 14px; color: #ffb020; display: flex; align-items: center; gap: 8px; }
+.noise-formula-modal-close {
+  flex-shrink: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.25); border-radius: 50%;
+  color: var(--text-faint); font-size: 18px; line-height: 1; cursor: pointer; padding: 0;
+}
+.noise-formula-modal-close:hover { color: #ffb020; background: rgba(255,255,255,.15); }
+.noise-formula-modal-body ol { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; line-height: 1.5; }
+.noise-formula-modal-body code {
+  background: #05070a; border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: #76fff0; font-size: 10.5px;
+  white-space: nowrap; display: inline-block; max-width: 100%; overflow-x: auto; vertical-align: bottom;
+}
 .noise-formula-note { margin: 8px 0 0; font-style: italic; opacity: .8; }
+
+/* Pop-up de fórmula de agente: compacto (no debe tapar todo el plano) y
+   con la fórmula sola, como una lámina invertida — fondo negro, letra
+   blanca — sin ningún texto explicativo alrededor. */
+#agentFormulaModal .noise-formula-modal-box {
+  width: min(460px, 92vw); max-height: none; padding: 14px 18px 22px;
+  background: #000; border-color: rgba(255,255,255,.18);
+}
+#agentFormulaModal .formula-display { font-size: 21px; }
+#agentFormulaModal .noise-formula-modal-head h4 { color: rgba(255,255,255,.75); font-size: 12px; }
+.formula-display {
+  display: flex; align-items: center; justify-content: center; flex-wrap: nowrap;
+  gap: 6px; padding: 22px 6px 10px; color: #fff;
+  font-family: 'Cambria Math', 'STIX Two Math', Georgia, 'Times New Roman', serif;
+  font-style: italic; font-size: 24px; letter-spacing: .01em;
+  overflow-x: auto; max-width: 100%;
+}
+.formula-display > * { flex-shrink: 0; }
+.formula-display sub { font-size: .62em; }
+.formula-paren { font-size: 1.5em; font-style: normal; line-height: 1; }
+.formula-frac { display: inline-flex; flex-direction: column; align-items: center; margin: 0 2px; line-height: 1.15; }
+.formula-frac-num { padding: 0 3px 2px; border-bottom: 1.5px solid #fff; }
+.formula-frac-den { padding: 2px 3px 0; }
 .sumo-btn {
   width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border);
   background: var(--panel-alt); color: var(--text); cursor: pointer; flex-shrink: 0;
@@ -1658,4 +1732,57 @@ footer span { color: var(--teal); }
   font-size: 14px;
   font-weight: 700;
   color: var(--text);
+}
+
+
+/* ---------- Capa de mirlas sobre la simulación de SUMO ---------- */
+.birds-legend {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(176,107,255,0.28);
+  border-radius: 10px;
+  background: rgba(12,14,20,0.62);
+}
+.birds-legend h4 {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 0 0 6px; font-size: 13px; color: #e8edf3;
+}
+.birds-legend h4 i.fa-dove { color: #b06bff; }
+.birds-legend .birds-legend-note {
+  margin: 0 0 8px; font-size: 11.5px; line-height: 1.5; color: #aab4c0;
+}
+.birds-legend-row {
+  display: flex; flex-wrap: wrap; gap: 6px 18px;
+  font-size: 11.5px; color: #cfd6dc;
+}
+.birds-legend-row span { display: inline-flex; align-items: center; gap: 6px; }
+.birds-legend-row b { color: #e8edf3; }
+.birds-dot {
+  width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0;
+}
+
+.birds-slider-label { display: block; margin: 4px 0 10px; font-size: 11.5px; color: #cfd6dc; }
+.birds-slider-label input[type="range"] { display: block; width: 100%; max-width: 420px; margin-top: 5px; }
+.birds-slider-label span { color: #b06bff; font-weight: 700; }
+.birds-noise-note { border-left: 2px solid #ff6b4d; padding-left: 9px; }
+.birds-noise-note code { font-size: 11px; color: #ffb9a6; }
+.birds-noise-note i.fa-volume-high { color: #ff6b4d; }
+
+.birds-slider-label small { display: block; margin-top: 4px; font-size: 10.5px; line-height: 1.45; color: #9aa5b1; }
+.birds-slider-label small span { color: #7ed698; font-weight: 700; }
+
+/* ==========================================================
+   Editar el escenario en dos mitades: vehículos | mirlas
+   ========================================================== */
+.sumo-escenario-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch;
+  margin-bottom: 14px;
+}
+.sumo-escenario-row > .sumo-escenario-col { margin: 0; height: 100%; }
+.sumo-whatif-panel.sumo-escenario-col > h4,
+.birds-legend.sumo-escenario-col > h4 {
+  margin: 0 0 8px; font-size: 13px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+@media (max-width: 900px) {
+  .sumo-escenario-row { grid-template-columns: 1fr; }
 }

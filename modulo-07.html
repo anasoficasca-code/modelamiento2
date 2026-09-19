@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -14,7 +14,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
     <link rel="stylesheet" href="network06-shared.css">
-    <link rel="stylesheet" href="modulo-07.css?v=center-btn-simplified-v25" />
+    <link rel="stylesheet" href="modulo-07.css?v=fix-expansion-sound-v33" />
       <link rel="stylesheet" href="module02-system.css?v=spacing-v3">
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -22,22 +22,25 @@
 </head>
   <body class="module02-reference-page">
     <div class="app">
-      <aside class="sidebar sidebar-icons-only">
-    <div class="brand-icon"><i class="fa-solid fa-diagram-project"></i></div>
-    <nav class="icon-nav">
-      <a href="modulo-02.html" class="icon-nav-item" title="Medir la Red"><i class="fa-solid fa-chart-simple"></i></a>
-      <a href="modulo-03.html" class="icon-nav-item" title="Discurso vs Realidad"><i class="fa-solid fa-eye"></i></a>
-      <a href="modulo-04.html" class="icon-nav-item" title="Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
-      <a href="modulo-05.html" class="icon-nav-item" title="Lo que no está"><i class="fa-solid fa-magnifying-glass"></i></a>
-      <a href="modulo-06.html" class="icon-nav-item" title="POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
-      <a href="modulo-07.html" class="icon-nav-item active" title="Simulador"><i class="fa-solid fa-flask"></i></a>
-      <a href="modulo-08.html" class="icon-nav-item" title="Modelo Propio"><i class="fa-solid fa-city"></i></a>
-    </nav>
-    <div class="icon-nav-footer">
-      <a href="configuracion.html" class="icon-nav-item" title="Configuración"><i class="fa-solid fa-gear"></i></a>
-      <a href="demo.html" class="icon-nav-item" title="Salir"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
-    </div>
-  </aside>
+                          <aside class="sidebar sidebar-icons-only">
+      <a class="brand-icon" href="index.html" title="Bogotá Viva · Inicio" aria-label="Inicio"><i class="fa-solid fa-diagram-project"></i></a>
+      <nav class="icon-nav" aria-label="Módulos">
+        <a href="index.html" class="icon-nav-item" title="Inicio"><i class="fa-solid fa-house"></i></a>
+        <a href="modulo-metropolitano.html" class="icon-nav-item" title="Escala metropolitana &middot; Bogot&aacute; completa"><i class="fa-solid fa-city"></i></a>
+        <a href="modulo-02.html" class="icon-nav-item" title="02 · Medir la red"><i class="fa-solid fa-chart-simple"></i></a>
+        <a href="modulo-03.html" class="icon-nav-item" title="03 · Discurso vs realidad"><i class="fa-solid fa-eye"></i></a>
+        <a href="modulo-04.html" class="icon-nav-item" title="04 · Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
+        <a href="modulo-05.html" class="icon-nav-item" title="05 · Navegador multiescalar"><i class="fa-solid fa-magnifying-glass-location"></i></a>
+        <a href="modulo-06.html" class="icon-nav-item" title="06 · POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
+        <a href="modulo-07.html" class="icon-nav-item active" title="07 · Simulador"><i class="fa-solid fa-flask"></i></a>
+        <a href="modulo-08.html" class="icon-nav-item" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
+        <a href="modulo-08-3d.html" class="icon-nav-item" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
+        <a href="modulo-10-corte.html" class="icon-nav-item" title="10 · Corte axonométrico"><i class="fa-solid fa-scissors"></i></a>
+        <a href="modulo-12-problemas.html" class="icon-nav-item" title="12 · Problemáticas Corabastos"><i class="fa-solid fa-triangle-exclamation"></i></a>
+        <a href="red-residuos-organicos.html" class="icon-nav-item" title="Red de problemáticas"><i class="fa-solid fa-diagram-project"></i></a>
+        <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
+      </nav>
+    </aside>
 
       <main class="main">
         <header class="topbar">
@@ -74,43 +77,46 @@
                referente): cada línea es una relación bidireccional real
                entre dos elementos — hazle click para leer qué significa. -->
           <div class="bubble-net-wrap" id="visibleNetworkWrap">
-            <svg class="bubble-net-svg" viewBox="0 0 560 500" role="img" aria-label="Red de agentes, procesos, flujos, interacciones, sistemas y emergencia">
+            <svg class="bubble-net-svg" viewBox="0 0 560 512" role="img" aria-label="Red de agentes, procesos, flujos, interacciones, sistemas y emergencia">
               <defs>
                 <marker id="vnArrowEnd" markerWidth="4.5" markerHeight="4.5" refX="3.7" refY="2.25" orient="auto"><path d="M0,0 L4.5,2.25 L0,4.5 Z" fill="#f1f7f5"/></marker>
               </defs>
               <!-- Relaciones suaves: cada trazo mantiene su flecha pequeña y su flujo animado. -->
+              <!-- Hexágono exacto: los seis nodos están sobre una misma
+                   circunferencia y con el mismo radio, y cada relación sale
+                   del borde de una bola al borde de la otra, curvada hacia
+                   afuera para no pasar por encima de ninguna. -->
               <g class="bubble-net-edges">
-                <path id="vn-edge-agentes-procesos" class="bubble-edge-hit" d="M314 66 Q378 65 411 124"/><path id="vn-edge-agentes-procesos-visual" class="bubble-edge-visual" d="M314 66 Q378 65 411 124" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="5.6s" begin="0s" repeatCount="indefinite"><mpath href="#vn-edge-agentes-procesos-visual"/></animateMotion></circle>
-                <path id="vn-edge-agentes-flujos" class="bubble-edge-hit" d="M314 82 Q400 165 415 290"/><path id="vn-edge-agentes-flujos-visual" class="bubble-edge-visual" d="M314 82 Q400 165 415 290" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="6.4s" begin=".4s" repeatCount="indefinite"><mpath href="#vn-edge-agentes-flujos-visual"/></animateMotion></circle>
-                <path id="vn-edge-agentes-interacciones" class="bubble-edge-hit" d="M280 103 Q280 250 280 367"/><path id="vn-edge-agentes-interacciones-visual" class="bubble-edge-visual" d="M280 103 Q280 250 280 367" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="7s" begin=".8s" repeatCount="indefinite"><mpath href="#vn-edge-agentes-interacciones-visual"/></animateMotion></circle>
-                <path id="vn-edge-agentes-sistemas" class="bubble-edge-hit" d="M246 82 Q160 165 151 290"/><path id="vn-edge-agentes-sistemas-visual" class="bubble-edge-visual" d="M246 82 Q160 165 151 290" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="6.2s" begin="1.2s" repeatCount="indefinite"><mpath href="#vn-edge-agentes-sistemas-visual"/></animateMotion></circle>
-                <path id="vn-edge-agentes-emergencia" class="bubble-edge-hit" d="M246 67 Q170 65 153 125"/><path id="vn-edge-agentes-emergencia-visual" class="bubble-edge-visual" d="M246 67 Q170 65 153 125" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="5.2s" begin="1.6s" repeatCount="indefinite"><mpath href="#vn-edge-agentes-emergencia-visual"/></animateMotion></circle>
-                <path id="vn-edge-procesos-flujos" class="bubble-edge-hit" d="M455 194 L455 290"/><path id="vn-edge-procesos-flujos-visual" class="bubble-edge-visual" d="M455 194 L455 290" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="4.8s" begin="2s" repeatCount="indefinite"><mpath href="#vn-edge-procesos-flujos-visual"/></animateMotion></circle>
-                <path id="vn-edge-procesos-interacciones" class="bubble-edge-hit" d="M421 177 Q370 300 330 385"/><path id="vn-edge-procesos-interacciones-visual" class="bubble-edge-visual" d="M421 177 Q370 300 330 385" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="6.8s" begin="2.4s" repeatCount="indefinite"><mpath href="#vn-edge-procesos-interacciones-visual"/></animateMotion></circle>
-                <path id="vn-edge-procesos-sistemas" class="bubble-edge-hit" d="M415 165 Q275 260 151 320"/><path id="vn-edge-procesos-sistemas-visual" class="bubble-edge-visual" d="M415 165 Q275 260 151 320" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="7.2s" begin="2.8s" repeatCount="indefinite"><mpath href="#vn-edge-procesos-sistemas-visual"/></animateMotion></circle>
-                <path id="vn-edge-procesos-emergencia" class="bubble-edge-hit" d="M411 135 Q275 260 153 135"/><path id="vn-edge-procesos-emergencia-visual" class="bubble-edge-visual" d="M411 135 Q275 260 153 135" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="7.5s" begin="3.2s" repeatCount="indefinite"><mpath href="#vn-edge-procesos-emergencia-visual"/></animateMotion></circle>
-                <path id="vn-edge-flujos-interacciones" class="bubble-edge-hit" d="M415 330 Q370 390 330 413"/><path id="vn-edge-flujos-interacciones-visual" class="bubble-edge-visual" d="M415 330 Q370 390 330 413" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="5.8s" begin="3.6s" repeatCount="indefinite"><mpath href="#vn-edge-flujos-interacciones-visual"/></animateMotion></circle>
-                <path id="vn-edge-flujos-sistemas" class="bubble-edge-hit" d="M415 330 Q275 410 151 330"/><path id="vn-edge-flujos-sistemas-visual" class="bubble-edge-visual" d="M415 330 Q275 410 151 330" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="7.2s" begin="4s" repeatCount="indefinite"><mpath href="#vn-edge-flujos-sistemas-visual"/></animateMotion></circle>
-                <path id="vn-edge-flujos-emergencia" class="bubble-edge-hit" d="M420 305 Q300 220 153 160"/><path id="vn-edge-flujos-emergencia-visual" class="bubble-edge-visual" d="M420 305 Q300 220 153 160" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="7.5s" begin="4.4s" repeatCount="indefinite"><mpath href="#vn-edge-flujos-emergencia-visual"/></animateMotion></circle>
-                <path id="vn-edge-interacciones-sistemas" class="bubble-edge-hit" d="M222 413 Q165 390 151 345"/><path id="vn-edge-interacciones-sistemas-visual" class="bubble-edge-visual" d="M222 413 Q165 390 151 345" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="5.6s" begin="4.8s" repeatCount="indefinite"><mpath href="#vn-edge-interacciones-sistemas-visual"/></animateMotion></circle>
-                <path id="vn-edge-interacciones-emergencia" class="bubble-edge-hit" d="M240 385 Q145 300 153 193"/><path id="vn-edge-interacciones-emergencia-visual" class="bubble-edge-visual" d="M240 385 Q145 300 153 193" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="7.2s" begin="5.2s" repeatCount="indefinite"><mpath href="#vn-edge-interacciones-emergencia-visual"/></animateMotion></circle>
-                <path id="vn-edge-sistemas-emergencia" class="bubble-edge-hit" d="M105 284 L105 198"/><path id="vn-edge-sistemas-emergencia-visual" class="bubble-edge-visual" d="M105 284 L105 198" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="4.8s" begin="5.6s" repeatCount="indefinite"><mpath href="#vn-edge-sistemas-emergencia-visual"/></animateMotion></circle>
+                <path id="vn-edge-agentes-procesos" class="bubble-edge-hit" d="M322 88 Q367 100 399 132"/><path id="vn-edge-agentes-procesos-visual" class="bubble-edge-visual" d="M322 88 Q367 100 399 132" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="4.8s" begin="0.0s" repeatCount="indefinite"><mpath href="#vn-edge-agentes-procesos-visual"/></animateMotion></circle>
+                <path id="vn-edge-agentes-flujos" class="bubble-edge-hit" d="M304 106 Q388 188 417 301"/><path id="vn-edge-agentes-flujos-visual" class="bubble-edge-visual" d="M304 106 Q388 188 417 301" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="5.0s" begin="0.4s" repeatCount="indefinite"><mpath href="#vn-edge-agentes-flujos-visual"/></animateMotion></circle>
+                <path id="vn-edge-agentes-interacciones" class="bubble-edge-hit" d="M280 113 Q280 250 280 387"/><path id="vn-edge-agentes-interacciones-visual" class="bubble-edge-visual" d="M280 113 Q280 250 280 387" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="5.2s" begin="0.8s" repeatCount="indefinite"><mpath href="#vn-edge-agentes-interacciones-visual"/></animateMotion></circle>
+                <path id="vn-edge-agentes-sistemas" class="bubble-edge-hit" d="M256 106 Q172 188 143 301"/><path id="vn-edge-agentes-sistemas-visual" class="bubble-edge-visual" d="M256 106 Q172 188 143 301" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="5.4s" begin="1.2s" repeatCount="indefinite"><mpath href="#vn-edge-agentes-sistemas-visual"/></animateMotion></circle>
+                <path id="vn-edge-agentes-emergencia" class="bubble-edge-hit" d="M238 88 Q193 100 161 132"/><path id="vn-edge-agentes-emergencia-visual" class="bubble-edge-visual" d="M238 88 Q193 100 161 132" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="5.6s" begin="1.6s" repeatCount="indefinite"><mpath href="#vn-edge-agentes-emergencia-visual"/></animateMotion></circle>
+                <path id="vn-edge-procesos-flujos" class="bubble-edge-hit" d="M441 206 Q453 250 441 294"/><path id="vn-edge-procesos-flujos-visual" class="bubble-edge-visual" d="M441 206 Q453 250 441 294" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="5.8s" begin="2.0s" repeatCount="indefinite"><mpath href="#vn-edge-procesos-flujos-visual"/></animateMotion></circle>
+                <path id="vn-edge-procesos-interacciones" class="bubble-edge-hit" d="M417 199 Q388 312 304 394"/><path id="vn-edge-procesos-interacciones-visual" class="bubble-edge-visual" d="M417 199 Q388 312 304 394" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="6.0s" begin="2.4s" repeatCount="indefinite"><mpath href="#vn-edge-procesos-interacciones-visual"/></animateMotion></circle>
+                <path id="vn-edge-procesos-sistemas" class="bubble-edge-hit" d="M399 182 Q280 250 161 318"/><path id="vn-edge-procesos-sistemas-visual" class="bubble-edge-visual" d="M399 182 Q280 250 161 318" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="6.2s" begin="2.8s" repeatCount="indefinite"><mpath href="#vn-edge-procesos-sistemas-visual"/></animateMotion></circle>
+                <path id="vn-edge-procesos-emergencia" class="bubble-edge-hit" d="M392 157 Q280 126 168 157"/><path id="vn-edge-procesos-emergencia-visual" class="bubble-edge-visual" d="M392 157 Q280 126 168 157" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="6.4s" begin="3.2s" repeatCount="indefinite"><mpath href="#vn-edge-procesos-emergencia-visual"/></animateMotion></circle>
+                <path id="vn-edge-flujos-interacciones" class="bubble-edge-hit" d="M399 368 Q367 400 322 412"/><path id="vn-edge-flujos-interacciones-visual" class="bubble-edge-visual" d="M399 368 Q367 400 322 412" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="6.6s" begin="3.6s" repeatCount="indefinite"><mpath href="#vn-edge-flujos-interacciones-visual"/></animateMotion></circle>
+                <path id="vn-edge-flujos-sistemas" class="bubble-edge-hit" d="M392 343 Q280 374 168 343"/><path id="vn-edge-flujos-sistemas-visual" class="bubble-edge-visual" d="M392 343 Q280 374 168 343" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="6.8s" begin="4.0s" repeatCount="indefinite"><mpath href="#vn-edge-flujos-sistemas-visual"/></animateMotion></circle>
+                <path id="vn-edge-flujos-emergencia" class="bubble-edge-hit" d="M399 318 Q280 250 161 182"/><path id="vn-edge-flujos-emergencia-visual" class="bubble-edge-visual" d="M399 318 Q280 250 161 182" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="7.0s" begin="4.4s" repeatCount="indefinite"><mpath href="#vn-edge-flujos-emergencia-visual"/></animateMotion></circle>
+                <path id="vn-edge-interacciones-sistemas" class="bubble-edge-hit" d="M238 412 Q193 400 161 368"/><path id="vn-edge-interacciones-sistemas-visual" class="bubble-edge-visual" d="M238 412 Q193 400 161 368" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="7.2s" begin="4.8s" repeatCount="indefinite"><mpath href="#vn-edge-interacciones-sistemas-visual"/></animateMotion></circle>
+                <path id="vn-edge-interacciones-emergencia" class="bubble-edge-hit" d="M256 394 Q172 312 143 199"/><path id="vn-edge-interacciones-emergencia-visual" class="bubble-edge-visual" d="M256 394 Q172 312 143 199" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="7.4s" begin="5.2s" repeatCount="indefinite"><mpath href="#vn-edge-interacciones-emergencia-visual"/></animateMotion></circle>
+                <path id="vn-edge-sistemas-emergencia" class="bubble-edge-hit" d="M119 294 Q107 250 119 206"/><path id="vn-edge-sistemas-emergencia-visual" class="bubble-edge-visual" d="M119 294 Q107 250 119 206" marker-end="url(#vnArrowEnd)"/><circle class="bubble-flow-dot" r="2.2"><animateMotion dur="7.6s" begin="5.6s" repeatCount="indefinite"><mpath href="#vn-edge-sistemas-emergencia-visual"/></animateMotion></circle>
               </g>
-              <!-- Nodos separados para que cada relación se lea sin amontonarse. -->
               <g class="bubble-net-nodes">
-                <circle class="bubble-node bn-agentes" cx="280" cy="55" r="46"/>
-                <circle class="bubble-node bn-procesos" cx="455" cy="150" r="42"/>
-                <circle class="bubble-node bn-flujos" cx="455" cy="330" r="38"/>
-                <circle class="bubble-node bn-interacciones" cx="280" cy="430" r="52"/>
-                <circle class="bubble-node bn-sistemas" cx="105" cy="330" r="44"/>
-                <circle class="bubble-node bn-emergencia" cx="105" cy="150" r="46"/>
+                <circle class="bubble-node bn-agentes" cx="280" cy="64" r="46"/>
+                <circle class="bubble-node bn-procesos" cx="441" cy="157" r="46"/>
+                <circle class="bubble-node bn-flujos" cx="441" cy="343" r="46"/>
+                <circle class="bubble-node bn-interacciones" cx="280" cy="436" r="46"/>
+                <circle class="bubble-node bn-sistemas" cx="119" cy="343" r="46"/>
+                <circle class="bubble-node bn-emergencia" cx="119" cy="157" r="46"/>
               </g>
-              <foreignObject x="234" y="9" width="92" height="92"><div xmlns="http://www.w3.org/1999/xhtml" class="bubble-node-label"><i class="fa-solid fa-people-group"></i><span>Agentes</span></div></foreignObject>
-              <foreignObject x="413" y="108" width="84" height="84"><div xmlns="http://www.w3.org/1999/xhtml" class="bubble-node-label"><i class="fa-solid fa-gears"></i><span>Procesos</span></div></foreignObject>
-              <foreignObject x="417" y="292" width="76" height="76"><div xmlns="http://www.w3.org/1999/xhtml" class="bubble-node-label"><i class="fa-solid fa-arrows-turn-to-dots"></i><span>Flujos</span></div></foreignObject>
-              <foreignObject x="228" y="378" width="104" height="104"><div xmlns="http://www.w3.org/1999/xhtml" class="bubble-node-label"><i class="fa-solid fa-diagram-project"></i><span>Interacciones</span></div></foreignObject>
-              <foreignObject x="61" y="292" width="88" height="88"><div xmlns="http://www.w3.org/1999/xhtml" class="bubble-node-label"><i class="fa-solid fa-circle-nodes"></i><span>Sistemas</span></div></foreignObject>
-              <foreignObject x="59" y="104" width="92" height="92"><div xmlns="http://www.w3.org/1999/xhtml" class="bubble-node-label"><i class="fa-solid fa-triangle-exclamation"></i><span>Emergencia</span></div></foreignObject>
+              <foreignObject x="234" y="18" width="92" height="92"><div xmlns="http://www.w3.org/1999/xhtml" class="bubble-node-label"><i class="fa-solid fa-people-group"></i><span>Agentes</span></div></foreignObject>
+              <foreignObject x="395" y="111" width="92" height="92"><div xmlns="http://www.w3.org/1999/xhtml" class="bubble-node-label"><i class="fa-solid fa-gears"></i><span>Procesos</span></div></foreignObject>
+              <foreignObject x="395" y="297" width="92" height="92"><div xmlns="http://www.w3.org/1999/xhtml" class="bubble-node-label"><i class="fa-solid fa-arrows-turn-to-dots"></i><span>Flujos</span></div></foreignObject>
+              <foreignObject x="234" y="390" width="92" height="92"><div xmlns="http://www.w3.org/1999/xhtml" class="bubble-node-label"><i class="fa-solid fa-diagram-project"></i><span>Interacciones</span></div></foreignObject>
+              <foreignObject x="73" y="297" width="92" height="92"><div xmlns="http://www.w3.org/1999/xhtml" class="bubble-node-label"><i class="fa-solid fa-circle-nodes"></i><span>Sistemas</span></div></foreignObject>
+              <foreignObject x="73" y="111" width="92" height="92"><div xmlns="http://www.w3.org/1999/xhtml" class="bubble-node-label"><i class="fa-solid fa-triangle-exclamation"></i><span>Emergencia</span></div></foreignObject>
             </svg>
             <div class="visible-network-tooltip" id="visibleNetworkTooltip" hidden></div>
           </div>
@@ -172,6 +178,7 @@
           </div>
           <div id="territoryNetworkPlainWrap" class="territory-network-plain-wrap">
             <div id="territoryNetworkPlain" class="subsystem-bubbles territory-network-plain" aria-label="Red de subsistemas y submodelos"></div>
+
           </div>
         </section>
         <section class="cartography-section" id="cartographySection" aria-labelledby="cartographyTitle" hidden>
@@ -345,6 +352,19 @@
         </div>
       </div>
     </div>
-    <script src="modulo-07.js?v=center-btn-simplified-v25"></script>
+    <script src="modulo-07.js?v=fix-expansion-sound-v33"></script>
   </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+

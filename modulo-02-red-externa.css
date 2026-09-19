@@ -1,0 +1,198 @@
+/* ==========================================================
+   Módulo 02 · Red externa (base de datos cargada desde Excel/Supabase)
+   Capa de nodos/conexiones sobre networkViz, con el mismo lenguaje
+   visual (anillo + ícono + texto adentro) que los nodos originales.
+   Aislado en su propio archivo para no tocar modulo-02.css / modulo-02.js.
+   ========================================================== */
+
+.network-canvas-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.m2re-toolbar-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 6px;
+}
+.m2cat-toolbar-status {
+  font-size: 11.5px; color: var(--text-faint); padding: 2px 4px; white-space: normal; flex: 1;
+}
+.m2re-zoom-controls { flex-shrink: 0; }
+
+.m2re-highlight-row { justify-content: flex-start; flex-wrap: wrap; }
+.m2re-highlight-info { font-size: 11.5px; color: var(--text-faint); }
+
+/* Cuál de las dos redes se ve en Módulo 02 lo decide la constante
+   RED_EXTERNA_ACTIVA de modulo-02-red-externa.js, que pone (o no) la clase
+   .m2re-activa en el <body>:
+
+   - SIN la clase (estado actual, a pedido): se ve la red original de
+     modulo-02.js (ODS_NODES y las relaciones del POT escritas a mano), con
+     su propio control de zoom, y se esconde toda la interfaz de la red
+     externa (barra de estado, botones de resalte y de simulación).
+   - CON la clase: se ve la red alimentada desde Supabase y se esconde la
+     original — que se oculta por CSS, no se borra del DOM, para no romper
+     la lógica de modulo-02.js que sigue leyendo esos nodos (métricas,
+     matriz, leyenda, etc.). */
+body.m2re-activa #networkViz .ambient-mesh-layer,
+body.m2re-activa #networkViz .edges-layer,
+body.m2re-activa #networkViz .nodes-layer {
+  display: none !important;
+}
+/* el control de zoom viejo (networkZoomIn/Out/Reset) controla la red
+   original: solo se esconde cuando esa red no está a la vista. */
+body.m2re-activa .network-controls {
+  display: none !important;
+}
+/* y al revés: sin red externa, su barra de herramientas no tiene qué controlar */
+body:not(.m2re-activa) .m2re-toolbar-row,
+body:not(.m2re-activa) .m2re-ficha,
+body:not(.m2re-activa) .m2re-conclusiones {
+  display: none !important;
+}
+
+/* Nodos/aristas dibujados dentro de #networkViz > #m2-red-externa > #m2re-viewport.
+   Las conexiones quedan casi invisibles por defecto (795 nodos × 2198 líneas
+   se leen como una maraña si se muestran todas a la vez) y se iluminan solo
+   al pasar el mouse sobre uno de sus dos extremos. */
+/* Las conexiones SÍ se ven: finas y tenues, se leen como una malla. Antes
+   estaban al 8% y con 1.2px, así que la red parecía una nube de burbujas
+   sin una sola línea. Al señalar un nodo se encienden las suyas y el resto
+   de la red se apaga (con 2.198 líneas, resaltar sin apagar no se nota). */
+.m2re-edge { stroke: rgba(158,175,200,0.34); stroke-width: 0.75; pointer-events: none; transition: stroke .18s, stroke-width .18s, opacity .18s; }
+.m2re-edge-indirecta { stroke: rgba(158,175,200,0.2); stroke-dasharray: 4 4; }
+.m2re-edge-activa { stroke-width: 2.2 !important; opacity: 1 !important; }
+.m2re-nodes, .m2re-edges { transition: opacity .18s ease; }
+.m2re-edge[data-filtered-out="1"] { opacity: 0 !important; }
+.m2re-node-group { cursor: pointer; }
+.m2re-node-ring { transition: stroke-width .1s, filter .15s; }
+.m2re-node-group:hover .m2re-node-ring { stroke-width: 4; }
+.m2re-node-ring.m2re-hl { stroke: #ffffff !important; animation: m2reHlPulse 1.4s ease-in-out infinite; }
+@keyframes m2reHlPulse {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(255,255,255,0.5)); }
+  50% { filter: drop-shadow(0 0 10px rgba(255,255,255,0.95)); }
+}
+#networkViz.m2re-panning { cursor: grabbing; }
+#networkViz { cursor: grab; }
+
+.m2re-tooltip {
+  position: absolute; z-index: 50; max-width: 260px;
+  background: #0b0f18; border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; font-size: 12px; color: var(--text-dim);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45); pointer-events: none;
+}
+.m2re-tooltip strong { color: var(--text); display: block; margin-bottom: 3px; font-size: 12.5px; }
+.m2re-tooltip small { color: var(--text-faint); display: block; margin-top: 4px; }
+
+
+/* ---------- Ficha del nodo (panel lateral) y simulación de apagado ---------- */
+.network-canvas { position: relative; }
+.m2re-ficha {
+  position: absolute; top: 12px; right: 12px; z-index: 20;
+  width: 290px; max-height: calc(100% - 24px); overflow-y: auto;
+  padding: 12px 14px 14px; border-radius: 12px;
+  background: rgba(9,11,15,0.96); border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 14px 40px rgba(0,0,0,.6);
+  font-family: 'Inter', sans-serif; color: #cfd6dc;
+}
+.m2re-ficha[hidden] { display: none; }
+.m2re-ficha .m2re-ficha-cerrar {
+  position: absolute; top: 8px; right: 8px; width: 20px; height: 20px;
+  border: 0; border-radius: 5px; background: transparent; color: #9fb0bd; cursor: pointer; font-size: 14px;
+}
+.m2re-ficha .m2re-ficha-cerrar:hover { background: rgba(255,255,255,.12); color: #fff; }
+.m2re-ficha h4 { margin: 2px 26px 4px 0; font-size: 14px; color: #f2f5f7; line-height: 1.25; }
+.m2re-ficha .m2re-ficha-cat {
+  display: inline-flex; align-items: center; gap: 6px; margin-bottom: 8px;
+  padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .3px;
+}
+.m2re-ficha .m2re-ficha-etiqueta {
+  margin: 10px 0 3px; font-size: 10px; font-weight: 800; letter-spacing: .4px;
+  text-transform: uppercase; color: #8fa0b0;
+}
+.m2re-ficha p { margin: 0; font-size: 11.5px; line-height: 1.5; }
+.m2re-ficha .m2re-ficha-vacio { color: #7d8794; font-style: italic; }
+.m2re-ficha .m2re-ficha-datos { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.m2re-ficha .m2re-chip {
+  padding: 2px 7px; border-radius: 6px; font-size: 10.5px;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); color: #dbe3ea;
+}
+.m2re-ficha .m2re-vecino-btn {
+  display: block; width: 100%; text-align: left; margin-top: 4px; cursor: pointer;
+  padding: 5px 7px; border-radius: 7px; font-size: 11px; line-height: 1.35;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: #dbe3ea;
+  font-family: inherit;
+}
+.m2re-ficha .m2re-vecino-btn:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.25); }
+.m2re-ficha .m2re-vecino-btn small { display: block; margin-top: 2px; color: #93a1ae; font-size: 10px; }
+.m2re-ficha .m2re-ficha-toggle {
+  width: 100%; margin-top: 12px; padding: 7px; cursor: pointer;
+  border-radius: 8px; font-size: 11.5px; font-weight: 700; font-family: inherit;
+  border: 1px solid rgba(255,209,102,.5); background: rgba(255,209,102,.14); color: #ffd166;
+}
+.m2re-ficha .m2re-ficha-toggle:hover { background: rgba(255,209,102,.24); }
+.m2re-ficha .m2re-ficha-toggle.apagado { border-color: rgba(120,220,160,.5); background: rgba(120,220,160,.14); color: #7fdca4; }
+.m2re-sim-row .m2re-sim-label { font-size: 11px; font-weight: 700; color: #9fb0bd; text-transform: uppercase; letter-spacing: .3px; }
+
+/* ---------- Panel de conclusiones de la red ----------
+   Vive dentro de .network-canvas, al lado izquierdo (la ficha del nodo va a
+   la derecha), para que se puedan leer las dos a la vez mientras se apagan
+   nodos y las cifras se recalculan. */
+.m2re-btn-conclusiones.active { border-color: rgba(255,209,102,.55); background: rgba(255,209,102,.16); color: #ffd166; }
+
+.m2re-conclusiones {
+  position: absolute; top: 12px; left: 12px; z-index: 21;
+  width: 380px; max-width: calc(100% - 24px); max-height: calc(100% - 24px); overflow-y: auto;
+  padding: 16px 18px 18px; border-radius: 14px;
+  background: rgba(9,11,15,0.97); border: 1px solid rgba(255,209,102,.28);
+  box-shadow: 0 18px 50px rgba(0,0,0,.65);
+  font-family: 'Inter', sans-serif; color: #cfd6dc;
+  animation: m2reConclIn .22s ease;
+}
+@keyframes m2reConclIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.m2re-conclusiones[hidden] { display: none; }
+.m2re-concl-cerrar {
+  position: absolute; top: 10px; right: 10px; width: 22px; height: 22px;
+  border: 0; border-radius: 6px; background: transparent; color: #9fb0bd; cursor: pointer; font-size: 15px;
+}
+.m2re-concl-cerrar:hover { background: rgba(255,255,255,.12); color: #fff; }
+.m2re-concl-kicker {
+  font-size: 10px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: #ffd166;
+}
+.m2re-conclusiones h3 { margin: 4px 26px 6px 0; font-size: 16px; line-height: 1.25; color: #f2f5f7; }
+.m2re-concl-nota { margin: 0 0 12px; font-size: 10.5px; line-height: 1.45; color: #7d8794; font-style: italic; }
+
+.m2re-concl-datos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
+.m2re-concl-dato {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 4px; border-radius: 9px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+}
+.m2re-concl-dato b { font-size: 16px; color: #f2f5f7; line-height: 1; }
+.m2re-concl-dato span { font-size: 9px; text-align: center; color: #8fa0b0; line-height: 1.2; }
+
+.m2re-concl-bloque { margin-bottom: 13px; }
+.m2re-concl-bloque h4 {
+  margin: 0 0 4px; font-size: 12px; line-height: 1.3; color: #ffd166; font-weight: 800;
+}
+.m2re-concl-bloque p { margin: 0; font-size: 11.5px; line-height: 1.55; color: #c3ccd6; }
+.m2re-concl-bloque b { color: #f2f5f7; }
+.m2re-concl-bloque em { color: #9fb0bd; }
+
+.m2re-concl-barras { margin-top: 9px; display: flex; flex-direction: column; gap: 5px; }
+.m2re-concl-barra { display: grid; grid-template-columns: 8px 1fr 60px 58px; align-items: center; gap: 6px; }
+.m2re-concl-punto { width: 8px; height: 8px; border-radius: 50%; }
+.m2re-concl-barra-nom { font-size: 10px; color: #9fb0bd; line-height: 1.2; }
+.m2re-concl-barra-track { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
+.m2re-concl-barra-fill { display: block; height: 100%; border-radius: 3px; opacity: .85; }
+.m2re-concl-barra-val { font-size: 10px; color: #dbe3ea; text-align: right; }
+
+.m2re-concl-final {
+  margin-top: 4px; padding: 10px 12px; border-radius: 10px;
+  background: rgba(255,209,102,.09); border: 1px solid rgba(255,209,102,.26);
+  font-size: 11.5px; line-height: 1.55; color: #e6dcc4;
+}
+.m2re-concl-final b { color: #ffd166; }

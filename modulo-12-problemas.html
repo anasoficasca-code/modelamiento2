@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Problemáticas de Kennedy — Corabastos</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="navigation-unified.css?v=20260824">
+<style>
+  :root{
+    --bg:#0b0c0f; --panel:rgba(255,255,255,.06); --panel-border:rgba(255,255,255,.12);
+    --ink:#e8ecf1; --ink-dim:#8b96a5; --accent:#24c8bd;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{ background:var(--bg); color:var(--ink); font-family:Inter,Arial,sans-serif; overflow:hidden; }
+  .app{ display:flex; min-height:100vh; }
+  .main{ flex:1; position:relative; min-width:0; }
+  #sceneWrap{ position:absolute; inset:0; }
+  #sceneCanvas{ position:absolute; inset:0; display:block; width:100%; height:100%; }
+
+  .hud-title{
+    position:absolute; top:18px; left:18px; z-index:5; pointer-events:none;
+  }
+  .hud-title h1{ font-size:15px; font-weight:600; margin:0 0 3px; }
+  .hud-title p{ font-size:11.5px; color:var(--ink-dim); margin:0; }
+
+  .status-overlay{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:13px; color:var(--ink-dim); background:rgba(11,12,15,.6); z-index:8; text-align:center; padding:20px;
+  }
+  .status-overlay.hide{ display:none; }
+
+  .controls-bar{
+    position:absolute; left:50%; bottom:20px; transform:translateX(-50%); z-index:6;
+    display:flex; align-items:center; gap:12px; padding:10px 16px; border-radius:14px;
+    background:rgba(17,20,24,.9); border:1px solid var(--panel-border); backdrop-filter:blur(6px);
+    max-width:92vw;
+  }
+  .controls-bar button{
+    width:34px; height:34px; border-radius:50%; border:1px solid var(--panel-border); background:var(--panel);
+    color:var(--ink); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px;
+  }
+  .controls-bar button:hover{ background:rgba(255,255,255,.12); }
+  .controls-bar input[type=range]{ width:min(38vw,340px); accent-color:var(--accent); }
+  .controls-bar .time-label{ font-size:11.5px; color:var(--ink-dim); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .controls-bar select{
+    background:var(--panel); color:var(--ink); border:1px solid var(--panel-border); border-radius:8px;
+    font-size:11.5px; padding:5px 8px;
+  }
+
+  .view-buttons{
+    position:absolute; top:18px; right:18px; z-index:6; display:flex; flex-direction:column; gap:6px;
+  }
+  .view-buttons button{
+    padding:8px 12px; border-radius:9px; border:1px solid var(--panel-border); background:rgba(17,20,24,.85);
+    color:var(--ink); font-size:11.5px; cursor:pointer; text-align:left;
+  }
+  .view-buttons button:hover{ background:rgba(255,255,255,.1); }
+
+  .legend{
+    position:absolute; bottom:78px; left:18px; z-index:5; font-size:11px; color:var(--ink-dim);
+    background:rgba(17,20,24,.8); border:1px solid var(--panel-border); border-radius:10px; padding:10px 12px;
+    display:flex; flex-direction:column; gap:5px;
+  }
+  .legend span{ display:flex; align-items:center; gap:7px; }
+  .legend i{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+
+  .rotate-panel{
+    position:absolute; top:70px; right:18px; z-index:6; width:220px;
+    background:rgba(17,20,24,.92); border:1px solid var(--panel-border); border-radius:10px; padding:12px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .rotate-row{ display:flex; flex-direction:column; gap:4px; }
+  .rotate-row label{ font-size:11px; color:var(--ink-dim); display:flex; justify-content:space-between; }
+  .rotate-row input[type=range]{ width:100%; accent-color:var(--accent); }
+  .rotate-row.rotate-buttons{ flex-direction:row; gap:8px; }
+  .rotate-row button{
+    flex:1; padding:7px 8px; border-radius:8px; border:1px solid var(--panel-border); background:var(--panel);
+    color:var(--ink); font-size:10.5px; cursor:pointer;
+  }
+  .rotate-row button:hover{ background:rgba(255,255,255,.12); }
+  #rotateOutput{
+    width:100%; resize:vertical; font-family:monospace; font-size:10.5px; padding:6px; border-radius:6px;
+    border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
+  }
+  input[type=color]{
+    width:34px; height:24px; padding:0; border:1px solid var(--panel-border); border-radius:5px;
+    background:none; cursor:pointer;
+  }
+  #colorOutput{
+    width:100%; resize:vertical; font-family:monospace; font-size:10.5px; padding:6px; border-radius:6px;
+    border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
+  }
+
+  .draw-panel{
+    position:absolute; top:70px; left:96px; z-index:110; width:230px;
+    max-height:calc(100vh - 90px); overflow-y:auto;
+    background:rgba(17,20,24,.92); border:1px solid var(--panel-border); border-radius:10px; padding:12px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .draw-panel #drawToggle.active, .draw-panel #treePlantToggle.active{ background:var(--accent); color:#0b0c0f; border-color:var(--accent); }
+  .draw-hint{ font-size:10px; color:var(--ink-dim); margin:0; line-height:1.4; }
+  #drawOutput, #treePlantOutput{
+    width:100%; resize:vertical; font-family:monospace; font-size:10px; padding:6px; border-radius:6px;
+    border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
+  }
+
+  .tree-info{
+    position:absolute; left:50%; top:70px; transform:translateX(-50%) translateY(-10px); z-index:20;
+    width:min(300px, 88vw); background:rgba(17,20,24,.97); border:1px solid var(--panel-border);
+    border-radius:12px; padding:16px 18px; box-shadow:0 10px 30px rgba(0,0,0,.5);
+    opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;
+  }
+  .tree-info.show{ opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0); }
+  .tree-info-close{
+    position:absolute; top:10px; right:10px; width:24px; height:24px; border-radius:50%;
+    border:1px solid var(--panel-border); background:var(--panel); color:var(--ink-dim);
+    cursor:pointer; font-size:12px;
+  }
+  .tree-info-kind{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-dim); margin:0 0 4px; }
+  .tree-info h3{ font-size:14px; margin:0 26px 6px 0; color:var(--ink); }
+  .tree-info p#treeInfoDetails{ font-size:12px; color:var(--ink-dim); margin:0; line-height:1.5; }
+
+  /* ---- Conectografia: red de problematicas UBICADA sobre el mapa 3D real
+  (no una red suelta/abstracta aparte), con el mismo aspecto organico
+  (burbujas goo) que la red original, pero en su posicion geografica real ---- */
+  #netGooLayer{ position:absolute; inset:0; width:100%; height:100%; z-index:11; filter:url(#netGoo); pointer-events:none; }
+  .net-blob{
+    position:absolute; top:0; left:0; border-radius:50%; transform:translate(-50%,-50%);
+    pointer-events:auto; cursor:pointer; transition:opacity .25s ease;
+  }
+  #netSvg{ position:absolute; inset:0; width:100%; height:100%; z-index:12; pointer-events:none; overflow:visible; }
+  #netSvg .macro-num{ font-family:'Segoe UI',sans-serif; font-weight:700; fill:#fff; text-anchor:middle; dominant-baseline:central; pointer-events:none; font-size:14px; text-shadow:0 1px 3px rgba(0,0,0,.6); }
+  #netSvg .net-line{ stroke-linecap:round; fill:none; }
+  #netLabelLayer{ position:absolute; inset:0; z-index:13; pointer-events:none; }
+  .net-label{
+    position:absolute; transform:translate(-50%,-100%); font-family:'Segoe UI',sans-serif;
+    background:rgba(11,12,15,.88); color:#e8eaed; padding:3px 8px; border-radius:6px; font-size:10.5px;
+    white-space:nowrap; max-width:170px; overflow:hidden; text-overflow:ellipsis; pointer-events:none;
+    border:1px solid rgba(255,255,255,.15);
+  }
+  #netPanel{
+    position:absolute; top:0; right:0; bottom:0; z-index:20; width:min(360px,90vw);
+    background:#111418; border-left:1px solid var(--panel-border); box-shadow:-14px 0 40px rgba(0,0,0,.35);
+    padding:24px 22px; overflow-y:auto; transform:translateX(100%); transition:transform .3s cubic-bezier(.2,.8,.2,1);
+  }
+  #netPanel.open{ transform:translateX(0); }
+  #netPanel .panel-close{
+    position:absolute; top:16px; right:16px; width:28px; height:28px; border-radius:50%; border:1px solid var(--panel-border);
+    background:var(--panel); color:var(--ink-dim); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px;
+  }
+  #netPanel .panel-kind{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin:0 0 8px; }
+  #netPanel h2{ font-size:15px; font-weight:600; margin:0 28px 4px 0; line-height:1.4; color:var(--ink); }
+  #netPanel .block{ margin-top:14px; padding-top:14px; border-top:1px solid var(--panel-border); }
+  #netPanel .block b{ display:block; font-size:10.5px; color:var(--ink-dim); font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em; }
+  #netPanel .rel-chip{ display:block; padding:8px 11px; margin-bottom:6px; border-radius:8px; background:rgba(226,99,90,.1); border:1px solid rgba(226,99,90,.3); font-size:11.5px; color:var(--ink); }
+  #netCloseSubBtn{
+    position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:15;
+    padding:9px 16px; border-radius:999px; border:1px solid var(--panel-border); background:var(--panel);
+    font-size:11.5px; font-weight:600; color:var(--ink); cursor:pointer; display:none;
+  }
+  #netCloseSubBtn.show{ display:block; }
+</style>
+</head>
+<body>
+<div class="app">
+                      <aside class="sidebar sidebar-icons-only">
+      <a class="brand-icon" href="index.html" title="Bogotá Viva · Inicio" aria-label="Inicio"><i class="fa-solid fa-diagram-project"></i></a>
+      <nav class="icon-nav" aria-label="Módulos">
+        <a href="index.html" class="icon-nav-item" title="Inicio"><i class="fa-solid fa-house"></i></a>
+        <a href="modulo-metropolitano.html" class="icon-nav-item" title="Escala metropolitana &middot; Bogot&aacute; completa"><i class="fa-solid fa-city"></i></a>
+        <a href="modulo-02.html" class="icon-nav-item" title="02 · Medir la red"><i class="fa-solid fa-chart-simple"></i></a>
+        <a href="modulo-03.html" class="icon-nav-item" title="03 · Discurso vs realidad"><i class="fa-solid fa-eye"></i></a>
+        <a href="modulo-04.html" class="icon-nav-item" title="04 · Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
+        <a href="modulo-05.html" class="icon-nav-item" title="05 · Navegador multiescalar"><i class="fa-solid fa-magnifying-glass-location"></i></a>
+        <a href="modulo-06.html" class="icon-nav-item" title="06 · POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
+        <a href="modulo-07.html" class="icon-nav-item" title="07 · Simulador"><i class="fa-solid fa-flask"></i></a>
+        <a href="modulo-08.html" class="icon-nav-item" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
+        <a href="modulo-08-3d.html" class="icon-nav-item" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
+        <a href="modulo-10-corte.html" class="icon-nav-item" title="10 · Corte axonométrico"><i class="fa-solid fa-scissors"></i></a>
+        <a href="modulo-12-problemas.html" class="icon-nav-item active" title="12 · Problemáticas Corabastos"><i class="fa-solid fa-triangle-exclamation"></i></a>
+        <a href="red-residuos-organicos.html" class="icon-nav-item" title="Red de problemáticas"><i class="fa-solid fa-diagram-project"></i></a>
+        <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
+      </nav>
+    </aside>
+  <main class="main">
+    <div id="sceneWrap">
+      <canvas id="sceneCanvas"></canvas>
+    </div>
+
+    <div class="hud-title">
+      <h1>Problemáticas de Kennedy — Corabastos</h1>
+      <p>8 problemáticas ubicadas en su lugar real · clic en un círculo para ver su red de causas, localizada en el mismo mapa</p>
+    </div>
+
+    <div class="view-buttons">
+      <button type="button" id="viewReset">Restablecer vista axonométrica</button>
+    </div>
+
+    <div class="rotate-panel" id="rotatePanel">
+      <div class="rotate-row">
+        <label>Sol — acimut <span id="sunAzVal">130°</span></label>
+        <input type="range" id="sunAz" min="0" max="360" value="130" step="1">
+      </div>
+      <div class="rotate-row">
+        <label>Sol — altura <span id="sunElVal">45°</span></label>
+        <input type="range" id="sunEl" min="5" max="85" value="45" step="1">
+      </div>
+      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border); flex-direction:row; align-items:center; justify-content:space-between;">
+        <label style="display:inline;">Color del agua</label>
+        <input type="color" id="colorAgua" value="#97a5af">
+      </div>
+      <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
+        <label style="display:inline;">Color de las vías</label>
+        <input type="color" id="colorVia" value="#b7babd">
+      </div>
+      <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
+        <label style="display:inline;">Color de lo verde</label>
+        <input type="color" id="colorVerde" value="#adaa90">
+      </div>
+      <textarea id="colorOutput" rows="3" spellcheck="false" readonly></textarea>
+    </div>
+
+    <div class="legend">
+      <span><i style="background:#e2635a"></i> Vehículo</span>
+      <span><i style="background:#b7babd"></i> Vía</span>
+      <span><i style="background:#ffffff"></i> Edificio</span>
+      <span><i style="background:#5c8f52"></i> Árbol</span>
+      <span><i style="background:#97a5af"></i> Cuerpo de agua</span>
+      <span><i style="background:#8a8f96"></i> Manzana</span>
+      <span><i style="background:#adaa90"></i> Parque/zona verde</span>
+      <span><i style="background:#b5714a"></i> Techo a dos aguas</span>
+      <span><i style="background:#ffffff"></i> Techo plano/parapeto</span>
+    </div>
+
+    <div class="controls-bar">
+      <button type="button" id="playPause" aria-label="Reproducir / pausar"><i class="fa-solid fa-play"></i></button>
+      <input type="range" id="timeSlider" min="0" max="1000" value="0" step="1" disabled>
+      <span class="time-label" id="timeLabel">00:00 / 00:00</span>
+      <select id="speedSelect">
+        <option value="1">1×</option>
+        <option value="2" selected>2×</option>
+        <option value="4">4×</option>
+        <option value="8">8×</option>
+      </select>
+    </div>
+
+    <div class="status-overlay" id="statusOverlay">Cargando red vial…</div>
+
+    <div class="tree-info" id="treeInfo">
+      <button type="button" class="tree-info-close" id="treeInfoClose">✕</button>
+      <p class="tree-info-kind">Árbol</p>
+      <h3 id="treeInfoName"></h3>
+      <p id="treeInfoDetails"></p>
+    </div>
+
+    <!-- Conectografia: red de problematicas ubicada sobre el mapa 3D real -->
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <filter id="netGoo">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+          <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 17 -8" result="goo" />
+          <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+        </filter>
+      </defs>
+    </svg>
+    <div id="netGooLayer"></div>
+    <svg id="netSvg"></svg>
+    <div id="netLabelLayer"></div>
+    <button type="button" id="netCloseSubBtn">✕ Cerrar causas internas</button>
+    <div id="cldLegend" style="display:none; position:absolute; bottom:70px; left:96px; z-index:15; font-size:11px; color:#0b0c0f; background:rgba(255,255,255,.94); border-radius:10px; padding:9px 12px; max-width:230px; line-height:1.5; box-shadow:0 4px 16px rgba(0,0,0,.25);">
+      <b>Notación del diagrama causal</b><br>
+      <b>+</b> junto a una flecha: si la causa aumenta, el efecto también aumenta<br>
+      <b>↻ R</b> sobre un ciclo cerrado: bucle reforzador (círculo vicioso)
+    </div>
+    <aside id="netPanel">
+      <button type="button" class="panel-close" id="netPanelClose">✕</button>
+      <div id="netPanelBody"></div>
+    </aside>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="modulo-12-problemas.js?v=11"></script>
+</body>
+</html>

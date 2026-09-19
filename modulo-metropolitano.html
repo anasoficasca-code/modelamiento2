@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bogotá Viva · Escala metropolitana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  :root{
+    --bg:#0b0c0f; --panel:rgba(255,255,255,.06); --panel-border:rgba(255,255,255,.12);
+    --ink:#e8ecf1; --ink-dim:#8b96a5; --accent:#24c8bd;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; overflow:hidden; }
+  .app{ display:flex; height:100vh; }
+  .sidebar{ width:64px; flex:none; background:#0d0e12; border-right:1px solid var(--panel-border); display:flex; flex-direction:column; align-items:center; padding:14px 0; gap:10px; }
+  .brand-icon{ color:var(--accent); font-size:20px; margin-bottom:10px; text-decoration:none; }
+  .icon-nav{ display:flex; flex-direction:column; gap:6px; }
+  .icon-nav-item{ width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; color:var(--ink-dim); text-decoration:none; font-size:15px; transition:background .15s,color .15s; }
+  .icon-nav-item:hover{ background:var(--panel); color:var(--ink); }
+  .icon-nav-item.active{ background:var(--accent); color:#04211f; }
+
+  main{ flex:1; position:relative; overflow:hidden; }
+  #mapWrap{ position:absolute; inset:0; overflow:hidden; cursor:grab; }
+  #mapWrap.dragging{ cursor:grabbing; }
+  #mapImg{ position:absolute; top:50%; left:50%; transform-origin:center; user-select:none; pointer-events:none; filter:invert(1) hue-rotate(180deg) brightness(1.35) contrast(1.05); }
+
+  .hud-title{ position:absolute; top:18px; left:24px; z-index:5; max-width:420px; }
+  .hud-title h1{ font-family:'Space Grotesk',sans-serif; font-size:20px; margin:0 0 4px; }
+  .hud-title p{ font-size:12px; color:var(--ink-dim); margin:0; line-height:1.5; }
+
+  .zoom-controls{ position:absolute; bottom:20px; left:24px; z-index:5; display:flex; flex-direction:column; gap:6px; }
+  .zoom-btn{ width:34px; height:34px; border-radius:8px; border:1px solid var(--panel-border); background:var(--panel); color:var(--ink); font-size:16px; cursor:pointer; }
+  .zoom-btn:hover{ background:rgba(255,255,255,.12); }
+
+  .kennedy-marker{ position:absolute; z-index:4; pointer-events:none; transform:translate(-50%,-50%); }
+  .kennedy-dot{ width:14px; height:14px; border-radius:50%; background:#e2635a; box-shadow:0 0 0 4px rgba(226,99,90,.28); }
+  .kennedy-pulse{ position:absolute; top:50%; left:50%; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%; background:rgba(226,99,90,.55); animation:kpulse 2.2s ease-out infinite; }
+  @keyframes kpulse{ 0%{ transform:scale(1); opacity:.8; } 100%{ transform:scale(3.6); opacity:0; } }
+  .kennedy-label{ position:absolute; top:16px; left:50%; transform:translateX(-50%); white-space:nowrap; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:#e2635a; background:rgba(11,12,15,.82); padding:3px 9px; border-radius:6px; border:1px solid rgba(226,99,90,.4); }
+
+  .note{ position:absolute; bottom:18px; right:20px; z-index:5; max-width:280px; font-size:10.5px; color:var(--ink-dim); background:rgba(255,255,255,.05); border:1px solid var(--panel-border); border-radius:10px; padding:9px 12px; line-height:1.5; }
+</style>
+</head>
+<body><div class="app">
+  <aside class="sidebar">
+    <a class="brand-icon" href="index.html" title="Bogotá Viva · Inicio" aria-label="Inicio"><i class="fa-solid fa-diagram-project"></i></a>
+    <nav class="icon-nav" aria-label="Módulos">
+      <a href="index.html" class="icon-nav-item" title="Inicio"><i class="fa-solid fa-house"></i></a>
+      <a href="modulo-metropolitano.html" class="icon-nav-item active" title="Escala metropolitana · Bogotá completa"><i class="fa-solid fa-city"></i></a>
+      <a href="modulo-02.html" class="icon-nav-item" title="02 · Medir la red"><i class="fa-solid fa-chart-simple"></i></a>
+      <a href="modulo-03.html" class="icon-nav-item" title="03 · Discurso vs realidad"><i class="fa-solid fa-eye"></i></a>
+      <a href="modulo-04.html" class="icon-nav-item" title="04 · Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
+      <a href="modulo-05.html" class="icon-nav-item" title="05 · Navegador multiescalar"><i class="fa-solid fa-magnifying-glass-location"></i></a>
+      <a href="modulo-06.html" class="icon-nav-item" title="06 · POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
+      <a href="modulo-07.html" class="icon-nav-item" title="07 · Simulador"><i class="fa-solid fa-flask"></i></a>
+      <a href="modulo-08.html" class="icon-nav-item" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
+      <a href="modulo-08-3d.html" class="icon-nav-item" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
+      <a href="modulo-10-corte.html" class="icon-nav-item" title="10 · Corte axonométrico"><i class="fa-solid fa-scissors"></i></a>
+      <a href="modulo-12-problemas.html" class="icon-nav-item" title="12 · Problemáticas Corabastos"><i class="fa-solid fa-triangle-exclamation"></i></a>
+      <a href="red-residuos-organicos.html" class="icon-nav-item" title="Red de problemáticas"><i class="fa-solid fa-diagram-project"></i></a>
+      <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="hud-title">
+      <h1>Escala metropolitana — Bogotá completa</h1>
+      <p>Planta de la ciudad completa (Bogotá y municipios vecinos), para ubicar a Kennedy dentro del conjunto metropolitano · arrastra para mover, rueda para zoom</p>
+    </div>
+
+    <div id="mapWrap">
+      <img id="mapImg" src="./assets/bogota-osm-gray.jpg" alt="Planta completa de Bogotá">
+      <div class="kennedy-marker" id="kennedyMarker">
+        <div class="kennedy-pulse"></div>
+        <div class="kennedy-dot"></div>
+        <div class="kennedy-label">Kennedy</div>
+      </div>
+    </div>
+
+    <div class="zoom-controls">
+      <button type="button" class="zoom-btn" id="zoomIn">+</button>
+      <button type="button" class="zoom-btn" id="zoomOut">−</button>
+      <button type="button" class="zoom-btn" id="zoomReset" title="Restablecer"><i class="fa-solid fa-arrows-to-dot" style="font-size:12px;"></i></button>
+    </div>
+
+    <div class="note">Ubicación aproximada de la localidad de Kennedy dentro de Bogotá (suroccidente de la ciudad, entre el aeropuerto El Dorado y Soacha).</div>
+  </main>
+</div>
+
+<script>
+(function () {
+  const wrap = document.getElementById("mapWrap");
+  const img = document.getElementById("mapImg");
+  const marker = document.getElementById("kennedyMarker");
+
+  // Posicion aproximada de Kennedy sobre la imagen de 768x768 (localidad
+  // suroccidental, al sur del aeropuerto El Dorado y al noreste de Soacha)
+  const KENNEDY_PX = { x: 300, y: 415 };
+  const IMG_SIZE = 768;
+
+  let scale = 1.9, panX = 0, panY = 0;
+  const MIN_SCALE = 0.8, MAX_SCALE = 6;
+
+  function apply() {
+    img.style.width = IMG_SIZE + "px";
+    img.style.height = IMG_SIZE + "px";
+    img.style.transform = `translate(-50%,-50%) translate(${panX}px, ${panY}px) scale(${scale})`;
+    // el marcador sigue la MISMA transformacion que la imagen, anclado al pixel real de Kennedy
+    const rect = wrap.getBoundingClientRect();
+    const cx = rect.width / 2 + panX + (KENNEDY_PX.x - IMG_SIZE / 2) * scale;
+    const cy = rect.height / 2 + panY + (KENNEDY_PX.y - IMG_SIZE / 2) * scale;
+    marker.style.left = cx + "px";
+    marker.style.top = cy + "px";
+  }
+
+  function centerOnStart() {
+    // centrar la vista inicial sobre Kennedy, no sobre el centro de la imagen
+    const rect = wrap.getBoundingClientRect();
+    panX = -(KENNEDY_PX.x - IMG_SIZE / 2) * scale;
+    panY = -(KENNEDY_PX.y - IMG_SIZE / 2) * scale + rect.height * 0.05;
+    apply();
+  }
+
+  let dragging = false, lastX = 0, lastY = 0;
+  wrap.addEventListener("pointerdown", (e) => {
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    wrap.classList.add("dragging");
+    wrap.setPointerCapture(e.pointerId);
+  });
+  wrap.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    panX += e.clientX - lastX; panY += e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    apply();
+  });
+  wrap.addEventListener("pointerup", (e) => { dragging = false; wrap.classList.remove("dragging"); });
+  wrap.addEventListener("pointercancel", () => { dragging = false; wrap.classList.remove("dragging"); });
+
+  wrap.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * factor));
+    apply();
+  }, { passive: false });
+
+  document.getElementById("zoomIn").addEventListener("click", () => { scale = Math.min(MAX_SCALE, scale * 1.25); apply(); });
+  document.getElementById("zoomOut").addEventListener("click", () => { scale = Math.max(MIN_SCALE, scale / 1.25); apply(); });
+  document.getElementById("zoomReset").addEventListener("click", centerOnStart);
+
+  window.addEventListener("resize", apply);
+  if (img.complete) centerOnStart(); else img.addEventListener("load", centerOnStart);
+})();
+</script>
+</body>
+</html>
