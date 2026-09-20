@@ -159,13 +159,16 @@
 
     <div class="hud-title">
       <h1>Conectografías — Kennedy</h1>
-      <p>Proyección axonométrica a 35° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista · copia las coordenadas del panel derecho para ubicar cada humedal</p>
+      <p>Proyección axonométrica a 35° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista</p>
+    </div>
+
+    <div style="position:absolute; top:78px; left:18px; z-index:6; display:flex; flex-direction:column; gap:6px; width:220px;">
+      <button type="button" id="viewCopy" style="padding:8px 12px; border-radius:9px; border:1px solid var(--panel-border); background:rgba(17,20,24,.85); color:var(--ink); font-size:11.5px; cursor:pointer; text-align:left;">📋 Copiar coordenadas de la vista</button>
+      <textarea id="viewOutput" rows="4" spellcheck="false" readonly style="width:100%; box-sizing:border-box; font-size:10px; background:rgba(17,20,24,.9); color:var(--ink); border:1px solid var(--panel-border); border-radius:8px; padding:6px 8px; resize:none; pointer-events:none;"></textarea>
     </div>
 
     <div class="view-buttons">
       <button type="button" id="viewReset">Restablecer vista axonométrica</button>
-      <button type="button" id="viewCopy">📋 Copiar coordenadas de la vista</button>
-      <textarea id="viewOutput" rows="4" spellcheck="false" readonly style="width:230px; font-size:10px; background:rgba(17,20,24,.9); color:var(--ink); border:1px solid var(--panel-border); border-radius:8px; padding:6px 8px; resize:none;"></textarea>
     </div>
 
     <div class="right-panels-wrap">
