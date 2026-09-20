@@ -357,7 +357,7 @@
   let treeInstanceData = null; // {x,z,w,h} por instancia, para recalcular el billboard al girar la camara
   let treeMesh = null;
   function buildTrees(trees) {
-    const treeTex = new THREE.TextureLoader().load("./assets/arbol_real3.png");
+    const treeTex = new THREE.TextureLoader().load("./assets/arbol_real4.png");
     // Tarjeta plana (billboard) con la foto real completa (ya incluye
     // tronco y copa) — se pidio que se vea igual que la foto, no un
     // volumen 3D armado con esfera+cilindro por separado.

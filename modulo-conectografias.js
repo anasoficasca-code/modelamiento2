@@ -280,7 +280,7 @@
     viaTex.wrapS = THREE.RepeatWrapping;
     viaTex.wrapT = THREE.RepeatWrapping;
     const ribbonMat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
-      map: viaTex, color: 0xc0453f, roughness: 0.85, side: THREE.DoubleSide,
+      map: viaTex, color: 0x9099a3, roughness: 0.85, side: THREE.DoubleSide,
       transparent: true, opacity: 0.7,
     });
     roadMat = ribbonMat;
@@ -939,6 +939,25 @@
 
   // ---- Botones de vista ----
   document.getElementById("viewReset").addEventListener("click", () => setAxonometricView(400));
+
+  // ---- Salida en vivo de la posicion de camara actual, para que el
+  // usuario pueda mover/hacer zoom hasta el humedal que quiera mostrar y
+  // copiar esas coordenadas exactas para pedir ajustes puntuales. ----
+  const viewOutput = document.getElementById("viewOutput");
+  function updateViewOutput() {
+    const p = camera.position, t = controls.target;
+    viewOutput.value =
+      `camera.position.set(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)});\n` +
+      `controls.target.set(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)});\n` +
+      `camera.zoom = ${camera.zoom.toFixed(3)};`;
+  }
+  controls.addEventListener("change", updateViewOutput);
+  document.getElementById("viewCopy").addEventListener("click", async () => {
+    updateViewOutput();
+    try { await navigator.clipboard.writeText(viewOutput.value); } catch (err) {}
+    viewOutput.select();
+  });
+  updateViewOutput();
 
   // ---- Control del sol (mover las sombras) ----
   const sunAzInput = document.getElementById("sunAz"), sunElInput = document.getElementById("sunEl");
