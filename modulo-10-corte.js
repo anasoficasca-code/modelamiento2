@@ -23,7 +23,7 @@
   const canvas = document.getElementById("sceneCanvas");
   const wrap = document.getElementById("sceneWrap");
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xffffff);
+  // scene.background = new THREE.Color(0xffffff); // quitado: fondo transparente para que solo se vea el terreno/edificios reales, sin ningun borde/marco sobrante
   scene.fog = new THREE.Fog(0xf3f4f5, 900, 3200);
   // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
   // se agrega a este grupo, no directamente a la escena, para poder
@@ -39,8 +39,9 @@
   scene.add(sceneRoot);
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true }); // preserveDrawingBuffer para poder capturar el canvas como imagen al explotar
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, alpha: true }); // alpha:true + sin scene.background = fondo transparente, para que el "rombo" sea la SILUETA REAL del terreno visto en axonometria (no un recorte de CSS que deja bordes sobrantes)
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.setClearColor(0x000000, 0); // fondo transparente explicito (alpha 0)
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.BasicShadowMap;
   renderer.localClippingEnabled = true; // para la caja de seccion (corte del modelo)

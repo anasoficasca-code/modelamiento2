@@ -16,7 +16,7 @@
   body{ background:var(--bg); color:var(--ink); font-family:Inter,Arial,sans-serif; overflow:hidden; }
   .app{ display:flex; min-height:100vh; }
   .main{ flex:1; position:relative; min-width:0; }
-  #sceneWrap{ position:relative; width:100%; aspect-ratio:16/9; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+  #sceneWrap{ position:relative; width:100%; aspect-ratio:16/9; }
   #sceneCanvas{ position:absolute; inset:0; display:block; width:100%; height:100%; }
 
   .hud-title{
@@ -148,20 +148,19 @@
   el grupo explotado (3 replicas apiladas, en el MISMO lugar) aparece. ---- */
   #replicaStack{
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:9;
-    width:42vw; max-width:520px;
+    width:26vw; max-width:320px;
   }
   #layerBase{
     position:relative; transition: opacity .5s ease;
   }
   #explodedGroup{
-    position:absolute; top:0; left:0; width:100%;
+    position:absolute; top:50%; left:0; width:100%; transform:translateY(-50%);
     display:flex; flex-direction:column; align-items:center;
     opacity:0; pointer-events:none;
   }
   #explodedGroup.show{ opacity:1; pointer-events:auto; }
   .replica-layer{
     position:relative; width:100%; aspect-ratio:16/9; margin-bottom:3%;
-    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
     background:transparent;
     transition: transform .85s cubic-bezier(.2,.8,.2,1), opacity .7s ease;
   }
@@ -396,6 +395,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=46"></script>
+<script src="modulo-10-corte.js?v=47"></script>
 </body>
 </html>
