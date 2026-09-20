@@ -88,7 +88,7 @@
   controls.minPolarAngle = Math.PI * 55 / 180;
   controls.maxPolarAngle = Math.PI * 55 / 180;
   controls.minZoom = 0.15;
-  controls.maxZoom = 30;
+  controls.maxZoom = 4; // reducido bastante (antes 30): con el visor mas chico, un zoom tan alto hacia que el terreno se saliera del cuadro rectangular del canvas y se viera cortado
   controls.enablePan = true;
 
   // ---- Luces (con sombras, tipo render arquitectonico) ----
