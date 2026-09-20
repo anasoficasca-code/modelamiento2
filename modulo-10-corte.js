@@ -942,7 +942,7 @@
     // mismo angulo/distancia relativa que la vista anterior.
     camera.position.set(-398.60, 612.74, 618.27);
     controls.target.set(209.56, 0, -10.93);
-    camera.zoom = 2.272;
+    camera.zoom = 2.9;
     camera.updateProjectionMatrix();
   }
 
