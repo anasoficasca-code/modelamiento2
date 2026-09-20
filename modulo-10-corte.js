@@ -1535,8 +1535,8 @@
   // (efecto de capas explotando hacia arriba). Un solo clic sin arrastre
   // dispara esto (el navegador no genera "click" despues de un arrastre
   // real, asi que no choca con el orbitar/zoom de la base).
-  const replicaStackEl = document.getElementById("replicaStack");
   const layerBaseEl = document.getElementById("layerBase");
+  const explodedGroupEl = document.getElementById("explodedGroup");
   const replicaLayerEls = [
     document.getElementById("layerReplicaNatural"),
     document.getElementById("layerReplicaCultural"),
@@ -1546,10 +1546,12 @@
   layerBaseEl.addEventListener("click", () => {
     if (yaExploto) return;
     yaExploto = true;
+    layerBaseEl.style.opacity = "0";
+    layerBaseEl.style.pointerEvents = "none";
+    explodedGroupEl.classList.add("show");
     replicaLayerEls.forEach((el, i) => {
-      setTimeout(() => { el.style.opacity = "1"; el.style.transform = "scale(1)"; }, i * 160);
+      el.style.transitionDelay = (i * 160) + "ms";
     });
-    replicaStackEl.classList.remove("pre-explosion");
   });
 
   Promise.all([
