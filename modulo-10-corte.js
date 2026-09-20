@@ -937,12 +937,11 @@
   // los controles) y 45 grados de acimut, proyeccion en paralelo (sin
   // fuga de perspectiva). ----
   function setAxonometricView(distance) {
-    // Vista recentrada en el Humedal El Burro (a pedido del usuario, que
-    // ya la habia cuadrado con el humedal en el medio), manteniendo el
-    // mismo angulo/distancia relativa que la vista anterior.
-    camera.position.set(-398.60, 612.74, 618.27);
-    controls.target.set(209.56, 0, -10.93);
-    camera.zoom = 2.9;
+    // Vista original que el usuario ya habia cuadrado y confirmado - no
+    // recalcular esto de nuevo, dejarla exactamente asi.
+    camera.position.set(-389.40, 559.68, 542.58);
+    controls.target.set(218.76, -53.06, -86.62);
+    camera.zoom = 2.272;
     camera.updateProjectionMatrix();
   }
 
