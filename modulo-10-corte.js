@@ -134,10 +134,11 @@
   let groundMesh = null;
 
   function buildGround(bbox) {
-    const w = (bbox[2] - bbox[0]) * SCALE * 1.4;
-    const h = (bbox[3] - bbox[1]) * SCALE * 1.4;
+    const w = (bbox[2] - bbox[0]) * SCALE; // tamano EXACTO del modelo, sin sobresalir (antes *1.4 se veia como un marco blanco)
+    const h = (bbox[3] - bbox[1]) * SCALE;
     // Losa solida con grosor real (no un plano de papel): se ve como una
-    // maqueta fisica, con caras laterales visibles, no una lamina.
+    // maqueta fisica, con caras laterales visibles hacia ABAJO, no una
+    // lamina ni un marco plano mas ancho que el modelo.
     const THICKNESS = 6;
     const geo = new THREE.BoxGeometry(w, THICKNESS, h);
     const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xeceeef, roughness: 1, metalness: 0 });
@@ -1530,6 +1531,7 @@
   }
 
   const replicas = [setupReplica("canvasReplica1"), setupReplica("canvasReplica2"), setupReplica("canvasReplica3")];
+  let sharedViewSize = null; // se fija cuando cargan los datos; se reusa para recalcular resolucion tras la explosion
 
   // Animacion de "explosion": al iniciar solo se ve la axonometria base;
   // al hacer CLIC SOBRE ELLA MISMA (no un boton aparte), las 3 replicas
@@ -1554,6 +1556,14 @@
     replicaLayerEls.forEach((el, i) => {
       el.style.transitionDelay = (i * 160) + "ms";
     });
+    // Las 3 replicas se calcularon a resolucion MUY chica (estaban a
+    // transform:scale(0.05) cuando se midio su tamano por primera vez),
+    // asi que se ven borrosas al crecer con la animacion. Se vuelve a
+    // calcular su tamano real DESPUES de que termina la transicion (~1s),
+    // ya con el tamano final correcto.
+    setTimeout(() => {
+      if (sharedViewSize) replicas.forEach(r => r.resizeR(sharedViewSize));
+    }, 1000);
   });
 
   Promise.all([
@@ -1566,6 +1576,7 @@
     function toScene(x, y) { return { x: (x - netCenter.x) * SCALE, z: -(y - netCenter.y) * SCALE }; }
     const w = (net.bbox[2] - net.bbox[0]) * SCALE, h = (net.bbox[3] - net.bbox[1]) * SCALE;
     const viewSize = Math.max(w, h) * 0.36;
+    sharedViewSize = viewSize; // disponible para recalcular resolucion despues de la explosion
     const camDist = Math.max(w, h) * 1.7;
 
     // ---- Geometria compartida: se construye UNA sola vez y se agrega
@@ -1661,7 +1672,7 @@
     // en la base), para que se vea como maqueta solida, no una lamina, y
     // para que no quede fondo blanco vacio dentro del rombo.
     const GROUND_THICK = 6;
-    const groundGeoR = new THREE.BoxGeometry(w * 1.4, GROUND_THICK, h * 1.4);
+    const groundGeoR = new THREE.BoxGeometry(w, GROUND_THICK, h); // tamano exacto, sin sobresalir
     const groundMatR = new THREE.MeshStandardMaterial({ color: 0xeceeef, roughness: 1, metalness: 0 });
 
     replicas.forEach((r) => {
