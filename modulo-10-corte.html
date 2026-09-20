@@ -153,6 +153,7 @@
     background:#ffffff;
   }
   .replica-layer canvas{ width:100%; height:100%; display:block; }
+  .replica-layer .axo-label{ font-size:14px; bottom:14%; right:6%; transform: rotate(-26deg); }
 
   /* ---- Animacion de "explosion": al iniciar, solo se ve la axonometria
   base, agrandada para llenar la pantalla (mismo elemento, solo con un
@@ -328,9 +329,9 @@
     </div>
 
     <div id="replicaStack" class="pre-explosion">
-      <div class="replica-layer"><canvas id="canvasReplica1"></canvas></div>
-      <div class="replica-layer"><canvas id="canvasReplica2"></canvas></div>
-      <div class="replica-layer"><canvas id="canvasReplica3"></canvas></div>
+      <div class="replica-layer" id="layerReplicaNatural"><canvas id="canvasReplica1"></canvas><div class="axo-label">ESCALA NATURAL</div></div>
+      <div class="replica-layer" id="layerReplicaCultural"><canvas id="canvasReplica2"></canvas><div class="axo-label">ESCALA CULTURAL</div></div>
+      <div class="replica-layer" id="layerReplicaTecnologica"><canvas id="canvasReplica3"></canvas><div class="axo-label">ESCALA TECNOLÓGICA</div></div>
       <div class="replica-layer" id="layerBase">
         <div id="sceneWrap">
           <canvas id="sceneCanvas"></canvas>
@@ -384,6 +385,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=39"></script>
+<script src="modulo-10-corte.js?v=40"></script>
 </body>
 </html>

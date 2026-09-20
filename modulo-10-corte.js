@@ -1651,17 +1651,105 @@
     const waterMat = new THREE.MeshBasicMaterial({ color: 0x8f9498, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
 
     replicas.forEach((r) => {
-      r.sceneRoot.add(new THREE.Mesh(roadGeo, roadMat));
       r.sceneRoot.add(new THREE.Mesh(buildGeo, buildMat));
-      r.sceneRoot.add(new THREE.Mesh(waterGeo, waterMat));
       r.sceneRoot.add(treeMeshR.clone());
       r.resizeR(viewSize);
       pointReplicaCamera(r, { x: 0, y: 0, z: 0 }, camDist, 40);
       window.addEventListener("resize", () => r.resizeR(viewSize));
     });
 
-    function animateReplicas() {
+    const [rNatural, rCultural, rTecnologica] = replicas;
+
+    // ---- ESCALA NATURAL: agua normal + el Humedal El Burro creciendo y
+    // encogiendo con el mismo ciclo climatico anual real ya calculado ----
+    rNatural.sceneRoot.add(new THREE.Mesh(roadGeo, roadMat));
+    rNatural.sceneRoot.add(new THREE.Mesh(waterGeo, waterMat));
+    const HUMEDAL_CICLO_R = [41.7, 42.6, 46.7, 50.0, 47.4, 41.5, 37.7, 34.1, 33.0, 38.6, 43.8, 43.3];
+    const elBurroR = waterBodies.find(b => b.nombre === "Humedal El Burro");
+    let elBurroCentroR = null, elBurroMeshR = null;
+    if (elBurroR) {
+      elBurroCentroR = { x: elBurroR.pts.reduce((s, p) => s + p[0], 0) / elBurroR.pts.length, y: elBurroR.pts.reduce((s, p) => s + p[1], 0) / elBurroR.pts.length };
+    }
+    function rebuildElBurroR(pct) {
+      if (!elBurroR) return;
+      if (elBurroMeshR) { rNatural.sceneRoot.remove(elBurroMeshR); elBurroMeshR.geometry.dispose(); }
+      const scale = 1 + pct / 100 * 0.6;
+      const pts = elBurroR.pts.map(p => {
+        const ex = elBurroCentroR.x + (p[0] - elBurroCentroR.x) * scale, ey = elBurroCentroR.y + (p[1] - elBurroCentroR.y) * scale;
+        return toScene(ex, ey);
+      });
+      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+      let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
+      const pos = [];
+      tris.forEach(([a, b, c]) => [a, b, c].forEach(idx => pos.push(pts[idx].x, 0.025, pts[idx].z)));
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      elBurroMeshR = new THREE.Mesh(geo, waterMat);
+      rNatural.sceneRoot.add(elBurroMeshR);
+    }
+    let mesIdxR = 0;
+    rebuildElBurroR(HUMEDAL_CICLO_R[0]);
+    setInterval(() => { mesIdxR = (mesIdxR + 1) % 12; rebuildElBurroR(HUMEDAL_CICLO_R[mesIdxR]); }, 1600);
+
+    // ---- ESCALA CULTURAL: sintaxis espacial real de la red vial
+    // (centralidad de intermediacion aproximada, azul=segregada a
+    // rojo=muy integrada), calculada antes para el modulo 3D completo ----
+    rCultural.sceneRoot.add(new THREE.Mesh(waterGeo, waterMat));
+    fetch("./assets/kennedy_integracion.json").then(r2 => r2.json()).then(integEdges => {
+      const cLow = new THREE.Color(0x3b6fb0), cHigh = new THREE.Color(0xe0463f);
+      const pos = [], col = [];
+      integEdges.forEach(e => {
+        const pts = e.pts.map(p => toScene(p[0], p[1]));
+        const t = Math.pow(e.integ, 0.35);
+        const c = cLow.clone().lerp(cHigh, t);
+        for (let i = 0; i < pts.length - 1; i++) {
+          pos.push(pts[i].x, 0.035, pts[i].z, pts[i + 1].x, 0.035, pts[i + 1].z);
+          col.push(c.r, c.g, c.b, c.r, c.g, c.b);
+        }
+      });
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+      rCultural.sceneRoot.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.95 })));
+    });
+
+    // ---- ESCALA TECNOLOGICA: vias grises normales + vehiculos reales de
+    // SUMO moviendose en vivo ----
+    rTecnologica.sceneRoot.add(new THREE.Mesh(roadGeo, roadMat));
+    rTecnologica.sceneRoot.add(new THREE.Mesh(waterGeo, waterMat));
+    const vehGeoR = new THREE.BoxGeometry(0.9, 0.5, 1.8);
+    const vehMatR = new THREE.MeshBasicMaterial({ color: 0xe2635a });
+    const vehMeshR = new THREE.InstancedMesh(vehGeoR, vehMatR, 1200);
+    rTecnologica.sceneRoot.add(vehMeshR);
+    const dummyVehR = new THREE.Object3D();
+    let timestepsR = [];
+    fetch("./assets/kennedy_vehiculos.json").then(r2 => r2.json()).then(data => {
+      timestepsR = data.map(([time, vs]) => ({ time, vehicles: vs.map(([id, x, y]) => ({ x, y })) }));
+    });
+    let tR = 0, lastFrameR = 0;
+    function animateVehR(now) {
+      if (!timestepsR.length) return;
+      const dt = lastFrameR ? Math.min(0.05, (now - lastFrameR) / 1000) : 0;
+      lastFrameR = now;
+      tR += dt * 12;
+      const maxT = timestepsR[timestepsR.length - 1].time;
+      if (tR > maxT) tR = 0;
+      let idx = Math.max(0, Math.min(timestepsR.length - 1, Math.floor((tR / maxT) * (timestepsR.length - 1))));
+      const vehicles = timestepsR[idx].vehicles;
+      const n = Math.min(vehicles.length, 1200);
+      for (let i = 0; i < n; i++) {
+        const p = toScene(vehicles[i].x, vehicles[i].y);
+        dummyVehR.position.set(p.x, 0.05, p.z);
+        dummyVehR.updateMatrix();
+        vehMeshR.setMatrixAt(i, dummyVehR.matrix);
+      }
+      vehMeshR.count = n;
+      vehMeshR.instanceMatrix.needsUpdate = true;
+    }
+
+    function animateReplicas(now) {
       requestAnimationFrame(animateReplicas);
+      animateVehR(now);
       replicas.forEach(r => { r.controls.update(); r.renderer.render(r.scene, r.camera); });
     }
     requestAnimationFrame(animateReplicas);
