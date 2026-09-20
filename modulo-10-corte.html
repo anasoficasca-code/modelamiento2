@@ -166,7 +166,7 @@
     transition: transform .85s cubic-bezier(.2,.8,.2,1), opacity .7s ease;
   }
   #explodedGroup:not(.show) .replica-layer{ opacity:0; transform:scale(0.05); }
-  .replica-layer canvas{ width:100%; height:100%; display:block; }
+  .replica-layer canvas, .replica-layer img{ width:100%; height:100%; display:block; object-fit:cover; }
   /* La etiqueta arranca EXACTAMENTE en la punta derecha del rombo (left:100%
   del contenedor, que coincide con el vertice segun el clip-path) y se
   extiende hacia AFUERA (a la derecha, fuera del rombo, nunca encima de el),
@@ -346,9 +346,9 @@
         <div class="axo-label" id="axoLabelBottom">KENNEDY</div>
       </div>
       <div id="explodedGroup">
-        <div class="replica-layer" id="layerReplicaNatural"><canvas id="canvasReplica1"></canvas><div class="axo-label">ESCALA NATURAL</div></div>
-        <div class="replica-layer" id="layerReplicaCultural"><canvas id="canvasReplica2"></canvas><div class="axo-label">ESCALA CULTURAL</div></div>
-        <div class="replica-layer" id="layerReplicaTecnologica"><canvas id="canvasReplica3"></canvas><div class="axo-label">ESCALA TECNOLÓGICA</div></div>
+        <div class="replica-layer" id="layerReplicaNatural"><img id="imgReplica1" alt=""><div class="axo-label">ESCALA NATURAL</div></div>
+        <div class="replica-layer" id="layerReplicaCultural"><img id="imgReplica2" alt=""><div class="axo-label">ESCALA CULTURAL</div></div>
+        <div class="replica-layer" id="layerReplicaTecnologica"><img id="imgReplica3" alt=""><div class="axo-label">ESCALA TECNOLÓGICA</div></div>
       </div>
     </div>
 
@@ -396,6 +396,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=45"></script>
+<script src="modulo-10-corte.js?v=46"></script>
 </body>
 </html>

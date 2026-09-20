@@ -39,7 +39,7 @@
   scene.add(sceneRoot);
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true }); // preserveDrawingBuffer para poder capturar el canvas como imagen al explotar
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.BasicShadowMap;
@@ -146,7 +146,7 @@
     groundMesh.position.set(0, -0.4 - THICKNESS / 2, 0);
     groundMesh.receiveShadow = true;
     sceneRoot.add(groundMesh);
-    buildAxoBorder(-w / 2, w / 2, -h / 2, h / 2);
+    // buildAxoBorder(-w / 2, w / 2, -h / 2, h / 2); // quitado a pedido del usuario: sin bordes, solo lo dibujado
   }
 
   // ---- Marco/borde negro grueso alrededor del area VISIBLE actual (como
@@ -1125,7 +1125,7 @@
     // El borde negro sigue el area de la caja de seccion (lo que en
     // verdad se ve), no el terreno completo (que quedaria muy lejos del
     // recorte y no se notaria).
-    if (boxFilter) buildAxoBorder(xMin, xMax, zMin, zMax);
+    // if (boxFilter) buildAxoBorder(xMin, xMax, zMin, zMax); // quitado a pedido del usuario: sin bordes
     else buildAxoBorder(-halfW, halfW, -halfH, halfH);
   }
   document.getElementById("sectionBoxToggle").addEventListener("click", (e) => {
@@ -1159,6 +1159,40 @@
 
   resize();
   requestAnimationFrame(animate);
+
+  // ---- Explosion en 3 capas IDENTICAS: en vez de armar 3 escenas 3D
+  // separadas (que siempre terminan con alguna diferencia de camara,
+  // zoom o encuadre por mas que se intente igualar), se toma una FOTO
+  // exacta del canvas de la base (toDataURL, gracias a
+  // preserveDrawingBuffer:true) y esa MISMA imagen se muestra 3 veces —
+  // asi es imposible que se vean distintas, es literalmente la misma
+  // imagen. Al hacer clic, la base desaparece y las 3 fotos aparecen
+  // apiladas en su lugar, con una pequena aparicion escalonada. ----
+  const layerBaseEl = document.getElementById("layerBase");
+  const explodedGroupEl = document.getElementById("explodedGroup");
+  const replicaImgEls = [
+    document.getElementById("imgReplica1"),
+    document.getElementById("imgReplica2"),
+    document.getElementById("imgReplica3"),
+  ];
+  const replicaLayerEls = [
+    document.getElementById("layerReplicaNatural"),
+    document.getElementById("layerReplicaCultural"),
+    document.getElementById("layerReplicaTecnologica"),
+  ];
+  let yaExploto = false;
+  layerBaseEl.addEventListener("click", () => {
+    if (yaExploto) return;
+    yaExploto = true;
+    const foto = renderer.domElement.toDataURL("image/png");
+    replicaImgEls.forEach(img => { img.src = foto; });
+    layerBaseEl.style.opacity = "0";
+    layerBaseEl.style.pointerEvents = "none";
+    explodedGroupEl.classList.add("show");
+    replicaLayerEls.forEach((el, i) => {
+      el.style.transitionDelay = (i * 160) + "ms";
+    });
+  });
 })();
 
 
@@ -1480,290 +1514,3 @@
   document.getElementById("naturalDetailClose").addEventListener("click", () => modal.classList.remove("open"));
 })();
 
-// ============================================================
-// 3 replicas de la MISMA axonometria completa (edificios, vias, agua,
-// arboles), apiladas arriba de la base — igual concepto que el
-// referente (el mismo modelo repetido), con las vias en color gris
-// normal (no rojo) y SIN el borde negro (que solo lleva la base).
-// ============================================================
-(function () {
-  const SCALE = 1 / 10;
-  const ELEV = 35 * Math.PI / 180;
-  function setupReplica(canvasId) {
-    const canvas = document.getElementById(canvasId);
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-    renderer.shadowMap.enabled = false;
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xffffff);
-    const sceneRoot = new THREE.Group();
-    scene.add(sceneRoot);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-    const sun = new THREE.DirectionalLight(0xffffff, 0.9);
-    sun.position.set(80, 140, 60);
-    scene.add(sun);
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true; controls.dampingFactor = 0.1;
-    controls.minPolarAngle = controls.maxPolarAngle = 55 * Math.PI / 180;
-    controls.enablePan = false;
-    controls.minZoom = 0.4; controls.maxZoom = 14;
-    function resizeR(viewSize) {
-      const rect = canvas.getBoundingClientRect();
-      const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
-      renderer.setSize(w, h, false);
-      const aspect = w / h;
-      camera.left = -viewSize * aspect; camera.right = viewSize * aspect;
-      camera.top = viewSize; camera.bottom = -viewSize;
-      camera.updateProjectionMatrix();
-    }
-    return { canvas, renderer, camera, scene, sceneRoot, controls, resizeR };
-  }
-  function pointReplicaCamera(r, target, distance, azimuthDeg) {
-    const az = azimuthDeg * Math.PI / 180;
-    r.camera.position.set(
-      target.x + Math.cos(az) * Math.cos(ELEV) * distance,
-      target.y + Math.sin(ELEV) * distance,
-      target.z + Math.sin(az) * Math.cos(ELEV) * distance
-    );
-    r.camera.lookAt(target.x, target.y, target.z);
-    r.camera.zoom = 2.272; // mismo zoom que usa la base (setAxonometricView), para encuadre identico
-    r.camera.updateProjectionMatrix();
-  }
-
-  const replicas = [setupReplica("canvasReplica1"), setupReplica("canvasReplica2"), setupReplica("canvasReplica3")];
-  let sharedViewSize = null; // se fija cuando cargan los datos; se reusa para recalcular resolucion tras la explosion
-
-  // Animacion de "explosion": al iniciar solo se ve la axonometria base;
-  // al hacer CLIC SOBRE ELLA MISMA (no un boton aparte), las 3 replicas
-  // aparecen creciendo/apareciendo con un pequeno retraso entre cada una
-  // (efecto de capas explotando hacia arriba). Un solo clic sin arrastre
-  // dispara esto (el navegador no genera "click" despues de un arrastre
-  // real, asi que no choca con el orbitar/zoom de la base).
-  const layerBaseEl = document.getElementById("layerBase");
-  const explodedGroupEl = document.getElementById("explodedGroup");
-  const replicaLayerEls = [
-    document.getElementById("layerReplicaNatural"),
-    document.getElementById("layerReplicaCultural"),
-    document.getElementById("layerReplicaTecnologica"),
-  ];
-  let yaExploto = false;
-  layerBaseEl.addEventListener("click", () => {
-    if (yaExploto) return;
-    yaExploto = true;
-    layerBaseEl.style.opacity = "0";
-    layerBaseEl.style.pointerEvents = "none";
-    explodedGroupEl.classList.add("show");
-    replicaLayerEls.forEach((el, i) => {
-      el.style.transitionDelay = (i * 160) + "ms";
-    });
-    // Las 3 replicas se calcularon a resolucion MUY chica (estaban a
-    // transform:scale(0.05) cuando se midio su tamano por primera vez),
-    // asi que se ven borrosas al crecer con la animacion. Se vuelve a
-    // calcular su tamano real DESPUES de que termina la transicion (~1s),
-    // ya con el tamano final correcto.
-    setTimeout(() => {
-      if (sharedViewSize) replicas.forEach(r => r.resizeR(sharedViewSize));
-    }, 1000);
-  });
-
-  Promise.all([
-    fetch("./assets/kennedy_net.json").then(r => r.json()),
-    fetch("./assets/kennedy_buildings.json").then(r => r.json()),
-    fetch("./assets/kennedy_water_bodies.json").then(r => r.json()),
-    fetch("./assets/kennedy_trees_real.json").then(r => r.json()),
-  ]).then(([net, buildings, waterBodies, trees]) => {
-    const netCenter = { x: (net.bbox[0] + net.bbox[2]) / 2, y: (net.bbox[1] + net.bbox[3]) / 2 };
-    function toScene(x, y) { return { x: (x - netCenter.x) * SCALE, z: -(y - netCenter.y) * SCALE }; }
-    const w = (net.bbox[2] - net.bbox[0]) * SCALE, h = (net.bbox[3] - net.bbox[1]) * SCALE;
-    const viewSize = Math.max(w, h) * 0.14; // MISMA formula que usa la base (linea 894), para encuadre identico
-    sharedViewSize = viewSize; // disponible para recalcular resolucion despues de la explosion
-    const camDist = Math.max(w, h) * 1.7;
-
-    // ---- Geometria compartida: se construye UNA sola vez y se agrega
-    // como nuevo Mesh (misma BufferGeometry, distinto material si hace
-    // falta) a cada una de las 3 replicas — evita reconstruir 243 mil
-    // edificios x3, solo se paga el costo de subir el buffer a la GPU
-    // 3 veces en vez de tambien recalcular toda la geometria 3 veces.
-    // Se usan TODOS los edificios y arboles reales (sin muestreo), para
-    // que las 3 replicas se vean identicas a la base, como se pidio. ----
-    const HALF_W = 0.9;
-    const roadPos = [], roadUv = [];
-    net.edges.forEach(([kind, pts]) => {
-      const sp = pts.map(p => toScene(p[0], p[1]));
-      for (let i = 0; i < sp.length - 1; i++) {
-        const a = sp[i], b = sp[i + 1];
-        const dx = b.x - a.x, dz = b.z - a.z;
-        const len = Math.hypot(dx, dz) || 0.001;
-        const nx = -dz / len * HALF_W, nz = dx / len * HALF_W;
-        roadPos.push(a.x - nx, 0.03, a.z - nz, a.x + nx, 0.03, a.z + nz, b.x + nx, 0.03, b.z + nz,
-          a.x - nx, 0.03, a.z - nz, b.x + nx, 0.03, b.z + nz, b.x - nx, 0.03, b.z - nz);
-        const uvLen = len * 0.06;
-        roadUv.push(0, 0, 1, 0, 1, uvLen, 0, 0, 1, uvLen, 0, uvLen);
-      }
-    });
-    const roadGeo = new THREE.BufferGeometry();
-    roadGeo.setAttribute("position", new THREE.Float32BufferAttribute(roadPos, 3));
-    roadGeo.setAttribute("uv", new THREE.Float32BufferAttribute(roadUv, 2));
-
-    const buildPositions = [], buildNormals = [];
-    buildings.forEach(b => {
-      const pts = b.pts.map(p => toScene(p[0], p[1]));
-      const h = b.h * SCALE;
-      if (pts.length < 4) return;
-      for (let i = 0; i < pts.length - 1; i++) {
-        const a = pts[i], c = pts[i + 1];
-        const dx = c.x - a.x, dz = c.z - a.z;
-        const len = Math.hypot(dx, dz) || 0.001;
-        const nx = dz / len, nz = -dx / len;
-        buildPositions.push(a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z, a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z);
-        for (let k = 0; k < 6; k++) buildNormals.push(nx, 0, nz);
-      }
-      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
-      let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
-      tris.forEach(([ia, ib, ic]) => {
-        buildPositions.push(pts[ia].x, h, pts[ia].z, pts[ib].x, h, pts[ib].z, pts[ic].x, h, pts[ic].z);
-        for (let k = 0; k < 3; k++) buildNormals.push(0, 1, 0);
-      });
-    });
-    const buildGeo = new THREE.BufferGeometry();
-    buildGeo.setAttribute("position", new THREE.Float32BufferAttribute(buildPositions, 3));
-    buildGeo.setAttribute("normal", new THREE.Float32BufferAttribute(buildNormals, 3));
-
-    const waterPositions = [];
-    waterBodies.forEach(wbody => {
-      const pts = wbody.pts.map(p => toScene(p[0], p[1]));
-      if (pts.length < 3) return;
-      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
-      let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
-      tris.forEach(([a, b, c]) => [a, b, c].forEach(idx => waterPositions.push(pts[idx].x, 0.02, pts[idx].z)));
-    });
-    const waterGeo = new THREE.BufferGeometry();
-    waterGeo.setAttribute("position", new THREE.Float32BufferAttribute(waterPositions, 3));
-
-    // Arboles: misma tarjeta plana con la foto real, un solo InstancedMesh
-    function hash2R(str) { let hh = 0; for (const c of (str || "")) hh = (hh * 31 + c.charCodeAt(0)) >>> 0; return hh; }
-    const treeTexR = new THREE.TextureLoader().load("./assets/arbol_real3.png");
-    const treePlaneGeo = new THREE.BufferGeometry();
-    treePlaneGeo.setAttribute("position", new THREE.Float32BufferAttribute([-0.5, 0, 0, 0.5, 0, 0, 0.5, 1, 0, -0.5, 0, 0, 0.5, 1, 0, -0.5, 1, 0], 3));
-    treePlaneGeo.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1], 2));
-    const treeMatR = new THREE.MeshBasicMaterial({ map: treeTexR, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide });
-    const treeMeshR = new THREE.InstancedMesh(treePlaneGeo, treeMatR, trees.length);
-    const dummyTR = new THREE.Object3D();
-    trees.forEach((t, i) => {
-      const [tx, ty, hMeters, , code] = t;
-      const p = toScene(tx, ty);
-      const th = Math.max(0.3, hMeters * SCALE);
-      const tw = th * (1.1 + (hash2R(code) % 20) / 100 - 0.1);
-      dummyTR.position.set(p.x, 0, p.z);
-      dummyTR.scale.set(tw, th, tw);
-      dummyTR.rotation.set(0, 40 * Math.PI / 180, 0); // orientadas al acimut fijo de la camara (40°)
-      dummyTR.updateMatrix();
-      treeMeshR.setMatrixAt(i, dummyTR.matrix);
-    });
-    treeMeshR.instanceMatrix.needsUpdate = true;
-
-    const viaTexR = new THREE.TextureLoader().load("./assets/textura_via.jpg");
-    viaTexR.wrapS = viaTexR.wrapT = THREE.RepeatWrapping;
-    const roadMat = new THREE.MeshStandardMaterial({ map: viaTexR, color: 0x9099a3, roughness: 0.85, side: THREE.DoubleSide }); // gris normal, NO rojo
-    const buildMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.65, metalness: 0.02, side: THREE.DoubleSide });
-    const waterMat = new THREE.MeshBasicMaterial({ color: 0x8f9498, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
-
-    // Losa de terreno con grosor real (compartida entre las 3, igual que
-    // en la base), para que se vea como maqueta solida, no una lamina, y
-    // para que no quede fondo blanco vacio dentro del rombo.
-    const GROUND_THICK = 6;
-    const groundGeoR = new THREE.BoxGeometry(w, GROUND_THICK, h); // tamano exacto, sin sobresalir
-    const groundMatR = new THREE.MeshStandardMaterial({ color: 0xeceeef, roughness: 1, metalness: 0 });
-
-    replicas.forEach((r) => {
-      const gMesh = new THREE.Mesh(groundGeoR, groundMatR);
-      gMesh.position.set(0, -0.4 - GROUND_THICK / 2, 0);
-      r.sceneRoot.add(gMesh);
-      r.sceneRoot.add(new THREE.Mesh(buildGeo, buildMat));
-      r.sceneRoot.add(treeMeshR.clone());
-      r.resizeR(viewSize);
-      pointReplicaCamera(r, { x: 0, y: 0, z: 0 }, camDist, 40);
-      window.addEventListener("resize", () => r.resizeR(viewSize));
-    });
-
-    const [rNatural, rCultural, rTecnologica] = replicas;
-
-    // ---- ESCALA NATURAL: agua normal + el Humedal El Burro creciendo y
-    // encogiendo con el mismo ciclo climatico anual real ya calculado ----
-    rNatural.sceneRoot.add(new THREE.Mesh(roadGeo, roadMat));
-    rNatural.sceneRoot.add(new THREE.Mesh(waterGeo, waterMat));
-    const HUMEDAL_CICLO_R = [41.7, 42.6, 46.7, 50.0, 47.4, 41.5, 37.7, 34.1, 33.0, 38.6, 43.8, 43.3];
-    const elBurroR = waterBodies.find(b => b.nombre === "Humedal El Burro");
-    let elBurroCentroR = null, elBurroMeshR = null;
-    if (elBurroR) {
-      elBurroCentroR = { x: elBurroR.pts.reduce((s, p) => s + p[0], 0) / elBurroR.pts.length, y: elBurroR.pts.reduce((s, p) => s + p[1], 0) / elBurroR.pts.length };
-    }
-    function rebuildElBurroR(pct) {
-      if (!elBurroR) return;
-      if (elBurroMeshR) { rNatural.sceneRoot.remove(elBurroMeshR); elBurroMeshR.geometry.dispose(); }
-      const scale = 1 + pct / 100 * 0.6;
-      const pts = elBurroR.pts.map(p => {
-        const ex = elBurroCentroR.x + (p[0] - elBurroCentroR.x) * scale, ey = elBurroCentroR.y + (p[1] - elBurroCentroR.y) * scale;
-        return toScene(ex, ey);
-      });
-      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
-      let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
-      const pos = [];
-      tris.forEach(([a, b, c]) => [a, b, c].forEach(idx => pos.push(pts[idx].x, 0.025, pts[idx].z)));
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-      elBurroMeshR = new THREE.Mesh(geo, waterMat);
-      rNatural.sceneRoot.add(elBurroMeshR);
-    }
-    let mesIdxR = 0;
-    rebuildElBurroR(HUMEDAL_CICLO_R[0]);
-    setInterval(() => { mesIdxR = (mesIdxR + 1) % 12; rebuildElBurroR(HUMEDAL_CICLO_R[mesIdxR]); }, 1600);
-
-    // ---- ESCALA CULTURAL: mismas vias sin colorear (a pedido del
-    // usuario, sin color especial) ----
-    rCultural.sceneRoot.add(new THREE.Mesh(roadGeo, roadMat));
-    rCultural.sceneRoot.add(new THREE.Mesh(waterGeo, waterMat));
-
-    // ---- ESCALA TECNOLOGICA: vias grises normales + vehiculos reales de
-    // SUMO moviendose en vivo ----
-    rTecnologica.sceneRoot.add(new THREE.Mesh(roadGeo, roadMat));
-    rTecnologica.sceneRoot.add(new THREE.Mesh(waterGeo, waterMat));
-    const vehGeoR = new THREE.BoxGeometry(0.9, 0.5, 1.8);
-    const vehMatR = new THREE.MeshBasicMaterial({ color: 0xe2635a });
-    const vehMeshR = new THREE.InstancedMesh(vehGeoR, vehMatR, 1200);
-    rTecnologica.sceneRoot.add(vehMeshR);
-    const dummyVehR = new THREE.Object3D();
-    let timestepsR = [];
-    fetch("./assets/kennedy_vehiculos.json").then(r2 => r2.json()).then(data => {
-      timestepsR = data.map(([time, vs]) => ({ time, vehicles: vs.map(([id, x, y]) => ({ x, y })) }));
-    });
-    let tR = 0, lastFrameR = 0;
-    function animateVehR(now) {
-      if (!timestepsR.length) return;
-      const dt = lastFrameR ? Math.min(0.05, (now - lastFrameR) / 1000) : 0;
-      lastFrameR = now;
-      tR += dt * 12;
-      const maxT = timestepsR[timestepsR.length - 1].time;
-      if (tR > maxT) tR = 0;
-      let idx = Math.max(0, Math.min(timestepsR.length - 1, Math.floor((tR / maxT) * (timestepsR.length - 1))));
-      const vehicles = timestepsR[idx].vehicles;
-      const n = Math.min(vehicles.length, 1200);
-      for (let i = 0; i < n; i++) {
-        const p = toScene(vehicles[i].x, vehicles[i].y);
-        dummyVehR.position.set(p.x, 0.05, p.z);
-        dummyVehR.updateMatrix();
-        vehMeshR.setMatrixAt(i, dummyVehR.matrix);
-      }
-      vehMeshR.count = n;
-      vehMeshR.instanceMatrix.needsUpdate = true;
-    }
-
-    function animateReplicas(now) {
-      requestAnimationFrame(animateReplicas);
-      animateVehR(now);
-      replicas.forEach(r => { r.controls.update(); r.renderer.render(r.scene, r.camera); });
-    }
-    requestAnimationFrame(animateReplicas);
-  }).catch(err => console.warn("No se pudieron cargar las replicas:", err));
-})();
