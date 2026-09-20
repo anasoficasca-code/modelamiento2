@@ -136,11 +136,13 @@
   function buildGround(bbox) {
     const w = (bbox[2] - bbox[0]) * SCALE * 1.4;
     const h = (bbox[3] - bbox[1]) * SCALE * 1.4;
-    const geo = new THREE.PlaneGeometry(w, h);
+    // Losa solida con grosor real (no un plano de papel): se ve como una
+    // maqueta fisica, con caras laterales visibles, no una lamina.
+    const THICKNESS = 6;
+    const geo = new THREE.BoxGeometry(w, THICKNESS, h);
     const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xeceeef, roughness: 1, metalness: 0 });
     groundMesh = new THREE.Mesh(geo, mat);
-    groundMesh.rotation.x = -Math.PI / 2;
-    groundMesh.position.set(0, -0.4, 0);
+    groundMesh.position.set(0, -0.4 - THICKNESS / 2, 0);
     groundMesh.receiveShadow = true;
     sceneRoot.add(groundMesh);
     buildAxoBorder(-w / 2, w / 2, -h / 2, h / 2);
@@ -1655,7 +1657,17 @@
     const buildMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.65, metalness: 0.02, side: THREE.DoubleSide });
     const waterMat = new THREE.MeshBasicMaterial({ color: 0x8f9498, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
 
+    // Losa de terreno con grosor real (compartida entre las 3, igual que
+    // en la base), para que se vea como maqueta solida, no una lamina, y
+    // para que no quede fondo blanco vacio dentro del rombo.
+    const GROUND_THICK = 6;
+    const groundGeoR = new THREE.BoxGeometry(w * 1.4, GROUND_THICK, h * 1.4);
+    const groundMatR = new THREE.MeshStandardMaterial({ color: 0xeceeef, roughness: 1, metalness: 0 });
+
     replicas.forEach((r) => {
+      const gMesh = new THREE.Mesh(groundGeoR, groundMatR);
+      gMesh.position.set(0, -0.4 - GROUND_THICK / 2, 0);
+      r.sceneRoot.add(gMesh);
       r.sceneRoot.add(new THREE.Mesh(buildGeo, buildMat));
       r.sceneRoot.add(treeMeshR.clone());
       r.resizeR(viewSize);
