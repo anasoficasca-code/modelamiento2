@@ -1399,11 +1399,18 @@
       const p = toPx(n.x, n.y);
       const r = 8 + (potDegree[n.id] || 0) * 2.2;
       const blob = document.createElement("div");
-      blob.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; width:${r * 2}px; height:${r * 2}px; margin:-${r}px 0 0 -${r}px; border-radius:50%; background:${POT_CATS[n.cat].color};`;
+      blob.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; width:${r * 2}px; height:${r * 2}px; margin:-${r}px 0 0 -${r}px; border-radius:50%; background:${POT_CATS[n.cat].color}; cursor:pointer; pointer-events:auto; transition:transform .15s ease;`;
+      blob.addEventListener("mouseenter", () => { blob.style.transform = "scale(1.18)"; label.style.opacity = "1"; });
+      blob.addEventListener("mouseleave", () => { blob.style.transform = "scale(1)"; label.style.opacity = "0"; });
+      blob.addEventListener("click", () => openPotInfo(n));
       gooLayer.appendChild(blob);
+      // El nombre completo NO se muestra siempre (con 49 nodos se ve muy
+      // saturado) - solo aparece al pasar el mouse por la burbuja, y el
+      // detalle completo (categoria + conexiones) se ve al hacer clic,
+      // en el panel lateral.
       const label = document.createElement("div");
       label.textContent = n.t;
-      label.style.cssText = `position:absolute; left:${p.x}px; top:${p.y + r + 3}px; transform:translateX(-50%); max-width:150px; text-align:center; font-size:9.5px; font-weight:600; color:#e8ecf1; text-shadow:0 1px 3px rgba(0,0,0,.8); line-height:1.25;`;
+      label.style.cssText = `position:absolute; left:${p.x}px; top:${p.y + r + 3}px; transform:translateX(-50%); max-width:150px; text-align:center; font-size:9.5px; font-weight:600; color:#e8ecf1; text-shadow:0 1px 3px rgba(0,0,0,.8); line-height:1.25; opacity:0; transition:opacity .15s ease;`;
       labelLayer.appendChild(label);
     });
     const legend = document.getElementById("potLegend");
@@ -1414,6 +1421,20 @@
       legend.appendChild(el);
     });
   }
+  const potInfoPanel = document.getElementById("potInfoPanel");
+  const potInfoBody = document.getElementById("potInfoBody");
+  function openPotInfo(n) {
+    const desde = POT_EDGES.filter(([a, b]) => b === n.id).map(([a]) => potById[a]);
+    const hacia = POT_EDGES.filter(([a, b]) => a === n.id).map(([, b]) => potById[b]);
+    potInfoBody.innerHTML = `
+      <p style="font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:${POT_CATS[n.cat].color}; margin:0 0 4px; font-weight:700;">${POT_CATS[n.cat].label}</p>
+      <h2 style="font-size:16px; color:#fff; margin:0 0 14px; line-height:1.3;">${n.t}</h2>
+      ${desde.length ? `<div style="margin-bottom:12px;"><b style="font-size:11px; color:#9aa3ad;">Se relaciona desde</b>${desde.map(x => `<div style="font-size:12px; color:#e8ecf1; background:rgba(255,255,255,.06); border-radius:8px; padding:6px 9px; margin-top:5px;">${x.t}</div>`).join("")}</div>` : ""}
+      ${hacia.length ? `<div><b style="font-size:11px; color:#9aa3ad;">Se conecta hacia</b>${hacia.map(x => `<div style="font-size:12px; color:#e8ecf1; background:rgba(255,255,255,.06); border-radius:8px; padding:6px 9px; margin-top:5px;">${x.t}</div>`).join("")}</div>` : ""}
+    `;
+    potInfoPanel.style.transform = "translateX(0)";
+  }
+  document.getElementById("potInfoClose").addEventListener("click", () => { potInfoPanel.style.transform = "translateX(100%)"; });
   const potModal = document.getElementById("potModal");
   document.getElementById("potBtn").addEventListener("click", () => {
     potModal.style.display = "flex";
