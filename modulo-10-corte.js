@@ -386,6 +386,14 @@
       let tris;
       try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
       catch (e) { tris = []; }
+      // Respaldo: si la triangulacion real falla (poligono invalido o
+      // auto-intersectado - 131 de los 243538 edificios tienen esto),
+      // usar un abanico simple desde el primer vertice, para que el
+      // edificio SIEMPRE tenga techo (sin esto quedaba con la parte de
+      // arriba abierta, viendose "transparente"/hueco desde la axonometria).
+      if (tris.length === 0 && pts2d.length >= 3) {
+        for (let i = 1; i < pts2d.length - 1; i++) tris.push([0, i, i + 1]);
+      }
       tris.forEach(([ia, ib, ic]) => {
         positions.push(
           pts[ia].x, h, pts[ia].z, pts[ib].x, h, pts[ib].z, pts[ic].x, h, pts[ic].z
@@ -929,11 +937,11 @@
   // los controles) y 45 grados de acimut, proyeccion en paralelo (sin
   // fuga de perspectiva). ----
   function setAxonometricView(distance) {
-    // Vista inicial fija que el usuario dejo lista (mismo objetivo, azimut
-    // y distancia que su vista anterior a 45°, pero recalculada a 35° de
-    // elevacion, que es el angulo que pidio para este modulo).
-    camera.position.set(-389.40, 559.68, 542.58);
-    controls.target.set(218.76, -53.06, -86.62);
+    // Vista recentrada en el Humedal El Burro (a pedido del usuario, que
+    // ya la habia cuadrado con el humedal en el medio), manteniendo el
+    // mismo angulo/distancia relativa que la vista anterior.
+    camera.position.set(-398.60, 612.74, 618.27);
+    controls.target.set(209.56, 0, -10.93);
     camera.zoom = 2.272;
     camera.updateProjectionMatrix();
   }
