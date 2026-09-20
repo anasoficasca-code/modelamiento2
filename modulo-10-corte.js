@@ -1527,6 +1527,7 @@
       target.z + Math.sin(az) * Math.cos(ELEV) * distance
     );
     r.camera.lookAt(target.x, target.y, target.z);
+    r.camera.zoom = 2.272; // mismo zoom que usa la base (setAxonometricView), para encuadre identico
     r.camera.updateProjectionMatrix();
   }
 
@@ -1575,7 +1576,7 @@
     const netCenter = { x: (net.bbox[0] + net.bbox[2]) / 2, y: (net.bbox[1] + net.bbox[3]) / 2 };
     function toScene(x, y) { return { x: (x - netCenter.x) * SCALE, z: -(y - netCenter.y) * SCALE }; }
     const w = (net.bbox[2] - net.bbox[0]) * SCALE, h = (net.bbox[3] - net.bbox[1]) * SCALE;
-    const viewSize = Math.max(w, h) * 0.36;
+    const viewSize = Math.max(w, h) * 0.14; // MISMA formula que usa la base (linea 894), para encuadre identico
     sharedViewSize = viewSize; // disponible para recalcular resolucion despues de la explosion
     const camDist = Math.max(w, h) * 1.7;
 
