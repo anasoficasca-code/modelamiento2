@@ -1530,23 +1530,26 @@
   const replicas = [setupReplica("canvasReplica1"), setupReplica("canvasReplica2"), setupReplica("canvasReplica3")];
 
   // Animacion de "explosion": al iniciar solo se ve la axonometria base;
-  // al hacer clic, las 3 replicas aparecen creciendo/apareciendo con un
-  // pequeno retraso entre cada una (efecto de capas explotando hacia
-  // arriba), y el boton desaparece.
-  const explodeBtn = document.getElementById("explodeBtn");
+  // al hacer CLIC SOBRE ELLA MISMA (no un boton aparte), las 3 replicas
+  // aparecen creciendo/apareciendo con un pequeno retraso entre cada una
+  // (efecto de capas explotando hacia arriba). Un solo clic sin arrastre
+  // dispara esto (el navegador no genera "click" despues de un arrastre
+  // real, asi que no choca con el orbitar/zoom de la base).
   const replicaStackEl = document.getElementById("replicaStack");
+  const layerBaseEl = document.getElementById("layerBase");
   const replicaLayerEls = [
-    document.getElementById("canvasReplica1").closest(".replica-layer"),
-    document.getElementById("canvasReplica2").closest(".replica-layer"),
-    document.getElementById("canvasReplica3").closest(".replica-layer"),
+    document.getElementById("layerReplicaNatural"),
+    document.getElementById("layerReplicaCultural"),
+    document.getElementById("layerReplicaTecnologica"),
   ];
-  explodeBtn.addEventListener("click", () => {
+  let yaExploto = false;
+  layerBaseEl.addEventListener("click", () => {
+    if (yaExploto) return;
+    yaExploto = true;
     replicaLayerEls.forEach((el, i) => {
       setTimeout(() => { el.style.opacity = "1"; el.style.transform = "scale(1)"; }, i * 160);
     });
     replicaStackEl.classList.remove("pre-explosion");
-    explodeBtn.style.opacity = "0";
-    explodeBtn.style.pointerEvents = "none";
   });
 
   Promise.all([
@@ -1691,27 +1694,10 @@
     rebuildElBurroR(HUMEDAL_CICLO_R[0]);
     setInterval(() => { mesIdxR = (mesIdxR + 1) % 12; rebuildElBurroR(HUMEDAL_CICLO_R[mesIdxR]); }, 1600);
 
-    // ---- ESCALA CULTURAL: sintaxis espacial real de la red vial
-    // (centralidad de intermediacion aproximada, azul=segregada a
-    // rojo=muy integrada), calculada antes para el modulo 3D completo ----
+    // ---- ESCALA CULTURAL: mismas vias sin colorear (a pedido del
+    // usuario, sin color especial) ----
+    rCultural.sceneRoot.add(new THREE.Mesh(roadGeo, roadMat));
     rCultural.sceneRoot.add(new THREE.Mesh(waterGeo, waterMat));
-    fetch("./assets/kennedy_integracion.json").then(r2 => r2.json()).then(integEdges => {
-      const cLow = new THREE.Color(0x3b6fb0), cHigh = new THREE.Color(0xe0463f);
-      const pos = [], col = [];
-      integEdges.forEach(e => {
-        const pts = e.pts.map(p => toScene(p[0], p[1]));
-        const t = Math.pow(e.integ, 0.35);
-        const c = cLow.clone().lerp(cHigh, t);
-        for (let i = 0; i < pts.length - 1; i++) {
-          pos.push(pts[i].x, 0.035, pts[i].z, pts[i + 1].x, 0.035, pts[i + 1].z);
-          col.push(c.r, c.g, c.b, c.r, c.g, c.b);
-        }
-      });
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-      geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
-      rCultural.sceneRoot.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.95 })));
-    });
 
     // ---- ESCALA TECNOLOGICA: vias grises normales + vehiculos reales de
     // SUMO moviendose en vivo ----
