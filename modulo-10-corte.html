@@ -16,7 +16,7 @@
   body{ background:var(--bg); color:var(--ink); font-family:Inter,Arial,sans-serif; overflow:hidden; }
   .app{ display:flex; min-height:100vh; }
   .main{ flex:1; position:relative; min-width:0; }
-  #sceneWrap{ position:absolute; inset:0; }
+  #sceneWrap{ position:relative; width:100%; aspect-ratio:16/9; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
   #sceneCanvas{ position:absolute; inset:0; display:block; width:100%; height:100%; }
 
   .hud-title{
@@ -136,21 +136,21 @@
     font-family:'Space Grotesk','Segoe UI',sans-serif; font-weight:800;
     color:#0a0a0a; letter-spacing:.03em; white-space:nowrap;
     transform-origin:left center;
-    transform: rotate(-32deg);
+    transform: rotate(-26deg);
   }
-  #axoLabelBottom{ font-size:26px; bottom:9%; right:6%; cursor:pointer; }
+  #axoLabelBottom{ font-size:16px; bottom:14%; right:6%; cursor:pointer; pointer-events:auto; }
 
-  /* ---- 3 copias de la MISMA axonometria, apiladas arriba de la base
-  (igual concepto que el referente: el mismo modelo repetido en capas) ---- */
+  /* ---- Las 4 axonometrias (base "Kennedy" + 3 replicas), TODAS del
+  mismo tamano, apiladas juntas y alineadas en una sola columna
+  centrada — ninguna es pantalla completa. ---- */
   #replicaStack{
     position:absolute; top:1%; left:50%; transform:translateX(-50%); z-index:9;
-    width:40vw; max-width:480px; display:flex; flex-direction:column; align-items:center;
-    pointer-events:none;
+    width:42vw; max-width:520px; display:flex; flex-direction:column; align-items:center;
   }
   .replica-layer{
     position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-9%;
     clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-    background:#ffffff; pointer-events:auto;
+    background:#ffffff;
   }
   .replica-layer canvas{ width:100%; height:100%; display:block; }
 
@@ -203,10 +203,6 @@
       </nav>
     </aside>
   <main class="main">
-    <div id="sceneWrap">
-      <canvas id="sceneCanvas"></canvas>
-    </div>
-
     <div class="hud-title">
       <h1>Corte axonométrico — Kennedy</h1>
       <p>Proyección axonométrica a 35° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista</p>
@@ -316,12 +312,16 @@
       <p id="treeInfoDetails"></p>
     </div>
 
-    <div class="axo-label" id="axoLabelBottom">KENNEDY</div>
-
     <div id="replicaStack">
       <div class="replica-layer"><canvas id="canvasReplica1"></canvas></div>
       <div class="replica-layer"><canvas id="canvasReplica2"></canvas></div>
       <div class="replica-layer"><canvas id="canvasReplica3"></canvas></div>
+      <div class="replica-layer" id="layerBase">
+        <div id="sceneWrap">
+          <canvas id="sceneCanvas"></canvas>
+        </div>
+        <div class="axo-label" id="axoLabelBottom">KENNEDY</div>
+      </div>
     </div>
 
     <div id="naturalDetailModal">
@@ -368,6 +368,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=36"></script>
+<script src="modulo-10-corte.js?v=37"></script>
 </body>
 </html>
