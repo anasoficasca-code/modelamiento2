@@ -142,7 +142,7 @@
     // lamina ni un marco plano mas ancho que el modelo.
     const THICKNESS = 6;
     const geo = new THREE.BoxGeometry(w, THICKNESS, h);
-    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xeceeef, roughness: 1, metalness: 0 });
+    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xffffff, roughness: 1, metalness: 0 }); // blanco puro, a pedido del usuario
     groundMesh = new THREE.Mesh(geo, mat);
     groundMesh.position.set(0, -0.4 - THICKNESS / 2, 0);
     groundMesh.receiveShadow = true;
