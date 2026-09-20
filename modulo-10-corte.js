@@ -943,6 +943,7 @@
     controls.target.set(218.76, -53.06, -86.62);
     camera.zoom = 2.272;
     camera.updateProjectionMatrix();
+    controls.update(); // fuerza a OrbitControls a re-sincronizar su estado interno con la nueva posicion/objetivo de inmediato (sin esto, a veces tarda un cuadro o interpreta mal el angulo bloqueado)
   }
 
   // ---- Botones de vista ----
