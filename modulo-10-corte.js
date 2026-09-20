@@ -1529,6 +1529,26 @@
 
   const replicas = [setupReplica("canvasReplica1"), setupReplica("canvasReplica2"), setupReplica("canvasReplica3")];
 
+  // Animacion de "explosion": al iniciar solo se ve la axonometria base;
+  // al hacer clic, las 3 replicas aparecen creciendo/apareciendo con un
+  // pequeno retraso entre cada una (efecto de capas explotando hacia
+  // arriba), y el boton desaparece.
+  const explodeBtn = document.getElementById("explodeBtn");
+  const replicaStackEl = document.getElementById("replicaStack");
+  const replicaLayerEls = [
+    document.getElementById("canvasReplica1").closest(".replica-layer"),
+    document.getElementById("canvasReplica2").closest(".replica-layer"),
+    document.getElementById("canvasReplica3").closest(".replica-layer"),
+  ];
+  explodeBtn.addEventListener("click", () => {
+    replicaLayerEls.forEach((el, i) => {
+      setTimeout(() => { el.style.opacity = "1"; el.style.transform = "scale(1)"; }, i * 160);
+    });
+    replicaStackEl.classList.remove("pre-explosion");
+    explodeBtn.style.opacity = "0";
+    explodeBtn.style.pointerEvents = "none";
+  });
+
   Promise.all([
     fetch("./assets/kennedy_net.json").then(r => r.json()),
     fetch("./assets/kennedy_buildings.json").then(r => r.json()),
