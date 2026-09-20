@@ -1273,3 +1273,151 @@
   window.addEventListener("resize", updateNetPositions);
   updateNetPositions();
 })();
+
+// ============================================================
+// "KENNEDY SEGUN EL POT": red completa de instrumentos, tratamientos y
+// elementos del Plan de Ordenamiento Territorial en Kennedy, con la
+// MISMA info/palabras que la referencia del usuario, en la estetica de
+// burbujas organicas (goo) de la red original.
+// ============================================================
+(function () {
+  const POT_CATS = {
+    econ: { label: "Actividades económicas", color: "#c9a877" },
+    eep: { label: "Estructura ecológica principal", color: "#6b4a42" },
+    habit: { label: "Habitabilidad e informalidad", color: "#7a6a4a" },
+    suelo: { label: "Clasificación del suelo", color: "#8d7d8a" },
+    cuidado: { label: "Sistema de cuidado", color: "#c9a9b5" },
+    seg: { label: "Seguridad", color: "#4a3530" },
+    espacio: { label: "Espacio público", color: "#5c8f6a" },
+    gob: { label: "Instrumentos de gobernanza", color: "#3d5c3d" },
+    equip: { label: "Equipamientos", color: "#c9b291" },
+    servicios: { label: "Servicios públicos", color: "#8fa39c" },
+    movilidad: { label: "Movilidad y transporte", color: "#9bad6b" },
+    upl: { label: "UPL", color: "#7d8f52" },
+    riesgo: { label: "Gestión de riesgo", color: "#d19a5a" },
+  };
+  const POT_NODES = [
+    { id: "alameda_porvenir", t: "Alameda El Porvenir", cat: "movilidad", x: 700, y: 35 },
+    { id: "veeduria", t: "Comisión de Veeduría Ciudadana POT", cat: "gob", x: 560, y: 85 },
+    { id: "upl15", t: "UPL 15 Porvenir (compartida Bosa-Kennedy)", cat: "upl", x: 690, y: 130 },
+    { id: "reparto_cargas", t: "Reparto Proporcional de Cargas y Beneficios", cat: "gob", x: 555, y: 165 },
+    { id: "manzana_bosa", t: "Manzana del Cuidado Bosa", cat: "cuidado", x: 690, y: 170 },
+    { id: "colegio_bosa", t: "Colegio Sede Bosa Porvenir", cat: "equip", x: 610, y: 200 },
+    { id: "mis", t: "Macroproyectos de Interés Social MIS", cat: "habit", x: 440, y: 210 },
+    { id: "subsidio_vivienda", t: "Subsidio Distrital de Vivienda", cat: "habit", x: 590, y: 225 },
+    { id: "eru", t: "Empresa de Renovación y Desarrollo Urbano ERU", cat: "gob", x: 410, y: 245 },
+    { id: "tejido_informal", t: "Tejido Urbano Consolidado de Origen Informal (Patio Bonito El Amparo)", cat: "habit", x: 480, y: 255 },
+    { id: "trat_estructural", t: "Tratamiento de Mejoramiento Integral Estructural", cat: "habit", x: 560, y: 260 },
+    { id: "humedal_techo", t: "Humedal Techo", cat: "eep", x: 495, y: 270 },
+    { id: "trat_occidente", t: "Tratamiento de Desarrollo Zona Occidente", cat: "habit", x: 385, y: 280 },
+    { id: "trat_habitabilidad", t: "Tratamiento de Mejoramiento Integral Habitabilidad", cat: "habit", x: 525, y: 285 },
+    { id: "zonas_reasentamiento", t: "Zonas de Reasentamiento Prioritario", cat: "riesgo", x: 585, y: 290 },
+    { id: "upl13", t: "UPL 13 Tintal", cat: "upl", x: 455, y: 320 },
+    { id: "upl14", t: "UPL 14 Patio Bonito", cat: "upl", x: 545, y: 320 },
+    { id: "corredor_eco_rio", t: "Corredor Ecológico de Ronda Río Bogotá", cat: "eep", x: 365, y: 335 },
+    { id: "suelos_riesgo", t: "Suelos de Protección por Riesgo no Mitigable", cat: "riesgo", x: 615, y: 325 },
+    { id: "amer_rio", t: "Área de Manejo Especial del Río Bogotá", cat: "eep", x: 365, y: 355 },
+    { id: "idiger", t: "Puntos Críticos de Inundación (IDIGER)", cat: "riesgo", x: 600, y: 345 },
+    { id: "cai_corabastos", t: "CAI y Estación de Policía Corabastos", cat: "seg", x: 385, y: 375 },
+    { id: "canal_americas", t: "Canal Américas", cat: "servicios", x: 515, y: 355 },
+    { id: "quebrada_limas", t: "Quebrada Limas", cat: "eep", x: 640, y: 355 },
+    { id: "alo_sur", t: "Avenida Longitudinal de Occidente ALO Sur", cat: "movilidad", x: 400, y: 390 },
+    { id: "rio_bogota", t: "Río Bogotá", cat: "eep", x: 475, y: 375 },
+    { id: "humedal_vaca", t: "Humedal La Vaca", cat: "eep", x: 645, y: 380 },
+    { id: "avenida_boyaca", t: "Avenida Boyacá", cat: "movilidad", x: 540, y: 390 },
+    { id: "canal_cundinamarca", t: "Canal Cundinamarca", cat: "servicios", x: 595, y: 400 },
+    { id: "nodo_logistico13", t: "Nodo Logístico Calle 13", cat: "econ", x: 305, y: 405 },
+    { id: "centro_corabastos", t: "Centro de Abasto Corabastos", cat: "econ", x: 440, y: 415 },
+    { id: "biblioteca_tintal", t: "Biblioteca Pública El Tintal Manuel Zapata Olivella", cat: "equip", x: 495, y: 415 },
+    { id: "rio_fucha", t: "Río Fucha", cat: "eep", x: 615, y: 415 },
+    { id: "upl18", t: "UPL 18 Kennedy", cat: "upl", x: 665, y: 420 },
+    { id: "zona_franca", t: "Zona Franca Fontibón", cat: "econ", x: 210, y: 425 },
+    { id: "plaza_fontibon", t: "Plaza de Mercado Fontibón", cat: "econ", x: 335, y: 435 },
+    { id: "metro_plmb", t: "Primera Línea del Metro de Bogotá PLMB", cat: "movilidad", x: 470, y: 440 },
+    { id: "parque_timiza", t: "Parque Metropolitano Timiza", cat: "espacio", x: 725, y: 435 },
+    { id: "data_center", t: "Data Center Fontibón", cat: "servicios", x: 130, y: 435 },
+    { id: "areas_industriales", t: "Áreas de Actividad Industrial y Logística", cat: "econ", x: 175, y: 460 },
+    { id: "portal_americas", t: "Portal Américas TransMilenio", cat: "movilidad", x: 480, y: 465 },
+    { id: "hospital_kennedy", t: "Hospital de Kennedy", cat: "cuidado", x: 685, y: 460 },
+    { id: "manzana_kennedy", t: "Manzana del Cuidado Kennedy", cat: "cuidado", x: 645, y: 480 },
+    { id: "ciclorrutas", t: "Red Ciclorrutas Prioritarias", cat: "movilidad", x: 450, y: 490 },
+    { id: "humedal_burro", t: "Humedal El Burro", cat: "eep", x: 715, y: 490 },
+    { id: "corredor_cali", t: "Corredor Verde Av Ciudad de Cali", cat: "espacio", x: 470, y: 520 },
+    { id: "ptar_canoas", t: "Planta de Tratamiento de Aguas Residuales (PTAR Canoas)", cat: "servicios", x: 745, y: 520 },
+    { id: "patio_metro_bosa", t: "Patio Taller Metro Bosa", cat: "movilidad", x: 450, y: 555 },
+    { id: "hospital_bosa", t: "Hospital de Bosa", cat: "cuidado", x: 795, y: 555 },
+  ];
+  const POT_EDGES = [
+    ["alameda_porvenir", "upl15"], ["veeduria", "reparto_cargas"],
+    ["upl15", "manzana_bosa"], ["reparto_cargas", "colegio_bosa"], ["manzana_bosa", "colegio_bosa"],
+    ["colegio_bosa", "subsidio_vivienda"], ["mis", "subsidio_vivienda"], ["subsidio_vivienda", "upl14"],
+    ["eru", "tejido_informal"], ["tejido_informal", "trat_estructural"], ["humedal_techo", "trat_estructural"],
+    ["trat_occidente", "upl13"], ["trat_estructural", "upl14"], ["trat_habitabilidad", "upl14"],
+    ["zonas_reasentamiento", "upl14"], ["trat_habitabilidad", "upl13"],
+    ["corredor_eco_rio", "upl13"], ["amer_rio", "upl13"], ["cai_corabastos", "upl13"], ["alo_sur", "upl13"],
+    ["suelos_riesgo", "upl14"], ["idiger", "upl14"], ["canal_americas", "upl14"],
+    ["quebrada_limas", "upl18"], ["humedal_vaca", "upl18"],
+    ["rio_bogota", "upl13"], ["rio_bogota", "upl14"], ["rio_bogota", "cai_corabastos"], ["rio_bogota", "avenida_boyaca"],
+    ["avenida_boyaca", "upl18"], ["canal_cundinamarca", "upl18"], ["rio_fucha", "upl18"],
+    ["nodo_logistico13", "zona_franca"], ["zona_franca", "data_center"], ["zona_franca", "areas_industriales"],
+    ["centro_corabastos", "cai_corabastos"], ["centro_corabastos", "rio_bogota"],
+    ["biblioteca_tintal", "rio_bogota"], ["plaza_fontibon", "centro_corabastos"],
+    ["metro_plmb", "centro_corabastos"], ["metro_plmb", "portal_americas"],
+    ["upl18", "hospital_kennedy"], ["upl18", "manzana_kennedy"], ["upl18", "parque_timiza"],
+    ["portal_americas", "ciclorrutas"], ["ciclorrutas", "corredor_cali"], ["corredor_cali", "patio_metro_bosa"],
+    ["hospital_kennedy", "manzana_kennedy"], ["manzana_kennedy", "humedal_burro"],
+    ["humedal_burro", "ptar_canoas"], ["ptar_canoas", "hospital_bosa"],
+  ];
+  const potById = {}; POT_NODES.forEach(n => potById[n.id] = n);
+  const potDegree = {}; POT_NODES.forEach(n => potDegree[n.id] = 0);
+  POT_EDGES.forEach(([a, b]) => { potDegree[a] = (potDegree[a] || 0) + 1; potDegree[b] = (potDegree[b] || 0) + 1; });
+
+  let potBuilt = false;
+  function buildPotNetwork() {
+    if (potBuilt) return;
+    potBuilt = true;
+    const stage = document.getElementById("potStage");
+    const gooLayer = document.getElementById("potGooLayer");
+    const svg = document.getElementById("potSvg");
+    const labelLayer = document.getElementById("potLabelLayer");
+    const rect = stage.getBoundingClientRect();
+    const SVGNS = "http://www.w3.org/2000/svg";
+    function sc(v, total, size) { return (v / total) * size; }
+    const W = 900, H = 590;
+    function toPx(x, y) { return { x: sc(x, W, rect.width), y: sc(y, H, rect.height) }; }
+
+    POT_EDGES.forEach(([a, b]) => {
+      const na = potById[a], nb = potById[b];
+      const pa = toPx(na.x, na.y), pb = toPx(nb.x, nb.y);
+      const line = document.createElementNS(SVGNS, "line");
+      line.setAttribute("x1", pa.x); line.setAttribute("y1", pa.y);
+      line.setAttribute("x2", pb.x); line.setAttribute("y2", pb.y);
+      line.setAttribute("stroke", "#c8ccd2"); line.setAttribute("stroke-width", "1.3"); line.setAttribute("stroke-opacity", "0.55");
+      svg.appendChild(line);
+    });
+    POT_NODES.forEach(n => {
+      const p = toPx(n.x, n.y);
+      const r = 8 + (potDegree[n.id] || 0) * 2.2;
+      const blob = document.createElement("div");
+      blob.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; width:${r * 2}px; height:${r * 2}px; margin:-${r}px 0 0 -${r}px; border-radius:50%; background:${POT_CATS[n.cat].color};`;
+      gooLayer.appendChild(blob);
+      const label = document.createElement("div");
+      label.textContent = n.t;
+      label.style.cssText = `position:absolute; left:${p.x}px; top:${p.y + r + 3}px; transform:translateX(-50%); max-width:150px; text-align:center; font-size:9.5px; font-weight:600; color:#e8ecf1; text-shadow:0 1px 3px rgba(0,0,0,.8); line-height:1.25;`;
+      labelLayer.appendChild(label);
+    });
+    const legend = document.getElementById("potLegend");
+    Object.values(POT_CATS).forEach(c => {
+      const el = document.createElement("span");
+      el.style.cssText = "display:flex; align-items:center; gap:5px; font-size:10.5px; color:#c3cad2;";
+      el.innerHTML = `<i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c.color};"></i>${c.label}`;
+      legend.appendChild(el);
+    });
+  }
+  const potModal = document.getElementById("potModal");
+  document.getElementById("potBtn").addEventListener("click", () => {
+    potModal.style.display = "flex";
+    buildPotNetwork();
+  });
+  document.getElementById("potModalClose").addEventListener("click", () => { potModal.style.display = "none"; });
+})();
