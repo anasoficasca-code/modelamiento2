@@ -1533,7 +1533,8 @@
     fetch("./assets/kennedy_net.json").then(r => r.json()),
     fetch("./assets/kennedy_buildings.json").then(r => r.json()),
     fetch("./assets/kennedy_water_bodies.json").then(r => r.json()),
-  ]).then(([net, buildings, waterBodies]) => {
+    fetch("./assets/kennedy_trees_real.json").then(r => r.json()),
+  ]).then(([net, buildings, waterBodies, trees]) => {
     const netCenter = { x: (net.bbox[0] + net.bbox[2]) / 2, y: (net.bbox[1] + net.bbox[3]) / 2 };
     function toScene(x, y) { return { x: (x - netCenter.x) * SCALE, z: -(y - netCenter.y) * SCALE }; }
     const w = (net.bbox[2] - net.bbox[0]) * SCALE, h = (net.bbox[3] - net.bbox[1]) * SCALE;
@@ -1544,23 +1545,30 @@
     // como nuevo Mesh (misma BufferGeometry, distinto material si hace
     // falta) a cada una de las 3 replicas — evita reconstruir 243 mil
     // edificios x3, solo se paga el costo de subir el buffer a la GPU
-    // 3 veces en vez de tambien recalcular toda la geometria 3 veces. ----
-    const roadPositions = [];
+    // 3 veces en vez de tambien recalcular toda la geometria 3 veces.
+    // Se usan TODOS los edificios y arboles reales (sin muestreo), para
+    // que las 3 replicas se vean identicas a la base, como se pidio. ----
+    const HALF_W = 0.9;
+    const roadPos = [], roadUv = [];
     net.edges.forEach(([kind, pts]) => {
       const sp = pts.map(p => toScene(p[0], p[1]));
-      for (let i = 0; i < sp.length - 1; i++) roadPositions.push(sp[i].x, 0.03, sp[i].z, sp[i + 1].x, 0.03, sp[i + 1].z);
+      for (let i = 0; i < sp.length - 1; i++) {
+        const a = sp[i], b = sp[i + 1];
+        const dx = b.x - a.x, dz = b.z - a.z;
+        const len = Math.hypot(dx, dz) || 0.001;
+        const nx = -dz / len * HALF_W, nz = dx / len * HALF_W;
+        roadPos.push(a.x - nx, 0.03, a.z - nz, a.x + nx, 0.03, a.z + nz, b.x + nx, 0.03, b.z + nz,
+          a.x - nx, 0.03, a.z - nz, b.x + nx, 0.03, b.z + nz, b.x - nx, 0.03, b.z - nz);
+        const uvLen = len * 0.06;
+        roadUv.push(0, 0, 1, 0, 1, uvLen, 0, 0, 1, uvLen, 0, uvLen);
+      }
     });
     const roadGeo = new THREE.BufferGeometry();
-    roadGeo.setAttribute("position", new THREE.Float32BufferAttribute(roadPositions, 3));
+    roadGeo.setAttribute("position", new THREE.Float32BufferAttribute(roadPos, 3));
+    roadGeo.setAttribute("uv", new THREE.Float32BufferAttribute(roadUv, 2));
 
     const buildPositions = [], buildNormals = [];
-    // Muestra representativa (no los 243 mil completos): con 3 replicas
-    // simultaneas + la base ya cargada, subir la geometria completa 2
-    // veces mas arriesgaba trabar el navegador (~15 millones de vertices
-    // solo en edificios). Se prioriza mantener los edificios MAS ALTOS
-    // (los que mas se notan a esta escala) y se toma 1 de cada 3 del resto.
-    const buildingsSample = buildings.filter((b, i) => b.h > 15 || i % 3 === 0);
-    buildingsSample.forEach(b => {
+    buildings.forEach(b => {
       const pts = b.pts.map(p => toScene(p[0], p[1]));
       const h = b.h * SCALE;
       if (pts.length < 4) return;
@@ -1594,14 +1602,39 @@
     const waterGeo = new THREE.BufferGeometry();
     waterGeo.setAttribute("position", new THREE.Float32BufferAttribute(waterPositions, 3));
 
-    const roadMat = new THREE.LineBasicMaterial({ color: 0x9099a3, transparent: true, opacity: 0.75 }); // gris normal, NO rojo
+    // Arboles: misma tarjeta plana con la foto real, un solo InstancedMesh
+    function hash2R(str) { let hh = 0; for (const c of (str || "")) hh = (hh * 31 + c.charCodeAt(0)) >>> 0; return hh; }
+    const treeTexR = new THREE.TextureLoader().load("./assets/arbol_real3.png");
+    const treePlaneGeo = new THREE.BufferGeometry();
+    treePlaneGeo.setAttribute("position", new THREE.Float32BufferAttribute([-0.5, 0, 0, 0.5, 0, 0, 0.5, 1, 0, -0.5, 0, 0, 0.5, 1, 0, -0.5, 1, 0], 3));
+    treePlaneGeo.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1], 2));
+    const treeMatR = new THREE.MeshBasicMaterial({ map: treeTexR, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide });
+    const treeMeshR = new THREE.InstancedMesh(treePlaneGeo, treeMatR, trees.length);
+    const dummyTR = new THREE.Object3D();
+    trees.forEach((t, i) => {
+      const [tx, ty, hMeters, , code] = t;
+      const p = toScene(tx, ty);
+      const th = Math.max(0.3, hMeters * SCALE);
+      const tw = th * (1.1 + (hash2R(code) % 20) / 100 - 0.1);
+      dummyTR.position.set(p.x, 0, p.z);
+      dummyTR.scale.set(tw, th, tw);
+      dummyTR.rotation.set(0, 40 * Math.PI / 180, 0); // orientadas al acimut fijo de la camara (40°)
+      dummyTR.updateMatrix();
+      treeMeshR.setMatrixAt(i, dummyTR.matrix);
+    });
+    treeMeshR.instanceMatrix.needsUpdate = true;
+
+    const viaTexR = new THREE.TextureLoader().load("./assets/textura_via.jpg");
+    viaTexR.wrapS = viaTexR.wrapT = THREE.RepeatWrapping;
+    const roadMat = new THREE.MeshStandardMaterial({ map: viaTexR, color: 0x9099a3, roughness: 0.85, side: THREE.DoubleSide }); // gris normal, NO rojo
     const buildMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.65, metalness: 0.02, side: THREE.DoubleSide });
     const waterMat = new THREE.MeshBasicMaterial({ color: 0x8f9498, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
 
-    replicas.forEach((r, i) => {
-      r.sceneRoot.add(new THREE.LineSegments(roadGeo, roadMat));
+    replicas.forEach((r) => {
+      r.sceneRoot.add(new THREE.Mesh(roadGeo, roadMat));
       r.sceneRoot.add(new THREE.Mesh(buildGeo, buildMat));
       r.sceneRoot.add(new THREE.Mesh(waterGeo, waterMat));
+      r.sceneRoot.add(treeMeshR.clone());
       r.resizeR(viewSize);
       pointReplicaCamera(r, { x: 0, y: 0, z: 0 }, camDist, 40);
       window.addEventListener("resize", () => r.resizeR(viewSize));
