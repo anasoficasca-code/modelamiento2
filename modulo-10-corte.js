@@ -88,7 +88,7 @@
   controls.minPolarAngle = Math.PI * 55 / 180;
   controls.maxPolarAngle = Math.PI * 55 / 180;
   controls.minZoom = 0.15;
-  controls.maxZoom = 4; // reducido bastante (antes 30): con el visor mas chico, un zoom tan alto hacia que el terreno se saliera del cuadro rectangular del canvas y se viera cortado
+  controls.maxZoom = 2.8; // limite mucho mas conservador (antes 4): el rombo debe seguir viendose como rombo (nunca como un cuadrado con las puntas cortadas por el borde del canvas) incluso en el maximo zoom permitido
   controls.enablePan = true;
 
   // ---- Luces (con sombras, tipo render arquitectonico) ----
