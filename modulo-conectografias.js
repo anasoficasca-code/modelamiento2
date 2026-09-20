@@ -78,6 +78,7 @@
   window.addEventListener("resize", resize);
 
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  canvas.addEventListener("contextmenu", (e) => e.preventDefault()); // sin esto, el navegador abre su menu contextual con el clic derecho en vez de dejarlo mover (panear) la vista
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   // Proyeccion paralela (axonometrica): se bloquea el angulo de la camara
