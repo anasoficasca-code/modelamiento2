@@ -23,7 +23,7 @@
   const canvas = document.getElementById("sceneCanvas");
   const wrap = document.getElementById("sceneWrap");
   const scene = new THREE.Scene();
-  // scene.background = new THREE.Color(0xffffff); // quitado: fondo transparente para que solo se vea el terreno/edificios reales, sin ningun borde/marco sobrante
+  scene.background = new THREE.Color(0xffffff); // restaurado: con el clip-path de vuelta, el rombo se recorta en CSS, asi que el fondo debe ser blanco para que se vea como terreno solido, no transparente
   scene.fog = new THREE.Fog(0xf3f4f5, 900, 3200);
   // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
   // se agrega a este grupo, no directamente a la escena, para poder
@@ -88,7 +88,7 @@
   controls.minPolarAngle = Math.PI * 55 / 180;
   controls.maxPolarAngle = Math.PI * 55 / 180;
   controls.minZoom = 0.15;
-  controls.maxZoom = 2.8; // limite mucho mas conservador (antes 4): el rombo debe seguir viendose como rombo (nunca como un cuadrado con las puntas cortadas por el borde del canvas) incluso en el maximo zoom permitido
+  controls.maxZoom = 8; // con el clip-path de vuelta, el rombo se mantiene recortado sin importar el zoom, asi que se puede permitir mas rango
   controls.enablePan = true;
 
   // ---- Luces (con sombras, tipo render arquitectonico) ----
