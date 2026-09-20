@@ -16,7 +16,7 @@
   body{ background:var(--bg); color:var(--ink); font-family:Inter,Arial,sans-serif; overflow:hidden; }
   .app{ display:flex; min-height:100vh; }
   .main{ flex:1; position:relative; min-width:0; }
-  #sceneWrap{ position:relative; width:100%; aspect-ratio:16/9; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); overflow:hidden; }
+  #sceneWrap{ position:absolute; inset:0; }
   #sceneCanvas{ position:absolute; inset:0; display:block; width:100%; height:100%; }
 
   .hud-title{
@@ -128,84 +128,6 @@
   .tree-info h3{ font-size:14px; margin:0 26px 6px 0; color:var(--ink); }
   .tree-info p#treeInfoDetails{ font-size:12px; color:var(--ink-dim); margin:0; line-height:1.5; }
 
-  /* ---- Titulos "explotados" tipo diagrama axonometrico de referencia:
-  texto grueso, negro, inclinado siguiendo el borde isometrico del plano
-  (mismo estilo que "BUILDINGS"/"BOSTON FLOODPLAIN" del referente) ---- */
-  .axo-label{
-    position:absolute; z-index:8; pointer-events:none;
-    font-family:'Space Grotesk','Segoe UI',sans-serif; font-weight:800;
-    color:#0a0a0a; letter-spacing:.03em; white-space:nowrap;
-    transform-origin:left center;
-    transform: rotate(-29.36deg);
-  }
-  #axoLabelBottom{ font-size:16px; bottom:14%; right:6%; cursor:pointer; pointer-events:auto; }
-
-  /* ---- Al iniciar SOLO se ve la axonometria base, arriba y centrada
-  (position:relative, es el UNICO elemento que ocupa espacio real en el
-  flujo — el grupo explotado esta aparte, superpuesto encima con
-  position:absolute, para que NUNCA empuje a la base hacia abajo
-  mientras esta oculto). Al hacer clic sobre la base, esta desaparece y
-  el grupo explotado (3 replicas apiladas, en el MISMO lugar) aparece. ---- */
-  #replicaStack{
-    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:9;
-    width:26vw; max-width:320px;
-  }
-  #layerBase{
-    position:absolute; top:50%; left:50%; width:60vw; max-width:760px;
-    transform:translate(-50%,-50%); transition: opacity .5s ease;
-  }
-  #explodedGroup{
-    position:absolute; top:50%; left:0; width:100%; transform:translateY(-50%);
-    display:flex; flex-direction:column; align-items:center;
-    opacity:0; pointer-events:none;
-  }
-  #explodedGroup.show{ opacity:1; pointer-events:auto; }
-  .replica-layer{
-    position:relative; width:100%; aspect-ratio:16/9; margin-bottom:3%;
-    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-    background:transparent;
-    transition: transform .85s cubic-bezier(.2,.8,.2,1), opacity .7s ease;
-  }
-  #explodedGroup:not(.show) .replica-layer{ opacity:0; transform:scale(0.05); }
-  .replica-layer canvas, .replica-layer img{ width:100%; height:100%; display:block; object-fit:cover; }
-  /* La etiqueta arranca EXACTAMENTE en la punta derecha del rombo (left:100%
-  del contenedor, que coincide con el vertice segun el clip-path) y se
-  extiende hacia AFUERA (a la derecha, fuera del rombo, nunca encima de el),
-  en el mismo angulo exacto que la arista inferior-derecha del rombo (-29.36
-  grados para un rombo de proporcion 16:9), sin tocar nunca el dibujo. */
-  .replica-layer .axo-label{
-    top:50%; left:100%; right:auto; bottom:auto;
-    transform: translateY(-50%) rotate(-29.36deg);
-    transform-origin: left center;
-    font-size:14px;
-  }
-
-
-  /* ---- Modal de detalle de la Escala Natural: 4 capas explotadas
-  adicionales, mismo estilo de rombos apilados ---- */
-  #naturalDetailModal{
-    position:fixed; inset:0; z-index:50; background:rgba(6,7,9,.94);
-    display:none; align-items:center; justify-content:center; flex-direction:column;
-  }
-  #naturalDetailModal.open{ display:flex; }
-  #naturalDetailModal .modal-title{ position:absolute; top:22px; left:50%; transform:translateX(-50%); text-align:center; color:#fff; }
-  #naturalDetailModal .modal-title h2{ font-family:'Space Grotesk',sans-serif; font-size:19px; margin:0 0 3px; }
-  #naturalDetailModal .modal-title p{ font-size:11.5px; color:#9aa3ad; margin:0; }
-  #naturalDetailModal .modal-close{
-    position:absolute; top:20px; right:26px; width:36px; height:36px; border-radius:50%;
-    border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.08); color:#fff;
-    font-size:16px; cursor:pointer;
-  }
-  #naturalDetailStack{ display:flex; flex-direction:column; align-items:center; width:52vw; max-width:640px; }
-  #naturalDetailStack .exploded-layer{ background:#0b0c0f; margin-bottom:-9%; }
-  #naturalDetailStack .axo-label{ color:#fff; }
-  .nd-badge{
-    position:absolute; z-index:6; background:rgba(6,7,9,.85); border:1px solid rgba(255,255,255,.18);
-    border-radius:10px; padding:7px 11px; color:#fff; font-size:11px; line-height:1.5; pointer-events:none;
-  }
-  .nd-badge b{ font-family:'Space Grotesk',sans-serif; font-size:13px; }
-  .nd-arrow-pct{ position:absolute; z-index:6; font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:15px; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.6); }
-
 </style>
 </head>
 <body>
@@ -214,7 +136,7 @@
       <a class="brand-icon" href="index.html" title="Bogotá Viva · Inicio" aria-label="Inicio"><i class="fa-solid fa-diagram-project"></i></a>
       <nav class="icon-nav" aria-label="Módulos">
         <a href="index.html" class="icon-nav-item" title="Inicio"><i class="fa-solid fa-house"></i></a>
-        <a href="modulo-metropolitano.html" class="icon-nav-item" title="Escala metropolitana &middot; Bogot&aacute; completa"><i class="fa-solid fa-city"></i></a>
+        <a href="modulo-metropolitano.html" class="icon-nav-item" title="Escala metropolitana · Bogotá completa"><i class="fa-solid fa-city"></i></a>
         <a href="modulo-02.html" class="icon-nav-item" title="02 · Medir la red"><i class="fa-solid fa-chart-simple"></i></a>
         <a href="modulo-03.html" class="icon-nav-item" title="03 · Discurso vs realidad"><i class="fa-solid fa-eye"></i></a>
         <a href="modulo-04.html" class="icon-nav-item" title="04 · Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
@@ -230,6 +152,10 @@
       </nav>
     </aside>
   <main class="main">
+    <div id="sceneWrap">
+      <canvas id="sceneCanvas"></canvas>
+    </div>
+
     <div class="hud-title">
       <h1>Corte axonométrico — Kennedy</h1>
       <p>Proyección axonométrica a 35° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista</p>
@@ -267,9 +193,6 @@
 
     <div class="rotate-panel" id="sectionBoxPanel" style="top:70px;">
       <div class="rotate-row rotate-buttons">
-        <button type="button" id="naturalDetailBtn">🌿 Escala natural — ver ciclo detallado</button>
-      </div>
-      <div class="rotate-row rotate-buttons" style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--panel-border);">
         <button type="button" id="sectionBoxToggle" class="active">✂️ Desactivar caja de sección</button>
       </div>
       <p class="draw-hint">El corte ya está activo — mueve cualquiera de los 6 límites y el modelo se corta al instante.</p>
@@ -338,65 +261,11 @@
       <h3 id="treeInfoName"></h3>
       <p id="treeInfoDetails"></p>
     </div>
-
-    <div id="replicaStack">
-      <div class="replica-layer" id="layerBase">
-        <div id="sceneWrap">
-          <canvas id="sceneCanvas"></canvas>
-        </div>
-        <div class="axo-label" id="axoLabelBottom">KENNEDY</div>
-      </div>
-      <div id="explodedGroup">
-        <div class="replica-layer" id="layerReplicaNatural"><img id="imgReplica1" alt=""><div class="axo-label">ESCALA NATURAL</div></div>
-        <div class="replica-layer" id="layerReplicaCultural"><img id="imgReplica2" alt=""><div class="axo-label">ESCALA CULTURAL</div></div>
-        <div class="replica-layer" id="layerReplicaTecnologica"><img id="imgReplica3" alt=""><div class="axo-label">ESCALA TECNOLÓGICA</div></div>
-      </div>
-    </div>
-
-    <div id="naturalDetailModal">
-      <div class="modal-title">
-        <h2>Escala natural — detalle</h2>
-        <p>Ciclo hídrico del Humedal El Burro y llegada de aves según la temporada</p>
-      </div>
-      <button type="button" class="modal-close" id="naturalDetailClose">✕</button>
-      <div id="naturalDetailStack">
-        <div class="exploded-layer" id="ndLayerAgua">
-          <canvas id="canvasNdAgua"></canvas>
-          <div class="axo-label">CRECIMIENTO Y FLUJO DEL AGUA</div>
-        </div>
-        <div class="exploded-layer" id="ndLayerAves">
-          <canvas id="canvasNdAves"></canvas>
-          <div class="axo-label">AVES SEGÚN LA TEMPORADA</div>
-        </div>
-        <div class="exploded-layer" id="ndLayerVeg">
-          <canvas id="canvasNdVeg"></canvas>
-          <div class="axo-label">COBERTURA VEGETAL</div>
-        </div>
-        <div class="exploded-layer" id="ndLayerVegCiclo">
-          <canvas id="canvasNdVegCiclo"></canvas>
-          <div class="axo-label">CICLO ESTACIONAL DE LA VEGETACIÓN</div>
-        </div>
-      </div>
-      <p style="max-width:52vw; font-size:10.5px; color:#8b96a5; text-align:center; margin-top:14px; line-height:1.6;">
-        Fuente hídrica: Canal Castilla (principal afluente real del Humedal El Burro, cuenca del río Fucha) · Secretaría Distrital de Ambiente.
-        Especies: <i>Porphyrio martinica</i> (Tingua azul / Calamón morado, documentada en Bogotá de octubre a abril, coincide con los meses de mayor nivel de agua) y
-        <i>Rallus semiplumbeus</i> (Tingua bogotana, especie endémica de patas cortas que camina sobre vegetación flotante en temporada seca).
-        Cobertura vegetal: levantamiento real 2014 (shapefile Cober_vege_humedales, Jardín Botánico de Bogotá), 305 polígonos del Humedal El Burro.
-      </p>
-      <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; max-width:52vw; margin-top:8px; font-size:10px; color:#c3cad2;">
-        <span><i style="display:inline-block;width:9px;height:9px;background:#4c7a3d;border-radius:2px;margin-right:4px;"></i>Arbustales</span>
-        <span><i style="display:inline-block;width:9px;height:9px;background:#8fae4a;border-radius:2px;margin-right:4px;"></i>Vegetación herbácea</span>
-        <span><i style="display:inline-block;width:9px;height:9px;background:#b8c47a;border-radius:2px;margin-right:4px;"></i>Pastos</span>
-        <span><i style="display:inline-block;width:9px;height:9px;background:#2f9e6f;border-radius:2px;margin-right:4px;"></i>Vegetación acuática</span>
-        <span><i style="display:inline-block;width:9px;height:9px;background:#5f8fae;border-radius:2px;margin-right:4px;"></i>Espejo de agua</span>
-        <span><i style="display:inline-block;width:9px;height:9px;background:#9a9a9a;border-radius:2px;margin-right:4px;"></i>Áreas endurecidas</span>
-      </div>
-    </div>
   </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=56"></script>
+<script src="modulo-10-corte.js?v=57"></script>
 </body>
 </html>

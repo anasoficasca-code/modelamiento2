@@ -23,7 +23,7 @@
   const canvas = document.getElementById("sceneCanvas");
   const wrap = document.getElementById("sceneWrap");
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xffffff); // restaurado: con el clip-path de vuelta, el rombo se recorta en CSS, asi que el fondo debe ser blanco para que se vea como terreno solido, no transparente
+  scene.background = new THREE.Color(0xf3f4f5);
   scene.fog = new THREE.Fog(0xf3f4f5, 900, 3200);
   // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
   // se agrega a este grupo, no directamente a la escena, para poder
@@ -39,9 +39,8 @@
   scene.add(sceneRoot);
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, alpha: true }); // alpha:true + sin scene.background = fondo transparente, para que el "rombo" sea la SILUETA REAL del terreno visto en axonometria (no un recorte de CSS que deja bordes sobrantes)
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-  renderer.setClearColor(0x000000, 0); // fondo transparente explicito (alpha 0)
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.BasicShadowMap;
   renderer.localClippingEnabled = true; // para la caja de seccion (corte del modelo)
@@ -88,7 +87,7 @@
   controls.minPolarAngle = Math.PI * 55 / 180;
   controls.maxPolarAngle = Math.PI * 55 / 180;
   controls.minZoom = 0.15;
-  controls.maxZoom = 8; // con el clip-path de vuelta, el rombo se mantiene recortado sin importar el zoom, asi que se puede permitir mas rango
+  controls.maxZoom = 30;
   controls.enablePan = true;
 
   // ---- Luces (con sombras, tipo render arquitectonico) ----
@@ -135,19 +134,16 @@
   let groundMesh = null;
 
   function buildGround(bbox) {
-    const w = (bbox[2] - bbox[0]) * SCALE; // tamano EXACTO del modelo, sin sobresalir (antes *1.4 se veia como un marco blanco)
-    const h = (bbox[3] - bbox[1]) * SCALE;
-    // Losa solida con grosor real (no un plano de papel): se ve como una
-    // maqueta fisica, con caras laterales visibles hacia ABAJO, no una
-    // lamina ni un marco plano mas ancho que el modelo.
-    const THICKNESS = 6;
-    const geo = new THREE.BoxGeometry(w, THICKNESS, h);
-    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xffffff, roughness: 1, metalness: 0 }); // blanco puro, a pedido del usuario
+    const w = (bbox[2] - bbox[0]) * SCALE * 1.4;
+    const h = (bbox[3] - bbox[1]) * SCALE * 1.4;
+    const geo = new THREE.PlaneGeometry(w, h);
+    const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xeceeef, roughness: 1, metalness: 0 });
     groundMesh = new THREE.Mesh(geo, mat);
-    groundMesh.position.set(0, -0.4 - THICKNESS / 2, 0);
+    groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.position.set(0, -0.4, 0);
     groundMesh.receiveShadow = true;
     sceneRoot.add(groundMesh);
-    // buildAxoBorder(-w / 2, w / 2, -h / 2, h / 2); // quitado a pedido del usuario: sin bordes, solo lo dibujado
+    buildAxoBorder(-w / 2, w / 2, -h / 2, h / 2);
   }
 
   // ---- Marco/borde negro grueso alrededor del area VISIBLE actual (como
@@ -373,7 +369,7 @@
           a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
         );
         for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
-        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // solo el perimetro del techo (forma simplificada)
+        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // solo el perimetro del techo (forma simplificada, menos lineas = menos "gris" acumulado)
       }
 
       // Techo plano simple (sin parapeto sintetico): las mallas REALES de
@@ -416,7 +412,7 @@
     // real y no una silueta plana.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.14 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.2 });
     buildingEdgeMat = edgeMat;
     const edgeMesh = new THREE.LineSegments(edgeGeo, edgeMat);
     sceneRoot.add(edgeMesh);
@@ -937,13 +933,13 @@
   // los controles) y 45 grados de acimut, proyeccion en paralelo (sin
   // fuga de perspectiva). ----
   function setAxonometricView(distance) {
-    // Vista original que el usuario ya habia cuadrado y confirmado - no
-    // recalcular esto de nuevo, dejarla exactamente asi.
+    // Vista inicial fija que el usuario dejo lista (mismo objetivo, azimut
+    // y distancia que su vista anterior a 45°, pero recalculada a 35° de
+    // elevacion, que es el angulo que pidio para este modulo).
     camera.position.set(-389.40, 559.68, 542.58);
     controls.target.set(218.76, -53.06, -86.62);
     camera.zoom = 2.272;
     camera.updateProjectionMatrix();
-    controls.update(); // fuerza a OrbitControls a re-sincronizar su estado interno con la nueva posicion/objetivo de inmediato (sin esto, a veces tarda un cuadro o interpreta mal el angulo bloqueado)
   }
 
   // ---- Botones de vista ----
@@ -1134,7 +1130,7 @@
     // El borde negro sigue el area de la caja de seccion (lo que en
     // verdad se ve), no el terreno completo (que quedaria muy lejos del
     // recorte y no se notaria).
-    // if (boxFilter) buildAxoBorder(xMin, xMax, zMin, zMax); // quitado a pedido del usuario: sin bordes
+    if (boxFilter) buildAxoBorder(xMin, xMax, zMin, zMax);
     else buildAxoBorder(-halfW, halfW, -halfH, halfH);
   }
   document.getElementById("sectionBoxToggle").addEventListener("click", (e) => {
@@ -1168,358 +1164,4 @@
 
   resize();
   requestAnimationFrame(animate);
-
-  // ---- Explosion en 3 capas IDENTICAS: en vez de armar 3 escenas 3D
-  // separadas (que siempre terminan con alguna diferencia de camara,
-  // zoom o encuadre por mas que se intente igualar), se toma una FOTO
-  // exacta del canvas de la base (toDataURL, gracias a
-  // preserveDrawingBuffer:true) y esa MISMA imagen se muestra 3 veces —
-  // asi es imposible que se vean distintas, es literalmente la misma
-  // imagen. Al hacer clic, la base desaparece y las 3 fotos aparecen
-  // apiladas en su lugar, con una pequena aparicion escalonada. ----
-  const layerBaseEl = document.getElementById("layerBase");
-  const explodedGroupEl = document.getElementById("explodedGroup");
-  const replicaImgEls = [
-    document.getElementById("imgReplica1"),
-    document.getElementById("imgReplica2"),
-    document.getElementById("imgReplica3"),
-  ];
-  const replicaLayerEls = [
-    document.getElementById("layerReplicaNatural"),
-    document.getElementById("layerReplicaCultural"),
-    document.getElementById("layerReplicaTecnologica"),
-  ];
-  let yaExploto = false;
-  layerBaseEl.addEventListener("click", () => {
-    if (yaExploto) return;
-    yaExploto = true;
-    const foto = renderer.domElement.toDataURL("image/png");
-    replicaImgEls.forEach(img => { img.src = foto; });
-    layerBaseEl.style.opacity = "0";
-    layerBaseEl.style.pointerEvents = "none";
-    explodedGroupEl.classList.add("show");
-    replicaLayerEls.forEach((el, i) => {
-      el.style.transitionDelay = (i * 160) + "ms";
-    });
-  });
 })();
-
-
-// ============================================================
-// Detalle de la ESCALA NATURAL (se abre al hacer clic en el titulo):
-// 2 capas explotadas adicionales, investigadas con datos reales:
-//   1) Crecimiento y flujo del agua: el mismo ciclo anual del Humedal
-//      El Burro, con el porcentaje de crecimiento en vivo junto a una
-//      flecha, y el flujo animado desde su afluente real documentado
-//      (Canal Castilla, cuenca del rio Fucha - Secretaria Distrital de
-//      Ambiente) hasta el humedal.
-//   2) Aves segun la temporada: Porphyrio martinica (Tingua azul /
-//      Calamon morado), documentada en Bogota de octubre a abril
-//      -coincide con los meses de mas agua del ciclo calculado- y
-//      Rallus semiplumbeus (Tingua bogotana, endemica, patas cortas,
-//      camina sobre vegetacion flotante) en temporada seca.
-// ============================================================
-(function () {
-  const SCALE = 1 / 10;
-  const ELEV = 35 * Math.PI / 180;
-  const HUMEDAL_CICLO = [
-    { mes: 1, nombre: "Ene", expansion_pct: 41.7, profundidad_m: 1.32 },
-    { mes: 2, nombre: "Feb", expansion_pct: 42.6, profundidad_m: 1.39 },
-    { mes: 3, nombre: "Mar", expansion_pct: 46.7, profundidad_m: 1.73 },
-    { mes: 4, nombre: "Abr", expansion_pct: 50.0, profundidad_m: 2.00 },
-    { mes: 5, nombre: "May", expansion_pct: 47.4, profundidad_m: 1.78 },
-    { mes: 6, nombre: "Jun", expansion_pct: 41.5, profundidad_m: 1.30 },
-    { mes: 7, nombre: "Jul", expansion_pct: 37.7, profundidad_m: 0.99 },
-    { mes: 8, nombre: "Ago", expansion_pct: 34.1, profundidad_m: 0.69 },
-    { mes: 9, nombre: "Sep", expansion_pct: 33.0, profundidad_m: 0.60 },
-    { mes: 10, nombre: "Oct", expansion_pct: 38.6, profundidad_m: 1.06 },
-    { mes: 11, nombre: "Nov", expansion_pct: 43.8, profundidad_m: 1.49 },
-    { mes: 12, nombre: "Dic", expansion_pct: 43.3, profundidad_m: 1.45 },
-  ];
-  // Oct-Abr (meses de mas agua, documentado real): Tingua azul / Calamon
-  // morado. May-Sep (temporada seca): Tingua bogotana, endemica.
-  function especieDelMes(mes) {
-    const humeda = mes >= 10 || mes <= 4;
-    return humeda
-      ? { nombre: "Tingua azul (Calamón morado)", cientifico: "Porphyrio martinica", color: "#3d5fd6", colorSec: "#7a4fc9", pico: "#e2635a", patas: "#e8b23b", patasLen: 1.5 }
-      : { nombre: "Tingua bogotana", cientifico: "Rallus semiplumbeus", color: "#7a6a4a", colorSec: "#5c5038", pico: "#c0392b", patas: "#c0392b", patasLen: 0.9 };
-  }
-
-  function setupMini(canvasId) {
-    const canvas = document.getElementById(canvasId);
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
-    const scene = new THREE.Scene();
-    const sceneRoot = new THREE.Group();
-    scene.add(sceneRoot);
-    scene.add(new THREE.AmbientLight(0xffffff, 1.1));
-    function resizeMini(viewSize) {
-      const rect = canvas.getBoundingClientRect();
-      const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
-      renderer.setSize(w, h, false);
-      const aspect = w / h;
-      camera.left = -viewSize * aspect; camera.right = viewSize * aspect;
-      camera.top = viewSize; camera.bottom = -viewSize;
-      camera.updateProjectionMatrix();
-    }
-    return { canvas, renderer, camera, scene, sceneRoot, resizeMini };
-  }
-  function pointMiniCamera(mini, target, distance, azimuthDeg) {
-    const az = azimuthDeg * Math.PI / 180;
-    mini.camera.position.set(
-      target.x + Math.cos(az) * Math.cos(ELEV) * distance,
-      target.y + Math.sin(ELEV) * distance,
-      target.z + Math.sin(az) * Math.cos(ELEV) * distance
-    );
-    mini.camera.lookAt(target.x, target.y, target.z);
-    mini.camera.updateProjectionMatrix();
-  }
-  function makeBirdSprite() {
-    const c = document.createElement("canvas"); c.width = 32; c.height = 32;
-    const ctx = c.getContext("2d");
-    ctx.translate(16, 16);
-    ctx.fillStyle = "#20222c";
-    ctx.beginPath(); ctx.ellipse(0, 0, 6, 3.4, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#eef2f7"; ctx.lineWidth = 1.4; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(-7, -6); ctx.lineTo(1, 0); ctx.lineTo(-7, 6); ctx.stroke();
-    return new THREE.CanvasTexture(c);
-  }
-
-  let initialized = false;
-  let miniAgua, miniAves, elBurroPts, elBurroCentro, canalPts, waterMatNd, elBurroMeshNd;
-  let ndMonthIdx = 0, ndLastStep = 0;
-  const netCenterRef = { x: 0, y: 0 };
-  const HUMEDAL_X = 6017.9, HUMEDAL_Y = 1980.2;
-
-  function toSceneNd(x, y) { return { x: (x - netCenterRef.x) * SCALE, z: -(y - netCenterRef.y) * SCALE }; }
-
-  function rebuildElBurroNd(expansionPct) {
-    if (!elBurroPts) return;
-    if (elBurroMeshNd) { miniAgua.sceneRoot.remove(elBurroMeshNd); elBurroMeshNd.geometry.dispose(); }
-    const scale = 1 + expansionPct / 100 * 0.6;
-    const pts = elBurroPts.map(p => {
-      const ex = elBurroCentro.x + (p[0] - elBurroCentro.x) * scale, ey = elBurroCentro.y + (p[1] - elBurroCentro.y) * scale;
-      return toSceneNd(ex, ey);
-    });
-    const positions = [];
-    const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
-    let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
-    tris.forEach(([a, b, c]) => [a, b, c].forEach(idx => positions.push(pts[idx].x, 0.01, pts[idx].z)));
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    elBurroMeshNd = new THREE.Mesh(geo, waterMatNd);
-    miniAgua.sceneRoot.add(elBurroMeshNd);
-  }
-
-  let pctBadgeEl, depthBadgeEl, especieBadgeEl;
-  const flowMarkers = [];
-  function initScenes() {
-    if (initialized) return;
-    initialized = true;
-
-    // badges de texto (HTML superpuesto, mas legible que texto en canvas 3D)
-    const layerAgua = document.getElementById("ndLayerAgua");
-    pctBadgeEl = document.createElement("div"); pctBadgeEl.className = "nd-arrow-pct"; pctBadgeEl.style.color = "#2ecf7a";
-    pctBadgeEl.style.left = "58%"; pctBadgeEl.style.top = "30%";
-    layerAgua.appendChild(pctBadgeEl);
-    depthBadgeEl = document.createElement("div"); depthBadgeEl.className = "nd-badge";
-    depthBadgeEl.style.left = "6%"; depthBadgeEl.style.top = "8%";
-    layerAgua.appendChild(depthBadgeEl);
-
-    const layerAves = document.getElementById("ndLayerAves");
-    especieBadgeEl = document.createElement("div"); especieBadgeEl.className = "nd-badge";
-    especieBadgeEl.style.left = "6%"; especieBadgeEl.style.top = "8%"; especieBadgeEl.style.maxWidth = "220px";
-    layerAves.appendChild(especieBadgeEl);
-
-    fetch("./assets/kennedy_net.json").then(r => r.json()).then(net => {
-      netCenterRef.x = (net.bbox[0] + net.bbox[2]) / 2;
-      netCenterRef.y = (net.bbox[1] + net.bbox[3]) / 2;
-      const w = (net.bbox[2] - net.bbox[0]) * SCALE, h = (net.bbox[3] - net.bbox[1]) * SCALE;
-      const target = toSceneNd(HUMEDAL_X, HUMEDAL_Y);
-      const viewSize = Math.max(w, h) * 0.09;
-      const camDist = Math.max(w, h) * 0.5;
-
-      miniAgua = setupMini("canvasNdAgua");
-      miniAgua.resizeMini(viewSize);
-      pointMiniCamera(miniAgua, { x: target.x, y: 0, z: target.z }, camDist, 40);
-      window.addEventListener("resize", () => miniAgua.resizeMini(viewSize));
-
-      miniAves = setupMini("canvasNdAves");
-      miniAves.resizeMini(viewSize);
-      pointMiniCamera(miniAves, { x: target.x, y: 0, z: target.z }, camDist, 40);
-      window.addEventListener("resize", () => miniAves.resizeMini(viewSize));
-
-      fetch("./assets/kennedy_water_bodies.json").then(r => r.json()).then(bodies => {
-        const burro = bodies.find(b => b.nombre === "Humedal El Burro");
-        const canal = bodies.find(b => b.nombre === "Canal Castilla");
-        elBurroPts = burro.pts;
-        elBurroCentro = { x: burro.pts.reduce((s, p) => s + p[0], 0) / burro.pts.length, y: burro.pts.reduce((s, p) => s + p[1], 0) / burro.pts.length };
-        canalPts = canal.pts;
-
-        waterMatNd = new THREE.MeshBasicMaterial({ color: 0x6f95a8, side: THREE.DoubleSide, transparent: true, opacity: 0.88 });
-        rebuildElBurroNd(HUMEDAL_CICLO[0].expansion_pct);
-
-        // Canal Castilla, como linea real (afluente principal documentado)
-        const canalScenePts = canalPts.map(p => toSceneNd(p[0], p[1]));
-        const canalGeoPos = [];
-        for (let i = 0; i < canalScenePts.length - 1; i++) canalGeoPos.push(canalScenePts[i].x, 0.02, canalScenePts[i].z, canalScenePts[i + 1].x, 0.02, canalScenePts[i + 1].z);
-        const canalGeo = new THREE.BufferGeometry();
-        canalGeo.setAttribute("position", new THREE.Float32BufferAttribute(canalGeoPos, 3));
-        miniAgua.sceneRoot.add(new THREE.LineSegments(canalGeo, new THREE.LineBasicMaterial({ color: 0x3d6fa0, transparent: true, opacity: 0.85 })));
-
-        // Marcadores de flujo animados, moviendose del canal hacia el humedal
-        const flowGeo = new THREE.ConeGeometry(1.1, 2.6, 5);
-        const flowMat = new THREE.MeshBasicMaterial({ color: 0x66c6ff });
-        for (let i = 0; i < 4; i++) {
-          const mesh = new THREE.Mesh(flowGeo, flowMat);
-          miniAgua.sceneRoot.add(mesh);
-          flowMarkers.push({ mesh, t: i / 4 });
-        }
-      });
-
-      // ---- Cobertura vegetal REAL (2014, shapefile Cober_vege_humedales
-      // del Jardin Botanico de Bogota, filtrado a Humedal El Burro: 305
-      // poligonos, 6 tipos de cobertura) ----
-      const COBERTURA_COLOR = {
-        "Arbustales": 0x4c7a3d, "Vegetación Herbácea": 0x8fae4a, "Areas Endurecidas": 0x9a9a9a,
-        "Espejo de Agua": 0x5f8fae, "Pastos": 0xb8c47a, "Vegetación Acuática": 0x2f9e6f,
-      };
-      const miniVeg = setupMini("canvasNdVeg");
-      const miniVegCiclo = setupMini("canvasNdVegCiclo");
-      const vegViewSize = viewSize * 1.15;
-      miniVeg.resizeMini(vegViewSize); miniVegCiclo.resizeMini(vegViewSize);
-      pointMiniCamera(miniVeg, { x: target.x, y: 0, z: target.z }, camDist, 40);
-      pointMiniCamera(miniVegCiclo, { x: target.x, y: 0, z: target.z }, camDist, 40);
-      window.addEventListener("resize", () => { miniVeg.resizeMini(vegViewSize); miniVegCiclo.resizeMini(vegViewSize); });
-
-      let vegAcuaticaMeshes = []; // {mesh, rawPts, centro} - las unicas que se animan en el ciclo estacional
-      fetch("./assets/burro_vegetacion.json").then(r => r.json()).then(poligonos => {
-        function buildPoly(p, sceneRootTarget, opacity) {
-          const pts = p.pts.map(pt => toSceneNd(pt[0], pt[1]));
-          if (pts.length < 3) return null;
-          const pts2d = pts.map(pt => new THREE.Vector2(pt.x, pt.z));
-          let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
-          const positions = [];
-          tris.forEach(([a, b, c]) => [a, b, c].forEach(idx => positions.push(pts[idx].x, 0.01, pts[idx].z)));
-          const geo = new THREE.BufferGeometry();
-          geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-          const mat = new THREE.MeshBasicMaterial({ color: COBERTURA_COLOR[p.cobertura] || 0x999999, transparent: true, opacity: opacity, side: THREE.DoubleSide });
-          const mesh = new THREE.Mesh(geo, mat);
-          sceneRootTarget.add(mesh);
-          return mesh;
-        }
-        // Capa 1: cobertura vegetal estatica (mapa real completo)
-        poligonos.forEach(p => buildPoly(p, miniVeg.sceneRoot, 0.92));
-
-        // Capa 2: ciclo estacional — las coberturas de suelo (arbustales,
-        // pastos, herbacea, areas endurecidas) quedan fijas de fondo; las
-        // acuaticas (espejo de agua + vegetacion acuatica) se vuelven a
-        // reconstruir cada mes, creciendo/encogiendo con el MISMO ciclo
-        // hidrico real que ya se calculo para el humedal.
-        poligonos.forEach(p => {
-          if (p.cobertura === "Espejo de Agua" || p.cobertura === "Vegetación Acuática") {
-            const cx = p.pts.reduce((s, pt) => s + pt[0], 0) / p.pts.length;
-            const cy = p.pts.reduce((s, pt) => s + pt[1], 0) / p.pts.length;
-            vegAcuaticaMeshes.push({ raw: p, centro: { x: cx, y: cy }, mesh: null });
-          } else {
-            buildPoly(p, miniVegCiclo.sceneRoot, 0.55); // fondo tenue, no cambia
-          }
-        });
-        rebuildVegCiclo(HUMEDAL_CICLO[0].expansion_pct);
-      });
-      function rebuildVegCiclo(expansionPct) {
-        const scale = 1 + expansionPct / 100 * 0.6;
-        vegAcuaticaMeshes.forEach(v => {
-          if (v.mesh) { miniVegCiclo.sceneRoot.remove(v.mesh); v.mesh.geometry.dispose(); }
-          const pts = v.raw.pts.map(pt => {
-            const ex = v.centro.x + (pt[0] - v.centro.x) * scale, ey = v.centro.y + (pt[1] - v.centro.y) * scale;
-            return toSceneNd(ex, ey);
-          });
-          const pts2d = pts.map(pt => new THREE.Vector2(pt.x, pt.z));
-          let tris; try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
-          const positions = [];
-          tris.forEach(([a, b, c]) => [a, b, c].forEach(idx => positions.push(pts[idx].x, 0.015, pts[idx].z)));
-          const geo = new THREE.BufferGeometry();
-          geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-          const mat = new THREE.MeshBasicMaterial({ color: COBERTURA_COLOR[v.raw.cobertura], transparent: true, opacity: 0.92, side: THREE.DoubleSide });
-          v.mesh = new THREE.Mesh(geo, mat);
-          miniVegCiclo.sceneRoot.add(v.mesh);
-        });
-      }
-      function animateVeg() {
-        requestAnimationFrame(animateVeg);
-        miniVeg.renderer.render(miniVeg.scene, miniVeg.camera);
-        miniVegCiclo.renderer.render(miniVegCiclo.scene, miniVegCiclo.camera);
-      }
-      requestAnimationFrame(animateVeg);
-
-      // Aves: 3 sprites volando hacia el humedal
-      const birdTex = makeBirdSprite();
-      const birdMat = new THREE.SpriteMaterial({ map: birdTex, transparent: true });
-      const birds = [];
-      for (let i = 0; i < 3; i++) {
-        const sprite = new THREE.Sprite(birdMat.clone());
-        sprite.scale.set(4, 4, 1);
-        miniAves.sceneRoot.add(sprite);
-        birds.push({ sprite, phase: i * 2.1, speed: 0.5 + i * 0.08 });
-      }
-
-      function animateAgua(now) {
-        requestAnimationFrame(animateAgua);
-        if (now - ndLastStep > 1600) {
-          ndLastStep = now;
-          const prevIdx = ndMonthIdx;
-          ndMonthIdx = (ndMonthIdx + 1) % 12;
-          const d = HUMEDAL_CICLO[ndMonthIdx];
-          const prev = HUMEDAL_CICLO[prevIdx];
-          rebuildElBurroNd(d.expansion_pct);
-          rebuildVegCiclo(d.expansion_pct);
-          const delta = d.expansion_pct - prev.expansion_pct;
-          pctBadgeEl.textContent = (delta >= 0 ? "▲ +" : "▼ ") + delta.toFixed(1) + "%";
-          pctBadgeEl.style.color = delta >= 0 ? "#2ecf7a" : "#e2635a";
-          depthBadgeEl.innerHTML = `<b>${d.nombre}</b><br>Espejo de agua: ${d.expansion_pct.toFixed(1)}%<br>Profundidad: ${d.profundidad_m.toFixed(2)} m`;
-          const esp = especieDelMes(d.mes);
-          especieBadgeEl.innerHTML = `<b>${esp.nombre}</b><br><i>${esp.cientifico}</i><br>${d.mes >= 10 || d.mes <= 4 ? "Temporada húmeda — aguas más profundas" : "Temporada seca — vegetación flotante"}`;
-        }
-        flowMarkers.forEach((f, i) => {
-          f.t += 0.0028;
-          if (f.t > 1) f.t -= 1;
-          const a = canalPts[canalPts.length - 1], b = [HUMEDAL_X, HUMEDAL_Y];
-          const rx = a[0] + (b[0] - a[0]) * f.t, ry = a[1] + (b[1] - a[1]) * f.t;
-          const p = toSceneNd(rx, ry);
-          f.mesh.position.set(p.x, 0.4, p.z);
-          const dx = b[0] - a[0], dz = -(b[1] - a[1]);
-          f.mesh.rotation.set(0, Math.atan2(dx, dz) * -1, 0);
-          f.mesh.rotation.x = Math.PI / 2;
-        });
-        miniAgua.renderer.render(miniAgua.scene, miniAgua.camera);
-      }
-      requestAnimationFrame(animateAgua);
-
-      function animateAves(now) {
-        requestAnimationFrame(animateAves);
-        const t = now * 0.00035;
-        const esp = especieDelMes(HUMEDAL_CICLO[ndMonthIdx].mes);
-        birds.forEach(b => {
-          const ang = t * b.speed + b.phase;
-          const r = viewSize * 0.55;
-          const x = target.x + Math.cos(ang) * r;
-          const z = target.z + Math.sin(ang * 1.2) * r * 0.6;
-          b.sprite.position.set(x, viewSize * 0.18 + Math.sin(ang * 3) * viewSize * 0.03, z);
-          b.sprite.material.color.set(esp.color);
-        });
-        miniAves.renderer.render(miniAves.scene, miniAves.camera);
-      }
-      requestAnimationFrame(animateAves);
-    });
-  }
-
-  const modal = document.getElementById("naturalDetailModal");
-  document.getElementById("naturalDetailBtn").addEventListener("click", () => {
-    modal.classList.add("open");
-    initScenes();
-  });
-  document.getElementById("naturalDetailClose").addEventListener("click", () => modal.classList.remove("open"));
-})();
-
