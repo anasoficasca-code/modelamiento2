@@ -158,25 +158,20 @@
   function buildAxoBorder(xMin, xMax, zMin, zMax) {
     if (axoBorderMesh) { sceneRoot.remove(axoBorderMesh); axoBorderMesh.geometry.dispose(); }
     const w = xMax - xMin, h = zMax - zMin;
-    const THICK = Math.max(w, h) * 0.012; // aun mas grueso, para que se vea claramente bold como en el referente
-    const Y = -0.399; // justo encima del suelo, evita z-fighting
+    const DEPTH = Math.max(w, h) * 0.018; // profundidad de la pared hacia abajo (no un grosor plano en el suelo) - esto es lo que le da apariencia de VOLUMEN, como el borde negro grueso del referente
+    const Y_TOP = 0; // nivel del suelo real
+    const Y_BOTTOM = -DEPTH;
     const corners = [
       [xMin, zMin], [xMax, zMin], [xMax, zMax], [xMin, zMax],
     ];
     const positions = [];
     for (let i = 0; i < 4; i++) {
       const a = corners[i], b = corners[(i + 1) % 4];
-      const dx = b[0] - a[0], dz = b[1] - a[1];
-      const len = Math.hypot(dx, dz) || 0.001;
-      const nx = -dz / len * THICK, nz = dx / len * THICK;
-      // Rectangulo un poco mas largo que el lado (se extiende THICK de
-      // mas en cada punta) para que las 4 esquinas queden bien cerradas,
-      // sin huecos en las uniones.
-      const ex = dx / len * THICK, ez = dz / len * THICK;
-      const a2 = [a[0] - ex, a[1] - ez], b2 = [b[0] + ex, b[1] + ez];
+      // Pared vertical entre cada par de esquinas: 2 triangulos, desde el
+      // nivel del suelo hasta DEPTH unidades hacia abajo.
       positions.push(
-        a2[0] - nx, Y, a2[1] - nz, a2[0] + nx, Y, a2[1] + nz, b2[0] + nx, Y, b2[1] + nz,
-        a2[0] - nx, Y, a2[1] - nz, b2[0] + nx, Y, b2[1] + nz, b2[0] - nx, Y, b2[1] - nz
+        a[0], Y_TOP, a[1], b[0], Y_TOP, b[1], b[0], Y_BOTTOM, b[1],
+        a[0], Y_TOP, a[1], b[0], Y_BOTTOM, b[1], a[0], Y_BOTTOM, a[1]
       );
     }
     const geo = new THREE.BufferGeometry();
@@ -412,7 +407,7 @@
     // real y no una silueta plana.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.2 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.1 });
     buildingEdgeMat = edgeMat;
     const edgeMesh = new THREE.LineSegments(edgeGeo, edgeMat);
     sceneRoot.add(edgeMesh);
