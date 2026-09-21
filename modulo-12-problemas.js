@@ -997,7 +997,14 @@
       ],
       rel:[],
     },
-    n3: { nodes:[ { id:"s3_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
+    n3: {
+      nodes:[
+        { id:"s3_1", t:"Entrada masiva de carga alimentaria regional en un solo predio", x:7174.8, y:2314.7 },
+        { id:"s3_2", t:"Represión de camiones en espera ante la diferencia entre horarios de llegada y venta", x:5728.0, y:2453.3 },
+        { id:"s3_3", t:"Saturación comercial intensiva en un grupo reducido de bodegas", x:6624.3, y:2158.8 },
+      ],
+      rel:[],
+    },
     n4: { nodes:[ { id:"s4_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
     n5: { nodes:[ { id:"s5_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
     n6: { nodes:[ { id:"s6_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
@@ -1109,7 +1116,7 @@
   // Por ahora SOLO se muestra la problematica rosada (N2, contaminacion
   // hidrica) - el usuario pidio explicitamente que no se muestren las
   // otras 6 todavia (siguen sin coordenadas reales definidas).
-  const VISIBLE_MACRO_IDS = ["n2"];
+  const VISIBLE_MACRO_IDS = ["n2", "n3"];
   const VISIBLE_MACRO = MACRO.filter(m => VISIBLE_MACRO_IDS.includes(m.id));
   VISIBLE_MACRO.forEach((m, i) => {
     const blob = makeBlob(MACRO_D, m.color);
