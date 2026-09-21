@@ -118,7 +118,7 @@
     const w = (bbox[2] - bbox[0]) * SCALE * 1.4;
     const h = (bbox[3] - bbox[1]) * SCALE * 1.4;
     const geo = new THREE.PlaneGeometry(w, h);
-    const mat = new THREE.MeshStandardMaterial({ color: 0xeceeef, roughness: 1, metalness: 0 });
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }); // blanco puro (antes gris claro), a pedido del usuario
     groundMesh = new THREE.Mesh(geo, mat);
     groundMesh.rotation.x = -Math.PI / 2;
     groundMesh.position.set(0, -0.4, 0);
@@ -820,6 +820,7 @@
     playing = !playing;
     playBtn.innerHTML = playing ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
     lastFrameAt = null;
+    document.getElementById("simExpand").style.display = "flex"; // se despliega el resto de la barra (deslizador, tiempo, velocidad) solo cuando se le da play, antes solo se ve el boton
   });
   slider.addEventListener("input", () => {
     currentTime = parseFloat(slider.value);

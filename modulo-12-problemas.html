@@ -200,33 +200,35 @@
     </div>
 
     <div class="rotate-panel" id="rotatePanel">
-      <div class="rotate-row">
-        <label>Sol — acimut <span id="sunAzVal">130°</span></label>
-        <input type="range" id="sunAz" min="0" max="360" value="130" step="1">
+      <div style="display:none;">
+        <div class="rotate-row">
+          <label>Sol — acimut <span id="sunAzVal">130°</span></label>
+          <input type="range" id="sunAz" min="0" max="360" value="130" step="1">
+        </div>
+        <div class="rotate-row">
+          <label>Sol — altura <span id="sunElVal">45°</span></label>
+          <input type="range" id="sunEl" min="5" max="85" value="45" step="1">
+        </div>
+        <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border); flex-direction:row; align-items:center; justify-content:space-between;">
+          <label style="display:inline;">Color del agua</label>
+          <input type="color" id="colorAgua" value="#97a5af">
+        </div>
+        <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
+          <label style="display:inline;">Color de las vías</label>
+          <input type="color" id="colorVia" value="#b7babd">
+        </div>
+        <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
+          <label style="display:inline;">Color de lo verde</label>
+          <input type="color" id="colorVerde" value="#adaa90">
+        </div>
+        <textarea id="colorOutput" rows="3" spellcheck="false" readonly></textarea>
       </div>
-      <div class="rotate-row">
-        <label>Sol — altura <span id="sunElVal">45°</span></label>
-        <input type="range" id="sunEl" min="5" max="85" value="45" step="1">
-      </div>
-      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border); flex-direction:row; align-items:center; justify-content:space-between;">
-        <label style="display:inline;">Color del agua</label>
-        <input type="color" id="colorAgua" value="#97a5af">
-      </div>
-      <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
-        <label style="display:inline;">Color de las vías</label>
-        <input type="color" id="colorVia" value="#b7babd">
-      </div>
-      <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
-        <label style="display:inline;">Color de lo verde</label>
-        <input type="color" id="colorVerde" value="#adaa90">
-      </div>
-      <textarea id="colorOutput" rows="3" spellcheck="false" readonly></textarea>
-      <div class="rotate-row rotate-buttons" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
+      <div class="rotate-row rotate-buttons">
         <button type="button" id="potBtn">📋 Kennedy según el POT</button>
       </div>
     </div>
 
-    <div class="legend">
+    <div class="legend" style="display:none;">
       <span><i style="background:#e2635a"></i> Vehículo</span>
       <span><i style="background:#b7babd"></i> Vía</span>
       <span><i style="background:#ffffff"></i> Edificio</span>
@@ -240,14 +242,16 @@
 
     <div class="controls-bar">
       <button type="button" id="playPause" aria-label="Reproducir / pausar"><i class="fa-solid fa-play"></i></button>
-      <input type="range" id="timeSlider" min="0" max="1000" value="0" step="1" disabled>
-      <span class="time-label" id="timeLabel">00:00 / 00:00</span>
-      <select id="speedSelect">
-        <option value="1">1×</option>
-        <option value="2" selected>2×</option>
-        <option value="4">4×</option>
-        <option value="8">8×</option>
-      </select>
+      <div id="simExpand" style="display:none; align-items:center; gap:10px;">
+        <input type="range" id="timeSlider" min="0" max="1000" value="0" step="1" disabled>
+        <span class="time-label" id="timeLabel">00:00 / 00:00</span>
+        <select id="speedSelect">
+          <option value="1">1×</option>
+          <option value="2" selected>2×</option>
+          <option value="4">4×</option>
+          <option value="8">8×</option>
+        </select>
+      </div>
     </div>
 
     <div class="status-overlay" id="statusOverlay">Cargando red vial…</div>
@@ -315,6 +319,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-12-problemas.js?v=17"></script>
+<script src="modulo-12-problemas.js?v=18"></script>
 </body>
 </html>
