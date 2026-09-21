@@ -985,7 +985,16 @@
   // vez segun las coordenadas que se vayan indicando; las que aun no
   // tienen coordenadas reales quedan con un solo nodo generico temporal.
   const SUBNETS = {
-    n1: { nodes:[ { id:"s1_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
+    n1: {
+      nodes:[
+        { id:"s1_1", t:"Infiltración de camiones pesados de escala regional en calles barriales de una sola calzada", x:6290.5, y:2559.6 },
+        { id:"s1_2", t:"Filas de camiones y congestión represada sobre las avenidas principales", x:5585.4, y:2475.9 },
+        { id:"s1_3", t:"Deterioro continuo de la capa de rodadura ante el tránsito de carga pesada", x:5544.1, y:2806.7 },
+        { id:"s1_4", t:"Conflicto y entrecruzamiento de flujos entre camiones, vehículos particulares, bicipatios y peatones", x:6014.7, y:2474.7 },
+        { id:"s1_5", t:"Ingreso vehicular en ángulo recto que obliga a frenar sobre la calzada arterial", x:6125.7, y:2429.2 },
+      ],
+      rel:[],
+    },
     n2: {
       nodes:[
         { id:"s2_1", t:"Vertimiento de lixiviados orgánicos al alcantarillado sin tratamiento", x:6669.5, y:2454.1 },
@@ -994,6 +1003,11 @@
         { id:"s2_4", t:"Vertimiento de grasas y agua de lavado de bodegas hacia canales superficiales", x:6490.3, y:2554.7 },
         { id:"s2_5", t:"Escorrentía de alimentos", x:7437.0, y:3271.2 },
         { id:"s2_6", t:"Vertimiento de lixiviados por residuos inorgánicos", x:8889.5, y:3352.4 },
+        { id:"s2_7", t:"Vertimiento de agua sucia y lixiviados al alcantarillado pluvial sin tratamiento", x:6173.2, y:2186.4 },
+        { id:"s2_8", t:"Arrastre de basuras desde la calle hacia los canales de agua en eventos de lluvia", x:5612.3, y:1774.2 },
+        { id:"s2_9", t:"Infiltración de agua contaminada en la franja del humedal", x:6017.9, y:1980.2 },
+        { id:"s2_10", t:"Barrera física del cerramiento privado sobre la franja de protección ambiental", x:6062.3, y:2148.5 },
+        { id:"s2_11", t:"Insuficiencia de redes sanitarias destinadas a la limpieza de bodegas", x:5777.0, y:2353.3 },
       ],
       rel:[],
     },
@@ -1002,12 +1016,44 @@
         { id:"s3_1", t:"Entrada masiva de carga alimentaria regional en un solo predio", x:7174.8, y:2314.7 },
         { id:"s3_2", t:"Represión de camiones en espera ante la diferencia entre horarios de llegada y venta", x:5728.0, y:2453.3 },
         { id:"s3_3", t:"Saturación comercial intensiva en un grupo reducido de bodegas", x:6624.3, y:2158.8 },
+        { id:"s3_4", t:"Llegada masiva y continua de carga alimentaria regional a un único punto urbano", x:5746.7, y:2361.8 },
+        { id:"s3_5", t:"Represión de camiones en vía pública durante la espera de apertura de bodegas", x:6389.0, y:2093.7 },
+        { id:"s3_6", t:"Mezcla física de comercialización mayorista con almacenamiento, empaque y preparación de alimentos", x:5808.7, y:2360.9 },
+        { id:"s3_7", t:"Saturación comercial intensiva en una franja reducida de bodegas", x:5856.2, y:2323.0 },
+        { id:"s3_8", t:"Aglomeración de compradores, carretas y vehículos en los accesos a los sectores de venta", x:5935.5, y:2398.8 },
       ],
       rel:[],
     },
-    n4: { nodes:[ { id:"s4_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
-    n5: { nodes:[ { id:"s5_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
-    n6: { nodes:[ { id:"s6_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
+    n4: {
+      nodes:[
+        { id:"s4_1", t:"Crecimiento de torres de apartamentos sobre infraestructuras con capacidad límite", x:6639.6, y:1846.2 },
+        { id:"s4_2", t:"Construcción de edificios que superan la altura permitida sobre vías estrechas", x:5010.9, y:2242.5 },
+        { id:"s4_3", t:"Fricción en la convivencia directa entre conjuntos residenciales y zonas de bodegaje", x:5697.7, y:2224.3 },
+        { id:"s4_4", t:"Coincidencia temporal entre los viajes de residentes y el transporte de carga", x:5708.8, y:1572.6 },
+        { id:"s4_5", t:"Ocupación de vías barriales con carros particulares ante estacionamientos agotados", x:5010.9, y:2242.5 },
+      ],
+      rel:[],
+    },
+    n5: {
+      nodes:[
+        { id:"s5_1", t:"Ocupación comercial de andenes estrechos con cajas, huacales y mercancía", x:6075.4, y:2459.3 },
+        { id:"s5_2", t:"Instalación de puestos informales de venta de alimentos sobre la calzada vehicular", x:6014.7, y:2452.0 },
+        { id:"s5_3", t:"Expulsión de peatones hacia la calle junto al tránsito de camiones pesados", x:6581.4, y:2438.1 },
+        { id:"s5_4", t:"Aglomeración peatonal sobre aceras fragmentadas e invadidas", x:6639.6, y:1846.2 },
+        { id:"s5_5", t:"Apropiación comercial de vías residenciales fuera del muro de cerramiento", x:4545.6, y:1963.7 },
+      ],
+      rel:[],
+    },
+    n6: {
+      nodes:[
+        { id:"s6_1", t:"Acumulación de basura orgánica superando la capacidad de los contenedores", x:6581.4, y:2438.1 },
+        { id:"s6_2", t:"Estacionamiento prolongado de camiones de gran tonelaje en calles residenciales", x:5544.1, y:2806.7 },
+        { id:"s6_3", t:"Derrame de lixiviados sobre el pavimento a la intemperie", x:5935.5, y:2376.1 },
+        { id:"s6_4", t:"Bloqueo de puntos de recolección de basura con vehículos parqueados", x:5777.0, y:2338.1 },
+        { id:"s6_5", t:"Generación de malos olores y focos sanitarios junto a las zonas de vivienda", x:6094.0, y:2186.4 },
+      ],
+      rel:[],
+    },
     n7: { nodes:[ { id:"s7_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
   };
   // Posicion real de cada causa: si ya trae x,y propios (coordenadas
@@ -1081,7 +1127,7 @@
     const d = document.createElement("div");
     d.className = "net-blob";
     d.style.width = d.style.height = diameter + "px";
-    d.style.background = hexToRgba(color, 0.45); // aun mas transparente, para que se vea bien el plano de abajo
+    d.style.background = color; // color solido, a pedido del usuario (antes transparente)
     netGooLayer.appendChild(d);
     return d;
   }
@@ -1116,7 +1162,7 @@
   // Por ahora SOLO se muestra la problematica rosada (N2, contaminacion
   // hidrica) - el usuario pidio explicitamente que no se muestren las
   // otras 6 todavia (siguen sin coordenadas reales definidas).
-  const VISIBLE_MACRO_IDS = ["n2", "n3"];
+  const VISIBLE_MACRO_IDS = ["n1", "n2", "n3", "n4", "n5", "n6"];
   const VISIBLE_MACRO = MACRO.filter(m => VISIBLE_MACRO_IDS.includes(m.id));
   VISIBLE_MACRO.forEach((m, i) => {
     const blob = makeBlob(MACRO_D, m.color);
