@@ -38,7 +38,7 @@
   // pura dentro de toScene() (ver abajo), sin tocar la altura de nada.
   scene.add(sceneRoot);
 
-  const camera = new THREE.PerspectiveCamera(35, 1, 1, 4000); // camara de PERSPECTIVA (no ortografica): permite que al hacer zoom el territorio se acerque/aleje de verdad (con paralaje real), a pedido del usuario - se pierde la axonometria "pura sin fuga", pero el zoom se siente natural
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true }); // preserveDrawingBuffer: permite capturar el canvas como foto para la animacion de explosion
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
@@ -68,7 +68,11 @@
   function resize() {
     const w = wrap.clientWidth, h = wrap.clientHeight;
     renderer.setSize(w, h, false);
-    camera.aspect = w / h; // camara de perspectiva: el encuadre se ajusta por relacion de aspecto + FOV, no por left/right/top/bottom
+    const aspect = w / h;
+    camera.left = -viewSize * aspect;
+    camera.right = viewSize * aspect;
+    camera.top = viewSize;
+    camera.bottom = -viewSize;
     camera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resize);
@@ -83,6 +87,11 @@
   // es literalmente la pagina entera escalada, no la camara moviendose.
   window.addEventListener("wheel", (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
   controls.enableDamping = true;
+  // Clic izquierdo (el que la gente prueba primero, sin pensarlo) ahora
+  // MUEVE la vista a otra parte del territorio (antes solo rotaba, y para
+  // moverse habia que usar clic derecho, poco intuitivo). Clic derecho
+  // pasa a rotar, por si se necesita.
+  controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
   controls.dampingFactor = 0.08;
   // Proyeccion paralela (axonometrica): se bloquea el angulo de la camara
   // en 35 grados fijo (55 grados de polarAngle, medido desde arriba), y
@@ -90,8 +99,8 @@
   // hacer zoom — no inclinar mas ni menos.
   controls.minPolarAngle = Math.PI * 55 / 180;
   controls.maxPolarAngle = Math.PI * 55 / 180;
-  controls.minDistance = 30; // distancia minima de la camara al objetivo (zoom maximo, en unidades de escena)
-  controls.maxDistance = 2000; // distancia maxima (zoom minimo)
+  controls.minZoom = 0.15;
+  controls.maxZoom = 30;
   controls.enableZoom = true; // el marco/rombo (el canvas HTML) NUNCA cambia de tamano en pantalla - el zoom solo cambia cuanto detalle del terreno se ve DENTRO de ese marco fijo, que es como funciona normalmente una camara ortografica
   controls.enablePan = true;
 
@@ -933,12 +942,10 @@
   // los controles) y 45 grados de acimut, proyeccion en paralelo (sin
   // fuga de perspectiva). ----
   function setAxonometricView(distance) {
-    // Camara de PERSPECTIVA: se recalculo la distancia (antes ~1068 unidades
-    // con zoom ortografico 2.272) a una distancia mas corta (~214 unidades)
-    // que da un encuadre inicial similar con el FOV de 35 grados, manteniendo
-    // el mismo objetivo y el mismo angulo/azimut que la vista original.
-    camera.position.set(96.92, 69.69, 39.42);
+    // Vista original que el usuario ya habia cuadrado y confirmado.
+    camera.position.set(-389.40, 559.68, 542.58);
     controls.target.set(218.76, -53.06, -86.62);
+    camera.zoom = 2.272;
     camera.updateProjectionMatrix();
   }
 
@@ -953,7 +960,8 @@
     const p = camera.position, t = controls.target;
     viewOutput.value =
       `camera.position.set(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)});\n` +
-      `controls.target.set(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)});`;
+      `controls.target.set(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)});\n` +
+      `camera.zoom = ${camera.zoom.toFixed(3)};`;
   }
   controls.addEventListener("change", updateViewOutput);
   document.getElementById("viewCopy").addEventListener("click", async () => {
