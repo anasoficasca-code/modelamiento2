@@ -1191,6 +1191,7 @@
   let wheelRebuildTimer = null;
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
+    e.stopImmediatePropagation(); // por si OrbitControls tiene su propio listener de wheel en el mismo canvas (aunque enableZoom=false), esto evita que tambien reaccione y compita con este codigo
     const factor = e.deltaY > 0 ? 1.06 : 1 / 1.06; // >0 = mas contexto (caja mas grande), <0 = menos contexto (acercarse)
     const cx = (parseFloat(secXMin.value) + parseFloat(secXMax.value)) / 2;
     const cz = (parseFloat(secZMin.value) + parseFloat(secZMax.value)) / 2;
@@ -1225,6 +1226,7 @@
     // recalcula de raiz cada vez, sin depender de un valor previo que
     // algo mas pueda estar sobrescribiendo.
     viewSize *= safeFactor;
+    camera.zoom = 2.272; // se fuerza siempre al mismo valor fijo, por si OrbitControls (aunque enableZoom=false) llegara a tocarlo por su cuenta - asi SOLO viewSize controla el encuadre, sin ninguna otra variable de por medio
     resize();
     updateSectionBox();
     clearTimeout(wheelRebuildTimer);
