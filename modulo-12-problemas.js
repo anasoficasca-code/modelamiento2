@@ -1374,6 +1374,24 @@
   POT_EDGES.forEach(([a, b]) => { potDegree[a] = (potDegree[a] || 0) + 1; potDegree[b] = (potDegree[b] || 0) + 1; });
 
   let potBuilt = false;
+  function wrapToFit(text, maxCharsPerLine, maxLines) {
+    const words = text.split(" ");
+    const lines = []; let current = "";
+    words.forEach(w => {
+      const candidate = current ? current + " " + w : w;
+      if (candidate.length > maxCharsPerLine && current) { lines.push(current); current = w; }
+      else current = candidate;
+    });
+    if (current) lines.push(current);
+    if (lines.length > maxLines) {
+      const shown = lines.slice(0, maxLines);
+      let last = shown[maxLines - 1];
+      while (last.length > 3 && (last + "…").length > maxCharsPerLine) last = last.slice(0, -1).trim();
+      shown[maxLines - 1] = last.replace(/[.,;:]+$/, "") + "…";
+      return shown.join("<br>");
+    }
+    return lines.join("<br>");
+  }
   function buildPotNetwork() {
     if (potBuilt) return;
     potBuilt = true;
@@ -1385,11 +1403,43 @@
     const SVGNS = "http://www.w3.org/2000/svg";
     function sc(v, total, size) { return (v / total) * size; }
     const W = 900, H = 590;
-    function toPx(x, y) { return { x: sc(x, W, rect.width), y: sc(y, H, rect.height) }; }
+    // Radios bastante mas grandes que antes (0-based en grado de
+    // conexion), para que el texto quepa adentro de cada burbuja.
+    const posPx = {};
+    const radiusPx = {};
+    POT_NODES.forEach(n => {
+      const p = { x: sc(n.x, W, rect.width), y: sc(n.y, H, rect.height) };
+      posPx[n.id] = p;
+      radiusPx[n.id] = 22 + (potDegree[n.id] || 0) * 4.2;
+    });
+    // Pasada de separacion: como los radios ahora son mucho mas grandes
+    // que cuando se ubicaron las posiciones a mano (copiadas del
+    // referente), muchas burbujas quedarian encimadas - se corren varias
+    // iteraciones de repulsion simple partiendo de esas mismas
+    // posiciones (para conservar la forma general del referente), para
+    // separarlas lo justo y aprovechar mejor el espacio disponible.
+    const ids = POT_NODES.map(n => n.id);
+    for (let pass = 0; pass < 200; pass++) {
+      for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+        const a = posPx[ids[i]], b = posPx[ids[j]];
+        const minDist = (radiusPx[ids[i]] + radiusPx[ids[j]]) * 1.08;
+        let dx = a.x - b.x, dy = a.y - b.y;
+        let dist = Math.hypot(dx, dy) || 0.001;
+        if (dist < minDist) {
+          if (dist < 0.01) { dx = (Math.random() - 0.5) * 2; dy = (Math.random() - 0.5) * 2; dist = Math.hypot(dx, dy); }
+          const overlap = (minDist - dist) / 2, ux = dx / dist, uy = dy / dist;
+          a.x += ux * overlap; a.y += uy * overlap; b.x -= ux * overlap; b.y -= uy * overlap;
+        }
+      }
+    }
+    ids.forEach(id => {
+      const r = radiusPx[id];
+      posPx[id].x = Math.max(r + 4, Math.min(rect.width - r - 4, posPx[id].x));
+      posPx[id].y = Math.max(r + 4, Math.min(rect.height - r - 4, posPx[id].y));
+    });
 
     POT_EDGES.forEach(([a, b]) => {
-      const na = potById[a], nb = potById[b];
-      const pa = toPx(na.x, na.y), pb = toPx(nb.x, nb.y);
+      const pa = posPx[a], pb = posPx[b];
       const line = document.createElementNS(SVGNS, "line");
       line.setAttribute("x1", pa.x); line.setAttribute("y1", pa.y);
       line.setAttribute("x2", pb.x); line.setAttribute("y2", pb.y);
@@ -1397,21 +1447,26 @@
       svg.appendChild(line);
     });
     POT_NODES.forEach(n => {
-      const p = toPx(n.x, n.y);
-      const r = 8 + (potDegree[n.id] || 0) * 2.2;
+      const p = posPx[n.id];
+      const r = radiusPx[n.id];
       const blob = document.createElement("div");
       blob.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; width:${r * 2}px; height:${r * 2}px; margin:-${r}px 0 0 -${r}px; border-radius:50%; background:${POT_CATS[n.cat].color}; cursor:pointer; pointer-events:auto; transition:transform .15s ease;`;
-      blob.addEventListener("mouseenter", () => { blob.style.transform = "scale(1.18)"; label.style.opacity = "1"; });
-      blob.addEventListener("mouseleave", () => { blob.style.transform = "scale(1)"; label.style.opacity = "0"; });
+      blob.addEventListener("mouseenter", () => { blob.style.transform = "scale(1.1)"; });
+      blob.addEventListener("mouseleave", () => { blob.style.transform = "scale(1)"; });
       blob.addEventListener("click", () => openPotInfo(n));
       gooLayer.appendChild(blob);
-      // El nombre completo NO se muestra siempre (con 49 nodos se ve muy
-      // saturado) - solo aparece al pasar el mouse por la burbuja, y el
-      // detalle completo (categoria + conexiones) se ve al hacer clic,
-      // en el panel lateral.
+      // El nombre (lo que quepa) ahora se muestra SIEMPRE dentro de la
+      // burbuja; el texto completo + categoria + conexiones se ve al
+      // hacer clic, en el panel lateral.
       const label = document.createElement("div");
-      label.textContent = n.t;
-      label.style.cssText = `position:absolute; left:${p.x}px; top:${p.y + r + 3}px; transform:translateX(-50%); max-width:150px; text-align:center; font-size:9.5px; font-weight:600; color:#e8ecf1; text-shadow:0 1px 3px rgba(0,0,0,.8); line-height:1.25; opacity:0; transition:opacity .15s ease;`;
+      const fontPx = 9.5, lineH = fontPx * 1.22;
+      let maxLines = Math.max(2, Math.floor((r * 2 * 0.82) / lineH));
+      let halfH = (maxLines * lineH) / 2;
+      while (halfH >= r * 0.86 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
+      const safeWidth = 2 * Math.sqrt(Math.max(0, r * r - halfH * halfH)) * 0.86;
+      const maxCharsPerLine = Math.max(5, Math.floor(safeWidth / (fontPx * 0.56)));
+      label.innerHTML = wrapToFit(n.t, maxCharsPerLine, maxLines);
+      label.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; transform:translate(-50%,-50%); width:${safeWidth}px; text-align:center; font-size:${fontPx}px; font-weight:600; color:#ffffff; text-shadow:0 1px 2px rgba(0,0,0,.55); line-height:${lineH}px; pointer-events:none;`;
       labelLayer.appendChild(label);
     });
     const legend = document.getElementById("potLegend");
