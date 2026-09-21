@@ -1178,6 +1178,37 @@
   });
   updateSectionBox();
 
+  // ---- "Zoom" real que pidio el usuario: en vez de escalar la camara
+  // (que solo agranda/achica la MISMA area, sin revelar mas ciudad), la
+  // rueda del mouse ahora agranda o achica la CAJA DE SECCION (el area
+  // real de la ciudad que se esta mostrando) - hacia arriba = menos
+  // contexto (acercarse a un area mas chica), hacia abajo = mas contexto
+  // (ver una porcion mas grande de la ciudad). El zoom de la camara se
+  // ajusta EN PROPORCION INVERSA al mismo tiempo, para que el rombo se
+  // vea SIEMPRE del mismo tamano en la pantalla, sin importar cuanta
+  // ciudad haya adentro. ----
+  controls.enableZoom = false;
+  let wheelRebuildTimer = null;
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 1.06 : 1 / 1.06; // >0 = mas contexto (caja mas grande), <0 = menos contexto (acercarse)
+    const cx = (parseFloat(secXMin.value) + parseFloat(secXMax.value)) / 2;
+    const cz = (parseFloat(secZMin.value) + parseFloat(secZMax.value)) / 2;
+    let halfX = (parseFloat(secXMax.value) - parseFloat(secXMin.value)) / 2 * factor;
+    let halfZ = (parseFloat(secZMax.value) - parseFloat(secZMin.value)) / 2 * factor;
+    halfX = Math.max(3, Math.min(50, halfX));
+    halfZ = Math.max(3, Math.min(50, halfZ));
+    secXMin.value = Math.max(0, cx - halfX).toFixed(1);
+    secXMax.value = Math.min(100, cx + halfX).toFixed(1);
+    secZMin.value = Math.max(0, cz - halfZ).toFixed(1);
+    secZMax.value = Math.min(100, cz + halfZ).toFixed(1);
+    camera.zoom = camera.zoom / factor; // compensa el cambio de tamano de la caja, para que el rombo se vea igual de grande en pantalla
+    camera.updateProjectionMatrix();
+    updateSectionBox();
+    clearTimeout(wheelRebuildTimer);
+    wheelRebuildTimer = setTimeout(rebuildFilteredGeometry, 150); // reconstruir edificios/vias solo cuando el usuario deja de mover la rueda un momento (reconstruir en cada evento seria muy pesado)
+  }, { passive: false });
+
   // Reorientar las tarjetas de los arboles hacia la camara cuando gira,
   // limitado en frecuencia para no recalcular 120 mil matrices por cuadro.
   let lastTreeBillboardUpdate = 0;
