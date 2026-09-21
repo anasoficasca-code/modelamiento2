@@ -191,6 +191,16 @@
   function toScene(x, y) {
     return { x: (x - netCenter.x) * SCALE, z: -(y - netCenter.y) * SCALE };
   }
+  function fromScene(sx, sz) {
+    return { x: sx / SCALE + netCenter.x, y: netCenter.y - sz / SCALE };
+  }
+  // Conversion local -> lat/lng (misma calibracion con Humedal La Vaca y
+  // Humedal El Burro ya usada en el proyecto), para poder copiar el
+  // poligono dibujado como coordenadas reales.
+  const CAL_A = 158502.5342667897, CAL_B = 11760483.425451731;
+  const CAL_C = 75875.89881636726, CAL_D = -349119.0227795534;
+  function localToLng(x) { return (x - CAL_B) / CAL_A; }
+  function localToLat(y) { return (y - CAL_D) / CAL_C; }
 
   // ---- Red vial: una sola geometria de lineas fusionada (19 mil tramos,
   // asi que se combina TODO en un unico BufferGeometry por rendimiento) ----
@@ -365,7 +375,8 @@
           a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
         );
         for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
-        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // solo el perimetro del techo (forma simplificada, menos lineas = menos "gris" acumulado)
+        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // perimetro del techo
+        edgePositions.push(a.x, 0, a.z, a.x, h, a.z); // esquina vertical (para que se lea el volumen, no solo una silueta plana - esto se habia perdido en una edicion anterior)
       }
 
       // Techo plano simple (sin parapeto sintetico): las mallas REALES de
@@ -1170,7 +1181,60 @@
   const explodeImgs = [document.getElementById("explodeImg1"), document.getElementById("explodeImg2"), document.getElementById("explodeImg3")];
   const explodeLayers = document.querySelectorAll("#explodeStack .explode-layer");
   const explodeHint = document.getElementById("explodeHint");
-  canvas.addEventListener("click", () => {
+
+  // ---- Herramienta de pluma: dibujar un poligono haciendo clic para ir
+  // agregando vertices sobre el terreno (raycasting contra el plano del
+  // suelo), mostrando en vivo las coordenadas (locales y lat/lng) de cada
+  // punto arriba a la izquierda. ----
+  let penActive = false;
+  const penPoints = []; // {x,y} en coordenadas RAW/locales
+  let penLine = null;
+  const penRaycaster = new THREE.Raycaster();
+  const penNdc = new THREE.Vector2();
+  const penCoordsOutput = document.getElementById("penCoordsOutput");
+  function screenToGround(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    penNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    penNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    penRaycaster.setFromCamera(penNdc, camera);
+    const dir = penRaycaster.ray.direction, origin = penRaycaster.ray.origin;
+    const t = (0 - origin.y) / dir.y; // interseccion con el plano Y=0 (nivel del suelo)
+    const hit = origin.clone().add(dir.clone().multiplyScalar(t));
+    return fromScene(hit.x, hit.z);
+  }
+  function updatePenLine() {
+    if (penLine) { sceneRoot.remove(penLine); penLine.geometry.dispose(); }
+    if (penPoints.length < 2) { penLine = null; return; }
+    const pos = [];
+    penPoints.forEach(p => { const s = toScene(p.x, p.y); pos.push(s.x, 0.15, s.z); });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    penLine = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xff2d55, linewidth: 2 }));
+    sceneRoot.add(penLine);
+  }
+  function updatePenOutput() {
+    if (penPoints.length === 0) { penCoordsOutput.style.display = "none"; return; }
+    penCoordsOutput.style.display = "block";
+    penCoordsOutput.value = penPoints.map((p, i) =>
+      `Punto ${i + 1}: lat ${localToLat(p.y).toFixed(6)}, lng ${localToLng(p.x).toFixed(6)}  (local x:${p.x.toFixed(1)} y:${p.y.toFixed(1)})`
+    ).join("\n");
+  }
+  document.getElementById("penToolBtn").addEventListener("click", () => {
+    penActive = !penActive;
+    const btn = document.getElementById("penToolBtn");
+    btn.textContent = penActive ? "✏️ Dibujando… (clic para terminar)" : "✏️ Dibujar polígono";
+    btn.style.background = penActive ? "rgba(255,45,85,.85)" : "rgba(10,12,14,.85)";
+    controls.enabled = !penActive; // mientras se dibuja, se desactiva rotar/zoom/mover la camara, para que el clic solo ponga puntos
+    if (!penActive) { penPoints.length = 0; if (penLine) { sceneRoot.remove(penLine); penLine.geometry.dispose(); penLine = null; } penCoordsOutput.style.display = "none"; }
+  });
+  canvas.addEventListener("click", (e) => {
+    if (penActive) {
+      const pt = screenToGround(e.clientX, e.clientY);
+      penPoints.push(pt);
+      updatePenLine();
+      updatePenOutput();
+      return; // mientras se dibuja el poligono, no se dispara la explosion
+    }
     const foto = renderer.domElement.toDataURL("image/png");
     explodeImgs.forEach(img => { img.src = foto; });
     explodeOverlay.style.display = "flex";

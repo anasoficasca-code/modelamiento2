@@ -162,6 +162,9 @@
       <p>Proyección axonométrica a 35° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista</p>
     </div>
 
+    <button type="button" id="penToolBtn" style="position:absolute; top:56px; left:18px; z-index:16; background:rgba(10,12,14,.85); color:#fff; font-size:11px; padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); cursor:pointer;">✏️ Dibujar polígono</button>
+    <textarea id="penCoordsOutput" style="display:none; position:absolute; top:90px; left:18px; z-index:16; width:320px; height:180px; font-size:10px; background:rgba(10,12,14,.92); color:#fff; border:1px solid rgba(255,255,255,.2); border-radius:6px; padding:8px;"></textarea>
+
     <div class="view-buttons">
       <button type="button" id="viewReset">Restablecer vista axonométrica</button>
     </div>
@@ -277,6 +280,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=61"></script>
+<script src="modulo-10-corte.js?v=62"></script>
 </body>
 </html>
