@@ -191,12 +191,12 @@
     </div>
 
     <div class="hud-title">
-      <h1>Problemáticas de Kennedy — Corabastos</h1>
-      <p>8 problemáticas ubicadas en su lugar real · clic en un círculo para ver su red de causas, localizada en el mismo mapa</p>
+      <h1>Problemáticas de Kennedy</h1>
     </div>
 
     <div class="view-buttons">
-      <button type="button" id="viewReset">Restablecer vista axonométrica</button>
+      <button type="button" id="viewReset" style="background:rgba(255,255,255,.06); color:#fff; font-size:10.5px; padding:6px 10px; opacity:.65;">Restablecer vista axonométrica</button>
+      <button type="button" id="potBtn" style="background:rgba(255,255,255,.06); color:#fff; font-size:10.5px; padding:6px 10px; opacity:.65;">Kennedy según el POT</button>
     </div>
 
     <div class="rotate-panel" id="rotatePanel">
@@ -223,9 +223,6 @@
         </div>
         <textarea id="colorOutput" rows="3" spellcheck="false" readonly></textarea>
       </div>
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="potBtn">📋 Kennedy según el POT</button>
-      </div>
     </div>
 
     <div class="legend" style="display:none;">
@@ -240,7 +237,7 @@
       <span><i style="background:#ffffff"></i> Techo plano/parapeto</span>
     </div>
 
-    <div class="controls-bar">
+    <div class="controls-bar" style="display:none;">
       <button type="button" id="playPause" aria-label="Reproducir / pausar"><i class="fa-solid fa-play"></i></button>
       <div id="simExpand" style="display:none; align-items:center; gap:10px;">
         <input type="range" id="timeSlider" min="0" max="1000" value="0" step="1" disabled>
@@ -319,6 +316,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-12-problemas.js?v=18"></script>
+<script src="modulo-12-problemas.js?v=19"></script>
 </body>
 </html>

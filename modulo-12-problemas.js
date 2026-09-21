@@ -702,7 +702,7 @@
   const dummy = new THREE.Object3D();
 
   let timesteps = [];
-  let playing = false;
+  let playing = true; // se reproduce automaticamente al cargar, ya no se necesita darle play
   let currentTime = 0;
   let speed = 2;
   let lastFrameAt = null;
@@ -968,103 +968,49 @@
   // punto de la problematica), conectada con lineas.
   // ============================================================
   const MACRO = [
-    { id:"m1", corto:"Desarticulación de gobernanza y regulación temporal", full:"Desarticulación de gobernanza y regulación temporal entre el Distrito y la administración de Corabastos", color:"#e2635a", x:6396.0, y:2168.0 },
-    { id:"m2", corto:"Saturación de residuos", full:"Saturación de la infraestructura física interna y plataformas de descarga de Corabastos", color:"#e8a33d", x:6440.0, y:2190.0 },
-    { id:"m3", corto:"Colapso de la red vial local en Kennedy", full:"Colapso de la red vial local en Kennedy", color:"#5b8ad6", x:6280.0, y:2050.0 },
-    { id:"m4", corto:"Acumulación y desborde de residuos orgánicos", full:"Acumulación y desborde de residuos orgánicos en el espacio público perimetral", color:"#4caf7d", x:6480.0, y:2220.0 },
-    { id:"m5", corto:"Incompatibilidad de usos del suelo", full:"Incompatibilidad de usos del suelo y proliferación no regulada de bodegas informales en barrios vecinos", color:"#9b7ede", x:6150.0, y:2280.0 },
-    { id:"m6", corto:"Informalidad laboral y segregación socio-espacial", full:"Informalidad laboral y segregación socio-espacial de recuperadores de oficio y coteros", color:"#45b8c4", x:6420.0, y:2120.0 },
-    { id:"m7", corto:"Eutrofización y contaminación de fuentes hídricas", full:"Eutrofización y contaminación de fuentes hídricas por vertimiento no tratado de lixiviados y aguas servidas", color:"#d669a8", x:6180.0, y:2050.0 },
-    { id:"m8", corto:"Deterioro de la Estructura Ecológica Principal", full:"Deterioro y fragmentación de la Estructura Ecológica Principal en el Humedal La Vaca", color:"#8fae4a", x:6018.0, y:1980.0 },
+    { id:"n1", corto:"Colapso de la red vial local y arterial", full:"Colapso de la red vial local y de los corredores arteriales", color:"#5b8ad6", x:6280.0, y:2050.0 },
+    { id:"n2", corto:"Contaminación de la red hídrica", full:"Contaminación y alteración biofísica de la red hídrica y cuerpos de agua", color:"#d669a8", x:6096.0, y:2297.4 },
+    { id:"n3", corto:"Concentración del mercado mayorista", full:"Concentración metropolitana del mercado mayorista de alimentos en la trama barrial", color:"#e2635a", x:6396.0, y:2168.0 },
+    { id:"n4", corto:"Sobrecarga por densificación en altura", full:"Sobrecarga infraestructural de la densificación residencial en altura", color:"#9b7ede", x:6150.0, y:2280.0 },
+    { id:"n5", corto:"Interferencia en el espacio público", full:"Interferencia de actividades logísticas en la red de espacio público barrial", color:"#4caf7d", x:6440.0, y:2190.0 },
+    { id:"n6", corto:"Acumulación de residuos y transporte pesado", full:"Acumulación de residuos y transporte pesado sobre la red ecológica", color:"#e8a33d", x:6480.0, y:2220.0 },
+    { id:"n7", corto:"Inoperancia del ordenamiento oficial", full:"Inoperancia del ordenamiento oficial ante los patrones reales del territorio", color:"#45b8c4", x:6420.0, y:2120.0 },
   ];
   const macroById = {}; MACRO.forEach(m => macroById[m.id] = m);
+  // Cada subred usa, cuando estan disponibles, las coordenadas REALES
+  // exactas de cada causa (convertidas de lat/lng a este sistema local
+  // mediante 2 puntos de calibracion ya georreferenciados en el
+  // proyecto: Humedal La Vaca y Humedal El Burro) - no un desplazamiento
+  // aproximado alrededor del macro-nodo. Se llenan una problematica a la
+  // vez segun las coordenadas que se vayan indicando; las que aun no
+  // tienen coordenadas reales quedan con un solo nodo generico temporal.
   const SUBNETS = {
-    m1: { nodes:[
-        { id:"s1_1", t:"Estructura accionaria mixta de Corabastos dividida entre sector público y comerciantes privados" },
-        { id:"s1_2", t:"Inexistencia de concertación horaria entre Secretaría de Movilidad y administración de la central" },
-        { id:"s1_3", t:"Incompatibilidad entre sanciones de espacio público del Distrito y reglamento interno de la central" },
-        { id:"s1_4", t:"Descalce entre las ventanas de comercialización de bodegas y los itinerarios nocturnos del transporte regional" },
-        { id:"s1_5", t:"Ausencia de control de flujo en los portones perimetrales de acceso" },
-        { id:"s1_6", t:"Desincronización de planes operativos entre la UAESP, operadores de aseo y Corabastos" },
-      ], rel:[ {from:"s1_1",to:"s1_2", pol:"+" },{from:"s1_2",to:"s1_4", pol:"+" },{from:"s1_1",to:"s1_3", pol:"+" },{from:"s1_3",to:"s1_5", pol:"+" },{from:"s1_2",to:"s1_6", pol:"+" },{from:"s1_6",to:"s1_2",loop:true, pol:"+" } ],
-      loopNote:"La descoordinación en calle refuerza la falta de acuerdos formales", loopType:"R" },
-    m2: { nodes:[
-        { id:"s2_1", t:"Recepción diaria concentrada de 11.500 toneladas de alimentos en 1.500 camiones pesados" },
-        { id:"s2_2", t:"Diseño geométrico de portones de acceso a 90 grados sin carriles de desaceleración" },
-        { id:"s2_3", t:"Capacidad limitada de estacionamiento en el sector El Martillo y bodegas internas" },
-        { id:"s2_4", t:"Invasión y bloqueo de las áreas de acopio interno por parqueo vehicular no regulado" },
-        { id:"s2_5", t:"Mezcla no zonificada de cargue y descargue en los mismos callejones de circulación interna" },
-        { id:"s2_6", t:"Inmovilización vehicular en las vías internas de la central" },
-      ], rel:[ {from:"s2_1",to:"s2_3", pol:"+" },{from:"s2_2",to:"s2_6", pol:"+" },{from:"s2_5",to:"s2_4", pol:"+" },{from:"s2_4",to:"s2_3", pol:"+" },{from:"s2_3",to:"s2_6", pol:"+" },{from:"s2_6",to:"s2_4",loop:true, pol:"+" } ],
-      loopNote:"El trancón interno atrapa camiones sobre las áreas de parqueo y acopio, anulando el espacio disponible", loopType:"R" },
-    m3: { nodes:[
-        { id:"s3_1", t:"Convergencia obligada de flujos intermunicipales de carga por Calle 13, Autopista Sur y Vía al Llano" },
-        { id:"s3_2", t:"Ausencia de plataformas logísticas de filtrado y puertos secos en los bordes de Bogotá" },
-        { id:"s3_3", t:"Atracción de camiones de carga pesada sobre los portones de la Cervecería Bavaria (Av. Boyacá / Av. Américas)" },
-        { id:"s3_4", t:"Predominio de vías perimetrales de una sola calzada en los barrios María Paz y Patio Bonito" },
-        { id:"s3_5", t:"Estacionamiento de camiones pesados sobre calzadas y andenes en espera de turno" },
-        { id:"s3_6", t:"Operaciones informales de cargue y descargue en vía pública" },
-        { id:"s3_7", t:"Invasión de calzadas por vehículos de tracción humana (VTH) y cargadores de oficio" },
-        { id:"s3_8", t:"Bloqueo físico de la circulación en la Av. Ciudad de Cali, Av. de las Américas y Av. Agoberto Mejía" },
-      ], rel:[ {from:"s3_2",to:"s3_1", pol:"+" },{from:"s3_1",to:"s3_5", pol:"+" },{from:"s3_3",to:"s3_8", pol:"+" },{from:"s3_4",to:"s3_8", pol:"+" },{from:"s3_5",to:"s3_6", pol:"+" },{from:"s3_6",to:"s3_7", pol:"+" },{from:"s3_7",to:"s3_8", pol:"+" },{from:"s3_8",to:"s3_5",loop:true, pol:"+" } ],
-      loopNote:"El colapso de las avenidas principales impide el paso hacia los portones, represando más camiones en las calles residenciales", loopType:"R" },
-    m4: { nodes:[
-        { id:"s4_1", t:"Concentración y descarte masivo de biomasa vegetal sin clasificación en origen" },
-        { id:"s4_2", t:"Saturación de la capacidad de contención en contenedores internos de Corabastos" },
-        { id:"s4_3", t:"Descarte masivo de chatarra, estibas y residuos de la industria metalmecánica y cervecera" },
-        { id:"s4_4", t:"Ausencia de plantas de compostaje o transformación de biomasa dentro del predio" },
-        { id:"s4_5", t:"Desborde y traslado de residuos orgánicos e inerte hacia los portones P7, P8 y P9" },
-        { id:"s4_6", t:"Desplazamiento de la selección manual («puchero») y descarte a la calzada vehicular de la Diagonal 38 Sur" },
-        { id:"s4_7", t:"Descalce entre los horarios de venta comercial y la frecuencia de recolección de la UAESP" },
-        { id:"s4_8", t:"Acumulación de residuos sólidos y biomasa en descomposición sobre la vía pública" },
-      ], rel:[ {from:"s4_1",to:"s4_2", pol:"+" },{from:"s4_2",to:"s4_5", pol:"+" },{from:"s4_3",to:"s4_8", pol:"+" },{from:"s4_4",to:"s4_6", pol:"+" },{from:"s4_5",to:"s4_6", pol:"+" },{from:"s4_7",to:"s4_8", pol:"+" },{from:"s4_6",to:"s4_8", pol:"+" },{from:"s4_8",to:"s4_2",loop:true, pol:"+" } ],
-      loopNote:"La basura acumulada en las aceras desborda los contenedores de los bordes, colapsando el sistema de retiro interno", loopType:"R" },
-    m5: { nodes:[
-        { id:"s5_1", t:"Presión comercial e industrial de Corabastos, Cervecería Bavaria y talleres sobre el entorno urbano" },
-        { id:"s5_2", t:"Inexistencia de franjas urbanas de amortiguación o mitigación de impactos entre la central y el barrio" },
-        { id:"s5_3", t:"Transformación de viviendas residenciales en bodegas informales de recolección, alimentos y chatarra" },
-        { id:"s5_4", t:"Proliferación de pequeños talleres metalmecánicos y de soldadura no regulados" },
-        { id:"s5_5", t:"Ocupación indebida de andenes por exhibición de mercancía, guacales y carretas" },
-        { id:"s5_6", t:"Deterioro del pavimento y sobrecarga de la infraestructura de servicios en María Paz" },
-      ], rel:[ {from:"s5_2",to:"s5_1", pol:"+" },{from:"s5_1",to:"s5_3", pol:"+" },{from:"s5_1",to:"s5_4", pol:"+" },{from:"s5_3",to:"s5_5", pol:"+" },{from:"s5_5",to:"s5_6", pol:"+" },{from:"s5_6",to:"s5_3",loop:true, pol:"+" } ],
-      loopNote:"El deterioro físico del barrio expulsa el uso residencial y abarata el suelo para el alquiler de más bodegas informales", loopType:"R" },
-    m6: { nodes:[
-        { id:"s6_1", t:"Contratación informal y trabajo a destajo operado por intermediarios" },
-        { id:"s6_2", t:"Ausencia de Estaciones de Clasificación y Aprovechamiento (ECA) e infraestructura pública limpia" },
-        { id:"s6_3", t:"Acarreo informal de reciclaje y carga en vehículos de tracción humana (VTH / carretas de madera)" },
-        { id:"s6_4", t:"Exposición a vectores y riesgos biológicos por manipulación no protegida de biomasa podrida" },
-        { id:"s6_5", t:"Estigmatización social y persecución administrativa a trabajadores informales" },
-      ], rel:[ {from:"s6_1",to:"s6_3", pol:"+" },{from:"s6_2",to:"s6_3", pol:"+" },{from:"s6_3",to:"s6_4", pol:"+" },{from:"s6_3",to:"s6_5", pol:"+" },{from:"s6_5",to:"s6_1",loop:true, pol:"+" } ],
-      loopNote:"La marginalización bloquea el acceso a esquemas de empleo formal, reduciendo las alternativas al pago por bulto a destajo", loopType:"R" },
-    m7: { nodes:[
-        { id:"s7_1", t:"Generación masiva de lixiviados ácidos por descomposición de biomasa vegetal acumulada" },
-        { id:"s7_2", t:"Vertimiento de aguas de lavado de bodegas, carnes y verduras con alta carga orgánica y grasa" },
-        { id:"s7_3", t:"Vertimiento de aceites de corte, refrigerantes y químicos de la industria metalmecánica y cervecera" },
-        { id:"s7_4", t:"Inexistencia de plantas de tratamiento de agua residual (PTAR) o trampas de grasa en Corabastos e industrias" },
-        { id:"s7_5", t:"Conexión errada de tuberías servidas al alcantarillado pluvial urbano" },
-        { id:"s7_6", t:"Escorrentía de lixiviados desde las calzadas de la Diagonal 38 Sur hacia los colectores del humedal" },
-        { id:"s7_7", t:"Anoxia, eutrofización y carga bacteriana en los canales y vaso de agua" },
-      ], rel:[ {from:"s7_1",to:"s7_6", pol:"+" },{from:"s7_2",to:"s7_5", pol:"+" },{from:"s7_3",to:"s7_5", pol:"+" },{from:"s7_4",to:"s7_5", pol:"+" },{from:"s7_5",to:"s7_7", pol:"+" },{from:"s7_6",to:"s7_7", pol:"+" },{from:"s7_7",to:"s7_6",loop:true, pol:"+" } ],
-      loopNote:"El colapso biológico del agua anula la capacidad natural de autodepuración del canal, estancando los nuevos lixiviados en los bordes superficiales", loopType:"R" },
-    m8: { nodes:[
-        { id:"s8_1", t:"Relleno e invasión histórica de la ronda hidráulica por desarrollo urbano informal" },
-        { id:"s8_2", t:"Cerramiento perimetral rígido de Corabastos funcionando como barrera biofísica" },
-        { id:"s8_3", t:"Disposición no controlada de escombros, llantas y residuos sólidos en la franja ambiental" },
-        { id:"s8_4", t:"Reducción del espejo de agua y pérdida de capacidad de amortiguación de inundaciones" },
-        { id:"s8_5", t:"Interrupción de la conectividad biológica entre el Humedal La Vaca y el Parque Cayetano Cañizares" },
-      ], rel:[ {from:"s8_1",to:"s8_4", pol:"+" },{from:"s8_2",to:"s8_5", pol:"+" },{from:"s8_3",to:"s8_4", pol:"+" },{from:"s8_4",to:"s8_5", pol:"+" },{from:"s8_5",to:"s8_3",loop:true, pol:"+" } ],
-      loopNote:"La desconexión ecosistémica desvaloriza la percepción social del humedal, convirtiendo sus bordes en puntos clandestinos de arrojo de escombros", loopType:"R" },
+    n1: { nodes:[ { id:"s1_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
+    n2: {
+      nodes:[
+        { id:"s2_1", t:"Vertimiento de lixiviados orgánicos al alcantarillado sin tratamiento", x:6669.5, y:2454.1 },
+        { id:"s2_2", t:"Escorrentía de residuos de alimentos", x:5817.3, y:2019.3 },
+        { id:"s2_3", t:"Eutrofización y tinción de aguas en la cuenca hídrica", x:5406.9, y:2161.5 },
+        { id:"s2_4", t:"Vertimiento de grasas y agua de lavado de bodegas hacia canales superficiales", x:6490.3, y:2554.7 },
+      ],
+      rel:[],
+    },
+    n3: { nodes:[ { id:"s3_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
+    n4: { nodes:[ { id:"s4_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
+    n5: { nodes:[ { id:"s5_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
+    n6: { nodes:[ { id:"s6_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
+    n7: { nodes:[ { id:"s7_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
   };
-  // Posicion real (aproximada) de cada causa: un pequeno desplazamiento
-  // alrededor de su problematica macro (misma logica que un mapa de
-  // "puntos calientes" localizados, no una nube abstracta) — como no hay
-  // coordenadas exactas para cada causa individual, se reparten en un
-  // circulo pequeno (unos 60-110m) alrededor del punto real de su
-  // problematica, que si es una ubicacion real (Corabastos, Humedal).
+  // Posicion real de cada causa: si ya trae x,y propios (coordenadas
+  // reales exactas, como en n2), se respetan tal cual. Solo las que
+  // todavia NO tienen coordenadas propias (los nodos temporales
+  // "Pendiente...") se colocan con un pequeno desplazamiento alrededor
+  // del macro-nodo, como marcador provisional.
   Object.keys(SUBNETS).forEach(mid => {
     const m = macroById[mid];
     const nodes = SUBNETS[mid].nodes;
     nodes.forEach((n, i) => {
+      if (n.x !== undefined && n.y !== undefined) return; // ya tiene coordenada real, no tocar
       const angle = (i / nodes.length) * Math.PI * 2;
       const r = 55 + (i % 3) * 18;
       n.x = m.x + Math.cos(angle) * r;
