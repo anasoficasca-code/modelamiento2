@@ -795,7 +795,7 @@
       buildRoads(data.edges);
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       const h = (data.bbox[3] - data.bbox[1]) * SCALE;
-      viewSize = Math.max(w, h) * 0.42; // ampliado bastante (antes 0.14): con los problemas reales dispersos por TODA Kennedy (Humedal El Burro, El Techo, Corabastos, etc.), la vista tenia que cubrir mucho mas terreno que antes, o quedaban puntos reales fuera del encuadre por defecto
+      viewSize = Math.max(w, h) * 0.14; // revertido al zoom original que el usuario ya habia cuadrado
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
@@ -989,7 +989,7 @@
     n2: {
       nodes:[
         { id:"s2_1", t:"Vertimiento de lixiviados orgánicos al alcantarillado sin tratamiento", x:6669.5, y:2454.1 },
-        { id:"s2_2", t:"Escorrentía de residuos de alimentos", x:5817.3, y:2019.3 },
+        { id:"s2_2", t:"Escorrentía de residuos de alimentos", x:5977.0, y:2010.0 },
         { id:"s2_3", t:"Eutrofización y tinción de aguas en la cuenca hídrica", x:5406.9, y:2161.5 },
         { id:"s2_4", t:"Vertimiento de grasas y agua de lavado de bodegas hacia canales superficiales", x:6490.3, y:2554.7 },
         { id:"s2_5", t:"Escorrentía de alimentos", x:7437.0, y:3271.2 },
@@ -1074,7 +1074,7 @@
     const d = document.createElement("div");
     d.className = "net-blob";
     d.style.width = d.style.height = diameter + "px";
-    d.style.background = hexToRgba(color, 0.62); // semitransparente, para que el plano de abajo se siga viendo
+    d.style.background = hexToRgba(color, 0.45); // aun mas transparente, para que se vea bien el plano de abajo
     netGooLayer.appendChild(d);
     return d;
   }
@@ -1104,9 +1104,14 @@
   arrowMarker.appendChild(arrowPath);
   arrowDefs.appendChild(arrowMarker);
 
-  const MACRO_D = 62; // diametro de las burbujas macro (px) - mas grandes
-  const SUB_D = 48; // diametro de las burbujas de causas (px) - mas grandes
-  MACRO.forEach((m, i) => {
+  const MACRO_D = 78; // diametro de las burbujas macro (px) - mas grandes aun, para que quepa mas texto
+  const SUB_D = 62; // diametro de las burbujas de causas (px) - mas grandes aun
+  // Por ahora SOLO se muestra la problematica rosada (N2, contaminacion
+  // hidrica) - el usuario pidio explicitamente que no se muestren las
+  // otras 6 todavia (siguen sin coordenadas reales definidas).
+  const VISIBLE_MACRO_IDS = ["n2"];
+  const VISIBLE_MACRO = MACRO.filter(m => VISIBLE_MACRO_IDS.includes(m.id));
+  VISIBLE_MACRO.forEach((m, i) => {
     const blob = makeBlob(MACRO_D, m.color);
     blob.addEventListener("click", (e) => { e.stopPropagation(); openMacroPanel(m.id); });
     const label = makeLabel(m.corto, MACRO_D);
@@ -1178,7 +1183,7 @@
     blob.style.opacity = visible ? "1" : "0";
   }
   function updateNetPositions() {
-    MACRO.forEach((m, i) => {
+    VISIBLE_MACRO.forEach((m, i) => {
       const p = projectPoint(m.x, m.y, 0.3);
       const els = macroEls[m.id];
       placeBlob(els.blob, p.x, p.y, p.visible);
@@ -1369,10 +1374,10 @@
     // posiciones (para conservar la forma general del referente), para
     // separarlas lo justo y aprovechar mejor el espacio disponible.
     const ids = POT_NODES.map(n => n.id);
-    for (let pass = 0; pass < 200; pass++) {
+    for (let pass = 0; pass < 400; pass++) {
       for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
         const a = posPx[ids[i]], b = posPx[ids[j]];
-        const minDist = (radiusPx[ids[i]] + radiusPx[ids[j]]) * 1.08;
+        const minDist = (radiusPx[ids[i]] + radiusPx[ids[j]]) * 1.35; // bastante mas separacion, para que ninguna burbuja se toque
         let dx = a.x - b.x, dy = a.y - b.y;
         let dist = Math.hypot(dx, dy) || 0.001;
         if (dist < minDist) {
