@@ -197,7 +197,7 @@
       <button type="button" id="potBtn" style="background:rgba(10,12,14,.75); color:#fff; font-size:10.5px; padding:6px 10px; border:1px solid rgba(255,255,255,.2);">Kennedy según el POT</button>
     </div>
 
-    <div class="rotate-panel" id="rotatePanel">
+    <div class="rotate-panel" id="rotatePanel" style="display:none;">
       <div style="display:none;">
         <div class="rotate-row">
           <label>Sol — acimut <span id="sunAzVal">130°</span></label>
@@ -272,11 +272,6 @@
     <svg id="netSvg"></svg>
     <div id="netLabelLayer"></div>
     <button type="button" id="netCloseSubBtn">✕ Cerrar causas internas</button>
-    <div id="cldLegend" style="display:none; position:absolute; bottom:70px; left:96px; z-index:15; font-size:11px; color:#0b0c0f; background:rgba(255,255,255,.94); border-radius:10px; padding:9px 12px; max-width:230px; line-height:1.5; box-shadow:0 4px 16px rgba(0,0,0,.25);">
-      <b>Notación del diagrama causal</b><br>
-      <b>+</b> junto a una flecha: si la causa aumenta, el efecto también aumenta<br>
-      <b>↻ R</b> sobre un ciclo cerrado: bucle reforzador (círculo vicioso)
-    </div>
     <aside id="netPanel">
       <button type="button" class="panel-close" id="netPanelClose">✕</button>
       <div id="netPanelBody"></div>
@@ -290,7 +285,7 @@
     <p style="font-size:11.5px; color:#9aa3ad; margin:0;">Red de instrumentos, tratamientos y elementos del Plan de Ordenamiento Territorial en Kennedy</p>
   </div>
   <button type="button" id="potModalClose" style="position:absolute; top:20px; right:26px; width:36px; height:36px; border-radius:50%; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.08); color:#fff; font-size:16px; cursor:pointer;">✕</button>
-  <div id="potStage" style="position:relative; width:92vw; height:78vh;">
+  <div id="potStage" style="position:relative; width:95vw; height:86vh;">
     <svg id="potGoo" width="0" height="0" style="position:absolute;">
       <defs>
         <filter id="potGooFilter">
@@ -314,6 +309,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-12-problemas.js?v=22"></script>
+<script src="modulo-12-problemas.js?v=23"></script>
 </body>
 </html>

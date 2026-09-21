@@ -1148,7 +1148,6 @@
     });
     allSubEls[m.id] = subEls;
   });
-  document.getElementById("cldLegend").style.display = "block";
 
   function openMacroPanel(id) {
     openMacroId = id;
@@ -1365,7 +1364,7 @@
     POT_NODES.forEach(n => {
       const p = { x: sc(n.x, W, rect.width), y: sc(n.y, H, rect.height) };
       posPx[n.id] = p;
-      radiusPx[n.id] = 22 + (potDegree[n.id] || 0) * 4.2;
+      radiusPx[n.id] = 32 + (potDegree[n.id] || 0) * 5.5; // burbujas bastante mas grandes
     });
     // Pasada de separacion: como los radios ahora son mucho mas grandes
     // que cuando se ubicaron las posiciones a mano (copiadas del
@@ -1377,7 +1376,7 @@
     for (let pass = 0; pass < 400; pass++) {
       for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
         const a = posPx[ids[i]], b = posPx[ids[j]];
-        const minDist = (radiusPx[ids[i]] + radiusPx[ids[j]]) * 1.35; // bastante mas separacion, para que ninguna burbuja se toque
+        const minDist = (radiusPx[ids[i]] + radiusPx[ids[j]]) * 1.55; // aun mas separacion, para asegurar que ninguna burbuja se toque
         let dx = a.x - b.x, dy = a.y - b.y;
         let dist = Math.hypot(dx, dy) || 0.001;
         if (dist < minDist) {
@@ -1395,9 +1394,18 @@
 
     POT_EDGES.forEach(([a, b]) => {
       const pa = posPx[a], pb = posPx[b];
+      const ra = radiusPx[a], rb = radiusPx[b];
+      const dx = pb.x - pa.x, dy = pb.y - pa.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const ux = dx / dist, uy = dy / dist;
+      // La linea arranca y termina justo en el borde de cada burbuja (no
+      // en su centro), para que no se vea entrando/atravesando el
+      // circulo - solo se ve la linea en el espacio VACIO entre ambas.
+      const startX = pa.x + ux * (ra + 2), startY = pa.y + uy * (ra + 2);
+      const endX = pb.x - ux * (rb + 2), endY = pb.y - uy * (rb + 2);
       const line = document.createElementNS(SVGNS, "line");
-      line.setAttribute("x1", pa.x); line.setAttribute("y1", pa.y);
-      line.setAttribute("x2", pb.x); line.setAttribute("y2", pb.y);
+      line.setAttribute("x1", startX); line.setAttribute("y1", startY);
+      line.setAttribute("x2", endX); line.setAttribute("y2", endY);
       line.setAttribute("stroke", "#c8ccd2"); line.setAttribute("stroke-width", "1.3"); line.setAttribute("stroke-opacity", "0.55");
       svg.appendChild(line);
     });
