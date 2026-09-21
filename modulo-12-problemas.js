@@ -1184,6 +1184,25 @@
   const CAL_C = 75875.89881636726, CAL_D = -349119.0227795534;
   function localToLng(x) { return (x - CAL_B) / CAL_A; }
   function localToLat(y) { return (y - CAL_D) / CAL_C; }
+
+  // Boton para copiar de UNA vez las coordenadas ACTUALES (ya movidas o
+  // no) de TODAS las bolitas de TODAS las problematicas visibles, para
+  // mandar un solo mensaje en vez de una bola a la vez.
+  document.getElementById("copyAllCoordsBtn").addEventListener("click", async () => {
+    let out = "";
+    VISIBLE_MACRO.forEach(m => {
+      out += `\n=== ${m.corto} ===\n`;
+      SUBNETS[m.id].nodes.forEach(n => {
+        out += `${n.t}\n  lat: ${localToLat(n.y).toFixed(6)}, lng: ${localToLng(n.x).toFixed(6)}  (local x:${n.x.toFixed(1)} y:${n.y.toFixed(1)})\n`;
+      });
+    });
+    out = out.trim();
+    const box = document.getElementById("allCoordsOutput");
+    box.value = out;
+    box.style.display = "block";
+    try { await navigator.clipboard.writeText(out); } catch (err) {}
+    box.select();
+  });
   let draggingNode = null; // { data, worldY }
   function startDrag(nodeData, worldY, e) {
     e.stopPropagation();
@@ -1219,8 +1238,8 @@
   arrowMarker.appendChild(arrowPath);
   arrowDefs.appendChild(arrowMarker);
 
-  const MACRO_D = 104; // un poco mas grande aun, para que quepa todo el texto completo
-  const SUB_D = 88; // un poco mas grande aun, para que quepa todo el texto completo
+  const MACRO_D = 60; // mas chicas, a pedido del usuario
+  const SUB_D = 48; // mas chicas, a pedido del usuario
   // Por ahora SOLO se muestra la problematica rosada (N2, contaminacion
   // hidrica) - el usuario pidio explicitamente que no se muestren las
   // otras 6 todavia (siguen sin coordenadas reales definidas).

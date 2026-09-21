@@ -191,7 +191,9 @@
     <div class="hud-title">
       <h1>Problemáticas de Kennedy</h1>
     </div>
-    <div id="dragCoordBox" style="display:none; position:absolute; top:56px; left:18px; z-index:16; background:rgba(10,12,14,.85); color:#fff; font-size:12px; padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); pointer-events:none;"></div>
+    <div id="dragCoordBox" style="display:none; position:absolute; top:90px; left:18px; z-index:17; background:rgba(10,12,14,.85); color:#fff; font-size:12px; padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); pointer-events:none;"></div>
+    <button type="button" id="copyAllCoordsBtn" style="position:absolute; top:56px; left:18px; z-index:16; background:rgba(10,12,14,.85); color:#fff; font-size:11px; padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); cursor:pointer;">📋 Copiar todas las coordenadas</button>
+    <textarea id="allCoordsOutput" style="display:none; position:absolute; top:124px; left:18px; z-index:16; width:340px; height:200px; font-size:10px; background:rgba(10,12,14,.92); color:#fff; border:1px solid rgba(255,255,255,.2); border-radius:6px; padding:8px;"></textarea>
 
     <div class="view-buttons">
       <button type="button" id="viewReset" style="background:rgba(10,12,14,.75); color:#fff; font-size:10.5px; padding:6px 10px; border:1px solid rgba(255,255,255,.2);">Restablecer vista axonométrica</button>
@@ -310,6 +312,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-12-problemas.js?v=28"></script>
+<script src="modulo-12-problemas.js?v=29"></script>
 </body>
 </html>
