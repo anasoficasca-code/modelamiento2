@@ -1173,6 +1173,13 @@
     return fromScene(hit.x, hit.z);
   }
   const dragCoordBox = document.getElementById("dragCoordBox");
+  // Conversion inversa local -> lat/lng (misma calibracion con Humedal La
+  // Vaca y Humedal El Burro usada para ubicar los nodos reales), para que
+  // la caja de coordenadas muestre tambien lat/lng listas para copiar.
+  const CAL_A = 158502.5342667897, CAL_B = 11760483.425451731;
+  const CAL_C = 75875.89881636726, CAL_D = -349119.0227795534;
+  function localToLng(x) { return (x - CAL_B) / CAL_A; }
+  function localToLat(y) { return (y - CAL_D) / CAL_C; }
   let draggingNode = null; // { data, worldY }
   function startDrag(nodeData, worldY, e) {
     e.stopPropagation();
@@ -1186,7 +1193,7 @@
     draggingNode.data.x = real.x;
     draggingNode.data.y = real.y;
     dragCoordBox.style.display = "block";
-    dragCoordBox.textContent = `x: ${real.x.toFixed(1)}, y: ${real.y.toFixed(1)}`;
+    dragCoordBox.textContent = `local x:${real.x.toFixed(1)} y:${real.y.toFixed(1)} · lat:${localToLat(real.y).toFixed(6)}, lng:${localToLng(real.x).toFixed(6)}`;
     updateNetPositions();
   });
   window.addEventListener("pointerup", () => {
@@ -1208,8 +1215,8 @@
   arrowMarker.appendChild(arrowPath);
   arrowDefs.appendChild(arrowMarker);
 
-  const MACRO_D = 92; // un poco mas grande, para que quepa el texto completo
-  const SUB_D = 76; // un poco mas grande, para que quepa el texto completo
+  const MACRO_D = 104; // un poco mas grande aun, para que quepa todo el texto completo
+  const SUB_D = 88; // un poco mas grande aun, para que quepa todo el texto completo
   // Por ahora SOLO se muestra la problematica rosada (N2, contaminacion
   // hidrica) - el usuario pidio explicitamente que no se muestren las
   // otras 6 todavia (siguen sin coordenadas reales definidas).
