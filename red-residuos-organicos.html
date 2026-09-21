@@ -538,15 +538,15 @@
       const ux = dx / dist, uy = dy / dist;
       const startX = a.x + ux * (rFrom + 4), startY = a.y + uy * (rFrom + 4);
       const endX = b.x - ux * (rTo + 4), endY = b.y - uy * (rTo + 4);
-      const arrowColorRaw = colorTo.startsWith("#") ? colorTo : getComputedStyle(document.documentElement).getPropertyValue("--node").trim();
+      const arrowColorRaw = "#e8ecf1"; // blanco/claro fijo, a pedido del usuario: se vea la direccion claramente sin importar el color de los nodos
       const markerKey = ensureArrowMarker(arrowColorRaw);
       const line = document.createElementNS(SVGNS, "line");
       line.setAttribute("class", "arrow-line");
       line.setAttribute("x1", startX); line.setAttribute("y1", startY);
       line.setAttribute("x2", endX); line.setAttribute("y2", endY);
       line.setAttribute("stroke", arrowColorRaw);
-      line.setAttribute("stroke-width", "2.4");
-      line.setAttribute("stroke-opacity", "0.85");
+      line.setAttribute("stroke-width", "2.8");
+      line.setAttribute("stroke-opacity", "0.9");
       line.setAttribute("marker-end", `url(#arrow-${markerKey})`);
       arrowsSvg.appendChild(line); arrowEls.push(line);
 
