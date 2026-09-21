@@ -1167,7 +1167,7 @@
     rebuildFilteredGeometry();
   });
   document.getElementById("sectionBoxReset").addEventListener("click", () => {
-    secXMin.value = 58; secXMax.value = 67; secYMin.value = 0; secYMax.value = 100; secZMin.value = 39; secZMax.value = 54;
+    secXMin.value = 0; secXMax.value = 100; secYMin.value = 0; secYMax.value = 100; secZMin.value = 0; secZMax.value = 100;
     updateSectionBox();
     rebuildFilteredGeometry();
   });
