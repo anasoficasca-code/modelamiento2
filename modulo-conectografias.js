@@ -421,7 +421,7 @@
     // real y no una silueta plana.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.35 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x9a9a9a, transparent: true, opacity: 0.55 }); // gris medio uniforme, no muy oscuro
     buildingEdgeMat = edgeMat;
     const edgeMesh = new THREE.LineSegments(edgeGeo, edgeMat);
     sceneRoot.add(edgeMesh);
@@ -1217,8 +1217,15 @@
     secXMax.value = (cx + halfX).toFixed(1);
     secZMin.value = (cz - halfZ).toFixed(1);
     secZMax.value = (cz + halfZ).toFixed(1);
-    camera.zoom = camera.zoom / safeFactor; // compensa el cambio real de tamano de la caja (el factor SEGURO aplicado, no el pedido), para que el rombo se vea igual de grande en pantalla
-    camera.updateProjectionMatrix();
+    // Se ajusta viewSize (el tamano base del encuadre, el mismo que usa
+    // resize()) en vez de camera.zoom directamente - camera.zoom puede
+    // chocar con el manejo interno de OrbitControls (aunque este
+    // desactivado, algunas versiones lo tocan igual en cada update()).
+    // Cambiando viewSize + llamando resize() de nuevo, el encuadre se
+    // recalcula de raiz cada vez, sin depender de un valor previo que
+    // algo mas pueda estar sobrescribiendo.
+    viewSize *= safeFactor;
+    resize();
     updateSectionBox();
     clearTimeout(wheelRebuildTimer);
     wheelRebuildTimer = setTimeout(rebuildFilteredGeometry, 150); // reconstruir edificios/vias solo cuando el usuario deja de mover la rueda un momento (reconstruir en cada evento seria muy pesado)
