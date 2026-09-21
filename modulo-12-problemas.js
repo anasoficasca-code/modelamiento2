@@ -1060,37 +1060,33 @@
 
   let openMacroId = null;
   const macroEls = {}; // id -> {blob, num, label}
-  let subEls = null; // {blobs:{}, lines:[], labels:{}}
+  const allSubEls = {}; // id -> {blobs:{}, lines:[], labels:{}} - TODAS las subredes, siempre visibles
+
+  // Flecha para las lineas causa->causa (direccion del diagrama causal) -
+  // se define ANTES de crear las lineas que la usan.
+  const arrowDefs = svgEl("defs", {});
+  netSvg.appendChild(arrowDefs);
+  const arrowMarker = svgEl("marker", { id: "netArrow", viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto-start-reverse" });
+  const arrowPath = svgEl("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: "#e2635a" });
+  arrowMarker.appendChild(arrowPath);
+  arrowDefs.appendChild(arrowMarker);
 
   const MACRO_D = 46; // diametro de las burbujas macro (px)
+  const SUB_D = 30; // diametro de las burbujas de causas (px)
   MACRO.forEach((m, i) => {
     const blob = makeBlob(MACRO_D, m.color);
-    blob.addEventListener("click", (e) => { e.stopPropagation(); toggleMacro(m.id); });
+    blob.addEventListener("click", (e) => { e.stopPropagation(); openMacroPanel(m.id); });
     const num = svgEl("text", { class: "macro-num" });
     num.textContent = i + 1;
     netSvg.appendChild(num);
     const label = makeLabel(m.corto);
     macroEls[m.id] = { blob, num, label };
-  });
 
-  function clearSubNetwork() {
-    if (!subEls) return;
-    Object.values(subEls.blobs).forEach(c => c.remove());
-    subEls.lines.forEach(l => l.el.remove());
-    Object.values(subEls.labels).forEach(l => l.remove());
-    subEls = null;
-  }
-
-  function toggleMacro(id) {
-    if (openMacroId === id) { closeSub(); return; }
-    clearSubNetwork();
-    openMacroId = id;
-    netCloseSubBtn.classList.add("show");
-    const sub = SUBNETS[id];
-    const m = macroById[id];
-    subEls = { blobs: {}, lines: [], labels: {} };
-    const SUB_D = 30; // diametro de las burbujas de causas (px)
-    // Lineas: del macro a cada causa, y entre causas segun su relacion
+    // Se crean TODAS las burbujas y lineas de causas de una vez (no solo
+    // al hacer clic) - todos los nodos quedan siempre visibles sobre el
+    // mapa, sin necesidad de desplegar nada.
+    const sub = SUBNETS[m.id];
+    const subEls = { blobs: {}, lines: [], labels: {} };
     sub.nodes.forEach(n => {
       const line = svgEl("line", { class: "net-line", stroke: m.color, "stroke-width": 1.6, "stroke-opacity": 0.55 });
       netSvg.insertBefore(line, netSvg.firstChild);
@@ -1101,14 +1097,10 @@
       const line = svgEl("line", { class: "net-line", stroke: m.color, "stroke-width": 2.2, "stroke-opacity": 0.85, "marker-end": "url(#netArrow)" });
       netSvg.insertBefore(line, netSvg.firstChild);
       subEls.lines.push({ el: line, from: a, to: b });
-      // Signo de polaridad (+/-), obligatorio en un diagrama causal
-      // correcto: indica si al aumentar la causa aumenta (+) o disminuye
-      // (-) el efecto.
       const polText = svgEl("text", { class: "net-pol", "text-anchor": "middle", "dominant-baseline": "central", "font-size": 14, "font-weight": 800, fill: "#fff", stroke: "#0b0c0f", "stroke-width": 3, "paint-order": "stroke" });
       polText.textContent = r.pol || "+";
       netSvg.appendChild(polText);
       subEls.lines.push({ el: polText, from: a, to: b, isPol: true });
-      // Etiqueta de bucle (R/B) sobre el enlace que cierra el ciclo
       if (r.loop) {
         const badge = svgEl("text", { class: "net-loopbadge", "text-anchor": "middle", "font-size": 12, "font-weight": 800, fill: m.color, stroke: "#0b0c0f", "stroke-width": 3.2, "paint-order": "stroke" });
         badge.textContent = "↻ " + (sub.loopType || "R");
@@ -1118,33 +1110,16 @@
     });
     sub.nodes.forEach(n => {
       const blob = makeBlob(SUB_D, m.color);
-      blob.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(id, n.id); });
+      blob.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(m.id, n.id); });
       subEls.blobs[n.id] = blob;
       subEls.labels[n.id] = makeLabel(n.t.length > 46 ? n.t.slice(0, 44) + "…" : n.t);
     });
-    updateNetPositions();
-    openMacroPanel(id);
-    document.getElementById("cldLegend").style.display = "block";
-  }
-  function closeSub() {
-    clearSubNetwork();
-    openMacroId = null;
-    netCloseSubBtn.classList.remove("show");
-    netPanel.classList.remove("open");
-    document.getElementById("cldLegend").style.display = "none";
-  }
-  netCloseSubBtn.addEventListener("click", closeSub);
-  document.getElementById("netPanelClose").addEventListener("click", () => netPanel.classList.remove("open"));
-
-  // Flecha para las lineas causa->causa (direccion del diagrama causal)
-  const arrowDefs = svgEl("defs", {});
-  netSvg.appendChild(arrowDefs);
-  const arrowMarker = svgEl("marker", { id: "netArrow", viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto-start-reverse" });
-  const arrowPath = svgEl("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: "#e2635a" });
-  arrowMarker.appendChild(arrowPath);
-  arrowDefs.appendChild(arrowMarker);
+    allSubEls[m.id] = subEls;
+  });
+  document.getElementById("cldLegend").style.display = "block";
 
   function openMacroPanel(id) {
+    openMacroId = id;
     const m = macroById[id];
     netPanelBody.innerHTML = `
       <p class="panel-kind">Problemática</p>
@@ -1186,8 +1161,11 @@
       els.num.setAttribute("opacity", visible);
       els.label.style.opacity = visible;
     });
-    if (subEls) {
-      const sub = SUBNETS[openMacroId];
+    // Se actualizan TODAS las subredes (de todos los macro-nodos), no
+    // solo una "abierta" - ahora todo queda siempre visible sobre el mapa.
+    Object.keys(allSubEls).forEach(mid => {
+      const subEls = allSubEls[mid];
+      const sub = SUBNETS[mid];
       sub.nodes.forEach(n => {
         const p = projectPoint(n.x, n.y, 0.25);
         placeBlob(subEls.blobs[n.id], p.x, p.y, p.visible);
@@ -1208,7 +1186,7 @@
           l.el.setAttribute("x2", pb.x); l.el.setAttribute("y2", pb.y);
         }
       });
-    }
+    });
   }
   let lastNetUpdate = 0;
   controls.addEventListener("change", () => {
