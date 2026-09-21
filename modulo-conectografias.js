@@ -89,7 +89,7 @@
   controls.maxPolarAngle = Math.PI * 55 / 180;
   controls.minZoom = 0.15;
   controls.maxZoom = 30;
-  controls.enableZoom = false; // desactivado por ahora, a pedido del usuario: el rombo queda fijo (tamano constante), solo se permite mover/rotar la vista
+  controls.enableZoom = true; // el marco/rombo (el canvas HTML) NUNCA cambia de tamano en pantalla - el zoom solo cambia cuanto detalle del terreno se ve DENTRO de ese marco fijo, que es como funciona normalmente una camara ortografica
   controls.enablePan = true;
 
   // ---- Luces (con sombras, tipo render arquitectonico) ----
