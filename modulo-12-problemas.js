@@ -795,7 +795,7 @@
       buildRoads(data.edges);
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       const h = (data.bbox[3] - data.bbox[1]) * SCALE;
-      viewSize = Math.max(w, h) * 0.14;
+      viewSize = Math.max(w, h) * 0.42; // ampliado bastante (antes 0.14): con los problemas reales dispersos por TODA Kennedy (Humedal El Burro, El Techo, Corabastos, etc.), la vista tenia que cubrir mucho mas terreno que antes, o quedaban puntos reales fuera del encuadre por defecto
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
@@ -992,6 +992,8 @@
         { id:"s2_2", t:"Escorrentía de residuos de alimentos", x:5817.3, y:2019.3 },
         { id:"s2_3", t:"Eutrofización y tinción de aguas en la cuenca hídrica", x:5406.9, y:2161.5 },
         { id:"s2_4", t:"Vertimiento de grasas y agua de lavado de bodegas hacia canales superficiales", x:6490.3, y:2554.7 },
+        { id:"s2_5", t:"Escorrentía de alimentos", x:7437.0, y:3271.2 },
+        { id:"s2_6", t:"Vertimiento de lixiviados por residuos inorgánicos", x:8889.5, y:3352.4 },
       ],
       rel:[],
     },
@@ -1030,10 +1032,41 @@
     for (const k in attrs) e.setAttribute(k, attrs[k]);
     return e;
   }
-  function makeLabel(text) {
+  function hexToRgba(hex, alpha) {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.substring(0, 2), 16), g = parseInt(h.substring(2, 4), 16), b = parseInt(h.substring(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+  function wrapToFit(text, maxCharsPerLine, maxLines) {
+    const words = text.split(" ");
+    const lines = []; let current = "";
+    words.forEach(w => {
+      const candidate = current ? current + " " + w : w;
+      if (candidate.length > maxCharsPerLine && current) { lines.push(current); current = w; }
+      else current = candidate;
+    });
+    if (current) lines.push(current);
+    if (lines.length > maxLines) {
+      const shown = lines.slice(0, maxLines);
+      let last = shown[maxLines - 1];
+      while (last.length > 3 && (last + "…").length > maxCharsPerLine) last = last.slice(0, -1).trim();
+      shown[maxLines - 1] = last.replace(/[.,;:]+$/, "") + "…";
+      return shown.join("<br>");
+    }
+    return lines.join("<br>");
+  }
+  function makeLabel(text, diameter) {
     const d = document.createElement("div");
     d.className = "net-label";
-    d.textContent = text;
+    const fontPx = 11, lineH = fontPx * 1.22;
+    const rr = diameter / 2;
+    let maxLines = Math.max(2, Math.floor((diameter * 0.82) / lineH));
+    let halfH = (maxLines * lineH) / 2;
+    while (halfH >= rr * 0.86 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
+    const safeWidth = 2 * Math.sqrt(Math.max(0, rr * rr - halfH * halfH)) * 0.86;
+    const maxCharsPerLine = Math.max(5, Math.floor(safeWidth / (fontPx * 0.56)));
+    d.style.width = safeWidth + "px";
+    d.innerHTML = wrapToFit(text, maxCharsPerLine, maxLines);
     netLabelLayer.appendChild(d);
     return d;
   }
@@ -1041,7 +1074,7 @@
     const d = document.createElement("div");
     d.className = "net-blob";
     d.style.width = d.style.height = diameter + "px";
-    d.style.background = color;
+    d.style.background = hexToRgba(color, 0.62); // semitransparente, para que el plano de abajo se siga viendo
     netGooLayer.appendChild(d);
     return d;
   }
@@ -1071,27 +1104,21 @@
   arrowMarker.appendChild(arrowPath);
   arrowDefs.appendChild(arrowMarker);
 
-  const MACRO_D = 46; // diametro de las burbujas macro (px)
-  const SUB_D = 30; // diametro de las burbujas de causas (px)
+  const MACRO_D = 62; // diametro de las burbujas macro (px) - mas grandes
+  const SUB_D = 48; // diametro de las burbujas de causas (px) - mas grandes
   MACRO.forEach((m, i) => {
     const blob = makeBlob(MACRO_D, m.color);
     blob.addEventListener("click", (e) => { e.stopPropagation(); openMacroPanel(m.id); });
-    const num = svgEl("text", { class: "macro-num" });
-    num.textContent = i + 1;
-    netSvg.appendChild(num);
-    const label = makeLabel(m.corto);
-    macroEls[m.id] = { blob, num, label };
+    const label = makeLabel(m.corto, MACRO_D);
+    macroEls[m.id] = { blob, label };
 
-    // Se crean TODAS las burbujas y lineas de causas de una vez (no solo
-    // al hacer clic) - todos los nodos quedan siempre visibles sobre el
-    // mapa, sin necesidad de desplegar nada.
+    // Se crean TODAS las burbujas de causas de una vez (no solo al hacer
+    // clic) - todos los nodos quedan siempre visibles sobre el mapa, sin
+    // necesidad de desplegar nada. Sin lineas del macro hacia cada causa
+    // (se veian como una "explosion" radiando desde el centro) - solo se
+    // dibujan las flechas causales reales entre las propias causas.
     const sub = SUBNETS[m.id];
     const subEls = { blobs: {}, lines: [], labels: {} };
-    sub.nodes.forEach(n => {
-      const line = svgEl("line", { class: "net-line", stroke: m.color, "stroke-width": 1.6, "stroke-opacity": 0.55 });
-      netSvg.insertBefore(line, netSvg.firstChild);
-      subEls.lines.push({ el: line, from: { x: m.x, y: m.y }, to: n });
-    });
     sub.rel.forEach(r => {
       const a = sub.nodes.find(n => n.id === r.from), b = sub.nodes.find(n => n.id === r.to);
       const line = svgEl("line", { class: "net-line", stroke: m.color, "stroke-width": 2.2, "stroke-opacity": 0.85, "marker-end": "url(#netArrow)" });
@@ -1112,7 +1139,7 @@
       const blob = makeBlob(SUB_D, m.color);
       blob.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(m.id, n.id); });
       subEls.blobs[n.id] = blob;
-      subEls.labels[n.id] = makeLabel(n.t.length > 46 ? n.t.slice(0, 44) + "…" : n.t);
+      subEls.labels[n.id] = makeLabel(n.t, SUB_D);
     });
     allSubEls[m.id] = subEls;
   });
@@ -1155,10 +1182,8 @@
       const p = projectPoint(m.x, m.y, 0.3);
       const els = macroEls[m.id];
       placeBlob(els.blob, p.x, p.y, p.visible);
-      els.num.setAttribute("x", p.x); els.num.setAttribute("y", p.y);
-      els.label.style.left = p.x + "px"; els.label.style.top = (p.y - MACRO_D / 2 - 6) + "px";
+      els.label.style.left = p.x + "px"; els.label.style.top = p.y + "px";
       const visible = p.visible ? "1" : "0";
-      els.num.setAttribute("opacity", visible);
       els.label.style.opacity = visible;
     });
     // Se actualizan TODAS las subredes (de todos los macro-nodos), no
@@ -1169,7 +1194,7 @@
       sub.nodes.forEach(n => {
         const p = projectPoint(n.x, n.y, 0.25);
         placeBlob(subEls.blobs[n.id], p.x, p.y, p.visible);
-        subEls.labels[n.id].style.left = p.x + "px"; subEls.labels[n.id].style.top = (p.y - 22) + "px";
+        subEls.labels[n.id].style.left = p.x + "px"; subEls.labels[n.id].style.top = p.y + "px";
         subEls.labels[n.id].style.opacity = p.visible ? "1" : "0";
       });
       subEls.lines.forEach(l => {
