@@ -1194,15 +1194,30 @@
     const factor = e.deltaY > 0 ? 1.06 : 1 / 1.06; // >0 = mas contexto (caja mas grande), <0 = menos contexto (acercarse)
     const cx = (parseFloat(secXMin.value) + parseFloat(secXMax.value)) / 2;
     const cz = (parseFloat(secZMin.value) + parseFloat(secZMax.value)) / 2;
-    let halfX = (parseFloat(secXMax.value) - parseFloat(secXMin.value)) / 2 * factor;
-    let halfZ = (parseFloat(secZMax.value) - parseFloat(secZMin.value)) / 2 * factor;
-    halfX = Math.max(3, Math.min(50, halfX));
-    halfZ = Math.max(3, Math.min(50, halfZ));
-    secXMin.value = Math.max(0, cx - halfX).toFixed(1);
-    secXMax.value = Math.min(100, cx + halfX).toFixed(1);
-    secZMin.value = Math.max(0, cz - halfZ).toFixed(1);
-    secZMax.value = Math.min(100, cz + halfZ).toFixed(1);
-    camera.zoom = camera.zoom / factor; // compensa el cambio de tamano de la caja, para que el rombo se vea igual de grande en pantalla
+    const curHalfX = (parseFloat(secXMax.value) - parseFloat(secXMin.value)) / 2;
+    const curHalfZ = (parseFloat(secZMax.value) - parseFloat(secZMin.value)) / 2;
+    // El factor real aplicado se limita para que X y Z SIEMPRE crezcan o
+    // encojan JUNTOS, en la misma proporcion - antes cada eje se topaba
+    // con su propio limite (0/100) en un punto distinto, deformando el
+    // rombo (dejaba de ser un rectangulo con las mismas proporciones).
+    let safeFactor = factor;
+    if (factor > 1) {
+      safeFactor = Math.min(
+        factor,
+        Math.min(cx, 100 - cx) / curHalfX,
+        Math.min(cz, 100 - cz) / curHalfZ,
+        50 / curHalfX, 50 / curHalfZ
+      );
+    } else {
+      safeFactor = Math.max(factor, 3 / curHalfX, 3 / curHalfZ);
+    }
+    const halfX = curHalfX * safeFactor;
+    const halfZ = curHalfZ * safeFactor;
+    secXMin.value = (cx - halfX).toFixed(1);
+    secXMax.value = (cx + halfX).toFixed(1);
+    secZMin.value = (cz - halfZ).toFixed(1);
+    secZMax.value = (cz + halfZ).toFixed(1);
+    camera.zoom = camera.zoom / safeFactor; // compensa el cambio real de tamano de la caja (el factor SEGURO aplicado, no el pedido), para que el rombo se vea igual de grande en pantalla
     camera.updateProjectionMatrix();
     updateSectionBox();
     clearTimeout(wheelRebuildTimer);
