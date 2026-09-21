@@ -79,6 +79,13 @@
 
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   canvas.addEventListener("contextmenu", (e) => e.preventDefault()); // sin esto, el navegador abre su menu contextual con el clic derecho en vez de dejarlo mover (panear) la vista
+  // Algunos trackpads (sobre todo en Mac) mandan el gesto de pellizcar
+  // como un evento "wheel" con ctrlKey=true, que el navegador interpreta
+  // como "hacer zoom a la pagina completa" (zoom nativo del navegador),
+  // compitiendo con el zoom de la camara 3D - se ve como si la imagen
+  // se agrandara/encogiera de golpe sin revelar mas detalle real, porque
+  // es literalmente la pagina entera escalada, no la camara moviendose.
+  window.addEventListener("wheel", (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   // Proyeccion paralela (axonometrica): se bloquea el angulo de la camara
