@@ -134,6 +134,13 @@
   function toScene(x, y) {
     return { x: (x - netCenter.x) * SCALE, z: -(y - netCenter.y) * SCALE };
   }
+  function fromScene(sx, sz) {
+    // Inversa exacta de toScene(): de coordenadas de escena de vuelta a
+    // las coordenadas RAW (el mismo sistema de todos los archivos de
+    // datos), para poder arrastrar una burbuja y saber a que
+    // coordenadas reales corresponde su nueva posicion.
+    return { x: sx / SCALE + netCenter.x, y: netCenter.y - sz / SCALE };
+  }
 
   // ---- Red vial: una sola geometria de lineas fusionada (19 mil tramos,
   // asi que se combina TODO en un unico BufferGeometry por rendimiento) ----
@@ -1111,14 +1118,16 @@
   function makeLabel(text, diameter) {
     const d = document.createElement("div");
     d.className = "net-label";
-    const fontPx = 11, lineH = fontPx * 1.22;
+    const fontPx = 9.5, lineH = fontPx * 1.2; // texto un poco mas chico, para que quepa completo sin cortarse
     const rr = diameter / 2;
-    let maxLines = Math.max(2, Math.floor((diameter * 0.82) / lineH));
+    let maxLines = Math.max(2, Math.floor((diameter * 0.86) / lineH));
     let halfH = (maxLines * lineH) / 2;
-    while (halfH >= rr * 0.86 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
-    const safeWidth = 2 * Math.sqrt(Math.max(0, rr * rr - halfH * halfH)) * 0.86;
-    const maxCharsPerLine = Math.max(5, Math.floor(safeWidth / (fontPx * 0.56)));
+    while (halfH >= rr * 0.9 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
+    const safeWidth = 2 * Math.sqrt(Math.max(0, rr * rr - halfH * halfH)) * 0.9;
+    const maxCharsPerLine = Math.max(5, Math.floor(safeWidth / (fontPx * 0.54)));
     d.style.width = safeWidth + "px";
+    d.style.fontSize = fontPx + "px";
+    d.style.lineHeight = lineH + "px";
     d.innerHTML = wrapToFit(text, maxCharsPerLine, maxLines);
     netLabelLayer.appendChild(d);
     return d;
@@ -1144,6 +1153,48 @@
     };
   }
 
+  // ---- Arrastrar las burbujas: se puede agarrar cualquier bola y
+  // moverla a donde se quiera, con las coordenadas reales resultantes
+  // mostradas en vivo arriba a la izquierda. Funciona proyectando el
+  // mouse contra un plano horizontal a la misma altura de la burbuja
+  // (raycasting), y convirtiendo el punto de interseccion de vuelta a
+  // coordenadas reales con fromScene(). ----
+  const dragRaycaster = new THREE.Raycaster();
+  const dragMouseNdc = new THREE.Vector2();
+  function screenToReal(clientX, clientY, worldY) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    dragMouseNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    dragMouseNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    dragRaycaster.setFromCamera(dragMouseNdc, camera);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -worldY);
+    const hit = new THREE.Vector3();
+    const ok = dragRaycaster.ray.intersectPlane(plane, hit);
+    if (!ok) return null;
+    return fromScene(hit.x, hit.z);
+  }
+  const dragCoordBox = document.getElementById("dragCoordBox");
+  let draggingNode = null; // { data, worldY }
+  function startDrag(nodeData, worldY, e) {
+    e.stopPropagation();
+    draggingNode = { data: nodeData, worldY };
+    controls.enabled = false; // evita que la camara gire mientras se arrastra
+  }
+  window.addEventListener("pointermove", (e) => {
+    if (!draggingNode) return;
+    const real = screenToReal(e.clientX, e.clientY, draggingNode.worldY);
+    if (!real) return;
+    draggingNode.data.x = real.x;
+    draggingNode.data.y = real.y;
+    dragCoordBox.style.display = "block";
+    dragCoordBox.textContent = `x: ${real.x.toFixed(1)}, y: ${real.y.toFixed(1)}`;
+    updateNetPositions();
+  });
+  window.addEventListener("pointerup", () => {
+    if (!draggingNode) return;
+    draggingNode = null;
+    controls.enabled = true;
+  });
+
   let openMacroId = null;
   const macroEls = {}; // id -> {blob, num, label}
   const allSubEls = {}; // id -> {blobs:{}, lines:[], labels:{}} - TODAS las subredes, siempre visibles
@@ -1157,8 +1208,8 @@
   arrowMarker.appendChild(arrowPath);
   arrowDefs.appendChild(arrowMarker);
 
-  const MACRO_D = 78; // diametro de las burbujas macro (px) - mas grandes aun, para que quepa mas texto
-  const SUB_D = 62; // diametro de las burbujas de causas (px) - mas grandes aun
+  const MACRO_D = 92; // un poco mas grande, para que quepa el texto completo
+  const SUB_D = 76; // un poco mas grande, para que quepa el texto completo
   // Por ahora SOLO se muestra la problematica rosada (N2, contaminacion
   // hidrica) - el usuario pidio explicitamente que no se muestren las
   // otras 6 todavia (siguen sin coordenadas reales definidas).
@@ -1167,6 +1218,7 @@
   VISIBLE_MACRO.forEach((m, i) => {
     const blob = makeBlob(MACRO_D, m.color);
     blob.addEventListener("click", (e) => { e.stopPropagation(); openMacroPanel(m.id); });
+    blob.addEventListener("pointerdown", (e) => startDrag(m, 0.3, e));
     const label = makeLabel(m.corto, MACRO_D);
     macroEls[m.id] = { blob, label };
 
@@ -1196,6 +1248,7 @@
     sub.nodes.forEach(n => {
       const blob = makeBlob(SUB_D, m.color);
       blob.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(m.id, n.id); });
+      blob.addEventListener("pointerdown", (e) => startDrag(n, 0.25, e));
       subEls.blobs[n.id] = blob;
       subEls.labels[n.id] = makeLabel(n.t, SUB_D);
     });
