@@ -802,7 +802,7 @@
       buildRoads(data.edges);
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       const h = (data.bbox[3] - data.bbox[1]) * SCALE;
-      viewSize = Math.max(w, h) * 0.14; // revertido al zoom original que el usuario ya habia cuadrado
+      viewSize = 326; // fijo, calculado para cubrir el area real donde estan repartidas las 40 bolitas de las 6 problematicas (de Corabastos hasta el Humedal El Techo), con margen
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
@@ -840,12 +840,14 @@
   // los controles) y 45 grados de acimut, proyeccion en paralelo (sin
   // fuga de perspectiva). ----
   function setAxonometricView(distance) {
-    // Vista inicial fija que el usuario dejo lista (posicion, objetivo y
-    // zoom exactos), en vez de calcularla a partir del tamano de la red.
-    // Se verifico que la elevacion sigue siendo exactamente 45° (proyeccion
-    // paralela/axonometrica intacta).
-    camera.position.set(56.88, 700.96, 649.09);
-    controls.target.set(178.42, -54.42, -96.45);
+    // Vista recalculada para que TODAS las 40 bolitas reales (repartidas
+    // desde Corabastos hasta el Humedal El Techo) queden dentro del
+    // encuadre por defecto - antes la vista original solo cubria una
+    // zona chica y las bolitas quedaban invisibles fuera de camara.
+    // Mismo angulo/elevacion axonometrica que antes, solo recentrada y
+    // con mas zona visible.
+    camera.position.set(16.08, 700.96, 815.48);
+    controls.target.set(137.62, -54.42, 69.94);
     camera.zoom = 1.0;
     camera.updateProjectionMatrix();
   }
