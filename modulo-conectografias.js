@@ -1190,27 +1190,4 @@
 
   resize();
   requestAnimationFrame(animate);
-
-  // ---- Explosion en 3 fotos identicas de la base: se captura el canvas
-  // tal como se ve en ese momento (misma vista, mismos colores, sin
-  // ningun cambio) y se muestra 3 veces apiladas en un overlay aparte,
-  // sin tocar el layout de la base (para no repetir los problemas de
-  // alineacion/zoom de intentos anteriores). ----
-  const explodeOverlay = document.getElementById("explodeOverlay");
-  const explodeImgs = [document.getElementById("explodeImg1"), document.getElementById("explodeImg2"), document.getElementById("explodeImg3")];
-  const explodeLayers = document.querySelectorAll("#explodeStack .explode-layer");
-  const explodeHint = document.getElementById("explodeHint");
-  canvas.addEventListener("click", () => {
-    const foto = renderer.domElement.toDataURL("image/png");
-    explodeImgs.forEach(img => { img.src = foto; });
-    explodeOverlay.style.display = "flex";
-    // fuerza un reflow antes de aplicar la clase, para que la transicion
-    // de aparicion (de escala 0.05 a 1) se vea animada y no instantanea
-    void explodeOverlay.offsetWidth;
-    explodeLayers.forEach(el => { el.style.opacity = "1"; el.style.transform = "scale(1)"; });
-  });
-  document.getElementById("explodeClose").addEventListener("click", () => {
-    explodeOverlay.style.display = "none";
-    explodeLayers.forEach(el => { el.style.opacity = "0"; el.style.transform = "scale(.05)"; });
-  });
 })();
