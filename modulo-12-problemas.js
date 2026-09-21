@@ -1000,7 +1000,12 @@
         { id:"s1_4", t:"Conflicto y entrecruzamiento de flujos entre camiones, vehículos particulares, bicipatios y peatones", x:6014.7, y:2474.7 },
         { id:"s1_5", t:"Ingreso vehicular en ángulo recto que obliga a frenar sobre la calzada arterial", x:6125.7, y:2429.2 },
       ],
-      rel:[],
+      rel:[
+        { from:"s1_5", to:"s1_2", pol:"+" },
+        { from:"s1_2", to:"s1_1", pol:"+" },
+        { from:"s1_1", to:"s1_4", pol:"+" },
+        { from:"s1_4", to:"s1_3", pol:"+" },
+      ],
     },
     n2: {
       nodes:[
@@ -1016,7 +1021,17 @@
         { id:"s2_10", t:"Barrera física del cerramiento privado sobre la franja de protección ambiental", x:6062.3, y:2148.5 },
         { id:"s2_11", t:"Insuficiencia de redes sanitarias destinadas a la limpieza de bodegas", x:5777.0, y:2353.3 },
       ],
-      rel:[],
+      rel:[
+        { from:"s2_11", to:"s2_1", pol:"+" },
+        { from:"s2_4", to:"s2_1", pol:"+" },
+        { from:"s2_1", to:"s2_7", pol:"+" },
+        { from:"s2_7", to:"s2_8", pol:"+" },
+        { from:"s2_10", to:"s2_9", pol:"+" },
+        { from:"s2_2", to:"s2_9", pol:"+" },
+        { from:"s2_9", to:"s2_3", pol:"+" },
+        { from:"s2_8", to:"s2_3", pol:"+" },
+        { from:"s2_6", to:"s2_3", pol:"+" },
+      ],
     },
     n3: {
       nodes:[
@@ -1029,7 +1044,15 @@
         { id:"s3_7", t:"Saturación comercial intensiva en una franja reducida de bodegas", x:5856.2, y:2323.0 },
         { id:"s3_8", t:"Aglomeración de compradores, carretas y vehículos en los accesos a los sectores de venta", x:5935.5, y:2398.8 },
       ],
-      rel:[],
+      rel:[
+        { from:"s3_1", to:"s3_5", pol:"+" },
+        { from:"s3_4", to:"s3_2", pol:"+" },
+        { from:"s3_5", to:"s3_8", pol:"+" },
+        { from:"s3_2", to:"s3_8", pol:"+" },
+        { from:"s3_8", to:"s3_3", pol:"+" },
+        { from:"s3_8", to:"s3_7", pol:"+" },
+        { from:"s3_3", to:"s3_6", pol:"+" },
+      ],
     },
     n4: {
       nodes:[
@@ -1043,7 +1066,14 @@
         { id:"s4_8", t:"Saturación del sistema masivo (TransMilenio y SITP) por exceso de pasajeros en horas pico", x:5301.5, y:2034.6 },
         { id:"s4_9", t:"Retraso en las frecuencias de buses debido al parqueo informal en los carriles mixtos", x:6290.5, y:2559.6 },
       ],
-      rel:[],
+      rel:[
+        { from:"s4_1", to:"s4_7", pol:"+" },
+        { from:"s4_6", to:"s4_7", pol:"+" },
+        { from:"s4_7", to:"s4_8", pol:"+" },
+        { from:"s4_8", to:"s4_9", pol:"+" },
+        { from:"s4_2", to:"s4_5", pol:"+" },
+        { from:"s4_4", to:"s4_3", pol:"+" },
+      ],
     },
     n5: {
       nodes:[
@@ -1053,7 +1083,11 @@
         { id:"s5_4", t:"Aglomeración peatonal sobre aceras fragmentadas e invadidas", x:6639.6, y:1846.2 },
         { id:"s5_5", t:"Apropiación comercial de vías residenciales fuera del muro de cerramiento", x:4545.6, y:1963.7 },
       ],
-      rel:[],
+      rel:[
+        { from:"s5_1", to:"s5_3", pol:"+" },
+        { from:"s5_3", to:"s5_4", pol:"+" },
+        { from:"s5_2", to:"s5_5", pol:"+" },
+      ],
     },
     n6: {
       nodes:[
@@ -1063,7 +1097,12 @@
         { id:"s6_4", t:"Bloqueo de puntos de recolección de basura con vehículos parqueados", x:5777.0, y:2338.1 },
         { id:"s6_5", t:"Generación de malos olores y focos sanitarios junto a las zonas de vivienda", x:6094.0, y:2186.4 },
       ],
-      rel:[],
+      rel:[
+        { from:"s6_1", to:"s6_4", pol:"+" },
+        { from:"s6_4", to:"s6_5", pol:"+" },
+        { from:"s6_2", to:"s6_3", pol:"+" },
+        { from:"s6_3", to:"s6_5", pol:"+" },
+      ],
     },
     n7: { nodes:[ { id:"s7_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
   };
@@ -1124,7 +1163,7 @@
     d.className = "net-label";
     const fontPx = 9.5, lineH = fontPx * 1.2; // texto un poco mas chico, para que quepa completo sin cortarse
     const rr = diameter / 2;
-    let maxLines = Math.max(2, Math.floor((diameter * 0.86) / lineH));
+    let maxLines = Math.min(3, Math.max(2, Math.floor((diameter * 0.86) / lineH))); // tope de 3 lineas: se resume con "…" en vez de intentar meter todo el texto
     let halfH = (maxLines * lineH) / 2;
     while (halfH >= rr * 0.9 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
     const safeWidth = 2 * Math.sqrt(Math.max(0, rr * rr - halfH * halfH)) * 0.9;
