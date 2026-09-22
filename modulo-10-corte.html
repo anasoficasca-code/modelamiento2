@@ -326,51 +326,72 @@
       </div>
 
       <!-- Contenedor central apilado estilo referente (líneas punteadas y capas suspendidas) -->
-      <div id="natExplodeStage" style="position:relative; width:92vw; max-width:880px; height:84vh; display:flex; align-items:center; justify-content:center;">
+      <div id="natExplodeStage" style="position:relative; width:92vw; max-width:880px; height:88vh; display:flex; align-items:center; justify-content:center;">
         <svg id="natGuideSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1; transition:opacity .8s ease;"></svg>
 
-        <!-- Capa 1: Cuerpo hídrico, afluentes, punto más hondo -->
-        <div id="natLayerWater" class="nat-sublayer" data-exploded-top="7%" style="position:absolute; top:7%; left:50%; width:58vw; max-width:640px; aspect-ratio:16/9; z-index:5; opacity:0; transform:translate(-50%, -30px); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease;">
+        <!-- Capa 1: Sistema Inerte y Límite Físico-Hidrológico -->
+        <div id="natLayerWater" class="nat-sublayer" data-exploded-top="4%" style="position:absolute; top:4%; left:50%; width:58vw; max-width:680px; aspect-ratio:16/9; z-index:6; opacity:0; transform:translate(-50%, -30px); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease;">
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(235,243,247,.35); box-shadow:0 8px 30px rgba(0,0,0,.04); transition:background .8s ease;">
             <canvas id="natWaterCanvas" style="width:100%; height:100%; display:block;"></canvas>
             <svg id="natWaterSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
-          <!-- Etiqueta temática lateral -->
-          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; transition:opacity .8s ease;">
+          <!-- Etiqueta temática lateral exterior al rombo -->
+          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 24px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#0284c7; background:#e0f2fe; padding:3px 8px; border-radius:4px; margin-bottom:4px;">Capa 01</span>
-            <div style="font-size:16px; font-weight:800; color:#0f172a; line-height:1.15;">CUERPO HÍDRICO</div>
-            <div style="font-size:11px; color:#475569; font-weight:600;">Humedal El Burro & Subcuenca El Tintal</div>
+            <div style="font-size:15px; font-weight:800; color:#0f172a; line-height:1.15;">SISTEMA INERTE & FÍSICO-HIDROLÓGICO</div>
+            <div style="font-size:11px; color:#475569; font-weight:600;">Fluctuación 0,2 ha - 6,69 ha · Nodo hondo · RH 30m · ZMPA</div>
           </div>
         </div>
 
-        <!-- Capa 2: Vegetación, Árboles y Zonas Verdes del Humedal -->
-        <div id="natLayer2" class="nat-sublayer" data-exploded-top="27%" style="position:absolute; top:27%; left:50%; width:58vw; max-width:640px; aspect-ratio:16/9; z-index:4; opacity:0; transform:translate(-50%, -20px); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease .15s;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; border:1.5px dashed rgba(16,185,129,.55); background:rgba(240,253,244,.35); box-shadow:0 8px 30px rgba(0,0,0,.03); transition:background .8s ease, border-color .8s ease;">
+        <!-- Capa 2: Cobertura Vegetal y Zonificación Florística -->
+        <div id="natLayer2" class="nat-sublayer" data-exploded-top="23%" style="position:absolute; top:23%; left:50%; width:58vw; max-width:680px; aspect-ratio:16/9; z-index:5; opacity:0; transform:translate(-50%, -20px); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease .15s;">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(240,253,244,.35); box-shadow:0 8px 30px rgba(0,0,0,.03); transition:background .8s ease;">
             <canvas id="natVegCanvas" style="width:100%; height:100%; display:block;"></canvas>
             <svg id="natVegSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
-          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; transition:opacity .8s ease;">
+          <!-- Etiqueta temática lateral exterior al rombo -->
+          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 24px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#059669; background:#d1fae5; padding:3px 8px; border-radius:4px; margin-bottom:4px;">Capa 02</span>
-            <div style="font-size:16px; font-weight:800; color:#0f172a; line-height:1.15;">VEGETACIÓN & COBERTURA</div>
-            <div style="font-size:11px; color:#475569; font-weight:600;">Arbolado georreferenciado y zonas verdes</div>
+            <div style="font-size:15px; font-weight:800; color:#0f172a; line-height:1.15;">COBERTURA VEGETAL & FLORÍSTICA</div>
+            <div style="font-size:11px; color:#475569; font-weight:600;">Eneas (Typha), Kikuyo, Chilco, Tintos y Alisos (ZMPA 12,14 ha)</div>
           </div>
         </div>
 
-        <!-- Capa 3: Corredor Biológico / Aves -->
-        <div id="natLayer3" class="nat-sublayer" data-exploded-top="47%" style="position:absolute; top:47%; left:50%; width:58vw; max-width:640px; aspect-ratio:16/9; z-index:3; opacity:0; transform:translate(-50%, -10px); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease .3s; pointer-events:none;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); border:1px dashed rgba(59,130,246,.3); background:rgba(239,246,255,.15); transition:background .8s ease, border-color .8s ease;"></div>
-          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; opacity:.6; white-space:nowrap; z-index:10; transition:opacity .8s ease;">
-            <span style="font-size:9.5px; font-weight:800; text-transform:uppercase; color:#2563eb;">Capa 03</span>
-            <div style="font-size:15px; font-weight:700; color:#334155;">CORREDOR BIÓTICO</div>
+        <!-- Capa 3: Agentes Faunísticos y Dinámicas Estacionales de Aves -->
+        <div id="natLayer3" class="nat-sublayer" data-exploded-top="42%" style="position:absolute; top:42%; left:50%; width:58vw; max-width:680px; aspect-ratio:16/9; z-index:4; opacity:0; transform:translate(-50%, -10px); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease .3s;">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(254,249,195,.30); box-shadow:0 8px 30px rgba(0,0,0,.03); transition:background .8s ease;">
+            <canvas id="natBirdCanvas" style="width:100%; height:100%; display:block;"></canvas>
+            <svg id="natBirdSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
+          </div>
+          <!-- Etiqueta temática lateral exterior al rombo -->
+          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 24px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; transition:opacity .8s ease;">
+            <span style="display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#d97706; background:#fef3c7; padding:3px 8px; border-radius:4px; margin-bottom:4px;">Capa 03</span>
+            <div style="font-size:15px; font-weight:800; color:#0f172a; line-height:1.15;">AGENTES FAUNÍSTICOS & AVES</div>
+            <div style="font-size:11px; color:#475569; font-weight:600;">Verano: patas cortas en playones · Invierno: garzas vs tinguas</div>
+          </div>
+        </div>
+
+        <!-- Capa 4: Límite Corológico e Intercambio Genético Macro-regional -->
+        <div id="natLayer4" class="nat-sublayer" data-exploded-top="61%" style="position:absolute; top:61%; left:50%; width:58vw; max-width:680px; aspect-ratio:16/9; z-index:3; opacity:0; transform:translate(-50%, 0); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease .45s;">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(238,242,255,.35); box-shadow:0 8px 30px rgba(0,0,0,.03); transition:background .8s ease;">
+            <canvas id="natMacroCanvas" style="width:100%; height:100%; display:block;"></canvas>
+            <svg id="natMacroSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
+          </div>
+          <!-- Etiqueta temática lateral exterior al rombo -->
+          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 24px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; transition:opacity .8s ease;">
+            <span style="display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#4f46e5; background:#e0e7ff; padding:3px 8px; border-radius:4px; margin-bottom:4px;">Capa 04</span>
+            <div style="font-size:15px; font-weight:800; color:#0f172a; line-height:1.15;">CONECTIVIDAD MACRO-REGIONAL</div>
+            <div style="font-size:11px; color:#475569; font-weight:600;">Llanos Orientales - Sabana · Nodo genético EEP Humedal El Burro</div>
           </div>
         </div>
 
         <!-- Capa Base inferior: Contexto existente / Corte base -->
-        <div id="natLayerBase" class="nat-sublayer" data-exploded-top="67%" style="position:absolute; top:67%; left:50%; width:58vw; max-width:640px; aspect-ratio:16/9; z-index:2; opacity:0; transform:translate(-50%, 20px); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease .45s;">
-          <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:0 12px 36px rgba(0,0,0,.08);"><img id="natBaseImg" style="width:100%; height:100%; object-fit:cover;"></div>
-          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; z-index:10; transition:opacity .8s ease;">
+        <div id="natLayerBase" class="nat-sublayer" data-exploded-top="80%" style="position:absolute; top:80%; left:50%; width:58vw; max-width:680px; aspect-ratio:16/9; z-index:2; opacity:0; transform:translate(-50%, 20px); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease .6s;">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:0 12px 36px rgba(0,0,0,.08);"><img id="natBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
+          <!-- Etiqueta temática lateral exterior al rombo -->
+          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 24px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; z-index:10; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:3px 8px; border-radius:4px; margin-bottom:4px;">Base</span>
-            <div style="font-size:16px; font-weight:800; color:#0f172a; line-height:1.15;">EXISTING FEATURES</div>
+            <div style="font-size:15px; font-weight:800; color:#0f172a; line-height:1.15;">EXISTING FEATURES</div>
             <div style="font-size:11px; color:#475569; font-weight:600;">Axonometría Base Cortada</div>
           </div>
         </div>
@@ -381,6 +402,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=87"></script>
+<script src="modulo-10-corte.js?v=88"></script>
 </body>
 </html>
