@@ -2772,11 +2772,13 @@
   }
 
   // ============================================================
-  // CAPA 3: Nichos Ecológicos y Agentes Bióticos (Aves)
-  // Representación cartográfica limpia: Garzas (blanco hueso con ribete pizarra), Tinguas (gris carbón con punto ocre terracota), Patos (pardo oliva)
+  // CAPA 3: Nichos Ecológicos & Dinámicas Estacionales de Aves (Comunidades Bióticas)
+  // Explica con claridad cartográfica cómo el nivel del agua define los hábitats:
+  // - En aguas altas (invierno): Espejo abierto para Garza Real y garcitas zancudas; franja de eneas/juncos donde anidan las Tinguas de pico rojo y Mirlas en arbolado.
+  // - En estiaje (verano): Playones de limo expuestos para aves playeras y Patos zambullidores alimentándose de invertebrados bénticos.
   // ============================================================
   function renderNaturalBirdLayer(mesNum) {
-    if (!natBirdCanvas) return;
+    if (!natBirdCanvas || !rawWaterData) return;
     const rect = natBirdCanvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = rect.width || 720, h = rect.height || 405;
@@ -2793,103 +2795,270 @@
     const info = HUMEDAL_CICLO[(mesNum || 4) - 1] || HUMEDAL_CICLO[3];
     const isWinter = info.profundidad_m >= 1.4;
 
+    const burro = rawWaterData.find(b => (b.nombre || "").includes("Burro"));
+    if (!burro || !burro.pts || burro.pts.length < 4) return;
+
+    const cx = burro.pts.reduce((s, p) => s + p[0], 0) / burro.pts.length;
+    const cy = burro.pts.reduce((s, p) => s + p[1], 0) / burro.pts.length;
+
+    // 1. DIBUJAR LAS ZONAS DE HÁBITAT (Zonificación de fondo clara)
+    // A) Franja litoral / Juncal de anidación perimetral
+    const juncosPts = burro.pts.map(p => [cx + (p[0] - cx) * 1.32, cy + (p[1] - cy) * 1.32]);
+    const scrJuncos = juncosPts.map(p => projectPoint(p[0], p[1]));
+    ctx.beginPath();
+    ctx.moveTo(scrJuncos[0].x, scrJuncos[0].y);
+    for (let i = 1; i < scrJuncos.length; i++) ctx.lineTo(scrJuncos[i].x, scrJuncos[i].y);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(180, 195, 165, 0.35)"; // Franja vegetal litoral
+    ctx.fill();
+    ctx.lineWidth = 1.0;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "#64748b";
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // B) Espejo de agua central / Playón estacional según temporada
+    const expFactor = isWinter ? 1.15 : 0.82;
+    const waterPts = burro.pts.map(p => [cx + (p[0] - cx) * expFactor, cy + (p[1] - cy) * expFactor]);
+    const scrWater = waterPts.map(p => projectPoint(p[0], p[1]));
+    ctx.beginPath();
+    ctx.moveTo(scrWater[0].x, scrWater[0].y);
+    for (let i = 1; i < scrWater.length; i++) ctx.lineTo(scrWater[i].x, scrWater[i].y);
+    ctx.closePath();
+    if (isWinter) {
+      ctx.fillStyle = "rgba(64, 100, 126, 0.45)"; // Lámina profunda de agua
+      ctx.fill();
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = "#334155";
+      ctx.stroke();
+    } else {
+      // En verano: playón limoso expuesto alrededor del agua remanente
+      ctx.fillStyle = "rgba(188, 160, 120, 0.45)"; // Playón de barro/limo
+      ctx.fill();
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = "#92683b";
+      ctx.stroke();
+
+      // Espejo interior reducido
+      const innerPts = burro.pts.map(p => [cx + (p[0] - cx) * 0.45, cy + (p[1] - cy) * 0.45]);
+      const scrInner = innerPts.map(p => projectPoint(p[0], p[1]));
+      ctx.beginPath();
+      ctx.moveTo(scrInner[0].x, scrInner[0].y);
+      for (let i = 1; i < scrInner.length; i++) ctx.lineTo(scrInner[i].x, scrInner[i].y);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(64, 100, 126, 0.55)";
+      ctx.fill();
+      ctx.lineWidth = 1.0;
+      ctx.strokeStyle = "#334155";
+      ctx.stroke();
+    }
+
+    // 2. AGENTES Y SILUETAS BIOLÓGICAS CLARAMENTE DISTINGUIBLES
     const centerSO = projectPoint(7518.49, 3137.57);
-    if (!centerSO.inFront) return;
 
     if (isWinter) {
-      // INVIERNO: Garzas zancudas de patas largas en lámina abierta + tinguas en borde de vegetación
-      for (let i = 0; i < 8; i++) {
-        const ang = (i / 8) * Math.PI * 2 + natWaterTime * 0.15;
-        const dist = 32 + Math.sin(natWaterTime * 0.8 + i) * 16;
-        const bx = centerSO.x + Math.cos(ang) * dist * 1.45;
-        const by = centerSO.y + Math.sin(ang) * dist * 0.78;
+      // --- INVIERNO ---
+      // Garzas Reales zancudas en el centro (espejo abierto)
+      for (let g = 0; g < 7; g++) {
+        const ang = (g / 7) * Math.PI * 2 + natWaterTime * 0.12;
+        const rad = 28 + Math.sin(natWaterTime * 0.7 + g) * 14;
+        const gx = centerSO.x + Math.cos(ang) * rad * 1.4;
+        const gy = centerSO.y + Math.sin(ang) * rad * 0.75;
 
-        // Pata zancuda tenue
+        // Sombra suave en el agua
         ctx.beginPath();
-        ctx.moveTo(bx, by);
-        ctx.lineTo(bx, by + 5);
-        ctx.strokeStyle = "#475569";
-        ctx.lineWidth = 0.9;
+        ctx.ellipse(gx + 1, gy + 8, 4, 1.5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.18)";
+        ctx.fill();
+
+        // Pata zancuda larga
+        ctx.beginPath();
+        ctx.moveTo(gx, gy);
+        ctx.lineTo(gx, gy + 8);
+        ctx.strokeStyle = "#334155";
+        ctx.lineWidth = 1.1;
         ctx.stroke();
 
-        // Cuerpo garza (blanco marfil con contorno gris piedra)
+        // Silueta cuerpo garza blanca estilizada
         ctx.beginPath();
-        ctx.ellipse(bx, by, 3.2, 2.2, -0.2, 0, Math.PI * 2);
-        ctx.fillStyle = "#f8fafc";
+        ctx.ellipse(gx, gy, 4.2, 2.8, -0.2, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
         ctx.fill();
-        ctx.lineWidth = 0.9;
-        ctx.strokeStyle = "#334155";
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = "#1e293b";
+        ctx.stroke();
+
+        // Cuello y cabeza
+        ctx.beginPath();
+        ctx.moveTo(gx + 3, gy - 1);
+        ctx.lineTo(gx + 5, gy - 5);
+        ctx.strokeStyle = "#1e293b";
+        ctx.lineWidth = 1.2;
         ctx.stroke();
       }
 
-      // Tinguas en franja litoral (cuerpo carbón pizarra oscuro con pequeño pico carmesí apagado)
-      for (let j = 0; j < 11; j++) {
-        const ang = (j / 11) * Math.PI * 2;
-        const tx = centerSO.x + Math.cos(ang) * 92;
-        const ty = centerSO.y + Math.sin(ang) * 52;
+      // Tinguas Bogotanas y de pico rojo en la franja de juncales (litoral protector)
+      for (let t = 0; t < 12; t++) {
+        const ang = (t / 12) * Math.PI * 2 + 0.15;
+        const tx = centerSO.x + Math.cos(ang) * 98;
+        const ty = centerSO.y + Math.sin(ang) * 56;
+
         ctx.beginPath();
-        ctx.arc(tx, ty, 2.8, 0, Math.PI * 2);
-        ctx.fillStyle = "#1e293b";
+        ctx.ellipse(tx, ty, 3.8, 2.6, 0.1, 0, Math.PI * 2);
+        ctx.fillStyle = "#1e293b"; // Plumaje oscuro pizarra
         ctx.fill();
         ctx.lineWidth = 0.8;
-        ctx.strokeStyle = "#991b1b"; // Terracota / carmesí sobrio
+        ctx.strokeStyle = "#ffffff";
         ctx.stroke();
+
+        // Escudo frontal y pico rojo característico de la tingua
+        ctx.beginPath();
+        ctx.arc(tx + 3.2, ty - 0.8, 1.3, 0, Math.PI * 2);
+        ctx.fillStyle = "#b91c1c";
+        ctx.fill();
       }
     } else {
-      // VERANO: Aves de patas cortas (patos y zambullidores) en playones expuestos (pardo y ocre tostado)
-      for (let k = 0; k < 15; k++) {
-        const ang = (k / 15) * Math.PI * 2 + natWaterTime * 0.2;
-        const dist = 22 + Math.cos(natWaterTime * 0.4 + k) * 20;
+      // --- VERANO (ESTIAJE) ---
+      // Aves playeras y chaparritos de patas cortas caminando sobre el limo expuesto
+      for (let p = 0; p < 14; p++) {
+        const ang = (p / 14) * Math.PI * 2 + natWaterTime * 0.2;
+        const dist = 36 + Math.cos(natWaterTime * 0.4 + p) * 22;
         const px = centerSO.x + Math.cos(ang) * dist * 1.35;
         const py = centerSO.y + Math.sin(ang) * dist * 0.72;
 
+        // Huellita / sombra en playón
         ctx.beginPath();
-        ctx.ellipse(px, py, 3.4, 2.2, -0.2, 0, Math.PI * 2);
-        ctx.fillStyle = "#785336"; // Pardo terroso
+        ctx.ellipse(px, py + 2, 3, 1.2, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(90, 60, 30, 0.25)";
+        ctx.fill();
+
+        // Pata corta
+        ctx.beginPath();
+        ctx.moveTo(px, py); ctx.lineTo(px, py + 3);
+        ctx.strokeStyle = "#5a3a1e"; ctx.lineWidth = 0.9;
+        ctx.stroke();
+
+        // Cuerpo ave de playón pardo
+        ctx.beginPath();
+        ctx.ellipse(px, py, 3.6, 2.4, -0.15, 0, Math.PI * 2);
+        ctx.fillStyle = "#855835";
         ctx.fill();
         ctx.lineWidth = 0.8;
         ctx.strokeStyle = "#fef3c7";
         ctx.stroke();
       }
+
+      // Patos zambullidores nadando en el pozo hondo remanente
+      for (let d = 0; d < 6; d++) {
+        const ang = (d / 6) * Math.PI * 2 + natWaterTime * 0.18;
+        const dx = centerSO.x + Math.cos(ang) * 16 * 1.3;
+        const dy = centerSO.y + Math.sin(ang) * 16 * 0.7;
+
+        ctx.beginPath();
+        ctx.ellipse(dx, dy, 4.2, 2.6, 0.1, 0, Math.PI * 2);
+        ctx.fillStyle = "#334155";
+        ctx.fill();
+        ctx.lineWidth = 0.8;
+        ctx.strokeStyle = "#94a3b8";
+        ctx.stroke();
+      }
     }
 
-    // Anotaciones en SVG técnica sobria
+    // 3. CARTOGRAFÍA Y LEYENDA TÉCNICA VISIBLE DIRECTAMENTE EN LA CAPA
     if (natBirdSvg) {
       natBirdSvg.innerHTML = "";
       const SVGNS = "http://www.w3.org/2000/svg";
-      const g = document.createElementNS(SVGNS, "g");
-      g.setAttribute("transform", `translate(${centerSO.x - 75}, ${centerSO.y - 42})`);
 
-      const bg = document.createElementNS(SVGNS, "rect");
-      bg.setAttribute("x", "0"); bg.setAttribute("y", "0");
-      bg.setAttribute("width", "180"); bg.setAttribute("height", "26");
-      bg.setAttribute("rx", "3"); bg.setAttribute("fill", "rgba(255,255,255,0.96)");
-      bg.setAttribute("stroke", "#cbd5e1"); bg.setAttribute("stroke-width", "1");
-      g.appendChild(bg);
+      // Cuadro explicativo superior con micro-leyenda gráfica
+      const legG = document.createElementNS(SVGNS, "g");
+      legG.setAttribute("transform", "translate(16, 16)");
 
-      const txt = document.createElementNS(SVGNS, "text");
-      txt.setAttribute("x", "8"); txt.setAttribute("y", "12");
-      txt.setAttribute("font-family", "'Segoe UI', sans-serif");
-      txt.setAttribute("font-size", "9px"); txt.setAttribute("font-weight", "700");
-      txt.setAttribute("fill", "#1e293b");
-      txt.textContent = isWinter ? "Aguas Altas: Garzas zancudas en espejo" : "Estiaje: Aves de patas cortas en playones";
-      g.appendChild(txt);
+      const legBg = document.createElementNS(SVGNS, "rect");
+      legBg.setAttribute("x", "0"); legBg.setAttribute("y", "0");
+      legBg.setAttribute("width", "255"); legBg.setAttribute("height", "58");
+      legBg.setAttribute("rx", "4"); legBg.setAttribute("fill", "rgba(255,255,255,0.96)");
+      legBg.setAttribute("stroke", "#cbd5e1"); legBg.setAttribute("stroke-width", "1");
+      legG.appendChild(legBg);
 
-      const sub = document.createElementNS(SVGNS, "text");
-      sub.setAttribute("x", "8"); sub.setAttribute("y", "21");
-      sub.setAttribute("font-family", "'Segoe UI', sans-serif");
-      sub.setAttribute("font-size", "7.8px"); sub.setAttribute("font-weight", "600");
-      sub.setAttribute("fill", "#64748b");
-      sub.textContent = isWinter ? "Tinguas moteadas replegadas en litoral de eneas" : "Patos turrios y zambullidores en bajamar";
-      g.appendChild(sub);
+      // Título
+      const t1 = document.createElementNS(SVGNS, "text");
+      t1.setAttribute("x", "10"); t1.setAttribute("y", "15");
+      t1.setAttribute("font-family", "'Segoe UI', sans-serif");
+      t1.setAttribute("font-size", "10px"); t1.setAttribute("font-weight", "800");
+      t1.setAttribute("fill", "#0f172a");
+      t1.textContent = isWinter ? "DINÁMICA DE AGUAS ALTAS (INVIERNO)" : "DINÁMICA DE ESTIAJE (VERANO)";
+      legG.appendChild(t1);
 
-      natBirdSvg.appendChild(g);
+      // Fila 1 leyenda
+      const ic1 = document.createElementNS(SVGNS, "circle");
+      ic1.setAttribute("cx", "16"); ic1.setAttribute("cy", "29"); ic1.setAttribute("r", "4");
+      ic1.setAttribute("fill", isWinter ? "#ffffff" : "#855835");
+      ic1.setAttribute("stroke", isWinter ? "#0f172a" : "#fef3c7");
+      ic1.setAttribute("stroke-width", "1");
+      legG.appendChild(ic1);
+
+      const tx1 = document.createElementNS(SVGNS, "text");
+      tx1.setAttribute("x", "26"); tx1.setAttribute("y", "32");
+      tx1.setAttribute("font-family", "'Segoe UI', sans-serif");
+      tx1.setAttribute("font-size", "8.5px"); tx1.setAttribute("font-weight", "600");
+      tx1.setAttribute("fill", "#334155");
+      tx1.textContent = isWinter ? "Garza Real (Zancuda): forrajeo en lámina libre de agua" : "Aves playeras / chaparritos: forrajeo en playón de limo";
+      legG.appendChild(tx1);
+
+      // Fila 2 leyenda
+      const ic2 = document.createElementNS(SVGNS, "circle");
+      ic2.setAttribute("cx", "16"); ic2.setAttribute("cy", "46"); ic2.setAttribute("r", "4");
+      ic2.setAttribute("fill", isWinter ? "#1e293b" : "#334155");
+      ic2.setAttribute("stroke", isWinter ? "#b91c1c" : "#94a3b8");
+      ic2.setAttribute("stroke-width", "1.5");
+      legG.appendChild(ic2);
+
+      const tx2 = document.createElementNS(SVGNS, "text");
+      tx2.setAttribute("x", "26"); tx2.setAttribute("y", "49");
+      tx2.setAttribute("font-family", "'Segoe UI', sans-serif");
+      tx2.setAttribute("font-size", "8.5px"); tx2.setAttribute("font-weight", "600");
+      tx2.setAttribute("fill", "#334155");
+      tx2.textContent = isWinter ? "Tingua Bogotana / Pico Rojo: anidación en juncos" : "Patos zambullidores: concentrados en poza profunda";
+      legG.appendChild(tx2);
+
+      natBirdSvg.appendChild(legG);
+
+      // Señalizador sobre el espejo/playón
+      const calloutG = document.createElementNS(SVGNS, "g");
+      calloutG.setAttribute("transform", `translate(${centerSO.x}, ${centerSO.y - 15})`);
+
+      const pointer = document.createElementNS(SVGNS, "polyline");
+      pointer.setAttribute("points", "0,0 20,-20 110,-20");
+      pointer.setAttribute("fill", "none");
+      pointer.setAttribute("stroke", "#475569");
+      pointer.setAttribute("stroke-width", "1.2");
+      calloutG.appendChild(pointer);
+
+      const pBox = document.createElementNS(SVGNS, "rect");
+      pBox.setAttribute("x", "20"); pBox.setAttribute("y", "-32");
+      pBox.setAttribute("width", "130"); pBox.setAttribute("height", "22");
+      pBox.setAttribute("rx", "3"); pBox.setAttribute("fill", "rgba(255,255,255,0.96)");
+      pBox.setAttribute("stroke", "#94a3b8"); pBox.setAttribute("stroke-width", "1");
+      calloutG.appendChild(pBox);
+
+      const pTxt = document.createElementNS(SVGNS, "text");
+      pTxt.setAttribute("x", "25"); pTxt.setAttribute("y", "-18");
+      pTxt.setAttribute("font-family", "'Segoe UI', sans-serif");
+      pTxt.setAttribute("font-size", "8.5px"); pTxt.setAttribute("font-weight", "700");
+      pTxt.setAttribute("fill", "#0f172a");
+      pTxt.textContent = isWinter ? "Espejo Abierto de Pesca" : "Playón de Limo Expuesto";
+      calloutG.appendChild(pTxt);
+
+      natBirdSvg.appendChild(calloutG);
     }
   }
 
   // ============================================================
   // CAPA 4: Corredores de Conectividad Regional e Intercambio Genético
-  // Vectores cartográficos de precisión (Gris pizarra / azul acero) sin efectos chillones
+  // Explica con exactitud geográfica el papel del Humedal El Burro como nodo de la EEP:
+  // - Corredor 1: Vuelo biológico desde los Cerros Orientales / Páramo de Cruz Verde siguiendo la cuenca del Río Fucha hacia El Burro.
+  // - Corredor 2: Conexión con la ronda del Río Bogotá hacia el Humedal La Conejera y Sabana Norte.
+  // - Corredor 3: Vínculo freático y biológico de proximidad hacia el Humedal La Vaca y Humedal El Tintal.
   // ============================================================
   function renderNaturalMacroLayer(mesNum) {
     if (!natMacroCanvas) return;
@@ -2908,90 +3077,194 @@
     const projectPoint = (rx, ry, el = 0.05) => projectPointToLayer(rx, ry, el, w, h);
     const burroCenter = projectPoint(7518.49, 3137.57);
 
-    // Anillos de influencia de nodo biogeográfico (trazo gris acero fino)
+    // 1. TRAMA CARTOGRÁFICA DEL NODO CENTRAL (El Burro como HUB de intercambio genético)
     if (burroCenter.inFront) {
+      // Área de amortiguación biológica regional
+      ctx.beginPath();
+      ctx.ellipse(burroCenter.x, burroCenter.y, 75, 42, -0.3, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(226, 232, 240, 0.40)";
+      ctx.fill();
+      ctx.lineWidth = 1.0;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = "#64748b";
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Ondas concéntricas de dispersión de semillas y fauna
       for (let r = 1; r <= 3; r++) {
-        const rad = (natWaterTime * 14 + r * 26) % 100;
-        const alpha = Math.max(0, 1 - rad / 100) * 0.35;
+        const rad = (natWaterTime * 12 + r * 28) % 95;
+        const alpha = Math.max(0, 1 - rad / 95) * 0.35;
         ctx.beginPath();
-        ctx.ellipse(burroCenter.x, burroCenter.y, rad * 1.6, rad * 0.85, -0.3, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(71, 85, 105, ${alpha})`;
+        ctx.ellipse(burroCenter.x, burroCenter.y, rad * 1.5, rad * 0.8, -0.3, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(51, 65, 85, ${alpha})`;
         ctx.lineWidth = 1.1;
         ctx.stroke();
       }
     }
 
+    // 2. CORREDORES ECOLÓGICOS REGIONALES CON POLILÍNEAS DETALLADAS E HITOS
     if (natMacroSvg) {
       natMacroSvg.innerHTML = "";
       const SVGNS = "http://www.w3.org/2000/svg";
 
-      const corridors = [
+      const macroRoutes = [
         {
-          from: [8400, 2400],
-          to: [7518, 3137],
-          name: "Corredor Cordillera Oriental → Humedal El Burro",
+          name: "Cerros Orientales (Cruz Verde) → Cuenca Río Fucha → El Burro",
+          desc: "Corredor aviar este-oeste (2.600 msnm a 2.540 msnm)",
+          hitorigen: "Cerros Orientales",
+          pts: [
+            [8600, 2200],
+            [8200, 2600],
+            [7850, 2900],
+            [7518, 3137]
+          ],
           color: "#334155"
         },
         {
-          from: [6200, 4400],
-          to: [7518, 3137],
-          name: "Corredor Sabana Norte · Río Bogotá",
+          name: "Río Bogotá & Sabana Norte → Conexión Humedales",
+          desc: "Ruta migratoria longitudinal del altiplano cundiboyacense",
+          hitorigen: "Río Bogotá / Sabana Norte",
+          pts: [
+            [6100, 4600],
+            [6600, 4100],
+            [7050, 3600],
+            [7518, 3137]
+          ],
           color: "#475569"
+        },
+        {
+          name: "Intercambio Local Tintal: El Burro ↔ Humedal La Vaca",
+          desc: "Paso de baja altura para dispersión de flora y aves residentes",
+          hitorigen: "H. La Vaca",
+          pts: [
+            [6750, 3750],
+            [7100, 3450],
+            [7518, 3137]
+          ],
+          color: "#0f766e"
         }
       ];
 
-      corridors.forEach(c => {
-        const p1 = projectPoint(c.from[0], c.from[1]);
-        const p2 = projectPoint(c.to[0], c.to[1]);
-        if (!p1.inFront || !p2.inFront) return;
+      macroRoutes.forEach(r => {
+        const scr = r.pts.map(p => projectPoint(p[0], p[1]));
+        if (scr.length < 2 || !scr[scr.length - 1].inFront) return;
 
         const pathG = document.createElementNS(SVGNS, "g");
-        const line = document.createElementNS(SVGNS, "line");
-        line.setAttribute("x1", String(p1.x)); line.setAttribute("y1", String(p1.y));
-        line.setAttribute("x2", String(p2.x)); line.setAttribute("y2", String(p2.y));
-        line.setAttribute("stroke", c.color);
-        line.setAttribute("stroke-width", "1.8");
-        line.setAttribute("stroke-dasharray", "5 4");
-        line.setAttribute("stroke-dashoffset", String((-natWaterTime * 16) % 20));
-        pathG.appendChild(line);
 
-        // Flecha de directriz sobria
-        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-        const arrowLen = 10;
-        const x1 = p2.x - arrowLen * Math.cos(angle - Math.PI / 6);
-        const y1 = p2.y - arrowLen * Math.sin(angle - Math.PI / 6);
-        const x2 = p2.x - arrowLen * Math.cos(angle + Math.PI / 6);
-        const y2 = p2.y - arrowLen * Math.sin(angle + Math.PI / 6);
+        // Trayectoria de fondo para destacar
+        let d = `M ${scr[0].x} ${scr[0].y}`;
+        for (let i = 1; i < scr.length; i++) d += ` L ${scr[i].x} ${scr[i].y}`;
+
+        const bgLine = document.createElementNS(SVGNS, "path");
+        bgLine.setAttribute("d", d);
+        bgLine.setAttribute("fill", "none");
+        bgLine.setAttribute("stroke", "rgba(255,255,255,0.85)");
+        bgLine.setAttribute("stroke-width", "4");
+        pathG.appendChild(bgLine);
+
+        // Línea animada punteada
+        const flowLine = document.createElementNS(SVGNS, "path");
+        flowLine.setAttribute("d", d);
+        flowLine.setAttribute("fill", "none");
+        flowLine.setAttribute("stroke", r.color);
+        flowLine.setAttribute("stroke-width", "2.2");
+        flowLine.setAttribute("stroke-dasharray", "6 4");
+        const dashOffset = (natWaterTime * 18) % 20;
+        flowLine.setAttribute("stroke-dashoffset", (-dashOffset).toFixed(1));
+        pathG.appendChild(flowLine);
+
+        // Marcador del hito de origen
+        const pStart = scr[0];
+        const dotStart = document.createElementNS(SVGNS, "circle");
+        dotStart.setAttribute("cx", String(pStart.x)); dotStart.setAttribute("cy", String(pStart.y));
+        dotStart.setAttribute("r", "4.5");
+        dotStart.setAttribute("fill", r.color);
+        dotStart.setAttribute("stroke", "#ffffff");
+        dotStart.setAttribute("stroke-width", "1.5");
+        pathG.appendChild(dotStart);
+
+        // Hito origen texto
+        const hitTxt = document.createElementNS(SVGNS, "text");
+        hitTxt.setAttribute("x", String(pStart.x + 8)); hitTxt.setAttribute("y", String(pStart.y - 4));
+        hitTxt.setAttribute("font-family", "'Segoe UI', sans-serif");
+        hitTxt.setAttribute("font-size", "8.5px"); hitTxt.setAttribute("font-weight", "700");
+        hitTxt.setAttribute("fill", "#0f172a");
+        hitTxt.textContent = r.hitorigen;
+        pathG.appendChild(hitTxt);
+
+        // Flecha hacia El Burro
+        const pEnd = scr[scr.length - 1], pPrev = scr[scr.length - 2];
+        const angle = Math.atan2(pEnd.y - pPrev.y, pEnd.x - pPrev.x);
+        const arrowLen = 11;
+        const x1 = pEnd.x - arrowLen * Math.cos(angle - Math.PI / 6);
+        const y1 = pEnd.y - arrowLen * Math.sin(angle - Math.PI / 6);
+        const x2 = pEnd.x - arrowLen * Math.cos(angle + Math.PI / 6);
+        const y2 = pEnd.y - arrowLen * Math.sin(angle + Math.PI / 6);
         const arrow = document.createElementNS(SVGNS, "polygon");
-        arrow.setAttribute("points", `${p2.x},${p2.y} ${x1},${y1} ${x2},${y2}`);
-        arrow.setAttribute("fill", c.color);
+        arrow.setAttribute("points", `${pEnd.x},${pEnd.y} ${x1},${y1} ${x2},${y2}`);
+        arrow.setAttribute("fill", r.color);
         pathG.appendChild(arrow);
 
-        // Etiqueta técnica minimalista
-        const midX = (p1.x + p2.x) / 2;
-        const midY = (p1.y + p2.y) / 2;
-        const lblG = document.createElementNS(SVGNS, "g");
-        lblG.setAttribute("transform", `translate(${midX - 70}, ${midY - 14})`);
-
-        const bg = document.createElementNS(SVGNS, "rect");
-        bg.setAttribute("x", "0"); bg.setAttribute("y", "0");
-        bg.setAttribute("width", "165"); bg.setAttribute("height", "18");
-        bg.setAttribute("rx", "3"); bg.setAttribute("fill", "rgba(255,255,255,0.95)");
-        bg.setAttribute("stroke", "#cbd5e1"); bg.setAttribute("stroke-width", "1");
-        lblG.appendChild(bg);
-
-        const lbl = document.createElementNS(SVGNS, "text");
-        lbl.setAttribute("x", "5"); lbl.setAttribute("y", "12");
-        lbl.setAttribute("font-family", "'Segoe UI', sans-serif");
-        lbl.setAttribute("font-size", "8.5px");
-        lbl.setAttribute("font-weight", "700");
-        lbl.setAttribute("fill", "#1e293b");
-        lbl.textContent = c.name;
-        lblG.appendChild(lbl);
-
-        pathG.appendChild(lblG);
         natMacroSvg.appendChild(pathG);
       });
+
+      // Panel explicativo superior izquierdo con estructura territorial
+      const boxG = document.createElementNS(SVGNS, "g");
+      boxG.setAttribute("transform", "translate(16, 16)");
+
+      const boxBg = document.createElementNS(SVGNS, "rect");
+      boxBg.setAttribute("x", "0"); boxBg.setAttribute("y", "0");
+      boxBg.setAttribute("width", "270"); boxBg.setAttribute("height", "54");
+      boxBg.setAttribute("rx", "4"); boxBg.setAttribute("fill", "rgba(255,255,255,0.96)");
+      boxBg.setAttribute("stroke", "#cbd5e1"); boxBg.setAttribute("stroke-width", "1");
+      boxG.appendChild(boxBg);
+
+      const title = document.createElementNS(SVGNS, "text");
+      title.setAttribute("x", "10"); title.setAttribute("y", "15");
+      title.setAttribute("font-family", "'Segoe UI', sans-serif");
+      title.setAttribute("font-size", "10px"); title.setAttribute("font-weight", "800");
+      title.setAttribute("fill", "#0f172a");
+      title.textContent = "ESTRUCTURA ECOLÓGICA PRINCIPAL (EEP)";
+      boxG.appendChild(title);
+
+      const d1 = document.createElementNS(SVGNS, "text");
+      d1.setAttribute("x", "10"); d1.setAttribute("y", "29");
+      d1.setAttribute("font-family", "'Segoe UI', sans-serif");
+      d1.setAttribute("font-size", "8.5px"); d1.setAttribute("font-weight", "600");
+      d1.setAttribute("fill", "#334155");
+      d1.textContent = "• Conector Biológico: Cerros Orientales ↔ Río Bogotá";
+      boxG.appendChild(d1);
+
+      const d2 = document.createElementNS(SVGNS, "text");
+      d2.setAttribute("x", "10"); d2.setAttribute("y", "43");
+      d2.setAttribute("font-family", "'Segoe UI', sans-serif");
+      d2.setAttribute("font-size", "8.5px"); d2.setAttribute("font-weight", "600");
+      d2.setAttribute("fill", "#0f766e");
+      d2.textContent = "• Nodo Genético Tintal: El Burro ↔ La Vaca ↔ Techo";
+      boxG.appendChild(d2);
+
+      natMacroSvg.appendChild(boxG);
+
+      // Nodo central Humedal El Burro destacado
+      if (burroCenter.inFront) {
+        const hubG = document.createElementNS(SVGNS, "g");
+        hubG.setAttribute("transform", `translate(${burroCenter.x}, ${burroCenter.y})`);
+
+        const hubPin = document.createElementNS(SVGNS, "circle");
+        hubPin.setAttribute("r", "5"); hubPin.setAttribute("fill", "#0f172a");
+        hubPin.setAttribute("stroke", "#ffffff"); hubPin.setAttribute("stroke-width", "2");
+        hubG.appendChild(hubPin);
+
+        const hubTxt = document.createElementNS(SVGNS, "text");
+        hubTxt.setAttribute("x", "9"); hubTxt.setAttribute("y", "4");
+        hubTxt.setAttribute("font-family", "'Segoe UI', sans-serif");
+        hubTxt.setAttribute("font-size", "9px"); hubTxt.setAttribute("font-weight", "800");
+        hubTxt.setAttribute("fill", "#0f172a");
+        hubTxt.textContent = "NODO EL BURRO (EEP)";
+        hubG.appendChild(hubTxt);
+
+        natMacroSvg.appendChild(hubG);
+      }
     }
   }
 
