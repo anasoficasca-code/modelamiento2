@@ -1183,12 +1183,14 @@
   const explodeHint = document.getElementById("explodeHint");
 
   // ---- Herramienta de pluma: dibujar un poligono haciendo clic para ir
-  // agregando vertices sobre el terreno (raycasting contra el plano del
-  // suelo), mostrando en vivo las coordenadas (locales y lat/lng) de cada
-  // punto arriba a la izquierda. ----
+  // agregando vertices en la PANTALLA (dibujo 2D con SVG, no sobre el
+  // terreno 3D), para poder dibujar libremente afuera del rombo tambien
+  // - se sigue calculando lat/lng de cada punto (proyectando contra el
+  // suelo) solo para el dato, no para la posicion visual del dibujo.
   let penActive = false;
-  const penPoints = []; // {x,y} en coordenadas RAW/locales
-  let penLine = null;
+  const penPoints = []; // {sx,sy} pixeles de pantalla + {x,y} coordenadas RAW calculadas
+  const penSvg = document.getElementById("penSvgOverlay");
+  const SVGNS = "http://www.w3.org/2000/svg";
   const penRaycaster = new THREE.Raycaster();
   const penNdc = new THREE.Vector2();
   const penCoordsOutput = document.getElementById("penCoordsOutput");
@@ -1198,19 +1200,30 @@
     penNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     penRaycaster.setFromCamera(penNdc, camera);
     const dir = penRaycaster.ray.direction, origin = penRaycaster.ray.origin;
-    const t = (0 - origin.y) / dir.y; // interseccion con el plano Y=0 (nivel del suelo)
+    const t = (0 - origin.y) / dir.y; // interseccion con el plano Y=0 (nivel del suelo), solo para el dato de coordenadas
     const hit = origin.clone().add(dir.clone().multiplyScalar(t));
     return fromScene(hit.x, hit.z);
   }
-  function updatePenLine() {
-    if (penLine) { sceneRoot.remove(penLine); penLine.geometry.dispose(); }
-    if (penPoints.length < 2) { penLine = null; return; }
-    const pos = [];
-    penPoints.forEach(p => { const s = toScene(p.x, p.y); pos.push(s.x, 0.15, s.z); });
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    penLine = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xff2d55, linewidth: 2 }));
-    sceneRoot.add(penLine);
+  function redrawPenSvg() {
+    penSvg.innerHTML = "";
+    if (penPoints.length === 0) return;
+    // Puntos visibles (circulos), para que se vea cada vertice aunque el
+    // trazo entre 2 puntos sea corto
+    penPoints.forEach(p => {
+      const c = document.createElementNS(SVGNS, "circle");
+      c.setAttribute("cx", p.sx); c.setAttribute("cy", p.sy); c.setAttribute("r", "4");
+      c.setAttribute("fill", "#0a0a0a");
+      penSvg.appendChild(c);
+    });
+    if (penPoints.length >= 2) {
+      const pts = penPoints.map(p => `${p.sx},${p.sy}`).join(" ");
+      const poly = document.createElementNS(SVGNS, "polyline");
+      poly.setAttribute("points", pts);
+      poly.setAttribute("fill", "none");
+      poly.setAttribute("stroke", "#0a0a0a"); // negro, solo el perimetro (sin relleno)
+      poly.setAttribute("stroke-width", "2.5");
+      penSvg.appendChild(poly);
+    }
   }
   function updatePenOutput() {
     if (penPoints.length === 0) { penCoordsOutput.style.display = "none"; return; }
@@ -1224,18 +1237,28 @@
     const btn = document.getElementById("penToolBtn");
     btn.textContent = penActive ? "✏️ Dibujando… (clic para terminar)" : "✏️ Dibujar polígono";
     btn.style.background = penActive ? "rgba(255,45,85,.85)" : "rgba(10,12,14,.85)";
+    penSvg.style.display = penActive ? "block" : "none";
     controls.enabled = !penActive; // mientras se dibuja, se desactiva rotar/zoom/mover la camara, para que el clic solo ponga puntos
-    if (!penActive) { penPoints.length = 0; if (penLine) { sceneRoot.remove(penLine); penLine.geometry.dispose(); penLine = null; } penCoordsOutput.style.display = "none"; }
+    if (!penActive) { penPoints.length = 0; redrawPenSvg(); penCoordsOutput.style.display = "none"; }
+  });
+  window.addEventListener("click", (e) => {
+    if (!penActive) return;
+    const pt3d = screenToGround(e.clientX, e.clientY);
+    penPoints.push({ sx: e.clientX, sy: e.clientY, x: pt3d.x, y: pt3d.y });
+    redrawPenSvg();
+    updatePenOutput();
   });
   canvas.addEventListener("click", (e) => {
-    if (penActive) {
-      const pt = screenToGround(e.clientX, e.clientY);
-      penPoints.push(pt);
-      updatePenLine();
-      updatePenOutput();
-      return; // mientras se dibuja el poligono, no se dispara la explosion
-    }
+    if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
+    // Para las 3 copias se ponen las vias en gris (no el rojo actual) -
+    // se cambia el color del material un instante, se captura la foto, y
+    // se regresa al color original de inmediato (sin que se note el
+    // cambio en la vista normal).
+    const colorOriginal = roadMat ? roadMat.color.getHex() : null;
+    if (roadMat) roadMat.color.set(0x9099a3);
+    renderer.render(scene, camera); // renderiza un cuadro con el color gris antes de capturar
     const foto = renderer.domElement.toDataURL("image/png");
+    if (roadMat) roadMat.color.set(colorOriginal);
     explodeImgs.forEach(img => { img.src = foto; });
     explodeOverlay.style.display = "flex";
     // fuerza un reflow antes de aplicar la clase, para que la transicion
