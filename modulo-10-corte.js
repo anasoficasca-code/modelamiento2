@@ -1303,7 +1303,7 @@
     // se regresa al color original de inmediato (sin que se note el
     // cambio en la vista normal).
     const colorOriginal = roadMat ? roadMat.color.getHex() : null;
-    if (roadMat) roadMat.color.set(0x0a0a0a);
+    if (roadMat) roadMat.color.set(0x9099a3);
     renderer.render(scene, camera); // renderiza un cuadro con el color gris antes de capturar
     const foto = renderer.domElement.toDataURL("image/png");
     if (roadMat) roadMat.color.set(colorOriginal);
