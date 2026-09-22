@@ -277,18 +277,27 @@
       <div id="explodeStack" style="display:flex; flex-direction:column; align-items:center; width:min(50vw, 560px); pointer-events:auto; margin:auto;">
         <!-- Arriba: Escala Tecnológica -->
         <div class="explode-layer" data-layer="3" style="position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-11%; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1), opacity 1.8s ease, z-index 0s;">
-          <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer;"><img id="explodeImg3" style="width:100%; height:100%; object-fit:contain;"></div>
-          <div class="explode-text" contenteditable="true" data-layer="3" style="position:absolute; top:calc(50% - 20px); right:14px; min-width:210px; width:max-content; white-space:nowrap; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.55); padding:6px 14px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala tecnológica</div>
+          <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer; position:relative;">
+            <img id="explodeImg3" style="width:100%; height:100%; object-fit:contain;">
+            <svg class="explode-poly-svg" data-layer="3" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2;"></svg>
+          </div>
+          <div class="explode-text" contenteditable="true" data-layer="3" style="position:absolute; top:42%; left:26%; width:auto; white-space:nowrap; font-size:13.5px; color:#ffffff; font-family:'Segoe UI',sans-serif; font-weight:800; text-shadow:0 1px 4px rgba(0,0,0,.9), 0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:transparent; padding:0; border:none; box-sizing:border-box; pointer-events:auto; letter-spacing:.02em;">Escala tecnológica</div>
         </div>
         <!-- Medio: Escala Cultural -->
         <div class="explode-layer" data-layer="2" style="position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-11%; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1) .35s, opacity 1.8s ease .35s, z-index 0s;">
-          <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer;"><img id="explodeImg2" style="width:100%; height:100%; object-fit:contain;"></div>
-          <div class="explode-text" contenteditable="true" data-layer="2" style="position:absolute; top:calc(50% - 20px); right:14px; min-width:210px; width:max-content; white-space:nowrap; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.55); padding:6px 14px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala cultural</div>
+          <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer; position:relative;">
+            <img id="explodeImg2" style="width:100%; height:100%; object-fit:contain;">
+            <svg class="explode-poly-svg" data-layer="2" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2;"></svg>
+          </div>
+          <div class="explode-text" contenteditable="true" data-layer="2" style="position:absolute; top:42%; left:26%; width:auto; white-space:nowrap; font-size:13.5px; color:#ffffff; font-family:'Segoe UI',sans-serif; font-weight:800; text-shadow:0 1px 4px rgba(0,0,0,.9), 0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:transparent; padding:0; border:none; box-sizing:border-box; pointer-events:auto; letter-spacing:.02em;">Escala cultural</div>
         </div>
         <!-- Abajo: Escala Natural -->
         <div class="explode-layer" data-layer="1" style="position:relative; width:100%; aspect-ratio:16/9; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1) .7s, opacity 1.8s ease .7s, z-index 0s;">
-          <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer;"><img id="explodeImg1" style="width:100%; height:100%; object-fit:contain;"></div>
-          <div class="explode-text" contenteditable="true" data-layer="1" style="position:absolute; top:calc(50% - 20px); right:14px; min-width:210px; width:max-content; white-space:nowrap; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.55); padding:6px 14px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala natural</div>
+          <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer; position:relative;">
+            <img id="explodeImg1" style="width:100%; height:100%; object-fit:contain;">
+            <svg class="explode-poly-svg" data-layer="1" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2;"></svg>
+          </div>
+          <div class="explode-text" contenteditable="true" data-layer="1" style="position:absolute; top:42%; left:26%; width:auto; white-space:nowrap; font-size:13.5px; color:#ffffff; font-family:'Segoe UI',sans-serif; font-weight:800; text-shadow:0 1px 4px rgba(0,0,0,.9), 0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:transparent; padding:0; border:none; box-sizing:border-box; pointer-events:auto; letter-spacing:.02em;">Escala natural</div>
         </div>
       </div>
     </div>
@@ -402,6 +411,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=91"></script>
+<script src="modulo-10-corte.js?v=92"></script>
 </body>
 </html>

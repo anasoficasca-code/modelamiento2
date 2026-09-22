@@ -1645,6 +1645,29 @@
   controls.addEventListener("change", updateFixedPolygon);
   window.addEventListener("resize", updateFixedPolygon);
 
+  // ---- Dibuja el mismo polígono de la axo principal proyectado sobre las 3 capas explotadas ----
+  function updateExplodePolygons() {
+    const polySvgs = document.querySelectorAll(".explode-poly-svg");
+    const pts = FIXED_POLYGON.map(p => {
+      const s = toScene(p.x, p.y);
+      fixedProjVec.set(s.x, 0, s.z);
+      fixedProjVec.project(camera);
+      return `${((fixedProjVec.x * 0.5 + 0.5) * 1000).toFixed(2)},${((-fixedProjVec.y * 0.5 + 0.5) * 562.5).toFixed(2)}`;
+    }).join(" ");
+
+    polySvgs.forEach(svg => {
+      svg.setAttribute("viewBox", "0 0 1000 562.5");
+      svg.setAttribute("preserveAspectRatio", "none");
+      svg.innerHTML = "";
+      const poly = document.createElementNS(SVGNS, "polygon");
+      poly.setAttribute("points", pts);
+      poly.setAttribute("fill", "#0a0a0a");
+      poly.setAttribute("stroke", "#0a0a0a");
+      poly.setAttribute("stroke-width", "4");
+      svg.appendChild(poly);
+    });
+  }
+
   function screenToGround(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
     penNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
@@ -1782,6 +1805,7 @@
     explodeLayers.forEach(el => { el.style.opacity = "1"; el.style.transform = "scale(1)"; });
 
     setTimeout(() => {
+      updateExplodePolygons();
       document.querySelectorAll(".explode-text").forEach(t => initTextDistort(t, t.dataset.layer));
     }, 60);
   });
@@ -1831,15 +1855,18 @@
   function initTextDistort(textEl, layerNum) {
     textEl.style.transform = "none";
     textEl.style.transformOrigin = "0 0";
-    const w = textEl.offsetWidth || 220;
-    const h = textEl.offsetHeight || 38;
+    textEl.style.background = "transparent";
+    textEl.style.border = "none";
+    textEl.style.padding = "0";
+    textEl.style.fontSize = "13.5px";
+    const w = textEl.offsetWidth || 145;
+    const h = textEl.offsetHeight || 22;
     const originLeft = textEl.offsetLeft;
     const originTop = textEl.offsetTop;
-    // Coordenadas de distorsión en perspectiva calibradas exactamente según pantallazo:
-    // esquinas: (28, 94) (192, 5) (190, 29) (28, 117)
+    // Coordenadas de distorsión ajustadas en escala compacta para caber limpiamente dentro del polígono
     textStates[layerNum] = {
       w, h, originLeft, originTop,
-      corners: [{ x: 28, y: 94 }, { x: 192, y: 5 }, { x: 190, y: 29 }, { x: 28, y: 117 }]
+      corners: [{ x: 10, y: 38 }, { x: 130, y: 4 }, { x: 128, y: 22 }, { x: 10, y: 52 }]
     };
     buildHandles(textEl, layerNum);
     applyDistort(textEl, layerNum);
