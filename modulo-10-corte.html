@@ -331,57 +331,57 @@
 
         <!-- Capa 1: Sistema Inerte y Límite Físico-Hidrológico -->
         <div id="natLayerWater" class="nat-sublayer" data-exploded-top="3%" style="position:absolute; top:3%; left:50%; width:min(48vw, 530px); aspect-ratio:16/9; z-index:6; opacity:0; transform:translate(-50%, -20px); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(235,243,247,.35); box-shadow:0 8px 30px rgba(0,0,0,.04); transition:background .8s ease;">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(241, 245, 249, 0.45); box-shadow:0 10px 30px rgba(15,23,42,.06); transition:background .8s ease;">
             <canvas id="natWaterCanvas" style="width:100%; height:100%; display:block;"></canvas>
             <svg id="natWaterSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; transition:opacity .8s ease;">
-            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#0284c7; background:#e0f2fe; padding:2px 7px; border-radius:4px; margin-bottom:3px;">Capa 01</span>
-            <div style="font-size:14px; font-weight:800; color:#0f172a; line-height:1.15;">SISTEMA INERTE & FÍSICO-HIDROLÓGICO</div>
-            <div style="font-size:10.5px; color:#475569; font-weight:600;">Fluctuación 0,2 ha - 6,69 ha · Nodo hondo · RH 30m · ZMPA</div>
+            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#0369a1; background:#e0f2fe; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(2,132,199,.2);">Capa 01</span>
+            <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">SISTEMA INERTE & FÍSICO-HIDROLÓGICO</div>
+            <div style="font-size:10px; color:#64748b; font-weight:600;">Espejo hídrico dinámico (0,2 - 6,69 ha) · Borde de inundación · Conexión freática La Vaca</div>
           </div>
         </div>
 
         <!-- Capa 2: Cobertura Vegetal y Zonificación Florística -->
         <div id="natLayer2" class="nat-sublayer" data-exploded-top="20%" style="position:absolute; top:20%; left:50%; width:min(48vw, 530px); aspect-ratio:16/9; z-index:5; opacity:0; transform:translate(-50%, -15px); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease .15s;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(240,253,244,.35); box-shadow:0 8px 30px rgba(0,0,0,.03); transition:background .8s ease;">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(244, 246, 243, 0.45); box-shadow:0 10px 30px rgba(15,23,42,.06); transition:background .8s ease;">
             <canvas id="natVegCanvas" style="width:100%; height:100%; display:block;"></canvas>
             <svg id="natVegSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; transition:opacity .8s ease;">
-            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#059669; background:#d1fae5; padding:2px 7px; border-radius:4px; margin-bottom:3px;">Capa 02</span>
-            <div style="font-size:14px; font-weight:800; color:#0f172a; line-height:1.15;">COBERTURA VEGETAL & FLORÍSTICA</div>
-            <div style="font-size:10.5px; color:#475569; font-weight:600;">Eneas (Typha), Kikuyo, Chilco, Tintos y Alisos (ZMPA 12,14 ha)</div>
+            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#2e6930; background:#edf7ed; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(46,105,48,.2);">Capa 02</span>
+            <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">ESTRATIFICACIÓN VEGETAL & COBERTURA</div>
+            <div style="font-size:10px; color:#64748b; font-weight:600;">Franja riparia hidrófita (Typha / juncales) · Matorral perimetral ZMPA · Arbolado urbano</div>
           </div>
         </div>
 
         <!-- Capa 3: Agentes Faunísticos y Dinámicas Estacionales de Aves -->
         <div id="natLayer3" class="nat-sublayer" data-exploded-top="37%" style="position:absolute; top:37%; left:50%; width:min(48vw, 530px); aspect-ratio:16/9; z-index:4; opacity:0; transform:translate(-50%, -10px); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease .3s;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(254,249,195,.30); box-shadow:0 8px 30px rgba(0,0,0,.03); transition:background .8s ease;">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(247, 246, 243, 0.45); box-shadow:0 10px 30px rgba(15,23,42,.06); transition:background .8s ease;">
             <canvas id="natBirdCanvas" style="width:100%; height:100%; display:block;"></canvas>
             <svg id="natBirdSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; transition:opacity .8s ease;">
-            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#d97706; background:#fef3c7; padding:2px 7px; border-radius:4px; margin-bottom:3px;">Capa 03</span>
-            <div style="font-size:14px; font-weight:800; color:#0f172a; line-height:1.15;">AGENTES FAUNÍSTICOS & AVES</div>
-            <div style="font-size:10.5px; color:#475569; font-weight:600;">Verano: patas cortas en playones · Invierno: garzas vs tinguas</div>
+            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#854d0e; background:#fef9c3; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(133,77,14,.2);">Capa 03</span>
+            <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">NICHOS ECOLÓGICOS & AGENTES BIÓTICOS</div>
+            <div style="font-size:10px; color:#64748b; font-weight:600;">Playones de forrajeo en estiaje · Segregación litoral garzas/tinguas en aguas altas</div>
           </div>
         </div>
 
         <!-- Capa 4: Límite Corológico e Intercambio Genético Macro-regional -->
         <div id="natLayer4" class="nat-sublayer" data-exploded-top="54%" style="position:absolute; top:54%; left:50%; width:min(48vw, 530px); aspect-ratio:16/9; z-index:3; opacity:0; transform:translate(-50%, 0); transition:top 2.2s cubic-bezier(.2,.85,.25,1), transform 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.5s ease .45s;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(238,242,255,.35); box-shadow:0 8px 30px rgba(0,0,0,.03); transition:background .8s ease;">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(243, 244, 248, 0.45); box-shadow:0 10px 30px rgba(15,23,42,.06); transition:background .8s ease;">
             <canvas id="natMacroCanvas" style="width:100%; height:100%; display:block;"></canvas>
             <svg id="natMacroSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; transition:opacity .8s ease;">
-            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#4f46e5; background:#e0e7ff; padding:2px 7px; border-radius:4px; margin-bottom:3px;">Capa 04</span>
-            <div style="font-size:14px; font-weight:800; color:#0f172a; line-height:1.15;">CONECTIVIDAD MACRO-REGIONAL</div>
-            <div style="font-size:10.5px; color:#475569; font-weight:600;">Llanos Orientales - Sabana · Nodo genético EEP Humedal El Burro</div>
+            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#475569; background:#e2e8f0; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(71,85,105,.25);">Capa 04</span>
+            <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">CORREDORES DE CONECTIVIDAD REGIONAL</div>
+            <div style="font-size:10px; color:#64748b; font-weight:600;">Eje biogeográfico Cordillera-Río Bogotá · Vínculo genético intercuencas EEP</div>
           </div>
         </div>
 
@@ -390,9 +390,9 @@
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:0 12px 36px rgba(0,0,0,.08);"><img id="natBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; z-index:10; transition:opacity .8s ease;">
-            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px;">Base</span>
-            <div style="font-size:14px; font-weight:800; color:#0f172a; line-height:1.15;">EXISTING FEATURES</div>
-            <div style="font-size:10.5px; color:#475569; font-weight:600;">Axonometría Base Cortada</div>
+            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(100,116,139,.2);">Base</span>
+            <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">EXISTING FEATURES</div>
+            <div style="font-size:10px; color:#64748b; font-weight:600;">Axonometría Base Cortada · Tejido urbano y geomorfología</div>
           </div>
         </div>
       </div>
@@ -402,6 +402,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=89"></script>
+<script src="modulo-10-corte.js?v=90"></script>
 </body>
 </html>

@@ -2193,13 +2193,13 @@
       const diamond = l.querySelector(".sublayer-diamond");
       if (diamond) {
         if (l.id === "natLayerWater") {
-          diamond.style.background = "rgba(235,243,247,.35)";
+          diamond.style.background = "rgba(241, 245, 249, 0.45)";
         } else if (l.id === "natLayer2") {
-          diamond.style.background = "rgba(240,253,244,.35)";
+          diamond.style.background = "rgba(244, 246, 243, 0.45)";
         } else if (l.id === "natLayer3") {
-          diamond.style.background = "rgba(254,249,195,.30)";
+          diamond.style.background = "rgba(247, 246, 243, 0.45)";
         } else if (l.id === "natLayer4") {
-          diamond.style.background = "rgba(238,242,255,.35)";
+          diamond.style.background = "rgba(243, 244, 248, 0.45)";
         }
       }
     });
@@ -2281,13 +2281,13 @@
 
   // ============================================================
   // CAPA 1: Sistema Inerte y Límite Físico-Hidrológico
-  // Fluctuación 0,2 ha a 6,69 ha, nodo más hondo, escorrentías subterráneas hacia La Vaca, CMI, RH 30m, ZMPA
+  // Fluctuación 0,2 ha a 6,69 ha, espejo hídrico realista pizarra/turquesa profundo, nodo más hondo, Ronda Hidráulica 30m, ZMPA y escorrentías
   // ============================================================
   function renderNaturalWaterLayer(mesNum) {
     if (!natWaterCanvas || !rawWaterData) return;
     const info = HUMEDAL_CICLO[mesNum - 1] || HUMEDAL_CICLO[3];
     natMesLabel.textContent = MESES_NAT[mesNum - 1];
-    natFloodStats.innerHTML = `Espejo de agua: <strong style="color:#0284c7">+${info.expansion_pct.toFixed(1)}%</strong> · Profundidad: <strong style="color:#0284c7">${info.profundidad_m.toFixed(2)} m</strong> (${info.temporada})`;
+    natFloodStats.innerHTML = `Espejo hídrico: <strong style="color:#0369a1">+${info.expansion_pct.toFixed(1)}%</strong> · Nivel freático: <strong style="color:#0369a1">${info.profundidad_m.toFixed(2)} m</strong> · <span style="color:#475569;">${info.temporada}</span>`;
 
     const rect = natWaterCanvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -2304,41 +2304,41 @@
     const projectPoint = (rx, ry, el = 0.05) => projectPointToLayer(rx, ry, el, w, h);
 
     const burro = rawWaterData.find(b => (b.nombre || "").includes("Burro"));
-    const expansionFactor = 1 + (info.expansion_pct / 100) * 0.6;
+    const expansionFactor = 1 + (info.expansion_pct / 100) * 0.55;
 
-    // 1. ZMPA y Ronda Hidráulica (RH 30m)
+    // 1. ZMPA y Ronda Hidráulica (RH 30m) - Dibujo técnico arquitectónico
     if (burro && burro.pts && burro.pts.length > 3) {
       const cx = burro.pts.reduce((s, p) => s + p[0], 0) / burro.pts.length;
       const cy = burro.pts.reduce((s, p) => s + p[1], 0) / burro.pts.length;
 
-      // ZMPA (Zona de Manejo y Preservación Ambiental)
-      const zmpaPts = burro.pts.map(p => [cx + (p[0] - cx) * 1.55, cy + (p[1] - cy) * 1.55]);
+      // ZMPA (Zona de Manejo y Preservación Ambiental) - Trama sutil gris azulado
+      const zmpaPts = burro.pts.map(p => [cx + (p[0] - cx) * 1.52, cy + (p[1] - cy) * 1.52]);
       const scrZmpa = zmpaPts.map(p => projectPoint(p[0], p[1]));
       ctx.beginPath();
       ctx.moveTo(scrZmpa[0].x, scrZmpa[0].y);
       for (let i = 1; i < scrZmpa.length; i++) ctx.lineTo(scrZmpa[i].x, scrZmpa[i].y);
       ctx.closePath();
-      ctx.fillStyle = "rgba(186, 230, 253, 0.15)";
+      ctx.fillStyle = "rgba(224, 231, 239, 0.40)";
       ctx.fill();
-      ctx.lineWidth = 1.2;
-      ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = "rgba(2, 132, 199, 0.4)";
+      ctx.lineWidth = 1.0;
+      ctx.setLineDash([3, 4]);
+      ctx.strokeStyle = "rgba(71, 85, 105, 0.45)";
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Ronda Hidráulica RH 30m
-      const rhPts = burro.pts.map(p => [cx + (p[0] - cx) * 1.28, cy + (p[1] - cy) * 1.28]);
+      // Ronda Hidráulica RH 30m - Trazo continuo sobrio
+      const rhPts = burro.pts.map(p => [cx + (p[0] - cx) * 1.25, cy + (p[1] - cy) * 1.25]);
       const scrRh = rhPts.map(p => projectPoint(p[0], p[1]));
       ctx.beginPath();
       ctx.moveTo(scrRh[0].x, scrRh[0].y);
       for (let i = 1; i < scrRh.length; i++) ctx.lineTo(scrRh[i].x, scrRh[i].y);
       ctx.closePath();
-      ctx.lineWidth = 1.4;
-      ctx.strokeStyle = "rgba(2, 132, 199, 0.7)";
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = "rgba(51, 65, 85, 0.65)";
       ctx.stroke();
     }
 
-    // 2. Cuerpos de agua (Humedal y afluentes)
+    // 2. Cuerpos de agua (Humedal y afluentes) - Azul pizarra / mineral realista con reflejos tenues
     rawWaterData.forEach(body => {
       const isBurro = body === burro;
       let pts = body.pts;
@@ -2357,38 +2357,38 @@
       ctx.closePath();
 
       if (isBurro) {
-        const waveX = Math.sin(natWaterTime * 0.8) * 30;
-        const waveY = Math.cos(natWaterTime * 0.6) * 20;
-        const grad = ctx.createLinearGradient(waveX, waveY, w + waveX, h + waveY);
-        grad.addColorStop(0, "rgba(56, 189, 248, 0.90)");
-        grad.addColorStop(0.35, "rgba(14, 165, 233, 0.85)");
-        grad.addColorStop(0.7, "rgba(2, 132, 199, 0.92)");
-        grad.addColorStop(1, "rgba(3, 105, 161, 0.95)");
+        // Degradado de espejo de agua profundo realista (azul pizarra grisáceo a azul cerúleo profundo)
+        const waveX = Math.sin(natWaterTime * 0.5) * 20;
+        const waveY = Math.cos(natWaterTime * 0.4) * 15;
+        const grad = ctx.createLinearGradient(waveX, waveY, w * 0.8 + waveX, h * 0.8 + waveY);
+        grad.addColorStop(0, "rgba(56, 96, 126, 0.88)");
+        grad.addColorStop(0.5, "rgba(40, 78, 107, 0.92)");
+        grad.addColorStop(1, "rgba(28, 59, 83, 0.95)");
         ctx.fillStyle = grad;
         ctx.fill();
-        ctx.lineWidth = 2.2;
-        ctx.strokeStyle = "#0284c7";
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = "rgba(15, 23, 42, 0.85)";
         ctx.stroke();
 
-        // Ondas concéntricas de agua viva
-        for (let ring = 1; ring <= 4; ring++) {
-          const rOffset = ((natWaterTime * 14 + ring * 18) % 75);
-          const rAlpha = Math.max(0, 1 - rOffset / 75) * 0.38;
+        // Ondas de superficie sutiles con tono agua sedosa
+        for (let ring = 1; ring <= 3; ring++) {
+          const rOffset = ((natWaterTime * 10 + ring * 22) % 80);
+          const rAlpha = Math.max(0, 1 - rOffset / 80) * 0.25;
           const centerSO = projectPoint(7518.49, 3137.57);
           if (centerSO.inFront) {
             ctx.beginPath();
-            ctx.ellipse(centerSO.x, centerSO.y, rOffset * 1.6, rOffset * 0.85, -0.32, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${rAlpha})`;
-            ctx.lineWidth = 1.3;
+            ctx.ellipse(centerSO.x, centerSO.y, rOffset * 1.5, rOffset * 0.8, -0.32, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(224, 242, 254, ${rAlpha})`;
+            ctx.lineWidth = 1.0;
             ctx.stroke();
           }
         }
       } else {
         const isNearbyCanal = (body.nombre || "").includes("Angeles") || (body.nombre || "").includes("Castilla") || (body.nombre || "").includes("América");
-        ctx.fillStyle = isNearbyCanal ? "rgba(56, 189, 248, 0.85)" : "rgba(125, 211, 252, 0.60)";
+        ctx.fillStyle = isNearbyCanal ? "rgba(71, 104, 130, 0.75)" : "rgba(100, 128, 150, 0.50)";
         ctx.fill();
-        ctx.lineWidth = isNearbyCanal ? 1.8 : 1.2;
-        ctx.strokeStyle = isNearbyCanal ? "#0284c7" : "#38bdf8";
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = isNearbyCanal ? "rgba(30, 58, 80, 0.8)" : "rgba(71, 104, 130, 0.6)";
         ctx.stroke();
       }
     });
@@ -2401,56 +2401,56 @@
       natWaterSvg.innerHTML = "";
       const SVGNS = "http://www.w3.org/2000/svg";
 
-      // Nodo punto más hondo
+      // Nodo cota más profunda
       if (hondoPt.inFront) {
         const g = document.createElementNS(SVGNS, "g");
         g.setAttribute("transform", `translate(${hondoPt.x}, ${hondoPt.y})`);
 
         const ring = document.createElementNS(SVGNS, "circle");
-        ring.setAttribute("r", (12 + Math.sin(natWaterTime * 3) * 3).toFixed(1));
+        ring.setAttribute("r", (10 + Math.sin(natWaterTime * 2.5) * 2.5).toFixed(1));
         ring.setAttribute("fill", "none");
-        ring.setAttribute("stroke", "#0284c7");
-        ring.setAttribute("stroke-width", "1.6");
-        ring.setAttribute("stroke-dasharray", "3 2");
+        ring.setAttribute("stroke", "#334155");
+        ring.setAttribute("stroke-width", "1.2");
+        ring.setAttribute("stroke-dasharray", "2 2");
         g.appendChild(ring);
 
         const dot = document.createElementNS(SVGNS, "circle");
-        dot.setAttribute("r", "5");
-        dot.setAttribute("fill", "#0369a1");
+        dot.setAttribute("r", "4");
+        dot.setAttribute("fill", "#0f172a");
         dot.setAttribute("stroke", "#ffffff");
-        dot.setAttribute("stroke-width", "2");
+        dot.setAttribute("stroke-width", "1.5");
         g.appendChild(dot);
 
-        // Directriz
+        // Directriz técnica fina
         const line = document.createElementNS(SVGNS, "polyline");
-        line.setAttribute("points", "0,0 20,-20 115,-20");
+        line.setAttribute("points", "0,0 18,-18 105,-18");
         line.setAttribute("fill", "none");
-        line.setAttribute("stroke", "#0369a1");
-        line.setAttribute("stroke-width", "1.5");
+        line.setAttribute("stroke", "#475569");
+        line.setAttribute("stroke-width", "1.1");
         g.appendChild(line);
 
-        // Rectángulo fondo
+        // Tarjeta técnica arquitectónica sobria
         const bg = document.createElementNS(SVGNS, "rect");
-        bg.setAttribute("x", "20"); bg.setAttribute("y", "-36");
-        bg.setAttribute("width", "165"); bg.setAttribute("height", "30");
-        bg.setAttribute("rx", "4"); bg.setAttribute("fill", "rgba(255,255,255,0.95)");
-        bg.setAttribute("stroke", "#0284c7"); bg.setAttribute("stroke-width", "1");
+        bg.setAttribute("x", "18"); bg.setAttribute("y", "-32");
+        bg.setAttribute("width", "160"); bg.setAttribute("height", "26");
+        bg.setAttribute("rx", "3"); bg.setAttribute("fill", "rgba(255,255,255,0.96)");
+        bg.setAttribute("stroke", "#cbd5e1"); bg.setAttribute("stroke-width", "1");
         g.appendChild(bg);
 
         const txt = document.createElementNS(SVGNS, "text");
-        txt.setAttribute("x", "26"); txt.setAttribute("y", "-22");
+        txt.setAttribute("x", "24"); txt.setAttribute("y", "-20");
         txt.setAttribute("font-family", "'Segoe UI', sans-serif");
-        txt.setAttribute("font-size", "10px"); txt.setAttribute("font-weight", "800");
+        txt.setAttribute("font-size", "9.5px"); txt.setAttribute("font-weight", "700");
         txt.setAttribute("fill", "#0f172a");
-        txt.textContent = "Nodo Punto Más Hondo";
+        txt.textContent = "Nodo Central de Depresión Hídrica";
         g.appendChild(txt);
 
         const sub = document.createElementNS(SVGNS, "text");
-        sub.setAttribute("x", "26"); sub.setAttribute("y", "-10");
+        sub.setAttribute("x", "24"); sub.setAttribute("y", "-10");
         sub.setAttribute("font-family", "'Segoe UI', sans-serif");
-        sub.setAttribute("font-size", "8.5px"); sub.setAttribute("font-weight", "700");
-        sub.setAttribute("fill", "#0284c7");
-        sub.textContent = `Centro Suroriental (13,9 ha) · Prof. ${info.profundidad_m.toFixed(2)} m`;
+        sub.setAttribute("font-size", "8px"); sub.setAttribute("font-weight", "600");
+        sub.setAttribute("fill", "#475569");
+        sub.textContent = `Sector Suroriental · Prof. ${info.profundidad_m.toFixed(2)} m`;
         g.appendChild(sub);
 
         natWaterSvg.appendChild(g);
@@ -2471,24 +2471,24 @@
         const subPath = document.createElementNS(SVGNS, "path");
         subPath.setAttribute("d", d);
         subPath.setAttribute("fill", "none");
-        subPath.setAttribute("stroke", "#0284c7");
-        subPath.setAttribute("stroke-width", "2");
-        subPath.setAttribute("stroke-dasharray", "4 6");
-        subPath.setAttribute("stroke-dashoffset", String((-natWaterTime * 15) % 20));
+        subPath.setAttribute("stroke", "#475569");
+        subPath.setAttribute("stroke-width", "1.6");
+        subPath.setAttribute("stroke-dasharray", "3 4");
+        subPath.setAttribute("stroke-dashoffset", String((-natWaterTime * 12) % 18));
         natWaterSvg.appendChild(subPath);
 
         const subLbl = document.createElementNS(SVGNS, "text");
         subLbl.setAttribute("x", String((scrSub[1].x + scrSub[2].x) / 2));
-        subLbl.setAttribute("y", String((scrSub[1].y + scrSub[2].y) / 2 - 8));
+        subLbl.setAttribute("y", String((scrSub[1].y + scrSub[2].y) / 2 - 6));
         subLbl.setAttribute("font-family", "'Segoe UI', sans-serif");
-        subLbl.setAttribute("font-size", "9px");
-        subLbl.setAttribute("font-weight", "800");
-        subLbl.setAttribute("fill", "#0369a1");
-        subLbl.textContent = "Escorrentía subterránea → H. La Vaca";
+        subLbl.setAttribute("font-size", "8.5px");
+        subLbl.setAttribute("font-weight", "700");
+        subLbl.setAttribute("fill", "#334155");
+        subLbl.textContent = "Gradiente freático → H. La Vaca";
         natWaterSvg.appendChild(subLbl);
       }
 
-      // 4. SUBCUENCA EL TINTAL: Corrientes que SALEN de los Ríos (Río Fucha, Río Bogotá, Río Tunjuelo) a través de los canales hacia el Humedal
+      // 4. SUBCUENCA EL TINTAL: Afluentes y canales
       const flowCorridors = [
         {
           name: "Río Fucha → C. Los Ángeles de Castilla",
@@ -2501,7 +2501,7 @@
             [7598.2, 2966.1],
             [7588.3, 2974.2]
           ],
-          color: "#0284c7"
+          color: "#334155"
         },
         {
           name: "Cuenca Río Fucha → Canal Castilla",
@@ -2515,7 +2515,7 @@
             [6983.1, 3865.5],
             [7080.0, 3750.0]
           ],
-          color: "#0ea5e9"
+          color: "#475569"
         },
         {
           name: "Río Tunjuelo & Río Bogotá → Canal Américas",
@@ -2529,7 +2529,7 @@
             [6658.1, 3306.9],
             [7020.0, 3360.0]
           ],
-          color: "#0284c7"
+          color: "#334155"
         }
       ];
 
@@ -2543,17 +2543,17 @@
           const flowBg = document.createElementNS(SVGNS, "path");
           flowBg.setAttribute("d", pathD);
           flowBg.setAttribute("fill", "none");
-          flowBg.setAttribute("stroke", "rgba(255,255,255,0.75)");
-          flowBg.setAttribute("stroke-width", "4.8");
+          flowBg.setAttribute("stroke", "rgba(255,255,255,0.85)");
+          flowBg.setAttribute("stroke-width", "3.6");
           flowG.appendChild(flowBg);
 
           const flowPath = document.createElementNS(SVGNS, "path");
           flowPath.setAttribute("d", pathD);
           flowPath.setAttribute("fill", "none");
           flowPath.setAttribute("stroke", corr.color);
-          flowPath.setAttribute("stroke-width", "2.8");
-          flowPath.setAttribute("stroke-dasharray", "8 5");
-          const dashOffset = (natWaterTime * 24) % 26;
+          flowPath.setAttribute("stroke-width", "2.0");
+          flowPath.setAttribute("stroke-dasharray", "6 4");
+          const dashOffset = (natWaterTime * 18) % 20;
           flowPath.setAttribute("stroke-dashoffset", (-dashOffset).toFixed(1));
           flowG.appendChild(flowPath);
 
@@ -2561,15 +2561,15 @@
           const startDot = document.createElementNS(SVGNS, "circle");
           startDot.setAttribute("cx", String(pStart.x));
           startDot.setAttribute("cy", String(pStart.y));
-          startDot.setAttribute("r", "4.5");
+          startDot.setAttribute("r", "3.5");
           startDot.setAttribute("fill", corr.color);
           startDot.setAttribute("stroke", "#ffffff");
-          startDot.setAttribute("stroke-width", "2");
+          startDot.setAttribute("stroke-width", "1.5");
           flowG.appendChild(startDot);
 
           const pEnd = screenPts[screenPts.length - 1], pPrev = screenPts[screenPts.length - 2];
           const angle = Math.atan2(pEnd.y - pPrev.y, pEnd.x - pPrev.x);
-          const arrowLen = 11;
+          const arrowLen = 9;
           const x1 = pEnd.x - arrowLen * Math.cos(angle - Math.PI / 6);
           const y1 = pEnd.y - arrowLen * Math.sin(angle - Math.PI / 6);
           const x2 = pEnd.x - arrowLen * Math.cos(angle + Math.PI / 6);
@@ -2577,36 +2577,34 @@
           const arrow = document.createElementNS(SVGNS, "polygon");
           arrow.setAttribute("points", `${pEnd.x},${pEnd.y} ${x1},${y1} ${x2},${y2}`);
           arrow.setAttribute("fill", corr.color);
-          arrow.setAttribute("stroke", "#ffffff");
-          arrow.setAttribute("stroke-width", "1.2");
           flowG.appendChild(arrow);
 
           const midIdx = Math.floor(screenPts.length / 2);
           const pLabel = screenPts[midIdx] || screenPts[0];
           const labelG = document.createElementNS(SVGNS, "g");
-          const offsetX = pLabel.x > w * 0.5 ? -150 : 10;
-          const offsetY = pLabel.y < 50 ? 25 : -12;
+          const offsetX = pLabel.x > w * 0.5 ? -145 : 10;
+          const offsetY = pLabel.y < 50 ? 20 : -10;
           labelG.setAttribute("transform", `translate(${pLabel.x + offsetX}, ${pLabel.y + offsetY})`);
 
-          const textWidth = corr.name.length * 6.5 + 16;
+          const textWidth = corr.name.length * 5.8 + 14;
           const rectBg = document.createElementNS(SVGNS, "rect");
-          rectBg.setAttribute("x", "-4");
-          rectBg.setAttribute("y", "-14");
+          rectBg.setAttribute("x", "-3");
+          rectBg.setAttribute("y", "-12");
           rectBg.setAttribute("width", String(textWidth));
-          rectBg.setAttribute("height", "18");
-          rectBg.setAttribute("rx", "4");
+          rectBg.setAttribute("height", "16");
+          rectBg.setAttribute("rx", "3");
           rectBg.setAttribute("fill", "rgba(255,255,255,0.95)");
-          rectBg.setAttribute("stroke", corr.color);
-          rectBg.setAttribute("stroke-width", "1.2");
+          rectBg.setAttribute("stroke", "#cbd5e1");
+          rectBg.setAttribute("stroke-width", "1");
           labelG.appendChild(rectBg);
 
           const label = document.createElementNS(SVGNS, "text");
           label.setAttribute("x", "4");
           label.setAttribute("y", "0");
           label.setAttribute("font-family", "'Segoe UI', sans-serif");
-          label.setAttribute("font-size", "10px");
-          label.setAttribute("font-weight", "800");
-          label.setAttribute("fill", corr.color);
+          label.setAttribute("font-size", "9px");
+          label.setAttribute("font-weight", "700");
+          label.setAttribute("fill", "#1e293b");
           label.textContent = corr.name;
           labelG.appendChild(label);
 
@@ -2618,8 +2616,8 @@
   }
 
   // ============================================================
-  // CAPA 2: Cobertura Vegetal y Zonificación Florística
-  // Praderas flotantes/juncales, franja invasiva de Typha y Kikuyo con terrización, franja terrestre ZMPA (12,14 ha)
+  // CAPA 2: Estratificación Vegetal y Cobertura Florística
+  // Tonos realistas: Verde salvia, verde oliva desaturado, ocre terroso para Typha y copas de árboles con volumen sombreado
   // ============================================================
   function renderNaturalVegLayer(mesNum) {
     if (!natVegCanvas) return;
@@ -2637,11 +2635,10 @@
 
     const projectPoint = (rx, ry, el = 0.05) => projectPointToLayer(rx, ry, el, w, h);
     const info = HUMEDAL_CICLO[(mesNum || 4) - 1] || HUMEDAL_CICLO[3];
-    // En sequía/estiaje (baja cota de inundación), eneas y pasto kikuyo avanzan sobre el lecho (terrización)
     const isDrySeason = info.profundidad_m < 1.1;
-    const typhaAdvance = isDrySeason ? 0.85 : 1.10;
+    const typhaAdvance = isDrySeason ? 0.88 : 1.08;
 
-    // 1. Zonas verdes y parques generales
+    // 1. Zonas verdes y parques generales - Verde oliva salvia suave
     if (rawParquesData && rawParquesData.length) {
       rawParquesData.forEach(p => {
         if (!p.pts || p.pts.length < 3) return;
@@ -2652,10 +2649,10 @@
         ctx.moveTo(scrPts[0].x, scrPts[0].y);
         for (let i = 1; i < scrPts.length; i++) ctx.lineTo(scrPts[i].x, scrPts[i].y);
         ctx.closePath();
-        ctx.fillStyle = "rgba(74, 222, 128, 0.35)";
+        ctx.fillStyle = "rgba(164, 180, 148, 0.40)"; // Verde salvia suave desaturado
         ctx.fill();
-        ctx.lineWidth = 1.1;
-        ctx.strokeStyle = "rgba(22, 163, 74, 0.55)";
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = "rgba(110, 130, 95, 0.50)";
         ctx.stroke();
       });
     }
@@ -2667,35 +2664,36 @@
         const cx = burro.pts.reduce((s, p) => s + p[0], 0) / burro.pts.length;
         const cy = burro.pts.reduce((s, p) => s + p[1], 0) / burro.pts.length;
 
-        // Franja terrestre ZMPA 12,14 ha: chilco, tinto, alisos
-        const zmpaVegPts = burro.pts.map(p => [cx + (p[0] - cx) * 1.48, cy + (p[1] - cy) * 1.48]);
+        // Franja terrestre ZMPA 12,14 ha: chilco, tinto, alisos - Verde bosque agrisado
+        const zmpaVegPts = burro.pts.map(p => [cx + (p[0] - cx) * 1.45, cy + (p[1] - cy) * 1.45]);
         const scrZmpa = zmpaVegPts.map(p => projectPoint(p[0], p[1]));
         ctx.beginPath();
         ctx.moveTo(scrZmpa[0].x, scrZmpa[0].y);
         for (let i = 1; i < scrZmpa.length; i++) ctx.lineTo(scrZmpa[i].x, scrZmpa[i].y);
         ctx.closePath();
-        ctx.fillStyle = "rgba(34, 197, 94, 0.25)";
+        ctx.fillStyle = "rgba(128, 148, 114, 0.35)";
         ctx.fill();
-        ctx.lineWidth = 1.3;
-        ctx.strokeStyle = "rgba(21, 128, 61, 0.6)";
+        ctx.lineWidth = 1.1;
+        ctx.strokeStyle = "rgba(82, 102, 70, 0.55)";
         ctx.stroke();
 
-        // Franja invasiva de Typha angustifolia (Eneas) y Kikuyo
+        // Franja invasiva de Typha angustifolia (Eneas) y gramíneas - Ocre pajizo / verde junco
         const typhaPts = burro.pts.map(p => [cx + (p[0] - cx) * typhaAdvance, cy + (p[1] - cy) * typhaAdvance]);
         const scrTypha = typhaPts.map(p => projectPoint(p[0], p[1]));
         ctx.beginPath();
         ctx.moveTo(scrTypha[0].x, scrTypha[0].y);
         for (let i = 1; i < scrTypha.length; i++) ctx.lineTo(scrTypha[i].x, scrTypha[i].y);
         ctx.closePath();
-        ctx.fillStyle = isDrySeason ? "rgba(202, 138, 4, 0.40)" : "rgba(101, 163, 13, 0.35)";
+        // Color realista: en estiaje ocre terroso apagado, en lluvia verde caña junco
+        ctx.fillStyle = isDrySeason ? "rgba(175, 143, 90, 0.40)" : "rgba(138, 154, 106, 0.35)";
         ctx.fill();
-        ctx.lineWidth = 1.4;
-        ctx.strokeStyle = isDrySeason ? "#ca8a04" : "#65a30d";
+        ctx.lineWidth = 1.1;
+        ctx.strokeStyle = isDrySeason ? "rgba(140, 110, 65, 0.65)" : "rgba(95, 115, 75, 0.65)";
         ctx.stroke();
       }
     }
 
-    // 3. Árboles georreferenciados
+    // 3. Árboles georreferenciados - Copas con sombreado de copa realista (no bolas fluorescentes)
     if (treeMeshes && treeMeshes[0] && treeMeshes[0].data) {
       const trees = treeMeshes[0].data;
       const localTrees = trees.filter(t => t[0] >= 6700 && t[0] <= 8100 && t[1] >= 2600 && t[1] <= 4250);
@@ -2703,25 +2701,33 @@
         const [x, y, hMeters, especie] = t;
         const pt = projectPoint(x, y);
         if (!pt.inFront || pt.x < -20 || pt.x > w + 20 || pt.y < -20 || pt.y > h + 20) return;
-        const r = Math.max(2.8, Math.min(6, (hMeters || 6) * 0.5));
+        const r = Math.max(2.5, Math.min(5.5, (hMeters || 6) * 0.45));
+        const esp = especie || "";
+
+        // Sombra arrojada tenue
+        ctx.beginPath();
+        ctx.ellipse(pt.x + 1.2, pt.y + 1.2, r * 1.1, r * 0.7, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+        ctx.fill();
+
+        // Copa del árbol en tonos naturales sobrios
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
-        const esp = especie || "";
         if (esp.includes("Sauco") || esp.includes("Aliso")) {
-          ctx.fillStyle = "rgba(16, 185, 129, 0.92)"; // Alisos y sauces
+          ctx.fillStyle = "#557a55"; // Verde aliso cenizo
         } else if (esp.includes("Chilco") || esp.includes("Tinto")) {
-          ctx.fillStyle = "rgba(5, 150, 105, 0.92)"; // Matorral arbustivo nativo
+          ctx.fillStyle = "#4a684b"; // Matorral nativo sobrio
         } else {
-          ctx.fillStyle = "rgba(22, 163, 74, 0.85)";
+          ctx.fillStyle = "#5d7356"; // Arbóreo estándar
         }
         ctx.fill();
-        ctx.lineWidth = 0.8;
-        ctx.strokeStyle = "rgba(255,255,255,0.85)";
+        ctx.lineWidth = 0.6;
+        ctx.strokeStyle = "rgba(255,255,255,0.7)";
         ctx.stroke();
       });
     }
 
-    // Anotación en SVG
+    // Anotación en SVG técnica
     if (natVegSvg) {
       natVegSvg.innerHTML = "";
       const SVGNS = "http://www.w3.org/2000/svg";
@@ -2731,33 +2737,33 @@
         g.setAttribute("transform", `translate(${tagPt.x}, ${tagPt.y})`);
 
         const line = document.createElementNS(SVGNS, "polyline");
-        line.setAttribute("points", "0,0 20,-20 120,-20");
+        line.setAttribute("points", "0,0 18,-18 115,-18");
         line.setAttribute("fill", "none");
-        line.setAttribute("stroke", "#059669");
-        line.setAttribute("stroke-width", "1.5");
+        line.setAttribute("stroke", "#475569");
+        line.setAttribute("stroke-width", "1.1");
         g.appendChild(line);
 
         const bg = document.createElementNS(SVGNS, "rect");
-        bg.setAttribute("x", "20"); bg.setAttribute("y", "-36");
-        bg.setAttribute("width", "175"); bg.setAttribute("height", "30");
-        bg.setAttribute("rx", "4"); bg.setAttribute("fill", "rgba(255,255,255,0.95)");
-        bg.setAttribute("stroke", "#059669"); bg.setAttribute("stroke-width", "1");
+        bg.setAttribute("x", "18"); bg.setAttribute("y", "-32");
+        bg.setAttribute("width", "175"); bg.setAttribute("height", "26");
+        bg.setAttribute("rx", "3"); bg.setAttribute("fill", "rgba(255,255,255,0.96)");
+        bg.setAttribute("stroke", "#cbd5e1"); bg.setAttribute("stroke-width", "1");
         g.appendChild(bg);
 
         const txt = document.createElementNS(SVGNS, "text");
-        txt.setAttribute("x", "26"); txt.setAttribute("y", "-22");
+        txt.setAttribute("x", "24"); txt.setAttribute("y", "-20");
         txt.setAttribute("font-family", "'Segoe UI', sans-serif");
-        txt.setAttribute("font-size", "10px"); txt.setAttribute("font-weight", "800");
-        txt.setAttribute("fill", "#065f46");
-        txt.textContent = isDrySeason ? "Terrización activa: Ensamble Typha" : "Franja ZMPA 12,14 ha: Alisos y Tintos";
+        txt.setAttribute("font-size", "9.5px"); txt.setAttribute("font-weight", "700");
+        txt.setAttribute("fill", "#1e293b");
+        txt.textContent = isDrySeason ? "Retracción y Terrización de Typha" : "Cinturón Ripario ZMPA (12,14 ha)";
         g.appendChild(txt);
 
         const sub = document.createElementNS(SVGNS, "text");
-        sub.setAttribute("x", "26"); sub.setAttribute("y", "-10");
+        sub.setAttribute("x", "24"); sub.setAttribute("y", "-10");
         sub.setAttribute("font-family", "'Segoe UI', sans-serif");
-        sub.setAttribute("font-size", "8.5px"); sub.setAttribute("font-weight", "600");
-        sub.setAttribute("fill", "#059669");
-        sub.textContent = isDrySeason ? "Eneas avanzan hacia el lecho seco" : "Cinturón de protección litoral y juncales";
+        sub.setAttribute("font-size", "8px"); sub.setAttribute("font-weight", "600");
+        sub.setAttribute("fill", "#64748b");
+        sub.textContent = isDrySeason ? "Biomasa de eneas avanza sobre playones" : "Alisos, Sauces, Tintos y pasto Kikuyo";
         g.appendChild(sub);
 
         natVegSvg.appendChild(g);
@@ -2766,9 +2772,8 @@
   }
 
   // ============================================================
-  // CAPA 3: Agentes Faunísticos y Dinámicas Estacionales de Aves
-  // Verano: aves patas cortas (chaparritos, patos, zambullidores) en playones
-  // Invierno: garzas zancudas de patas largas que desplazan a tinguas hacia las eneas
+  // CAPA 3: Nichos Ecológicos y Agentes Bióticos (Aves)
+  // Representación cartográfica limpia: Garzas (blanco hueso con ribete pizarra), Tinguas (gris carbón con punto ocre terracota), Patos (pardo oliva)
   // ============================================================
   function renderNaturalBirdLayer(mesNum) {
     if (!natBirdCanvas) return;
@@ -2786,97 +2791,96 @@
 
     const projectPoint = (rx, ry, el = 0.05) => projectPointToLayer(rx, ry, el, w, h);
     const info = HUMEDAL_CICLO[(mesNum || 4) - 1] || HUMEDAL_CICLO[3];
-    const isWinter = info.profundidad_m >= 1.4; // Invierno: alta profundidad
+    const isWinter = info.profundidad_m >= 1.4;
 
     const centerSO = projectPoint(7518.49, 3137.57);
     if (!centerSO.inFront) return;
 
     if (isWinter) {
-      // INVIERNO: Garzas de patas largas (zancudas) en áreas abiertas + tinguas desplazadas hacia los bordes
-      for (let i = 0; i < 9; i++) {
-        const ang = (i / 9) * Math.PI * 2 + natWaterTime * 0.2;
-        const dist = 35 + Math.sin(natWaterTime + i) * 18;
-        const bx = centerSO.x + Math.cos(ang) * dist * 1.5;
-        const by = centerSO.y + Math.sin(ang) * dist * 0.8;
+      // INVIERNO: Garzas zancudas de patas largas en lámina abierta + tinguas en borde de vegetación
+      for (let i = 0; i < 8; i++) {
+        const ang = (i / 8) * Math.PI * 2 + natWaterTime * 0.15;
+        const dist = 32 + Math.sin(natWaterTime * 0.8 + i) * 16;
+        const bx = centerSO.x + Math.cos(ang) * dist * 1.45;
+        const by = centerSO.y + Math.sin(ang) * dist * 0.78;
 
-        // Garza zancuda (blanca / azul, patas largas)
-        ctx.beginPath();
-        ctx.arc(bx, by, 3.8, 0, Math.PI * 2);
-        ctx.fillStyle = "#ffffff";
-        ctx.fill();
-        ctx.lineWidth = 1.2;
-        ctx.strokeStyle = "#2563eb";
-        ctx.stroke();
-
-        // Línea de patas zancudas en el agua
+        // Pata zancuda tenue
         ctx.beginPath();
         ctx.moveTo(bx, by);
-        ctx.lineTo(bx, by + 6);
-        ctx.strokeStyle = "#1d4ed8";
-        ctx.lineWidth = 1;
+        ctx.lineTo(bx, by + 5);
+        ctx.strokeStyle = "#475569";
+        ctx.lineWidth = 0.9;
+        ctx.stroke();
+
+        // Cuerpo garza (blanco marfil con contorno gris piedra)
+        ctx.beginPath();
+        ctx.ellipse(bx, by, 3.2, 2.2, -0.2, 0, Math.PI * 2);
+        ctx.fillStyle = "#f8fafc";
+        ctx.fill();
+        ctx.lineWidth = 0.9;
+        ctx.strokeStyle = "#334155";
         ctx.stroke();
       }
 
-      // Tinguas residentes en los bordes de eneas
-      for (let j = 0; j < 12; j++) {
-        const ang = (j / 12) * Math.PI * 2;
-        const tx = centerSO.x + Math.cos(ang) * 95;
-        const ty = centerSO.y + Math.sin(ang) * 55;
+      // Tinguas en franja litoral (cuerpo carbón pizarra oscuro con pequeño pico carmesí apagado)
+      for (let j = 0; j < 11; j++) {
+        const ang = (j / 11) * Math.PI * 2;
+        const tx = centerSO.x + Math.cos(ang) * 92;
+        const ty = centerSO.y + Math.sin(ang) * 52;
         ctx.beginPath();
-        ctx.arc(tx, ty, 3, 0, Math.PI * 2);
-        ctx.fillStyle = "#dc2626"; // Pico / escudo frontal rojo de la tingua
+        ctx.arc(tx, ty, 2.8, 0, Math.PI * 2);
+        ctx.fillStyle = "#1e293b";
         ctx.fill();
         ctx.lineWidth = 0.8;
-        ctx.strokeStyle = "#111827";
+        ctx.strokeStyle = "#991b1b"; // Terracota / carmesí sobrio
         ctx.stroke();
       }
     } else {
-      // VERANO: Aves de patas cortas (chaparritos, patos turrios, zambullidores) en playones expuestos
-      for (let k = 0; k < 18; k++) {
-        const ang = (k / 18) * Math.PI * 2 + natWaterTime * 0.3;
-        const dist = 20 + Math.cos(natWaterTime * 0.5 + k) * 22;
-        const px = centerSO.x + Math.cos(ang) * dist * 1.4;
-        const py = centerSO.y + Math.sin(ang) * dist * 0.75;
+      // VERANO: Aves de patas cortas (patos y zambullidores) en playones expuestos (pardo y ocre tostado)
+      for (let k = 0; k < 15; k++) {
+        const ang = (k / 15) * Math.PI * 2 + natWaterTime * 0.2;
+        const dist = 22 + Math.cos(natWaterTime * 0.4 + k) * 20;
+        const px = centerSO.x + Math.cos(ang) * dist * 1.35;
+        const py = centerSO.y + Math.sin(ang) * dist * 0.72;
 
-        // Pato / zambullidor nadando o en playón
         ctx.beginPath();
-        ctx.ellipse(px, py, 4.2, 2.8, -0.2, 0, Math.PI * 2);
-        ctx.fillStyle = "#d97706";
+        ctx.ellipse(px, py, 3.4, 2.2, -0.2, 0, Math.PI * 2);
+        ctx.fillStyle = "#785336"; // Pardo terroso
         ctx.fill();
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 0.8;
+        ctx.strokeStyle = "#fef3c7";
         ctx.stroke();
       }
     }
 
-    // Anotaciones en SVG
+    // Anotaciones en SVG técnica sobria
     if (natBirdSvg) {
       natBirdSvg.innerHTML = "";
       const SVGNS = "http://www.w3.org/2000/svg";
       const g = document.createElementNS(SVGNS, "g");
-      g.setAttribute("transform", `translate(${centerSO.x - 70}, ${centerSO.y - 45})`);
+      g.setAttribute("transform", `translate(${centerSO.x - 75}, ${centerSO.y - 42})`);
 
       const bg = document.createElementNS(SVGNS, "rect");
       bg.setAttribute("x", "0"); bg.setAttribute("y", "0");
-      bg.setAttribute("width", "185"); bg.setAttribute("height", "28");
-      bg.setAttribute("rx", "4"); bg.setAttribute("fill", "rgba(255,255,255,0.95)");
-      bg.setAttribute("stroke", "#d97706"); bg.setAttribute("stroke-width", "1.2");
+      bg.setAttribute("width", "180"); bg.setAttribute("height", "26");
+      bg.setAttribute("rx", "3"); bg.setAttribute("fill", "rgba(255,255,255,0.96)");
+      bg.setAttribute("stroke", "#cbd5e1"); bg.setAttribute("stroke-width", "1");
       g.appendChild(bg);
 
       const txt = document.createElementNS(SVGNS, "text");
-      txt.setAttribute("x", "8"); txt.setAttribute("y", "13");
+      txt.setAttribute("x", "8"); txt.setAttribute("y", "12");
       txt.setAttribute("font-family", "'Segoe UI', sans-serif");
-      txt.setAttribute("font-size", "9.5px"); txt.setAttribute("font-weight", "800");
-      txt.setAttribute("fill", "#92400e");
-      txt.textContent = isWinter ? "Invierno: Garzas zancudas dominantes" : "Verano: Patas cortas en playones";
+      txt.setAttribute("font-size", "9px"); txt.setAttribute("font-weight", "700");
+      txt.setAttribute("fill", "#1e293b");
+      txt.textContent = isWinter ? "Aguas Altas: Garzas zancudas en espejo" : "Estiaje: Aves de patas cortas en playones";
       g.appendChild(txt);
 
       const sub = document.createElementNS(SVGNS, "text");
-      sub.setAttribute("x", "8"); sub.setAttribute("y", "23");
+      sub.setAttribute("x", "8"); sub.setAttribute("y", "21");
       sub.setAttribute("font-family", "'Segoe UI', sans-serif");
-      sub.setAttribute("font-size", "8px"); sub.setAttribute("font-weight", "600");
-      sub.setAttribute("fill", "#b45309");
-      sub.textContent = isWinter ? "Tinguas desplazadas hacia franja de eneas" : "Patos turrios y zambullidores en bajamar";
+      sub.setAttribute("font-size", "7.8px"); sub.setAttribute("font-weight", "600");
+      sub.setAttribute("fill", "#64748b");
+      sub.textContent = isWinter ? "Tinguas moteadas replegadas en litoral de eneas" : "Patos turrios y zambullidores en bajamar";
       g.appendChild(sub);
 
       natBirdSvg.appendChild(g);
@@ -2884,8 +2888,8 @@
   }
 
   // ============================================================
-  // CAPA 4: Límite Corológico e Intercambio Genético Macro-regional
-  // Vectores y trayectorias migratorias desde Llanos Orientales y Sabana hacia el nodo genético de El Burro
+  // CAPA 4: Corredores de Conectividad Regional e Intercambio Genético
+  // Vectores cartográficos de precisión (Gris pizarra / azul acero) sin efectos chillones
   // ============================================================
   function renderNaturalMacroLayer(mesNum) {
     if (!natMacroCanvas) return;
@@ -2904,15 +2908,15 @@
     const projectPoint = (rx, ry, el = 0.05) => projectPointToLayer(rx, ry, el, w, h);
     const burroCenter = projectPoint(7518.49, 3137.57);
 
-    // Ondas concéntricas de nodo genético regional (EEP)
+    // Anillos de influencia de nodo biogeográfico (trazo gris acero fino)
     if (burroCenter.inFront) {
       for (let r = 1; r <= 3; r++) {
-        const rad = (natWaterTime * 18 + r * 28) % 110;
-        const alpha = Math.max(0, 1 - rad / 110) * 0.45;
+        const rad = (natWaterTime * 14 + r * 26) % 100;
+        const alpha = Math.max(0, 1 - rad / 100) * 0.35;
         ctx.beginPath();
-        ctx.ellipse(burroCenter.x, burroCenter.y, rad * 1.8, rad * 0.9, -0.3, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(79, 70, 229, ${alpha})`;
-        ctx.lineWidth = 1.5;
+        ctx.ellipse(burroCenter.x, burroCenter.y, rad * 1.6, rad * 0.85, -0.3, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(71, 85, 105, ${alpha})`;
+        ctx.lineWidth = 1.1;
         ctx.stroke();
       }
     }
@@ -2921,21 +2925,18 @@
       natMacroSvg.innerHTML = "";
       const SVGNS = "http://www.w3.org/2000/svg";
 
-      // Vectores macro-regionales que convergen en el Humedal El Burro:
-      // 1. Vector desde los Llanos Orientales (cordillera oriental hacia la sabana)
-      // 2. Vector desde el Valle del Magdalena / Sabana Norte hacia El Burro
       const corridors = [
         {
           from: [8400, 2400],
           to: [7518, 3137],
-          name: "Corredor Llanos Orientales → El Burro",
-          color: "#4f46e5"
+          name: "Corredor Cordillera Oriental → Humedal El Burro",
+          color: "#334155"
         },
         {
           from: [6200, 4400],
           to: [7518, 3137],
-          name: "Corredor Sabana Norte / Río Bogotá",
-          color: "#6366f1"
+          name: "Corredor Sabana Norte · Río Bogotá",
+          color: "#475569"
         }
       ];
 
@@ -2949,14 +2950,14 @@
         line.setAttribute("x1", String(p1.x)); line.setAttribute("y1", String(p1.y));
         line.setAttribute("x2", String(p2.x)); line.setAttribute("y2", String(p2.y));
         line.setAttribute("stroke", c.color);
-        line.setAttribute("stroke-width", "2.6");
-        line.setAttribute("stroke-dasharray", "8 5");
-        line.setAttribute("stroke-dashoffset", String((-natWaterTime * 22) % 26));
+        line.setAttribute("stroke-width", "1.8");
+        line.setAttribute("stroke-dasharray", "5 4");
+        line.setAttribute("stroke-dashoffset", String((-natWaterTime * 16) % 20));
         pathG.appendChild(line);
 
-        // Flecha direccional
+        // Flecha de directriz sobria
         const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-        const arrowLen = 12;
+        const arrowLen = 10;
         const x1 = p2.x - arrowLen * Math.cos(angle - Math.PI / 6);
         const y1 = p2.y - arrowLen * Math.sin(angle - Math.PI / 6);
         const x2 = p2.x - arrowLen * Math.cos(angle + Math.PI / 6);
@@ -2966,6 +2967,29 @@
         arrow.setAttribute("fill", c.color);
         pathG.appendChild(arrow);
 
+        // Etiqueta técnica minimalista
+        const midX = (p1.x + p2.x) / 2;
+        const midY = (p1.y + p2.y) / 2;
+        const lblG = document.createElementNS(SVGNS, "g");
+        lblG.setAttribute("transform", `translate(${midX - 70}, ${midY - 14})`);
+
+        const bg = document.createElementNS(SVGNS, "rect");
+        bg.setAttribute("x", "0"); bg.setAttribute("y", "0");
+        bg.setAttribute("width", "165"); bg.setAttribute("height", "18");
+        bg.setAttribute("rx", "3"); bg.setAttribute("fill", "rgba(255,255,255,0.95)");
+        bg.setAttribute("stroke", "#cbd5e1"); bg.setAttribute("stroke-width", "1");
+        lblG.appendChild(bg);
+
+        const lbl = document.createElementNS(SVGNS, "text");
+        lbl.setAttribute("x", "5"); lbl.setAttribute("y", "12");
+        lbl.setAttribute("font-family", "'Segoe UI', sans-serif");
+        lbl.setAttribute("font-size", "8.5px");
+        lbl.setAttribute("font-weight", "700");
+        lbl.setAttribute("fill", "#1e293b");
+        lbl.textContent = c.name;
+        lblG.appendChild(lbl);
+
+        pathG.appendChild(lblG);
         natMacroSvg.appendChild(pathG);
       });
     }
