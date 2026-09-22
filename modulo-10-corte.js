@@ -566,40 +566,33 @@
   let noiseFieldImg = null;
   function rebuildNoiseGround() {
     if (!currentBoxRealBounds) return;
-    if (noiseMesh) { sceneRoot.remove(noiseMesh); noiseMesh.geometry.dispose(); }
     noiseOriginX = currentBoxRealBounds.xMin; noiseOriginY = currentBoxRealBounds.yMin;
     noiseGroundW = currentBoxRealBounds.xMax - currentBoxRealBounds.xMin;
     noiseGroundH = currentBoxRealBounds.yMax - currentBoxRealBounds.yMin;
-    if (noiseGroundW <= 0 || noiseGroundH <= 0) return;
-    const c0 = toScene(currentBoxRealBounds.xMin, currentBoxRealBounds.yMin), c1 = toScene(currentBoxRealBounds.xMax, currentBoxRealBounds.yMax);
-    const w = Math.abs(c1.x - c0.x), h = Math.abs(c1.z - c0.z);
-    const geo = new THREE.PlaneGeometry(w, h);
-    noiseTexture = new THREE.CanvasTexture(noiseBufCanvas);
-    const mat = new THREE.MeshBasicMaterial({ map: noiseTexture, transparent: true, opacity: 1, side: THREE.DoubleSide });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set((c0.x + c1.x) / 2, 0.35, (c0.z + c1.z) / 2); // bastante mas alto que vias/agua/terreno (antes 0.06, muy pegado, causaba destellos/parpadeo raro al competir con esas superficies)
-    mesh.visible = noiseOn;
-    sceneRoot.add(mesh);
-    noiseMesh = mesh;
   }
   const NOISE_VEH_RADIUS_M = 55;
   let lastNoiseCompute = 0;
+  const noiseOverlayCanvas = document.getElementById("noiseCanvasOverlay");
+  const noiseOverlayCtx = noiseOverlayCanvas.getContext("2d");
+  const noiseProjVec = new THREE.Vector3();
   function computeLiveNoiseField(vehicles, now) {
     if (!noiseGroundW || (now - lastNoiseCompute < 140)) return;
     lastNoiseCompute = now;
+    // ---- Buffer de DATOS (independiente de lo visual, en coordenadas
+    // reales) - solo se usa para que las mirlas sepan donde hay ruido,
+    // nunca se dibuja en la escena 3D. ----
     noiseBufCtx.clearRect(0, 0, NOISE_BUF_W, NOISE_BUF_H);
     noiseBufCtx.globalCompositeOperation = "lighter";
     const sx = NOISE_BUF_W / noiseGroundW, sy = NOISE_BUF_H / noiseGroundH;
-    const blobR = NOISE_VEH_RADIUS_M * sx;
+    const blobRData = NOISE_VEH_RADIUS_M * sx;
     vehicles.forEach(v => {
       if (v.x < noiseOriginX || v.x > noiseOriginX + noiseGroundW || v.y < noiseOriginY || v.y > noiseOriginY + noiseGroundH) return;
       const bx = (v.x - noiseOriginX) * sx, by = NOISE_BUF_H - (v.y - noiseOriginY) * sy;
-      const grad = noiseBufCtx.createRadialGradient(bx, by, 0, bx, by, blobR);
+      const grad = noiseBufCtx.createRadialGradient(bx, by, 0, bx, by, blobRData);
       grad.addColorStop(0, "rgba(255,255,255,0.9)");
       grad.addColorStop(1, "rgba(255,255,255,0)");
       noiseBufCtx.fillStyle = grad;
-      noiseBufCtx.beginPath(); noiseBufCtx.arc(bx, by, blobR, 0, Math.PI * 2); noiseBufCtx.fill();
+      noiseBufCtx.beginPath(); noiseBufCtx.arc(bx, by, blobRData, 0, Math.PI * 2); noiseBufCtx.fill();
     });
     noiseBufCtx.globalCompositeOperation = "source-over";
     const img = noiseBufCtx.getImageData(0, 0, NOISE_BUF_W, NOISE_BUF_H);
@@ -608,21 +601,46 @@
       const intensity = data[i + 3] / 255;
       if (intensity < 0.04) { data[i + 3] = 0; continue; }
       const t = Math.min(1, Math.pow(intensity, 2.4));
-      const [r, g, b] = noiseColorAt(t);
-      data[i] = r; data[i + 1] = g; data[i + 2] = b;
-      // El alfa ahora se desvanece SUAVEMENTE segun la intensidad (en vez
-      // de un valor fijo identico para toda mancha por encima del
-      // umbral), para que el borde de cada mancha se disuelva
-      // gradualmente en vez de cortar de golpe - eso era lo que se veia
-      // como un "borde gris" antes.
-      const fadeIn = Math.min(1, (intensity - 0.04) / 0.12);
-      data[i + 3] = Math.round(NOISE_ALPHA * 255 * fadeIn);
+      data[i + 3] = Math.round(255 * Math.min(1, (intensity - 0.04) / 0.12));
     }
     noiseFieldImg = img;
-    if (noiseMesh && noiseMesh.visible) {
-      noiseBufCtx.putImageData(img, 0, 0);
-      noiseTexture.needsUpdate = true;
+
+    // ---- Dibujo VISUAL: capa 2D totalmente aparte de la escena 3D (un
+    // <canvas> flotando ENCIMA de todo, en pixeles de pantalla) - asi es
+    // imposible que afecte vias, agua o vegetacion, sin importar que
+    // pase en el WebGL de abajo. Cada mancha se dibuja proyectando la
+    // posicion REAL de cada vehiculo a su pixel actual en pantalla. ----
+    if (!noiseOn) return;
+    const rect = noiseOverlayCanvas.getBoundingClientRect();
+    if (noiseOverlayCanvas.width !== rect.width || noiseOverlayCanvas.height !== rect.height) {
+      noiseOverlayCanvas.width = rect.width; noiseOverlayCanvas.height = rect.height;
     }
+    noiseOverlayCtx.clearRect(0, 0, rect.width, rect.height);
+    noiseOverlayCtx.globalCompositeOperation = "source-over";
+    // Radio en pixeles: se calcula proyectando 2 puntos separados por el
+    // radio real en metros y midiendo la distancia resultante en pantalla,
+    // para que el tamaño de la mancha se vea coherente con el zoom actual.
+    const p0 = toScene(0, 0), p1 = toScene(NOISE_VEH_RADIUS_M, 0);
+    noiseProjVec.set(p0.x, 0.3, p0.z); noiseProjVec.project(camera);
+    const s0 = { x: (noiseProjVec.x * 0.5 + 0.5) * rect.width, y: (-noiseProjVec.y * 0.5 + 0.5) * rect.height };
+    noiseProjVec.set(p1.x, 0.3, p1.z); noiseProjVec.project(camera);
+    const s1 = { x: (noiseProjVec.x * 0.5 + 0.5) * rect.width, y: (-noiseProjVec.y * 0.5 + 0.5) * rect.height };
+    const blobRScreen = Math.max(4, Math.hypot(s1.x - s0.x, s1.y - s0.y));
+    vehicles.forEach(v => {
+      const p = toScene(v.x, v.y);
+      noiseProjVec.set(p.x, 0.3, p.z);
+      noiseProjVec.project(camera);
+      if (noiseProjVec.z > 1) return; // detras de la camara
+      const sx2 = (noiseProjVec.x * 0.5 + 0.5) * rect.width, sy2 = (-noiseProjVec.y * 0.5 + 0.5) * rect.height;
+      const dbHere = noiseDbAt(v.x, v.y);
+      const t = Math.min(1, Math.max(0, (dbHere - NOISE_DB_BASE) / NOISE_DB_SPAN));
+      const [r, g, b] = noiseColorAt(t);
+      const grad = noiseOverlayCtx.createRadialGradient(sx2, sy2, 0, sx2, sy2, blobRScreen);
+      grad.addColorStop(0, `rgba(${r},${g},${b},${NOISE_ALPHA})`);
+      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      noiseOverlayCtx.fillStyle = grad;
+      noiseOverlayCtx.beginPath(); noiseOverlayCtx.arc(sx2, sy2, blobRScreen, 0, Math.PI * 2); noiseOverlayCtx.fill();
+    });
   }
   const NOISE_DB_BASE = 40, NOISE_DB_SPAN = 52;
   function noiseDbAt(x, y) {
@@ -701,26 +719,24 @@
     }
     return best ? { arbol: best, dist: bestDist } : null;
   }
-  function makeBirdSprite() {
+  function makeBirdSprite(wingUp) {
     const c = document.createElement("canvas"); c.width = 48; c.height = 48;
     const ctx = c.getContext("2d");
     ctx.translate(24, 24);
-    // Icono simple de pajarito (silueta tipo "M" de alas, un solo color
-    // solido oscuro, sin trazos claros ni relleno de fondo) - mas
-    // pequeño y limpio que el diseño anterior.
+    // Icono simple de pajarito volando (silueta de un solo color solido,
+    // sin trazos claros ni fondo): cuerpo pequeño en el centro y 2 alas
+    // que suben o bajan segun "wingUp", para dar sensacion de aleteo.
     ctx.fillStyle = "#1a1c22";
+    const wingY = wingUp ? -9 : 6; // punta del ala arriba o abajo
     ctx.beginPath();
-    ctx.moveTo(0, -2);
-    ctx.quadraticCurveTo(-9, -9, -15, -3);
-    ctx.quadraticCurveTo(-8, -3, -2, 1);
-    ctx.quadraticCurveTo(-8, 3, -15, 8);
-    ctx.quadraticCurveTo(-9, 9, 0, 2);
-    ctx.quadraticCurveTo(9, 9, 15, 8);
-    ctx.quadraticCurveTo(8, 3, 2, 1);
-    ctx.quadraticCurveTo(8, -3, 15, -3);
-    ctx.quadraticCurveTo(9, -9, 0, -2);
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-8, wingY * 0.4, -16, wingY);
+    ctx.quadraticCurveTo(-8, 1, 0, 2);
+    ctx.quadraticCurveTo(8, 1, 16, wingY);
+    ctx.quadraticCurveTo(8, wingY * 0.4, 0, 0);
     ctx.closePath();
     ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 1, 3.4, 2, 0, 0, Math.PI * 2); ctx.fill();
     return new THREE.CanvasTexture(c);
   }
   function makeBirdAgent(origen) {
@@ -803,6 +819,7 @@
     const b0 = currentBoxRealBounds;
     if (b.x < b0.xMin) Object.assign(b, makeBirdAgent(b.residente ? "refugio" : "oriente"), { sprite: b.sprite });
   }
+  let birdTexUp = null, birdTexDown = null; // 2 cuadros de aleteo (alas arriba/abajo), compartidos por todas las mirlas
   function rebuildBirds() {
     if (!currentBoxRealBounds) return;
     if (birdsGroup) { sceneRoot.remove(birdsGroup); birds = []; }
@@ -810,8 +827,9 @@
     birdTreesGrid = buildBirdTreeGrid(attractors);
     birdsGroup = new THREE.Group();
     birdsGroup.visible = birdOn;
-    const spriteTex = makeBirdSprite();
-    const spriteMat = new THREE.SpriteMaterial({ map: spriteTex, transparent: true });
+    birdTexUp = makeBirdSprite(true);
+    birdTexDown = makeBirdSprite(false);
+    const spriteMat = new THREE.SpriteMaterial({ map: birdTexUp, transparent: true, alphaTest: 0.15, depthWrite: false });
     const refugeCount = Math.max(4, Math.round(BIRD_COUNT * 0.15));
     for (let i = 0; i < BIRD_COUNT; i++) {
       const origen = i < refugeCount ? "refugio" : "oriente";
@@ -835,6 +853,10 @@
       const bat = Math.sin(b.phase) * (b.rest > 0 ? 0.15 : 0.3);
       b.sprite.position.set(p.x, 3.2 + bat, p.z);
       b.sprite.material.color.set(b.estresada ? 0xff6b4d : 0xffffff);
+      // Aleteo: se alterna entre las 2 texturas (alas arriba/abajo) segun
+      // la fase de vuelo de cada ave, para que se vea que mueve las alas.
+      const nuevaTex = Math.sin(b.phase) > 0 ? birdTexUp : birdTexDown;
+      if (b.sprite.material.map !== nuevaTex) { b.sprite.material.map = nuevaTex; b.sprite.material.needsUpdate = true; }
     });
   }
 
@@ -1282,7 +1304,8 @@
   document.getElementById("viewReset").addEventListener("click", () => setAxonometricView(400));
   document.getElementById("noiseToggleBtn").addEventListener("click", (e) => {
     noiseOn = !noiseOn;
-    if (noiseMesh) noiseMesh.visible = noiseOn;
+    noiseOverlayCanvas.style.display = noiseOn ? "block" : "none";
+    if (!noiseOn) noiseOverlayCtx.clearRect(0, 0, noiseOverlayCanvas.width, noiseOverlayCanvas.height);
     e.target.textContent = noiseOn ? "🔊 Ocultar ruido" : "🔊 Mostrar ruido";
   });
   document.getElementById("birdToggleBtn").addEventListener("click", (e) => {
@@ -1377,8 +1400,8 @@
       slider.value = String(Math.round(currentTime));
       timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(maxT)}`;
       renderVehiclesAt(currentTime);
-      if (noiseOn || birdOn) computeLiveNoiseField(vehiclesAtTime(currentTime), now);
     }
+    if ((noiseOn || birdOn) && timesteps.length) computeLiveNoiseField(vehiclesAtTime(currentTime), now); // fuera del "if playing": el ruido se sigue viendo aunque este en pausa
     if (birdOn) updateBirds(now);
     // Lineas de borde de edificios: opacidad FIJA, no cambia con el zoom
     // (se pidio que no aparezcan/desaparezcan ni cambien de grosor al
@@ -1671,6 +1694,14 @@
     // de aparicion (de escala 0.05 a 1) se vea animada y no instantanea
     void explodeOverlay.offsetWidth;
     explodeLayers.forEach(el => { el.style.opacity = "1"; el.style.transform = "scale(1)"; });
+    // Los textos se inicializan (dimensiones + manijas) AQUI, una vez que
+    // el overlay ya esta visible - antes se hacia al cargar la pagina,
+    // cuando el overlay todavia estaba oculto (display:none) y el ancho/
+    // alto de cada texto media CERO, dejando la distorsion rota desde el
+    // inicio.
+    setTimeout(() => {
+      document.querySelectorAll(".explode-text").forEach(t => initTextDistort(t, t.dataset.layer));
+    }, 50);
   });
   document.getElementById("explodeClose").addEventListener("click", () => {
     explodeOverlay.style.display = "none";
@@ -1741,6 +1772,7 @@
       document.body.appendChild(handlesLayer);
     }
     const st = textStates[layerNum];
+    if (st.handleEls) st.handleEls.forEach(h => h.remove()); // si ya existian (reinicializacion), se quitan antes de crear las nuevas, para no duplicar
     st.handleEls = st.corners.map((c, idx) => {
       const h = document.createElement("div");
       h.style.cssText = "position:absolute; width:14px; height:14px; border-radius:50%; background:#fff; border:2px solid #0a0a0a; cursor:grab; pointer-events:auto; display:none;";
@@ -1834,31 +1866,43 @@
   // ---- Zoom individual al hacer clic en cada capa: la que se toca crece
   // y ocupa mas espacio, las otras se hacen chicas/se apartan. ----
   let zoomedLayer = null;
+  function unzoomAll() {
+    document.querySelectorAll(".explode-layer").forEach(l => {
+      l.style.transform = "scale(1)"; l.style.opacity = "1"; l.style.visibility = "visible"; l.style.zIndex = "1"; l.style.position = "relative"; l.style.top = ""; l.style.left = "";
+    });
+    zoomedLayer = null;
+  }
   document.querySelectorAll(".explode-clip").forEach((clip, idx) => {
     clip.addEventListener("click", (e) => {
       e.stopPropagation();
       const layerNum = idx + 1;
-      const allLayers = document.querySelectorAll(".explode-layer");
-      if (zoomedLayer === layerNum) {
-        // ya estaba enfocada esta: se vuelve a la vista apilada normal
-        allLayers.forEach(l => { l.style.transform = "scale(1)"; l.style.zIndex = "1"; l.style.margin = ""; });
-        zoomedLayer = null;
-        return;
-      }
+      if (zoomedLayer === layerNum) { unzoomAll(); return; }
       zoomedLayer = layerNum;
+      const allLayers = document.querySelectorAll(".explode-layer");
       allLayers.forEach((l, i) => {
         if (i + 1 === layerNum) {
+          // La capa tocada se saca del flujo normal y se centra en TODA
+          // la pantalla (no solo dentro de la pila), bien grande pero
+          // sin pasarse.
           l.style.transition = "transform 1.1s cubic-bezier(.16,.84,.24,1)";
-          l.style.transform = "scale(2.15)";
-          l.style.zIndex = "50";
+          l.style.position = "fixed";
+          l.style.top = "50%"; l.style.left = "50%";
+          l.style.transform = "translate(-50%,-50%) scale(1.9)";
+          l.style.zIndex = "60";
+          l.style.opacity = "1"; l.style.visibility = "visible";
         } else {
-          l.style.transition = "transform 1.1s cubic-bezier(.16,.84,.24,1), opacity .6s ease";
-          l.style.transform = "scale(0.55)";
-          l.style.opacity = "0.35";
-          l.style.zIndex = "1";
+          // Las otras 2 desaparecen POR COMPLETO (no solo se achican).
+          l.style.transition = "opacity .35s ease";
+          l.style.opacity = "0";
+          l.style.visibility = "hidden";
         }
       });
     });
+  });
+  // Clic afuera de las axonometrias (en el fondo del overlay) vuelve a
+  // mostrar las 3 apiladas normalmente.
+  explodeOverlay.addEventListener("click", (e) => {
+    if (zoomedLayer !== null && e.target === explodeOverlay) unzoomAll();
   });
 
   // ---- Caja de coordenadas de los textos (arriba a la izquierda), para
