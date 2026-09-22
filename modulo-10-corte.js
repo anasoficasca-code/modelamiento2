@@ -537,12 +537,15 @@
   // MAPA DE RUIDO EN VIVO (igual logica que modulo-08-3d.js, pero
   // acotado SOLO al area de la caja de seccion actual, no toda la
   // ciudad) + MIRLAS (Turdus fuscater), aves que se desplazan de oriente
-  // a occidente atraidas por arboles reales, huyendo del ruido - todo
-  // recalculado dentro de los limites reales que muestra la axonometria
-  // en cada momento (se ajusta solo si se mueve la caja de seccion).
+  // ============================================================
+  // MAPA DE RUIDO EN VIVO — IGUAL ESTÉTICA Y LÓGICA QUE modulo-08-3d.js
+  // Manchas de intensidad alrededor de cada vehículo acumuladas con
+  // "lighter" en un canvas texture y coloreadas suavemente de amarillo
+  // a naranja y rojo, con alpha fijo (0.42) sobre la malla del suelo 3D,
+  // recortada con la caja de sección (sectionClipPlanesArr).
   // ============================================================
   const NOISE_ALPHA = 0.42;
-  const NOISE_BUF_W = 200, NOISE_BUF_H = 200;
+  const NOISE_BUF_W = 260, NOISE_BUF_H = 180; // misma resolucion que modulo-08-3d: mancha suave y continua
   const NOISE_COLOR_STOPS = [
     { t: 0.00, rgb: [255, 247, 179] }, { t: 0.20, rgb: [255, 224, 76] },
     { t: 0.40, rgb: [255, 179, 77] }, { t: 0.60, rgb: [245, 124, 0] },
@@ -564,107 +567,72 @@
   noiseBufCanvas.width = NOISE_BUF_W; noiseBufCanvas.height = NOISE_BUF_H;
   const noiseBufCtx = noiseBufCanvas.getContext("2d", { willReadFrequently: true });
   let noiseFieldImg = null;
-  function rebuildNoiseGround() {
-    if (!currentBoxRealBounds) return;
-    noiseOriginX = currentBoxRealBounds.xMin; noiseOriginY = currentBoxRealBounds.yMin;
-    noiseGroundW = currentBoxRealBounds.xMax - currentBoxRealBounds.xMin;
-    noiseGroundH = currentBoxRealBounds.yMax - currentBoxRealBounds.yMin;
+
+  function buildNoiseGround(bbox) {
+    noiseOriginX = bbox[0]; noiseOriginY = bbox[1];
+    noiseGroundW = bbox[2] - bbox[0]; noiseGroundH = bbox[3] - bbox[1];
+    const c0 = toScene(bbox[0], bbox[1]), c1 = toScene(bbox[2], bbox[3]);
+    const w = Math.abs(c1.x - c0.x), h = Math.abs(c1.z - c0.z);
+    const geo = new THREE.PlaneGeometry(w, h);
+    noiseTexture = new THREE.CanvasTexture(noiseBufCanvas);
+    const mat = new THREE.MeshBasicMaterial({
+      map: noiseTexture,
+      transparent: true,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      clippingPlanes: sectionClipPlanesArr,
+      clipShadows: true,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set((c0.x + c1.x) / 2, 0.06, (c0.z + c1.z) / 2);
+    mesh.visible = false;
+    sceneRoot.add(mesh);
+    noiseMesh = mesh;
   }
+
+  function rebuildNoiseGround() {
+    // Si la caja de seccion cambia o se resetea, los clippingPlanes del renderer
+    // ya cortan el plano de ruido de Three.js de forma exacta y automatica
+  }
+
   const NOISE_VEH_RADIUS_M = 55;
   let lastNoiseCompute = 0;
-  const noiseOverlayCanvas = document.getElementById("noiseCanvasOverlay");
-  const noiseOverlayCtx = noiseOverlayCanvas.getContext("2d");
-  const noiseProjVec = new THREE.Vector3();
+  let noiseOn = false;
+
   function computeLiveNoiseField(vehicles, now) {
     if (!noiseGroundW || (now - lastNoiseCompute < 140)) return;
     lastNoiseCompute = now;
-    // ---- Buffer de DATOS (independiente de lo visual, en coordenadas
-    // reales) - solo se usa para que las mirlas sepan donde hay ruido,
-    // nunca se dibuja en la escena 3D. ----
     noiseBufCtx.clearRect(0, 0, NOISE_BUF_W, NOISE_BUF_H);
     noiseBufCtx.globalCompositeOperation = "lighter";
     const sx = NOISE_BUF_W / noiseGroundW, sy = NOISE_BUF_H / noiseGroundH;
-    const blobRData = NOISE_VEH_RADIUS_M * sx;
+    const blobR = NOISE_VEH_RADIUS_M * sx;
     vehicles.forEach(v => {
-      if (v.x < noiseOriginX || v.x > noiseOriginX + noiseGroundW || v.y < noiseOriginY || v.y > noiseOriginY + noiseGroundH) return;
       const bx = (v.x - noiseOriginX) * sx, by = NOISE_BUF_H - (v.y - noiseOriginY) * sy;
-      const grad = noiseBufCtx.createRadialGradient(bx, by, 0, bx, by, blobRData);
+      const grad = noiseBufCtx.createRadialGradient(bx, by, 0, bx, by, blobR);
       grad.addColorStop(0, "rgba(255,255,255,0.9)");
       grad.addColorStop(1, "rgba(255,255,255,0)");
       noiseBufCtx.fillStyle = grad;
-      noiseBufCtx.beginPath(); noiseBufCtx.arc(bx, by, blobRData, 0, Math.PI * 2); noiseBufCtx.fill();
+      noiseBufCtx.beginPath(); noiseBufCtx.arc(bx, by, blobR, 0, Math.PI * 2); noiseBufCtx.fill();
     });
     noiseBufCtx.globalCompositeOperation = "source-over";
     const img = noiseBufCtx.getImageData(0, 0, NOISE_BUF_W, NOISE_BUF_H);
     const data = img.data;
     for (let i = 0; i < data.length; i += 4) {
       const intensity = data[i + 3] / 255;
-      if (intensity < 0.04) { data[i + 3] = 0; continue; }
-      // Curva no lineal: concentra los valores altos cerca del centro de
-      // cada vehiculo y se desvanece suavemente hacia el borde (sin esto
-      // se guardaba un valor casi plano, por eso siempre daba "poco
-      // ruido" = amarillo en vez de un degradado real hasta rojo).
-      const t = Math.pow(intensity, 1.8);
-      data[i + 3] = Math.round(255 * t);
+      if (intensity < 0.02) { data[i + 3] = 0; continue; }
+      const t = Math.min(1, Math.pow(intensity, 2.4));
+      const [r, g, b] = noiseColorAt(t);
+      data[i] = r; data[i + 1] = g; data[i + 2] = b;
+      data[i + 3] = Math.round(NOISE_ALPHA * 255); // alpha SIEMPRE el mismo, solo cambia el color
     }
     noiseFieldImg = img;
-
-    // ---- Dibujo VISUAL: capa 2D totalmente aparte de la escena 3D (un
-    // <canvas> flotando ENCIMA de todo, en pixeles de pantalla) - asi es
-    // imposible que afecte vias, agua o vegetacion, sin importar que
-    // pase en el WebGL de abajo. Cada mancha se dibuja proyectando la
-    // posicion REAL de cada vehiculo a su pixel actual en pantalla. ----
-    if (!noiseOn) return;
-    const rect = noiseOverlayCanvas.getBoundingClientRect();
-    if (noiseOverlayCanvas.width !== rect.width || noiseOverlayCanvas.height !== rect.height) {
-      noiseOverlayCanvas.width = rect.width; noiseOverlayCanvas.height = rect.height;
+    if (noiseMesh && noiseMesh.visible) {
+      noiseBufCtx.putImageData(img, 0, 0);
+      noiseTexture.needsUpdate = true;
     }
-    noiseOverlayCtx.clearRect(0, 0, rect.width, rect.height);
-    noiseOverlayCtx.save();
-    // Recorte: solo se dibuja DENTRO del area real de la caja de seccion
-    // actual (el "rombo" que se ve en pantalla), nunca fuera de ella -
-    // se proyectan las 4 esquinas reales de la caja y se usan como
-    // region de recorte del canvas antes de pintar cualquier mancha.
-    const boxCorners = [
-      [currentBoxRealBounds.xMin, currentBoxRealBounds.yMin], [currentBoxRealBounds.xMax, currentBoxRealBounds.yMin],
-      [currentBoxRealBounds.xMax, currentBoxRealBounds.yMax], [currentBoxRealBounds.xMin, currentBoxRealBounds.yMax],
-    ].map(([rx, ry]) => {
-      const sp = toScene(rx, ry);
-      noiseProjVec.set(sp.x, 0.3, sp.z); noiseProjVec.project(camera);
-      return { x: (noiseProjVec.x * 0.5 + 0.5) * rect.width, y: (-noiseProjVec.y * 0.5 + 0.5) * rect.height };
-    });
-    noiseOverlayCtx.beginPath();
-    noiseOverlayCtx.moveTo(boxCorners[0].x, boxCorners[0].y);
-    for (let i = 1; i < boxCorners.length; i++) noiseOverlayCtx.lineTo(boxCorners[i].x, boxCorners[i].y);
-    noiseOverlayCtx.closePath();
-    noiseOverlayCtx.clip();
-    noiseOverlayCtx.globalCompositeOperation = "lighter"; // igual mezcla que en modulo-08-3d.js: las manchas de vehiculos cercanos se acumulan/mezclan entre si en vez de pintarse una encima de otra, dando el mismo efecto de "resplandor" continuo
-    // Radio en pixeles: se calcula proyectando 2 puntos separados por el
-    // radio real en metros y midiendo la distancia resultante en pantalla,
-    // para que el tamaño de la mancha se vea coherente con el zoom actual.
-    const p0 = toScene(0, 0), p1 = toScene(NOISE_VEH_RADIUS_M, 0);
-    noiseProjVec.set(p0.x, 0.3, p0.z); noiseProjVec.project(camera);
-    const s0 = { x: (noiseProjVec.x * 0.5 + 0.5) * rect.width, y: (-noiseProjVec.y * 0.5 + 0.5) * rect.height };
-    noiseProjVec.set(p1.x, 0.3, p1.z); noiseProjVec.project(camera);
-    const s1 = { x: (noiseProjVec.x * 0.5 + 0.5) * rect.width, y: (-noiseProjVec.y * 0.5 + 0.5) * rect.height };
-    const blobRScreen = Math.max(4, Math.hypot(s1.x - s0.x, s1.y - s0.y));
-    vehicles.forEach(v => {
-      const p = toScene(v.x, v.y);
-      noiseProjVec.set(p.x, 0.3, p.z);
-      noiseProjVec.project(camera);
-      if (noiseProjVec.z > 1) return; // detras de la camara
-      const sx2 = (noiseProjVec.x * 0.5 + 0.5) * rect.width, sy2 = (-noiseProjVec.y * 0.5 + 0.5) * rect.height;
-      const dbHere = noiseDbAt(v.x, v.y);
-      const t = Math.min(1, Math.max(0, (dbHere - NOISE_DB_BASE) / NOISE_DB_SPAN));
-      const [r, g, b] = noiseColorAt(t);
-      const grad = noiseOverlayCtx.createRadialGradient(sx2, sy2, 0, sx2, sy2, blobRScreen);
-      grad.addColorStop(0, `rgba(${r},${g},${b},${NOISE_ALPHA})`);
-      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
-      noiseOverlayCtx.fillStyle = grad;
-      noiseOverlayCtx.beginPath(); noiseOverlayCtx.arc(sx2, sy2, blobRScreen, 0, Math.PI * 2); noiseOverlayCtx.fill();
-    });
-    noiseOverlayCtx.restore(); // quita el recorte, para que el proximo clearRect() limpie TODO el canvas otra vez
   }
+
   const NOISE_DB_BASE = 40, NOISE_DB_SPAN = 52;
   function noiseDbAt(x, y) {
     if (!noiseFieldImg || !noiseGroundW) return NOISE_DB_BASE;
@@ -672,13 +640,11 @@
     const by = Math.floor(NOISE_BUF_H - ((y - noiseOriginY) / noiseGroundH) * NOISE_BUF_H);
     if (bx < 0 || by < 0 || bx >= NOISE_BUF_W || by >= NOISE_BUF_H) return NOISE_DB_BASE;
     const idx = (by * NOISE_BUF_W + bx) * 4;
-    // El buffer de datos ahora solo guarda la intensidad en el canal
-    // alfa (no color, eso se calcula aparte solo para lo visual) - se
-    // usa DIRECTAMENTE como nivel de ruido, sin pasar por el brillo del
-    // color (que ya no se escribe aqui y siempre daba blanco = "0 ruido").
-    const t = noiseFieldImg.data[idx + 3] / 255;
-    if (t < 0.01) return NOISE_DB_BASE;
-    return NOISE_DB_BASE + NOISE_DB_SPAN * t;
+    const raw = noiseFieldImg.data[idx + 3] / 255;
+    const bright = (noiseFieldImg.data[idx] + noiseFieldImg.data[idx + 1] + noiseFieldImg.data[idx + 2]) / (3 * 255);
+    if (raw < 0.01) return NOISE_DB_BASE;
+    const t = 1 - bright;
+    return NOISE_DB_BASE + NOISE_DB_SPAN * Math.max(0, Math.min(1, t * 1.6));
   }
   function noiseEscapeDir(x, y) {
     const paso = (noiseGroundW / NOISE_BUF_W) * 3;
@@ -688,7 +654,6 @@
     if (m < 1e-4) return null;
     return [-gx / m, -gy / m];
   }
-  let noiseOn = false;
 
   // ---- MIRLAS: adaptadas para volar SOLO dentro del area de la caja de
   // seccion actual (entran por el borde este del area visible, salen por
@@ -1292,6 +1257,7 @@
     .then(data => {
       netCenter = { x: (data.bbox[0] + data.bbox[2]) / 2, y: (data.bbox[1] + data.bbox[3]) / 2 };
       buildGround(data.bbox);
+      buildNoiseGround(data.bbox);
       rawEdgesData = data.edges;
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       const h = (data.bbox[3] - data.bbox[1]) * SCALE;
@@ -1348,8 +1314,8 @@
   document.getElementById("viewReset").addEventListener("click", () => setAxonometricView(400));
   document.getElementById("noiseToggleBtn").addEventListener("click", (e) => {
     noiseOn = !noiseOn;
-    noiseOverlayCanvas.style.display = noiseOn ? "block" : "none";
-    if (!noiseOn) noiseOverlayCtx.clearRect(0, 0, noiseOverlayCanvas.width, noiseOverlayCanvas.height);
+    if (noiseMesh) noiseMesh.visible = noiseOn;
+    e.target.classList.toggle("active", noiseOn);
     e.target.textContent = noiseOn ? "🔊 Ocultar ruido" : "🔊 Mostrar ruido";
   });
   document.getElementById("birdToggleBtn").addEventListener("click", (e) => {
@@ -1902,10 +1868,11 @@
   });
 
   // ---- Zoom individual al hacer clic en cada capa: la que se toca crece
-  // y ocupa mas espacio, las otras se hacen chicas/se apartan. ----
+  // lentamente (zoom zoom zoom suave y progresivo), las otras se desvanecen. ----
   let zoomedLayer = null;
   function unzoomAll() {
     document.querySelectorAll(".explode-layer").forEach(l => {
+      l.style.transition = "transform 2.2s cubic-bezier(.2,.85,.25,1), width 2.2s cubic-bezier(.2,.85,.25,1), opacity 1.6s ease";
       l.style.transform = "scale(1)"; l.style.opacity = "1"; l.style.visibility = "visible"; l.style.zIndex = "1"; l.style.position = "relative"; l.style.top = ""; l.style.left = ""; l.style.width = "";
     });
     zoomedLayer = null;
@@ -1919,23 +1886,17 @@
       const allLayers = document.querySelectorAll(".explode-layer");
       allLayers.forEach((l, i) => {
         if (i + 1 === layerNum) {
-          // La capa tocada se saca del flujo normal y se centra en TODA
-          // la pantalla. OJO: al pasar a position:fixed, el width:100%
-          // heredado deja de ser "100% del contenedor" y pasa a ser
-          // "100% de TODA LA VENTANA" (asi funciona fixed) - por eso se
-          // veia gigante. Se fija un ancho EXPLICITO en vw en vez de
-          // depender de un porcentaje, del mismo tamaño que ocupa la
-          // axonometria principal del modulo.
-          l.style.transition = "transform 1.1s cubic-bezier(.16,.84,.24,1), width 1.1s cubic-bezier(.16,.84,.24,1)";
+          // La capa tocada se centra y se va haciendo zoom zoom zoom muy lento
+          l.style.transition = "transform 2.6s cubic-bezier(.2,.85,.25,1), width 2.6s cubic-bezier(.2,.85,.25,1), opacity 1.8s ease";
           l.style.position = "fixed";
           l.style.top = "50%"; l.style.left = "50%";
-          l.style.width = "78vw";
-          l.style.transform = "translate(-50%,-50%)";
+          l.style.width = "82vw";
+          l.style.transform = "translate(-50%,-50%) scale(1.08)";
           l.style.zIndex = "60";
           l.style.opacity = "1"; l.style.visibility = "visible";
         } else {
-          // Las otras 2 desaparecen POR COMPLETO (no solo se achican).
-          l.style.transition = "opacity .35s ease";
+          // Las otras 2 se desvanecen lentamente
+          l.style.transition = "opacity 1.2s ease, transform 1.2s ease";
           l.style.opacity = "0";
           l.style.visibility = "hidden";
         }
