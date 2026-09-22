@@ -729,23 +729,42 @@
     ctx.beginPath(); ctx.ellipse(0, 1, 3.4, 2, 0, 0, Math.PI * 2); ctx.fill();
     return new THREE.CanvasTexture(c);
   }
+  let humedalTreesList = [];
   function makeBirdAgent(origen) {
     const b0 = currentBoxRealBounds;
     let x, y;
     const refugeX = b0.xMin + (b0.xMax - b0.xMin) * 0.12, refugeY = b0.yMin + (b0.yMax - b0.yMin) * 0.88, refugeR = Math.min(b0.xMax - b0.xMin, b0.yMax - b0.yMin) * 0.12;
+    let landedTree = null;
     if (origen === "refugio") {
       const a = Math.random() * Math.PI * 2, r = Math.random() * refugeR;
       x = refugeX + Math.cos(a) * r; y = refugeY + Math.sin(a) * r;
+    } else if (origen === "humedal" && humedalTreesList.length > 0) {
+      // Salen directamente de los árboles del humedal / cuerpo de agua
+      const t = humedalTreesList[Math.floor(Math.random() * humedalTreesList.length)];
+      x = t.x + (Math.random() - 0.5) * 6;
+      y = t.y + (Math.random() - 0.5) * 6;
+      landedTree = { x: t.x, y: t.y };
     } else {
       x = b0.xMax - Math.random() * 20; y = b0.yMin + Math.random() * (b0.yMax - b0.yMin);
     }
     const residente = origen === "refugio";
-    return {
-      x, y, vx: residente ? (Math.random() - 0.5) * 2.2 : -(2.6 + Math.random() * 2.6),
-      vy: (Math.random() - 0.5) * (residente ? 2.2 : 1.2),
-      rest: 0, cooldown: 0, residente, estresada: false, phase: Math.random() * 6.28, sprite: null,
+    const esHumedal = origen === "humedal";
+    const birdObj = {
+      x, y,
+      vx: residente ? (Math.random() - 0.5) * 2.2 : (esHumedal ? (Math.random() - 0.7) * 2.0 : -(2.6 + Math.random() * 2.6)),
+      vy: (Math.random() - 0.5) * (residente ? 2.2 : 1.4),
+      rest: esHumedal ? (3 + Math.random() * 4) : 0,
+      cooldown: 0,
+      residente,
+      esHumedal,
+      origen,
+      estresada: false,
+      phase: Math.random() * 6.28,
+      sprite: null,
       refugeX, refugeY, refugeR,
+      landedAt: landedTree
     };
+    return birdObj;
   }
   function updateBirdAgent(b, dt) {
     b.phase += dt * 9;
@@ -825,7 +844,7 @@
     b.x += b.vx * dt * 10;
     b.y += b.vy * dt * 10;
     const b0 = currentBoxRealBounds;
-    if (b.x < b0.xMin) Object.assign(b, makeBirdAgent(b.residente ? "refugio" : "oriente"), { sprite: b.sprite });
+    if (b.x < b0.xMin) Object.assign(b, makeBirdAgent(b.origen || (b.residente ? "refugio" : "oriente")), { sprite: b.sprite });
   }
   let birdTexUp = null, birdTexDown = null; // 2 cuadros de aleteo (alas arriba/abajo), compartidos por todas las mirlas
   function rebuildBirds() {
@@ -833,14 +852,31 @@
     if (birdsGroup) { sceneRoot.remove(birdsGroup); birds = []; }
     const attractors = treeMeshes && treeMeshes[0] ? sampleAttractorTrees(treeMeshes[0].data) : [];
     birdTreesGrid = buildBirdTreeGrid(attractors);
+
+    // Identificar árboles dentro o adyacentes al Humedal El Burro y su cuerpo de agua
+    if (treeMeshes && treeMeshes[0]) {
+      humedalTreesList = treeMeshes[0].data
+        .filter(t => t[0] >= 6900 && t[0] <= 7800 && t[1] >= 2900 && t[1] <= 4050)
+        .map(t => ({ x: t[0], y: t[1] }));
+      if (humedalTreesList.length === 0) {
+        humedalTreesList = attractors.filter(t => t.x >= 6900 && t.x <= 7800 && t.y >= 2900 && t.y <= 4050);
+      }
+    }
+
     birdsGroup = new THREE.Group();
     birdsGroup.visible = birdOn;
     birdTexUp = makeBirdSprite(true);
     birdTexDown = makeBirdSprite(false);
     const spriteMat = new THREE.SpriteMaterial({ map: birdTexUp, transparent: true, alphaTest: 0.15, depthWrite: false, depthTest: false }); // depthTest:false para que SIEMPRE se vean por encima de edificios/arboles, sin importar que tan "detras" quede en la profundidad real
-    const refugeCount = Math.max(4, Math.round(BIRD_COUNT * 0.15));
+    
+    // Distribución: mirlas que nacen en árboles del humedal + mirlas del refugio + mirlas que entran desde oriente
+    const humedalCount = Math.round(BIRD_COUNT * 0.40); // 40% en árboles del humedal
+    const refugeCount = Math.round(BIRD_COUNT * 0.18);  // 18% refugio
     for (let i = 0; i < BIRD_COUNT; i++) {
-      const origen = i < refugeCount ? "refugio" : "oriente";
+      let origen = "oriente";
+      if (i < humedalCount) origen = "humedal";
+      else if (i < humedalCount + refugeCount) origen = "refugio";
+
       const b = makeBirdAgent(origen);
       const sprite = new THREE.Sprite(spriteMat.clone());
       sprite.scale.set(3.2, 3.2, 1);
@@ -1689,49 +1725,70 @@
   });
   canvas.addEventListener("click", (e) => {
     if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
-    // Para las 3 copias se ponen las vias en gris (no el rojo actual) -
-    // se cambia el color del material un instante, se captura la foto, y
-    // se regresa al color original de inmediato (sin que se note el
-    // cambio en la vista normal).
-    const colorOriginal = roadMat ? roadMat.color.getHex() : null;
+
+    // --- CAPTURA INDEPENDIENTE PARA LAS 3 ESCALAS ---
+    // Guardamos el estado actual del viewport y elementos vivos
+    const origRoadColor = roadMat ? roadMat.color.getHex() : null;
+    const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
+    const origBirdsVis = birdsGroup ? birdsGroup.visible : false;
+    const origVehVis = vehInstanced ? vehInstanced.visible : false;
+    const origEdgesVis = currentBuildingEdgeMesh ? currentBuildingEdgeMesh.visible : false;
+
+    // 1. Escala Natural: base arquitectónica limpia, vías neutrales, sin ruido
+    if (noiseMesh) noiseMesh.visible = false;
+    if (birdsGroup) birdsGroup.visible = false;
     if (roadMat) roadMat.color.set(0x9099a3);
-    renderer.render(scene, camera); // renderiza un cuadro con el color gris antes de capturar
-    const foto = renderer.domElement.toDataURL("image/png");
-    if (roadMat) roadMat.color.set(colorOriginal);
-    explodeImgs.forEach(img => { img.src = foto; });
-    document.getElementById("sceneWrap").style.display = "none"; // la axonometria principal desaparece (no se queda de fondo al lado de las 3 nuevas)
+    if (vehInstanced) vehInstanced.visible = false;
+    renderer.render(scene, camera);
+    const fotoNatural = renderer.domElement.toDataURL("image/png");
+
+    // 2. Escala Cultural: con vehículos y dinámicas urbanas
+    if (vehInstanced) vehInstanced.visible = true;
+    if (roadMat) roadMat.color.set(0x7a838d);
+    renderer.render(scene, camera);
+    const fotoCultural = renderer.domElement.toDataURL("image/png");
+
+    // 3. Escala Tecnológica: vista analítica
+    if (vehInstanced) vehInstanced.visible = true;
+    if (roadMat) roadMat.color.set(0x9099a3);
+    renderer.render(scene, camera);
+    const fotoTecno = renderer.domElement.toDataURL("image/png");
+
+    // Restaurar estado de la escena base
+    if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
+    if (noiseMesh) noiseMesh.visible = origNoiseVis;
+    if (birdsGroup) birdsGroup.visible = origBirdsVis;
+    if (vehInstanced) vehInstanced.visible = origVehVis;
+
+    if (explodeImgs[0]) explodeImgs[0].src = fotoNatural;
+    if (explodeImgs[1]) explodeImgs[1].src = fotoCultural;
+    if (explodeImgs[2]) explodeImgs[2].src = fotoTecno;
+
+    document.getElementById("sceneWrap").style.display = "none";
     explodeOverlay.style.display = "flex";
-    // fuerza un reflow antes de aplicar la clase, para que la transicion
-    // de aparicion (de escala 0.05 a 1) se vea animada y no instantanea
     void explodeOverlay.offsetWidth;
     explodeLayers.forEach(el => { el.style.opacity = "1"; el.style.transform = "scale(1)"; });
-    // Los textos se inicializan (dimensiones + manijas) AQUI, una vez que
-    // el overlay ya esta visible - antes se hacia al cargar la pagina,
-    // cuando el overlay todavia estaba oculto (display:none) y el ancho/
-    // alto de cada texto media CERO, dejando la distorsion rota desde el
-    // inicio.
+
     setTimeout(() => {
       document.querySelectorAll(".explode-text").forEach(t => initTextDistort(t, t.dataset.layer));
-    }, 50);
+    }, 60);
   });
   document.getElementById("explodeClose").addEventListener("click", () => {
     explodeOverlay.style.display = "none";
-    document.getElementById("sceneWrap").style.display = "block"; // vuelve a aparecer la axonometria principal al cerrar
+    document.getElementById("sceneWrap").style.display = "block";
     explodeLayers.forEach(el => { el.style.opacity = "0"; el.style.transform = "scale(.05)"; });
+    hideAllHandles();
   });
-  setTimeout(updateFixedPolygon, 500); // primer dibujo del poligono fijo, una vez que la camara ya quedo bien posicionada
+  setTimeout(updateFixedPolygon, 500);
+
   // ============================================================
   // Distorsion de 4 esquinas para los textos de cada capa (tipo
   // Photoshop "deformar/perspectiva"): cada texto tiene 4 manijas en las
   // esquinas que se pueden arrastrar libremente; se calcula la homografia
   // exacta que lleva el rectangulo original a esas 4 esquinas y se aplica
-  // como matrix3d - asi el texto se ve realmente distorsionado en
-  // perspectiva, no solo inclinado.
+  // como matrix3d con transform-origin: 0 0.
   // ============================================================
   function solveHomography(w, h, dst) {
-    // dst: [{x,y}x4] en el orden esquina sup-izq, sup-der, inf-der, inf-izq
-    // Sistema estandar de 8 ecuaciones para la matriz de perspectiva 3x3
-    // que lleva (0,0),(w,0),(w,h),(0,h) a los 4 puntos destino.
     const src = [[0, 0], [w, 0], [w, h], [0, h]];
     const A = [];
     const bvec = [];
@@ -1740,7 +1797,6 @@
       A.push([x, y, 1, 0, 0, 0, -x * X, -y * X]); bvec.push(X);
       A.push([0, 0, 0, x, y, 1, -x * Y, -y * Y]); bvec.push(Y);
     }
-    // Eliminacion gaussiana simple 8x8
     for (let col = 0; col < 8; col++) {
       let piv = col;
       for (let r = col + 1; r < 8; r++) if (Math.abs(A[r][col]) > Math.abs(A[piv][col])) piv = r;
@@ -1755,23 +1811,30 @@
     const h_ = bvec.map((v, i) => v / A[i][i]);
     return [h_[0], h_[1], h_[2], h_[3], h_[4], h_[5], h_[6], h_[7], 1];
   }
-  function homographyToMatrix3d(H, w, h) {
-    // Convierte la matriz 3x3 de homografia en una matrix3d de CSS
-    // (tecnica estandar: se normaliza dividiendo por H[8] y se acomoda en
-    // las columnas/filas que espera CSS, con el eje Z en 0).
+  function homographyToMatrix3d(H) {
     const m = H;
     return `matrix3d(${m[0]},${m[3]},0,${m[6]}, ${m[1]},${m[4]},0,${m[7]}, 0,0,1,0, ${m[2]},${m[5]},0,${m[8]})`;
   }
-  const textStates = {}; // layerNum -> {corners:[{x,y}x4], w, h}
+  const textStates = {}; // layerNum -> {corners:[{x,y}x4], w, h, originLeft, originTop}
   function initTextDistort(textEl, layerNum) {
-    const w = textEl.offsetWidth, h = textEl.offsetHeight;
-    textStates[layerNum] = { w, h, corners: [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }] };
+    textEl.style.transform = "none";
+    textEl.style.transformOrigin = "0 0";
+    const w = textEl.offsetWidth || 220;
+    const h = textEl.offsetHeight || 38;
+    const originLeft = textEl.offsetLeft;
+    const originTop = textEl.offsetTop;
+    textStates[layerNum] = {
+      w, h, originLeft, originTop,
+      corners: [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }]
+    };
     buildHandles(textEl, layerNum);
   }
   function applyDistort(textEl, layerNum) {
     const st = textStates[layerNum];
+    if (!st) return;
     const H = solveHomography(st.w, st.h, st.corners);
-    textEl.style.transform = homographyToMatrix3d(H, st.w, st.h);
+    textEl.style.transformOrigin = "0 0";
+    textEl.style.transform = homographyToMatrix3d(H);
     updateTextCoordsOutput();
   }
   let handlesLayer = null;
@@ -1795,24 +1858,30 @@
   function positionHandles(textEl, layerNum) {
     const st = textStates[layerNum];
     if (!st || !st.handleEls) return;
-    const parent = textEl.parentElement.getBoundingClientRect();
-    const textLeft = parent.right - 14 - st.w;
-    const textTop = parent.top + parent.height / 2 - st.h / 2;
+    const parentRect = textEl.parentElement.getBoundingClientRect();
+    const baseScreenX = parentRect.left + st.originLeft;
+    const baseScreenY = parentRect.top + st.originTop;
     st.corners.forEach((c, idx) => {
-      const cx = textLeft + c.x;
-      const cy = textTop + c.y;
+      const cx = baseScreenX + c.x;
+      const cy = baseScreenY + c.y;
       st.handleEls[idx].style.left = (cx - 7) + "px";
       st.handleEls[idx].style.top = (cy - 7) + "px";
     });
   }
   function showHandlesFor(layerNum) {
     Object.keys(textStates).forEach(k => {
-      textStates[k].handleEls.forEach(h => { h.style.display = (k == layerNum) ? "block" : "none"; });
+      if (textStates[k].handleEls) {
+        textStates[k].handleEls.forEach(h => { h.style.display = (k == layerNum) ? "block" : "none"; });
+      }
     });
     positionHandles(document.querySelector(`.explode-text[data-layer="${layerNum}"]`), layerNum);
   }
   function hideAllHandles() {
-    Object.keys(textStates).forEach(k => textStates[k].handleEls.forEach(h => h.style.display = "none"));
+    Object.keys(textStates).forEach(k => {
+      if (textStates[k].handleEls) {
+        textStates[k].handleEls.forEach(h => h.style.display = "none");
+      }
+    });
   }
   let draggingHandle = null;
   document.addEventListener("pointerdown", (e) => {
@@ -1826,10 +1895,11 @@
     const layerNum = draggingHandle.layer;
     const textEl = document.querySelector(`.explode-text[data-layer="${layerNum}"]`);
     const st = textStates[layerNum];
-    const parent = textEl.parentElement.getBoundingClientRect();
-    const textLeft = parent.right - 14 - st.w;
-    const textTop = parent.top + parent.height / 2 - st.h / 2;
-    st.corners[draggingHandle.corner] = { x: e.clientX - textLeft, y: e.clientY - textTop };
+    if (!st || !textEl) return;
+    const parentRect = textEl.parentElement.getBoundingClientRect();
+    const baseScreenX = parentRect.left + st.originLeft;
+    const baseScreenY = parentRect.top + st.originTop;
+    st.corners[draggingHandle.corner] = { x: e.clientX - baseScreenX, y: e.clientY - baseScreenY };
     applyDistort(textEl, layerNum);
     positionHandles(textEl, layerNum);
   });
