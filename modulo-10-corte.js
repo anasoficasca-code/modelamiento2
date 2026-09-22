@@ -616,6 +616,24 @@
       noiseOverlayCanvas.width = rect.width; noiseOverlayCanvas.height = rect.height;
     }
     noiseOverlayCtx.clearRect(0, 0, rect.width, rect.height);
+    noiseOverlayCtx.save();
+    // Recorte: solo se dibuja DENTRO del area real de la caja de seccion
+    // actual (el "rombo" que se ve en pantalla), nunca fuera de ella -
+    // se proyectan las 4 esquinas reales de la caja y se usan como
+    // region de recorte del canvas antes de pintar cualquier mancha.
+    const boxCorners = [
+      [currentBoxRealBounds.xMin, currentBoxRealBounds.yMin], [currentBoxRealBounds.xMax, currentBoxRealBounds.yMin],
+      [currentBoxRealBounds.xMax, currentBoxRealBounds.yMax], [currentBoxRealBounds.xMin, currentBoxRealBounds.yMax],
+    ].map(([rx, ry]) => {
+      const sp = toScene(rx, ry);
+      noiseProjVec.set(sp.x, 0.3, sp.z); noiseProjVec.project(camera);
+      return { x: (noiseProjVec.x * 0.5 + 0.5) * rect.width, y: (-noiseProjVec.y * 0.5 + 0.5) * rect.height };
+    });
+    noiseOverlayCtx.beginPath();
+    noiseOverlayCtx.moveTo(boxCorners[0].x, boxCorners[0].y);
+    for (let i = 1; i < boxCorners.length; i++) noiseOverlayCtx.lineTo(boxCorners[i].x, boxCorners[i].y);
+    noiseOverlayCtx.closePath();
+    noiseOverlayCtx.clip();
     noiseOverlayCtx.globalCompositeOperation = "source-over";
     // Radio en pixeles: se calcula proyectando 2 puntos separados por el
     // radio real en metros y midiendo la distancia resultante en pantalla,
@@ -641,6 +659,7 @@
       noiseOverlayCtx.fillStyle = grad;
       noiseOverlayCtx.beginPath(); noiseOverlayCtx.arc(sx2, sy2, blobRScreen, 0, Math.PI * 2); noiseOverlayCtx.fill();
     });
+    noiseOverlayCtx.restore(); // quita el recorte, para que el proximo clearRect() limpie TODO el canvas otra vez
   }
   const NOISE_DB_BASE = 40, NOISE_DB_SPAN = 52;
   function noiseDbAt(x, y) {
@@ -673,7 +692,7 @@
     "Cerezo, capuli": { key: "capuli", color: 0xff5fa8, weight: 0.76, base: 200 },
     "Urapán, Fresno": { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 },
   };
-  const BIRD_VISION = 14, BIRD_ARRIVE = 1.4, BIRD_WIND = 2.6, BIRD_MAX_SPEED = 7.8;
+  const BIRD_VISION = 14, BIRD_ARRIVE = 1.4, BIRD_WIND = 1.5, BIRD_MAX_SPEED = 4.2; // vuelo mas lento (antes 2.6/7.8)
   const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 50;
   let birds = [], birdTreesGrid = null, birdsGroup = null, birdOn = false;
   function sampleAttractorTrees(trees) {
@@ -766,6 +785,16 @@
       b.vx *= freno; b.vy *= freno;
       const sp = Math.hypot(b.vx, b.vy);
       if (sp > BIRD_REST_SPEED) { b.vx = (b.vx / sp) * BIRD_REST_SPEED; b.vy = (b.vy / sp) * BIRD_REST_SPEED; }
+      // Se ancla al arbol donde aterrizo: sin esto, aunque vuele mas
+      // lento durante el descanso, se sigue desplazando poco a poco y
+      // termina alejandose del arbol en vez de quedarse posada ahi.
+      if (b.landedAt) {
+        const d = Math.hypot(b.x - b.landedAt.x, b.y - b.landedAt.y);
+        if (d > 3) {
+          const ux = (b.landedAt.x - b.x) / d, uy = (b.landedAt.y - b.y) / d;
+          b.vx += ux * 6 * dt; b.vy += uy * 6 * dt;
+        }
+      }
     } else if (b.residente) {
       if (b.cooldown > 0) b.cooldown -= dt;
       b.vx += (Math.random() - 0.5) * 8 * dt; b.vy += (Math.random() - 0.5) * 8 * dt;
@@ -787,7 +816,7 @@
         const esSauco = arbol.meta.key === "sauco";
         const fuerza = arbol.meta.weight * (esSauco ? 20 : 11);
         b.vx += ux * fuerza * dt; b.vy += uy * fuerza * dt;
-        if (dist < BIRD_ARRIVE * 10) { b.rest = 2 + Math.random(); b.cooldown = 7; }
+        if (dist < BIRD_ARRIVE * 10) { b.rest = 2 + Math.random(); b.cooldown = 7; b.landedAt = { x: arbol.x, y: arbol.y }; }
       }
       const sp = Math.hypot(b.vx, b.vy);
       if (sp > BIRD_MAX_SPEED) { b.vx = (b.vx / sp) * BIRD_MAX_SPEED; b.vy = (b.vy / sp) * BIRD_MAX_SPEED; }
@@ -829,13 +858,14 @@
     birdsGroup.visible = birdOn;
     birdTexUp = makeBirdSprite(true);
     birdTexDown = makeBirdSprite(false);
-    const spriteMat = new THREE.SpriteMaterial({ map: birdTexUp, transparent: true, alphaTest: 0.15, depthWrite: false });
+    const spriteMat = new THREE.SpriteMaterial({ map: birdTexUp, transparent: true, alphaTest: 0.15, depthWrite: false, depthTest: false }); // depthTest:false para que SIEMPRE se vean por encima de edificios/arboles, sin importar que tan "detras" quede en la profundidad real
     const refugeCount = Math.max(4, Math.round(BIRD_COUNT * 0.15));
     for (let i = 0; i < BIRD_COUNT; i++) {
       const origen = i < refugeCount ? "refugio" : "oriente";
       const b = makeBirdAgent(origen);
       const sprite = new THREE.Sprite(spriteMat.clone());
       sprite.scale.set(3.2, 3.2, 1);
+      sprite.renderOrder = 999; // se dibuja al final, despues de todo lo demas, para que nunca quede tapado
       birdsGroup.add(sprite);
       b.sprite = sprite;
       birds.push(b);

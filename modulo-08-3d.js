@@ -548,7 +548,7 @@
     "Cerezo, capuli": { key: "capuli", color: 0xff5fa8, weight: 0.76, base: 200 },
     "Urapán, Fresno": { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 },
   };
-  const BIRD_VISION = 14, BIRD_ARRIVE = 1.4, BIRD_WIND = 2.6, BIRD_MAX_SPEED = 7.8;
+  const BIRD_VISION = 14, BIRD_ARRIVE = 1.4, BIRD_WIND = 1.5, BIRD_MAX_SPEED = 4.2;
   const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 50;
   const REFUGE_X = 3600, REFUGE_Y = 1000, REFUGE_R = 220; // esquina noroeste real del area de Kennedy
   let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null;
@@ -598,23 +598,25 @@
     return best ? { arbol: best, dist: bestDist } : null;
   }
 
-  function makeBirdSprite(colorHex) {
-    const c = document.createElement("canvas"); c.width = 64; c.height = 64;
+  function makeBirdSprite(wingUp) {
+    const c = document.createElement("canvas"); c.width = 48; c.height = 48;
     const ctx = c.getContext("2d");
-    ctx.translate(32, 32);
-    ctx.fillStyle = "#20222c";
-    ctx.beginPath(); ctx.ellipse(0, 0, 13, 7.5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#eef2f7"; ctx.lineWidth = 2.6; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(-15, -13); ctx.lineTo(2, 0); ctx.lineTo(-15, 13); ctx.stroke();
-    ctx.fillStyle = "#f2a93b";
-    ctx.beginPath(); ctx.arc(14, 0, 3.6, 0, Math.PI * 2); ctx.fill();
-    if (colorHex != null) {
-      ctx.strokeStyle = "#" + colorHex.toString(16).padStart(6, "0");
-      ctx.globalAlpha = 0.85; ctx.lineWidth = 2.4;
-      ctx.beginPath(); ctx.arc(0, 0, 24, 0, Math.PI * 2); ctx.stroke();
-    }
-    const tex = new THREE.CanvasTexture(c);
-    return tex;
+    ctx.translate(24, 24);
+    // Icono simple de pajarito volando (silueta de un solo color solido,
+    // sin trazos claros ni fondo) - igual diseño que en modulo-10-corte,
+    // con 2 alas que suben o bajan segun "wingUp" para dar aleteo.
+    ctx.fillStyle = "#1a1c22";
+    const wingY = wingUp ? -9 : 6;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-8, wingY * 0.4, -16, wingY);
+    ctx.quadraticCurveTo(-8, 1, 0, 2);
+    ctx.quadraticCurveTo(8, 1, 16, wingY);
+    ctx.quadraticCurveTo(8, wingY * 0.4, 0, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 1, 3.4, 2, 0, 0, Math.PI * 2); ctx.fill();
+    return new THREE.CanvasTexture(c);
   }
   function makeBirdAgent(origen) {
     let x, y;
@@ -643,6 +645,13 @@
       b.vx *= freno; b.vy *= freno;
       const sp = Math.hypot(b.vx, b.vy);
       if (sp > BIRD_REST_SPEED) { b.vx = (b.vx / sp) * BIRD_REST_SPEED; b.vy = (b.vy / sp) * BIRD_REST_SPEED; }
+      if (b.landedAt) {
+        const d = Math.hypot(b.x - b.landedAt.x, b.y - b.landedAt.y);
+        if (d > 3) {
+          const ux = (b.landedAt.x - b.x) / d, uy = (b.landedAt.y - b.y) / d;
+          b.vx += ux * 6 * dt; b.vy += uy * 6 * dt;
+        }
+      }
     } else if (b.residente) {
       if (b.cooldown > 0) b.cooldown -= dt;
       b.vx += (Math.random() - 0.5) * 8 * dt; b.vy += (Math.random() - 0.5) * 8 * dt;
@@ -665,7 +674,7 @@
         const fuerza = arbol.meta.weight * (esSauco ? 20 : 11);
         b.vx += ux * fuerza * dt; b.vy += uy * fuerza * dt;
         if (dist < BIRD_ARRIVE * 10) {
-          b.rest = 2 + Math.random(); b.restColor = arbol.meta.color; b.cooldown = 7;
+          b.rest = 2 + Math.random(); b.restColor = arbol.meta.color; b.cooldown = 7; b.landedAt = { x: arbol.x, y: arbol.y };
         }
       }
       const sp = Math.hypot(b.vx, b.vy);
@@ -684,16 +693,20 @@
     // sale por el occidente real (x chico): vuelve a entrar por oriente
     if (b.x < 500) Object.assign(b, makeBirdAgent(b.residente ? "refugio" : "oriente"), { sprite: b.sprite });
   }
+  let birdTexUp = null, birdTexDown = null;
   function buildBirds() {
     birdsGroup = new THREE.Group();
     birdsGroup.visible = false;
-    const spriteMat = new THREE.SpriteMaterial({ map: makeBirdSprite(null), transparent: true });
+    birdTexUp = makeBirdSprite(true);
+    birdTexDown = makeBirdSprite(false);
+    const spriteMat = new THREE.SpriteMaterial({ map: birdTexUp, transparent: true, alphaTest: 0.15, depthWrite: false, depthTest: false });
     const refugeCount = Math.max(4, Math.round(BIRD_COUNT * 0.15));
     for (let i = 0; i < BIRD_COUNT; i++) {
       const origen = i < refugeCount ? "refugio" : (i % 2 ? "humedal" : "oriente");
       const b = makeBirdAgent(origen);
       const sprite = new THREE.Sprite(spriteMat.clone());
-      sprite.scale.set(6, 6, 1);
+      sprite.scale.set(3.2, 3.2, 1);
+      sprite.renderOrder = 999;
       birdsGroup.add(sprite);
       b.sprite = sprite;
       birds.push(b);
@@ -711,6 +724,8 @@
       const bat = Math.sin(b.phase) * (b.rest > 0 ? 0.15 : 0.3);
       b.sprite.position.set(p.x, 3.2 + bat, p.z);
       b.sprite.material.color.set(b.estresada ? 0xff6b4d : 0xffffff);
+      const nuevaTex = Math.sin(b.phase) > 0 ? birdTexUp : birdTexDown;
+      if (b.sprite.material.map !== nuevaTex) { b.sprite.material.map = nuevaTex; b.sprite.material.needsUpdate = true; }
     });
   }
 
