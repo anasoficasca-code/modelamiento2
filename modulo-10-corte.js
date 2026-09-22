@@ -346,13 +346,16 @@
   }
 
   let rawBuildingsData = null;
-  let currentBuildingMesh = null, currentBuildingEdgeMesh = null;
+  let currentBuildingMesh = null, currentBuildingEdgeMesh = null, currentBuildingCornerMesh = null;
   function buildBuildings(buildings, boxFilter) {
     if (currentBuildingMesh) { sceneRoot.remove(currentBuildingMesh); currentBuildingMesh.geometry.dispose(); }
     if (currentBuildingEdgeMesh) { sceneRoot.remove(currentBuildingEdgeMesh); currentBuildingEdgeMesh.geometry.dispose(); }
+    if (currentBuildingCornerMesh) { sceneRoot.remove(currentBuildingCornerMesh); currentBuildingCornerMesh.geometry.dispose(); }
     const positions = [];
     const normals = [];
-    const edgePositions = []; // lineas de borde: perimetro del techo + perimetro de la base + esquinas verticales (para que se lea el volumen completo), nada de lineas interiores
+    const edgePositions = []; // solo el perimetro del techo (una linea nativa, se ve bien desde arriba)
+    const cornerPositions = []; // esquinas verticales: geometria 3D real (mini-pared delgada), NO una linea nativa - las lineas nativas de WebGL tienen 1px fijo sin importar linewidth, y ademas se pueden "desaparecer" en angulos rasantes por z-fighting; una pared delgada de verdad se ve igual de gruesa siempre, sin importar el angulo
+    const CORNER_THICK = 0.035; // grosor fijo de la mini-pared de esquina (muy delgado, pero real en 3D)
     buildings.forEach(b => {
       const pts = b.pts.map(p => toScene(p[0], p[1]));
       let h = b.h * SCALE;
@@ -376,7 +379,15 @@
         );
         for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
         edgePositions.push(a.x, h, a.z, c.x, h, c.z); // perimetro del techo
-        edgePositions.push(a.x, 0, a.z, a.x, h, a.z); // esquina vertical (para que se lea el volumen, no solo una silueta plana - esto se habia perdido en una edicion anterior)
+        // Esquina vertical como una mini-pared delgada real (2 caras
+        // perpendiculares en cruz, para que se vea igual de gruesa
+        // mirando desde CUALQUIER angulo, no solo una linea plana que
+        // puede volverse invisible de canto):
+        const t = CORNER_THICK;
+        cornerPositions.push(
+          a.x - nx * t, 0, a.z - nz * t, a.x + nx * t, 0, a.z + nz * t, a.x + nx * t, h, a.z + nz * t,
+          a.x - nx * t, 0, a.z - nz * t, a.x + nx * t, h, a.z + nz * t, a.x - nx * t, h, a.z - nz * t
+        );
       }
 
       // Techo plano simple (sin parapeto sintetico): las mallas REALES de
@@ -414,9 +425,9 @@
     sceneRoot.add(mesh);
     currentBuildingMesh = mesh;
 
-    // Borde oscuro de cada edificio: perimetro del techo + esquinas
-    // verticales (sin lineas internas), para que se lea como un volumen
-    // real y no una silueta plana.
+    // Borde oscuro del perimetro del techo (linea nativa, funciona bien
+    // vista desde arriba, sin el problema de "desaparecer" en angulos
+    // rasantes que si afecta a las verticales).
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
     const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.35 });
@@ -424,6 +435,17 @@
     const edgeMesh = new THREE.LineSegments(edgeGeo, edgeMat);
     sceneRoot.add(edgeMesh);
     currentBuildingEdgeMesh = edgeMesh;
+
+    // Esquinas verticales: geometria 3D real (no lineas), para que el
+    // grosor se vea SIEMPRE igual sin importar el angulo de camara, y
+    // nunca desaparezcan.
+    const cornerGeo = new THREE.BufferGeometry();
+    cornerGeo.setAttribute("position", new THREE.Float32BufferAttribute(cornerPositions, 3));
+    cornerGeo.computeVertexNormals();
+    const cornerMat = new THREE.MeshBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.55, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+    const cornerMesh = new THREE.Mesh(cornerGeo, cornerMat);
+    sceneRoot.add(cornerMesh);
+    currentBuildingCornerMesh = cornerMesh;
   }
 
   function loadBuildings() {
@@ -1207,14 +1229,6 @@
   function redrawPenSvg() {
     penSvg.innerHTML = "";
     if (penPoints.length === 0) return;
-    // Puntos visibles (circulos), para que se vea cada vertice aunque el
-    // trazo entre 2 puntos sea corto
-    penPoints.forEach(p => {
-      const c = document.createElementNS(SVGNS, "circle");
-      c.setAttribute("cx", p.sx); c.setAttribute("cy", p.sy); c.setAttribute("r", "4");
-      c.setAttribute("fill", "#0a0a0a");
-      penSvg.appendChild(c);
-    });
     if (penPoints.length >= 2) {
       const pts = penPoints.map(p => `${p.sx},${p.sy}`).join(" ");
       const poly = document.createElementNS(SVGNS, "polygon"); // "polygon" (no "polyline") cierra la forma sola y permite rellenarla, como una herramienta de pluma normal
@@ -1224,7 +1238,34 @@
       poly.setAttribute("stroke-width", "2.5");
       penSvg.appendChild(poly);
     }
+    // Puntos visibles (circulos), para que se vea cada vertice aunque el
+    // trazo entre 2 puntos sea corto - van DESPUES del poligono en el
+    // DOM para quedar por encima y poder arrastrarlos. Cada uno se puede
+    // arrastrar para reubicarlo despues de dibujado, por si quedo
+    // desfigurado.
+    penPoints.forEach((p, idx) => {
+      const c = document.createElementNS(SVGNS, "circle");
+      c.setAttribute("cx", p.sx); c.setAttribute("cy", p.sy); c.setAttribute("r", "6");
+      c.setAttribute("fill", "#0a0a0a");
+      c.style.pointerEvents = "auto";
+      c.style.cursor = "move";
+      c.addEventListener("pointerdown", (ev) => {
+        ev.stopPropagation();
+        draggingPenIdx = idx;
+      });
+      penSvg.appendChild(c);
+    });
   }
+  let draggingPenIdx = null;
+  window.addEventListener("pointermove", (e) => {
+    if (draggingPenIdx === null) return;
+    const svgRect = penSvg.getBoundingClientRect();
+    const sx = e.clientX - svgRect.left, sy = e.clientY - svgRect.top;
+    const pt3d = screenToGround(e.clientX, e.clientY);
+    penPoints[draggingPenIdx] = { sx, sy, x: pt3d.x, y: pt3d.y };
+    redrawPenSvg();
+    updatePenOutput();
+  });
   function updatePenOutput() {
     if (penPoints.length === 0) { penCoordsOutput.style.display = "none"; return; }
     penCoordsOutput.style.display = "block";
@@ -1241,8 +1282,14 @@
     controls.enabled = !penActive; // mientras se dibuja, se desactiva rotar/zoom/mover la camara, para que el clic solo ponga puntos
     if (!penActive) { penPoints.length = 0; redrawPenSvg(); penCoordsOutput.style.display = "none"; }
   });
+  let justDraggedPen = false;
+  window.addEventListener("pointerup", () => {
+    if (draggingPenIdx !== null) justDraggedPen = true;
+    draggingPenIdx = null;
+  });
   window.addEventListener("click", (e) => {
     if (!penActive) return;
+    if (justDraggedPen) { justDraggedPen = false; return; } // si el clic fue el final de arrastrar un punto existente, no agregar uno nuevo
     const pt3d = screenToGround(e.clientX, e.clientY);
     const svgRect = penSvg.getBoundingClientRect(); // el SVG esta dentro de .main (corrido por el menu lateral), asi que hay que restar su propio origen, no usar las coordenadas de toda la ventana directamente
     penPoints.push({ sx: e.clientX - svgRect.left, sy: e.clientY - svgRect.top, x: pt3d.x, y: pt3d.y });
@@ -1256,7 +1303,7 @@
     // se regresa al color original de inmediato (sin que se note el
     // cambio en la vista normal).
     const colorOriginal = roadMat ? roadMat.color.getHex() : null;
-    if (roadMat) roadMat.color.set(0x9099a3);
+    if (roadMat) roadMat.color.set(0x0a0a0a);
     renderer.render(scene, camera); // renderiza un cuadro con el color gris antes de capturar
     const foto = renderer.domElement.toDataURL("image/png");
     if (roadMat) roadMat.color.set(colorOriginal);
