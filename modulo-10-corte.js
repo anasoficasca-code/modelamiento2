@@ -1216,6 +1216,38 @@
   const penRaycaster = new THREE.Raycaster();
   const penNdc = new THREE.Vector2();
   const penCoordsOutput = document.getElementById("penCoordsOutput");
+
+  // ---- Poligono fijo dado por el usuario (coordenadas reales exactas),
+  // se dibuja en negro sobre el mapa y se recalcula su posicion en
+  // pantalla cada vez que la camara se mueve, para que quede pegado al
+  // lugar real que representa. ----
+  const FIXED_POLYGON = [
+    { x: 6543.2, y: 4141.8 },
+    { x: 6533.1, y: 2808.1 },
+    { x: 7888.4, y: 2808.6 },
+    { x: 7858.7, y: 2775.8 },
+    { x: 6497.1, y: 2773.1 },
+    { x: 6508.8, y: 4106.2 },
+  ];
+  const fixedPolySvg = document.createElementNS(SVGNS, "polygon");
+  fixedPolySvg.setAttribute("fill", "rgba(10,10,10,0.35)");
+  fixedPolySvg.setAttribute("stroke", "#0a0a0a");
+  fixedPolySvg.setAttribute("stroke-width", "2.5");
+  document.getElementById("fixedPolySvgOverlay").appendChild(fixedPolySvg);
+  const fixedProjVec = new THREE.Vector3();
+  function updateFixedPolygon() {
+    const svgRect = document.getElementById("fixedPolySvgOverlay").getBoundingClientRect();
+    const pts = FIXED_POLYGON.map(p => {
+      const s = toScene(p.x, p.y);
+      fixedProjVec.set(s.x, 0, s.z);
+      fixedProjVec.project(camera);
+      return `${(fixedProjVec.x * 0.5 + 0.5) * svgRect.width},${(-fixedProjVec.y * 0.5 + 0.5) * svgRect.height}`;
+    }).join(" ");
+    fixedPolySvg.setAttribute("points", pts);
+  }
+  controls.addEventListener("change", updateFixedPolygon);
+  window.addEventListener("resize", updateFixedPolygon);
+
   function screenToGround(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
     penNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
@@ -1320,4 +1352,5 @@
     document.getElementById("sceneWrap").style.display = "block"; // vuelve a aparecer la axonometria principal al cerrar
     explodeLayers.forEach(el => { el.style.opacity = "0"; el.style.transform = "scale(.05)"; });
   });
+  setTimeout(updateFixedPolygon, 500); // primer dibujo del poligono fijo, una vez que la camara ya quedo bien posicionada
 })();
