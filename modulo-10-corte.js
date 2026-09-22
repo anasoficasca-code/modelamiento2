@@ -1648,4 +1648,210 @@
     explodeLayers.forEach(el => { el.style.opacity = "0"; el.style.transform = "scale(.05)"; });
   });
   setTimeout(updateFixedPolygon, 500); // primer dibujo del poligono fijo, una vez que la camara ya quedo bien posicionada
+  // ============================================================
+  // Distorsion de 4 esquinas para los textos de cada capa (tipo
+  // Photoshop "deformar/perspectiva"): cada texto tiene 4 manijas en las
+  // esquinas que se pueden arrastrar libremente; se calcula la homografia
+  // exacta que lleva el rectangulo original a esas 4 esquinas y se aplica
+  // como matrix3d - asi el texto se ve realmente distorsionado en
+  // perspectiva, no solo inclinado.
+  // ============================================================
+  function solveHomography(w, h, dst) {
+    // dst: [{x,y}x4] en el orden esquina sup-izq, sup-der, inf-der, inf-izq
+    // Sistema estandar de 8 ecuaciones para la matriz de perspectiva 3x3
+    // que lleva (0,0),(w,0),(w,h),(0,h) a los 4 puntos destino.
+    const src = [[0, 0], [w, 0], [w, h], [0, h]];
+    const A = [];
+    const bvec = [];
+    for (let i = 0; i < 4; i++) {
+      const [x, y] = src[i], X = dst[i].x, Y = dst[i].y;
+      A.push([x, y, 1, 0, 0, 0, -x * X, -y * X]); bvec.push(X);
+      A.push([0, 0, 0, x, y, 1, -x * Y, -y * Y]); bvec.push(Y);
+    }
+    // Eliminacion gaussiana simple 8x8
+    for (let col = 0; col < 8; col++) {
+      let piv = col;
+      for (let r = col + 1; r < 8; r++) if (Math.abs(A[r][col]) > Math.abs(A[piv][col])) piv = r;
+      [A[col], A[piv]] = [A[piv], A[col]]; [bvec[col], bvec[piv]] = [bvec[piv], bvec[col]];
+      for (let r = 0; r < 8; r++) {
+        if (r === col) continue;
+        const f = A[r][col] / A[col][col];
+        for (let c = col; c < 8; c++) A[r][c] -= f * A[col][c];
+        bvec[r] -= f * bvec[col];
+      }
+    }
+    const h_ = bvec.map((v, i) => v / A[i][i]);
+    return [h_[0], h_[1], h_[2], h_[3], h_[4], h_[5], h_[6], h_[7], 1];
+  }
+  function homographyToMatrix3d(H, w, h) {
+    // Convierte la matriz 3x3 de homografia en una matrix3d de CSS
+    // (tecnica estandar: se normaliza dividiendo por H[8] y se acomoda en
+    // las columnas/filas que espera CSS, con el eje Z en 0).
+    const m = H;
+    return `matrix3d(${m[0]},${m[3]},0,${m[6]}, ${m[1]},${m[4]},0,${m[7]}, 0,0,1,0, ${m[2]},${m[5]},0,${m[8]})`;
+  }
+  const textStates = {}; // layerNum -> {corners:[{x,y}x4], w, h}
+  function initTextDistort(textEl, layerNum) {
+    const w = textEl.offsetWidth, h = textEl.offsetHeight;
+    textStates[layerNum] = { w, h, corners: [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }] };
+    buildHandles(textEl, layerNum);
+  }
+  function applyDistort(textEl, layerNum) {
+    const st = textStates[layerNum];
+    const H = solveHomography(st.w, st.h, st.corners);
+    textEl.style.transform = `translate(-50%,-50%) ${homographyToMatrix3d(H, st.w, st.h)}`;
+    updateTextCoordsOutput();
+  }
+  let handlesLayer = null;
+  function buildHandles(textEl, layerNum) {
+    if (!handlesLayer) {
+      handlesLayer = document.createElement("div");
+      handlesLayer.id = "textHandlesLayer";
+      handlesLayer.style.cssText = "position:fixed; inset:0; z-index:400; pointer-events:none;";
+      document.body.appendChild(handlesLayer);
+    }
+    const st = textStates[layerNum];
+    st.handleEls = st.corners.map((c, idx) => {
+      const h = document.createElement("div");
+      h.style.cssText = "position:absolute; width:14px; height:14px; border-radius:50%; background:#fff; border:2px solid #0a0a0a; cursor:grab; pointer-events:auto; display:none;";
+      h.dataset.layer = layerNum; h.dataset.corner = idx;
+      handlesLayer.appendChild(h);
+      return h;
+    });
+  }
+  function positionHandles(textEl, layerNum) {
+    const st = textStates[layerNum];
+    if (!st || !st.handleEls) return;
+    const rect = textEl.getBoundingClientRect();
+    // Las esquinas se ubican relativas al rectangulo SIN transformar
+    // (offsetWidth/Height), pero deben verse en su posicion YA
+    // transformada en pantalla: se usa la caja visual (getBoundingClientRect)
+    // como aproximacion para el punto de partida de arrastre, y se
+    // reconstruye el resto matematicamente al soltar.
+    const baseLeft = textEl.offsetLeft, baseTop = textEl.offsetTop;
+    st.corners.forEach((c, idx) => {
+      // posicion real en pantalla = posicion del elemento padre + esquina transformada
+      const parent = textEl.parentElement.getBoundingClientRect();
+      const cx = parent.left + parent.width / 2 - st.w / 2 + c.x;
+      const cy = parent.top + parent.height / 2 - st.h / 2 + c.y;
+      st.handleEls[idx].style.left = (cx - 7) + "px";
+      st.handleEls[idx].style.top = (cy - 7) + "px";
+    });
+  }
+  function showHandlesFor(layerNum) {
+    Object.keys(textStates).forEach(k => {
+      textStates[k].handleEls.forEach(h => { h.style.display = (k == layerNum) ? "block" : "none"; });
+    });
+    positionHandles(document.querySelector(`.explode-text[data-layer="${layerNum}"]`), layerNum);
+  }
+  function hideAllHandles() {
+    Object.keys(textStates).forEach(k => textStates[k].handleEls.forEach(h => h.style.display = "none"));
+  }
+  let draggingHandle = null;
+  document.addEventListener("pointerdown", (e) => {
+    if (e.target.closest && e.target.closest("#textHandlesLayer") && e.target.dataset.corner !== undefined) {
+      draggingHandle = { layer: e.target.dataset.layer, corner: parseInt(e.target.dataset.corner) };
+      e.preventDefault();
+    }
+  });
+  document.addEventListener("pointermove", (e) => {
+    if (!draggingHandle) return;
+    const layerNum = draggingHandle.layer;
+    const textEl = document.querySelector(`.explode-text[data-layer="${layerNum}"]`);
+    const st = textStates[layerNum];
+    const parent = textEl.parentElement.getBoundingClientRect();
+    const originX = parent.left + parent.width / 2 - st.w / 2;
+    const originY = parent.top + parent.height / 2 - st.h / 2;
+    st.corners[draggingHandle.corner] = { x: e.clientX - originX, y: e.clientY - originY };
+    applyDistort(textEl, layerNum);
+    positionHandles(textEl, layerNum);
+  });
+  document.addEventListener("pointerup", () => { draggingHandle = null; });
+
+  // ---- Toolbar flotante (tamaño, color) para el texto activo ----
+  const textToolbar = document.createElement("div");
+  textToolbar.style.cssText = "display:none; position:absolute; z-index:401; background:rgba(10,12,14,.92); border:1px solid rgba(255,255,255,.2); border-radius:8px; padding:6px 10px; gap:8px; align-items:center; top:20px; left:50%; transform:translateX(-50%);";
+  textToolbar.innerHTML = `
+    <label style="color:#fff; font-size:11px;">Tamaño <input type="range" id="txtSizeSlider" min="10" max="60" value="22" style="vertical-align:middle;"></label>
+    <label style="color:#fff; font-size:11px;">Color <input type="color" id="txtColorPicker" value="#ffffff"></label>
+  `;
+  document.body.appendChild(textToolbar);
+  let activeTextEl = null;
+  document.querySelectorAll(".explode-text").forEach(t => {
+    const layerNum = t.dataset.layer;
+    t.addEventListener("focus", () => {
+      activeTextEl = t;
+      textToolbar.style.display = "flex";
+      document.getElementById("txtSizeSlider").value = parseInt(t.style.fontSize) || 22;
+      document.getElementById("txtColorPicker").value = rgbToHex(t.style.color) || "#ffffff";
+      showHandlesFor(layerNum);
+    });
+  });
+  function rgbToHex(rgb) {
+    if (!rgb) return null;
+    if (rgb.startsWith("#")) return rgb;
+    const m = rgb.match(/\d+/g);
+    if (!m) return null;
+    return "#" + m.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, "0")).join("");
+  }
+  document.getElementById("txtSizeSlider").addEventListener("input", (e) => {
+    if (activeTextEl) { activeTextEl.style.fontSize = e.target.value + "px"; updateTextCoordsOutput(); }
+  });
+  document.getElementById("txtColorPicker").addEventListener("input", (e) => {
+    if (activeTextEl) { activeTextEl.style.color = e.target.value; updateTextCoordsOutput(); }
+  });
+
+  // ---- Zoom individual al hacer clic en cada capa: la que se toca crece
+  // y ocupa mas espacio, las otras se hacen chicas/se apartan. ----
+  let zoomedLayer = null;
+  document.querySelectorAll(".explode-clip").forEach((clip, idx) => {
+    clip.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const layerNum = idx + 1;
+      const allLayers = document.querySelectorAll(".explode-layer");
+      if (zoomedLayer === layerNum) {
+        // ya estaba enfocada esta: se vuelve a la vista apilada normal
+        allLayers.forEach(l => { l.style.transform = "scale(1)"; l.style.zIndex = "1"; l.style.margin = ""; });
+        zoomedLayer = null;
+        return;
+      }
+      zoomedLayer = layerNum;
+      allLayers.forEach((l, i) => {
+        if (i + 1 === layerNum) {
+          l.style.transition = "transform 1.1s cubic-bezier(.16,.84,.24,1)";
+          l.style.transform = "scale(2.15)";
+          l.style.zIndex = "50";
+        } else {
+          l.style.transition = "transform 1.1s cubic-bezier(.16,.84,.24,1), opacity .6s ease";
+          l.style.transform = "scale(0.55)";
+          l.style.opacity = "0.35";
+          l.style.zIndex = "1";
+        }
+      });
+    });
+  });
+
+  // ---- Caja de coordenadas de los textos (arriba a la izquierda), para
+  // poder copiar y pegar el estado exacto de cada texto (posicion de
+  // esquinas, tamaño, color) y que quede fijo en la siguiente iteracion.
+  const textCoordsBox = document.createElement("textarea");
+  textCoordsBox.id = "textCoordsOutput";
+  textCoordsBox.style.cssText = "display:none; position:absolute; top:18px; left:18px; z-index:16; width:340px; height:160px; font-size:10px; background:rgba(10,12,14,.92); color:#fff; border:1px solid rgba(255,255,255,.2); border-radius:6px; padding:8px;";
+  document.getElementById("explodeOverlay").appendChild(textCoordsBox);
+  function updateTextCoordsOutput() {
+    let out = "";
+    document.querySelectorAll(".explode-text").forEach(t => {
+      const layerNum = t.dataset.layer;
+      const st = textStates[layerNum];
+      out += `Capa ${layerNum} ("${t.textContent}"): tamaño ${t.style.fontSize || "22px"}, color ${t.style.color || "#ffffff"}\n`;
+      if (st) out += `  esquinas: ${st.corners.map(c => `(${c.x.toFixed(0)},${c.y.toFixed(0)})`).join(" ")}\n`;
+    });
+    textCoordsBox.value = out.trim();
+    textCoordsBox.style.display = "block";
+  }
+  document.querySelectorAll(".explode-text").forEach(t => {
+    initTextDistort(t, t.dataset.layer);
+    t.addEventListener("input", updateTextCoordsOutput);
+  });
+
 })();
