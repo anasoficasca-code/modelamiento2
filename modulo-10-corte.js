@@ -1804,7 +1804,7 @@
   function applyDistort(textEl, layerNum) {
     const st = textStates[layerNum];
     const H = solveHomography(st.w, st.h, st.corners);
-    textEl.style.transform = `translate(-50%,-50%) ${homographyToMatrix3d(H, st.w, st.h)}`;
+    textEl.style.transform = homographyToMatrix3d(H, st.w, st.h);
     updateTextCoordsOutput();
   }
   let handlesLayer = null;
@@ -1816,10 +1816,10 @@
       document.body.appendChild(handlesLayer);
     }
     const st = textStates[layerNum];
-    if (st.handleEls) st.handleEls.forEach(h => h.remove()); // si ya existian (reinicializacion), se quitan antes de crear las nuevas, para no duplicar
+    if (st.handleEls) st.handleEls.forEach(h => h.remove());
     st.handleEls = st.corners.map((c, idx) => {
       const h = document.createElement("div");
-      h.style.cssText = "position:absolute; width:14px; height:14px; border-radius:50%; background:#fff; border:2px solid #0a0a0a; cursor:grab; pointer-events:auto; display:none;";
+      h.style.cssText = "position:absolute; width:14px; height:14px; border-radius:50%; background:#fff; border:2px solid #0a0a0a; cursor:grab; pointer-events:auto; display:none; box-shadow:0 2px 6px rgba(0,0,0,0.5);";
       h.dataset.layer = layerNum; h.dataset.corner = idx;
       handlesLayer.appendChild(h);
       return h;
@@ -1828,18 +1828,12 @@
   function positionHandles(textEl, layerNum) {
     const st = textStates[layerNum];
     if (!st || !st.handleEls) return;
-    const rect = textEl.getBoundingClientRect();
-    // Las esquinas se ubican relativas al rectangulo SIN transformar
-    // (offsetWidth/Height), pero deben verse en su posicion YA
-    // transformada en pantalla: se usa la caja visual (getBoundingClientRect)
-    // como aproximacion para el punto de partida de arrastre, y se
-    // reconstruye el resto matematicamente al soltar.
-    const baseLeft = textEl.offsetLeft, baseTop = textEl.offsetTop;
+    const parent = textEl.parentElement.getBoundingClientRect();
+    const textLeft = parent.right - 14 - st.w;
+    const textTop = parent.top + parent.height / 2 - st.h / 2;
     st.corners.forEach((c, idx) => {
-      // posicion real en pantalla = posicion del elemento padre + esquina transformada
-      const parent = textEl.parentElement.getBoundingClientRect();
-      const cx = parent.left + parent.width / 2 - st.w / 2 + c.x;
-      const cy = parent.top + parent.height / 2 - st.h / 2 + c.y;
+      const cx = textLeft + c.x;
+      const cy = textTop + c.y;
       st.handleEls[idx].style.left = (cx - 7) + "px";
       st.handleEls[idx].style.top = (cy - 7) + "px";
     });
@@ -1866,9 +1860,9 @@
     const textEl = document.querySelector(`.explode-text[data-layer="${layerNum}"]`);
     const st = textStates[layerNum];
     const parent = textEl.parentElement.getBoundingClientRect();
-    const originX = parent.left + parent.width / 2 - st.w / 2;
-    const originY = parent.top + parent.height / 2 - st.h / 2;
-    st.corners[draggingHandle.corner] = { x: e.clientX - originX, y: e.clientY - originY };
+    const textLeft = parent.right - 14 - st.w;
+    const textTop = parent.top + parent.height / 2 - st.h / 2;
+    st.corners[draggingHandle.corner] = { x: e.clientX - textLeft, y: e.clientY - textTop };
     applyDistort(textEl, layerNum);
     positionHandles(textEl, layerNum);
   });
