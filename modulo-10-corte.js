@@ -1989,12 +1989,12 @@
       allLayers.forEach((l) => {
         const lNum = parseInt(l.dataset.layer, 10);
         if (lNum === layerNum) {
-          // Mantener el tamaño original de la escala (58vw / max 680px) con escala 1 natural
+          // Mantener el tamaño original de la escala (min(50vw, 560px)) con escala 1 natural
           l.style.transition = "transform 2.4s cubic-bezier(.2,.85,.25,1), opacity 1.8s ease";
           l.style.position = "fixed";
           l.style.top = "50%"; l.style.left = "50%";
-          l.style.width = "58vw";
-          l.style.maxWidth = "680px";
+          l.style.width = "min(50vw, 560px)";
+          l.style.maxWidth = "560px";
           l.style.transform = "translate(-50%,-50%) scale(1)";
           l.style.zIndex = "60";
           l.style.opacity = "1"; l.style.visibility = "visible";
@@ -2158,7 +2158,7 @@
     const tags = natOverlay.querySelectorAll(".nat-layer-tag");
     tags.forEach(t => { t.style.opacity = "0"; });
 
-    const baseTop = "80%";
+    const baseTop = "71%";
     const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
     sublayers.forEach((l) => {
       l.style.top = baseTop;
@@ -2184,7 +2184,7 @@
 
     const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
     sublayers.forEach(l => {
-      const expTop = l.dataset.explodedTop || "80%";
+      const expTop = l.dataset.explodedTop || "71%";
       l.style.top = expTop;
       l.style.opacity = "1";
       l.style.transform = "translate(-50%, 0)";
