@@ -578,7 +578,7 @@
     const mat = new THREE.MeshBasicMaterial({ map: noiseTexture, transparent: true, opacity: 1, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set((c0.x + c1.x) / 2, 0.06, (c0.z + c1.z) / 2);
+    mesh.position.set((c0.x + c1.x) / 2, 0.35, (c0.z + c1.z) / 2); // bastante mas alto que vias/agua/terreno (antes 0.06, muy pegado, causaba destellos/parpadeo raro al competir con esas superficies)
     mesh.visible = noiseOn;
     sceneRoot.add(mesh);
     noiseMesh = mesh;
@@ -606,11 +606,17 @@
     const data = img.data;
     for (let i = 0; i < data.length; i += 4) {
       const intensity = data[i + 3] / 255;
-      if (intensity < 0.02) { data[i + 3] = 0; continue; }
+      if (intensity < 0.04) { data[i + 3] = 0; continue; }
       const t = Math.min(1, Math.pow(intensity, 2.4));
       const [r, g, b] = noiseColorAt(t);
       data[i] = r; data[i + 1] = g; data[i + 2] = b;
-      data[i + 3] = Math.round(NOISE_ALPHA * 255);
+      // El alfa ahora se desvanece SUAVEMENTE segun la intensidad (en vez
+      // de un valor fijo identico para toda mancha por encima del
+      // umbral), para que el borde de cada mancha se disuelva
+      // gradualmente en vez de cortar de golpe - eso era lo que se veia
+      // como un "borde gris" antes.
+      const fadeIn = Math.min(1, (intensity - 0.04) / 0.12);
+      data[i + 3] = Math.round(NOISE_ALPHA * 255 * fadeIn);
     }
     noiseFieldImg = img;
     if (noiseMesh && noiseMesh.visible) {
@@ -696,15 +702,25 @@
     return best ? { arbol: best, dist: bestDist } : null;
   }
   function makeBirdSprite() {
-    const c = document.createElement("canvas"); c.width = 64; c.height = 64;
+    const c = document.createElement("canvas"); c.width = 48; c.height = 48;
     const ctx = c.getContext("2d");
-    ctx.translate(32, 32);
-    ctx.fillStyle = "#20222c";
-    ctx.beginPath(); ctx.ellipse(0, 0, 13, 7.5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#eef2f7"; ctx.lineWidth = 2.6; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(-15, -13); ctx.lineTo(2, 0); ctx.lineTo(-15, 13); ctx.stroke();
-    ctx.fillStyle = "#f2a93b";
-    ctx.beginPath(); ctx.arc(14, 0, 3.6, 0, Math.PI * 2); ctx.fill();
+    ctx.translate(24, 24);
+    // Icono simple de pajarito (silueta tipo "M" de alas, un solo color
+    // solido oscuro, sin trazos claros ni relleno de fondo) - mas
+    // pequeño y limpio que el diseño anterior.
+    ctx.fillStyle = "#1a1c22";
+    ctx.beginPath();
+    ctx.moveTo(0, -2);
+    ctx.quadraticCurveTo(-9, -9, -15, -3);
+    ctx.quadraticCurveTo(-8, -3, -2, 1);
+    ctx.quadraticCurveTo(-8, 3, -15, 8);
+    ctx.quadraticCurveTo(-9, 9, 0, 2);
+    ctx.quadraticCurveTo(9, 9, 15, 8);
+    ctx.quadraticCurveTo(8, 3, 2, 1);
+    ctx.quadraticCurveTo(8, -3, 15, -3);
+    ctx.quadraticCurveTo(9, -9, 0, -2);
+    ctx.closePath();
+    ctx.fill();
     return new THREE.CanvasTexture(c);
   }
   function makeBirdAgent(origen) {
@@ -760,13 +776,27 @@
       const sp = Math.hypot(b.vx, b.vy);
       if (sp > BIRD_MAX_SPEED) { b.vx = (b.vx / sp) * BIRD_MAX_SPEED; b.vy = (b.vy / sp) * BIRD_MAX_SPEED; }
     }
-    const db = noiseDbAt(b.x, b.y);
-    const exceso = Math.max(0, db - BIRD_NOISE_DB);
+    // Umbral critico de 60 dB(A): igual que en la simulacion 2D de
+    // referencia, se evalua el ruido en la posicion actual Y un poco por
+    // delante del rumbo de vuelo (el sonido se "oye" antes de llegar), no
+    // solo en el punto exacto donde esta el ave - asi la reaccion de
+    // huida empieza a la distancia correcta, no solo cuando ya esta
+    // encima del ruido.
+    let exceso = Math.max(0, noiseDbAt(b.x, b.y) - BIRD_NOISE_DB);
+    let rx = b.x, ry = b.y;
+    const rapidez = Math.hypot(b.vx, b.vy) || 1;
+    for (let k = 1; k <= 3; k++) {
+      const ax = b.x + (b.vx / rapidez) * k * 30, ay = b.y + (b.vy / rapidez) * k * 30;
+      const e = Math.max(0, noiseDbAt(ax, ay) - BIRD_NOISE_DB) * (1 - k * 0.15);
+      if (e > exceso) { exceso = e; rx = ax; ry = ay; }
+    }
     b.estresada = exceso > 0;
     if (exceso > 0) {
-      const u = noiseEscapeDir(b.x, b.y);
+      const u = noiseEscapeDir(rx, ry);
       if (u) { b.vx += BIRD_K_REP * exceso * u[0] * dt; b.vy += BIRD_K_REP * exceso * u[1] * dt; }
       if (b.rest > 0) { b.rest = 0; b.cooldown = Math.max(b.cooldown, 3); }
+      const sp = Math.hypot(b.vx, b.vy);
+      if (sp > BIRD_MAX_SPEED * 1.35) { b.vx = (b.vx / sp) * BIRD_MAX_SPEED * 1.35; b.vy = (b.vy / sp) * BIRD_MAX_SPEED * 1.35; }
     }
     b.x += b.vx * dt * 10;
     b.y += b.vy * dt * 10;
@@ -787,7 +817,7 @@
       const origen = i < refugeCount ? "refugio" : "oriente";
       const b = makeBirdAgent(origen);
       const sprite = new THREE.Sprite(spriteMat.clone());
-      sprite.scale.set(6, 6, 1);
+      sprite.scale.set(3.2, 3.2, 1);
       birdsGroup.add(sprite);
       b.sprite = sprite;
       birds.push(b);
