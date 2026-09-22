@@ -1732,23 +1732,26 @@
     const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
     const origBirdsVis = birdsGroup ? birdsGroup.visible : false;
     const origVehVis = vehInstanced ? vehInstanced.visible : false;
-    const origEdgesVis = currentBuildingEdgeMesh ? currentBuildingEdgeMesh.visible : false;
 
-    // 1. Escala Natural: base arquitectónica limpia, vías neutrales, sin ruido
+    // 1. Escala Natural: base arquitectónica 100% limpia, CERO carros, CERO ruido, CERO mirlas
     if (noiseMesh) noiseMesh.visible = false;
     if (birdsGroup) birdsGroup.visible = false;
+    if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
-    if (vehInstanced) vehInstanced.visible = false;
     renderer.render(scene, camera);
     const fotoNatural = renderer.domElement.toDataURL("image/png");
 
     // 2. Escala Cultural: con vehículos y dinámicas urbanas
-    if (vehInstanced) vehInstanced.visible = true;
+    if (vehInstanced) {
+      vehInstanced.visible = true;
+      vehInstanced.count = vehiclesAtTime(currentTime).length || 120;
+      renderVehiclesAt(currentTime);
+    }
     if (roadMat) roadMat.color.set(0x7a838d);
     renderer.render(scene, camera);
     const fotoCultural = renderer.domElement.toDataURL("image/png");
 
-    // 3. Escala Tecnológica: vista analítica
+    // 3. Escala Tecnológica: vista analítica de la red
     if (vehInstanced) vehInstanced.visible = true;
     if (roadMat) roadMat.color.set(0x9099a3);
     renderer.render(scene, camera);
@@ -1758,11 +1761,18 @@
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
     if (noiseMesh) noiseMesh.visible = origNoiseVis;
     if (birdsGroup) birdsGroup.visible = origBirdsVis;
-    if (vehInstanced) vehInstanced.visible = origVehVis;
+    if (vehInstanced) {
+      vehInstanced.visible = origVehVis;
+      vehInstanced.count = origVehVis ? (vehiclesAtTime(currentTime).length || 0) : 0;
+    }
 
-    if (explodeImgs[0]) explodeImgs[0].src = fotoNatural;
-    if (explodeImgs[1]) explodeImgs[1].src = fotoCultural;
-    if (explodeImgs[2]) explodeImgs[2].src = fotoTecno;
+    // Asignar fotos a cada imagen según su escala
+    const imgNatural = document.getElementById("explodeImg1");
+    const imgCultural = document.getElementById("explodeImg2");
+    const imgTecno = document.getElementById("explodeImg3");
+    if (imgNatural) imgNatural.src = fotoNatural;
+    if (imgCultural) imgCultural.src = fotoCultural;
+    if (imgTecno) imgTecno.src = fotoTecno;
 
     document.getElementById("sceneWrap").style.display = "none";
     explodeOverlay.style.display = "flex";
@@ -2128,7 +2138,7 @@
     const burro = rawWaterData.find(b => (b.nombre || "").includes("Burro"));
     const expansionFactor = 1 + (info.expansion_pct / 100) * 0.6;
 
-    // Dibujar cuerpos de agua (canales y humedal)
+    // Dibujar cuerpos de agua (canales y humedal) usando geometría real del dataset
     rawWaterData.forEach(body => {
       const isBurro = body === burro;
       let pts = body.pts;
@@ -2147,38 +2157,40 @@
       ctx.closePath();
 
       if (isBurro) {
-        // Agua del humedal: degradado dinámico fluido
-        const waveX = Math.sin(natWaterTime * 0.7) * 25;
-        const waveY = Math.cos(natWaterTime * 0.9) * 20;
+        // Agua del humedal: tono azul agua cristalina arquitectónico, limpio y vibrante
+        const waveX = Math.sin(natWaterTime * 0.8) * 30;
+        const waveY = Math.cos(natWaterTime * 0.6) * 20;
         const grad = ctx.createLinearGradient(waveX, waveY, w + waveX, h + waveY);
-        grad.addColorStop(0, "rgba(56, 189, 248, 0.82)");
-        grad.addColorStop(0.5, "rgba(14, 165, 233, 0.78)");
-        grad.addColorStop(1, "rgba(3, 105, 161, 0.88)");
+        grad.addColorStop(0, "rgba(56, 189, 248, 0.90)");
+        grad.addColorStop(0.35, "rgba(14, 165, 233, 0.85)");
+        grad.addColorStop(0.7, "rgba(2, 132, 199, 0.92)");
+        grad.addColorStop(1, "rgba(3, 105, 161, 0.95)");
         ctx.fillStyle = grad;
         ctx.fill();
-        ctx.lineWidth = 1.8;
+        ctx.lineWidth = 2.2;
         ctx.strokeStyle = "#0284c7";
         ctx.stroke();
 
-        // Ondas concéntricas de agua fluida en movimiento continuo
-        for (let ring = 1; ring <= 3; ring++) {
-          const rOffset = ((natWaterTime * 12 + ring * 22) % 65);
-          const rAlpha = Math.max(0, 1 - rOffset / 65) * 0.45;
+        // Ondas concéntricas sutiles de agua viva fluyendo
+        for (let ring = 1; ring <= 4; ring++) {
+          const rOffset = ((natWaterTime * 14 + ring * 18) % 75);
+          const rAlpha = Math.max(0, 1 - rOffset / 75) * 0.38;
           const centerSO = projectPoint(7518.49, 3137.57);
           if (centerSO.inFront) {
             ctx.beginPath();
-            ctx.ellipse(centerSO.x, centerSO.y, rOffset * 1.5, rOffset * 0.8, -0.35, 0, Math.PI * 2);
+            ctx.ellipse(centerSO.x, centerSO.y, rOffset * 1.6, rOffset * 0.85, -0.32, 0, Math.PI * 2);
             ctx.strokeStyle = `rgba(255, 255, 255, ${rAlpha})`;
-            ctx.lineWidth = 1.4;
+            ctx.lineWidth = 1.3;
             ctx.stroke();
           }
         }
       } else {
-        // Canales afluentes con flujo de agua suave
-        ctx.fillStyle = "rgba(125, 211, 252, 0.7)";
+        // Canales y afluentes reales geográficos dibujados en el plano (Canal Los Ángeles, Castilla, Américas, etc.)
+        const isNearbyCanal = (body.nombre || "").includes("Angeles") || (body.nombre || "").includes("Castilla") || (body.nombre || "").includes("América");
+        ctx.fillStyle = isNearbyCanal ? "rgba(56, 189, 248, 0.85)" : "rgba(125, 211, 252, 0.60)";
         ctx.fill();
-        ctx.lineWidth = 1.2;
-        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = isNearbyCanal ? 1.8 : 1.2;
+        ctx.strokeStyle = isNearbyCanal ? "#0284c7" : "#38bdf8";
         ctx.stroke();
       }
     });
@@ -2246,46 +2258,68 @@
         natWaterSvg.appendChild(g);
       }
 
-      // 2. SUBCUENCA EL TINTAL: Vectores de flujo desde los Ríos Fucha, Tunjuelo y Bogotá hacia el Humedal
+      // 2. SUBCUENCA EL TINTAL: Trazado real de corrientes hacia el Humedal El Burro con coordenadas geográficas reales del dataset
+      // Canal Los Ángeles (cuenca alta / Río Fucha), Canal Castilla y conexión Río Bogotá
       const flowCorridors = [
         {
-          name: "Río Fucha → Canal Américas",
-          pts: [[8350, 4200], [7950, 3750], [7640, 3450]],
+          name: "Río Fucha → C. Los Ángeles de Castilla",
+          // Coordenadas reales del dataset: desde cabecera del canal [8334.8, 2551.5] bajando hacia el humedal [7588.3, 2974.2]
+          pts: [
+            [8334.8, 2551.5],
+            [8012.0, 2640.9],
+            [7720.9, 2856.0],
+            [7588.3, 2974.2]
+          ],
           color: "#0284c7"
         },
         {
-          name: "Río Tunjuelo → Afluente Sur",
-          pts: [[7800, 2400], [7650, 2800], [7550, 3050]],
+          name: "Subcuenca Fucha → Canal Castilla",
+          // Coordenadas reales del dataset: desde [6368.3, 4674.2] pasando por [6625.0, 4240.8] hacia El Burro [6983.1, 3865.5]
+          pts: [
+            [6368.3, 4674.2],
+            [6625.0, 4240.8],
+            [6983.1, 3865.5],
+            [7150.0, 3650.0]
+          ],
           color: "#0ea5e9"
         },
         {
-          name: "Interconexión Río Bogotá / Subcuenca El Tintal",
-          pts: [[6700, 3350], [6950, 3420], [7250, 3400]],
-          color: "#06b6d4"
+          name: "Río Tunjuelo / Interconexión Río Bogotá",
+          // Conexión sur-occidental de la planicie aluvial hacia la cuenca del humedal
+          pts: [
+            [6005.0, 2600.0],
+            [6658.1, 3306.9],
+            [7100.0, 3380.0]
+          ],
+          color: "#0284c7"
         }
       ];
 
       flowCorridors.forEach(corr => {
         const screenPts = corr.pts.map(p => projectPoint(p[0], p[1]));
-        if (screenPts.length >= 3 && screenPts[0].inFront && screenPts[2].inFront) {
+        if (screenPts.length >= 3 && screenPts[0].inFront && screenPts[screenPts.length - 1].inFront) {
           const flowG = document.createElementNS(SVGNS, "g");
-          const pathD = `M ${screenPts[0].x} ${screenPts[0].y} Q ${screenPts[1].x} ${screenPts[1].y} ${screenPts[2].x} ${screenPts[2].y}`;
+          
+          let pathD = `M ${screenPts[0].x} ${screenPts[0].y}`;
+          for (let pi = 1; pi < screenPts.length; pi++) {
+            pathD += ` L ${screenPts[pi].x} ${screenPts[pi].y}`;
+          }
 
           const flowPath = document.createElementNS(SVGNS, "path");
           flowPath.setAttribute("d", pathD);
           flowPath.setAttribute("fill", "none");
           flowPath.setAttribute("stroke", corr.color);
-          flowPath.setAttribute("stroke-width", "2.2");
-          flowPath.setAttribute("stroke-dasharray", "6 4");
-          // Desplazamiento animado de las líneas punteadas para simular el caudal del río fluyendo
-          const dashOffset = (natWaterTime * 20) % 20;
+          flowPath.setAttribute("stroke-width", "2.4");
+          flowPath.setAttribute("stroke-dasharray", "7 4");
+          // Desplazamiento animado de las líneas punteadas simulando la corriente de agua
+          const dashOffset = (natWaterTime * 22) % 22;
           flowPath.setAttribute("stroke-dashoffset", (-dashOffset).toFixed(1));
           flowG.appendChild(flowPath);
 
-          // Flecha de dirección hacia el humedal
-          const pEnd = screenPts[2], pPrev = screenPts[1];
+          // Flecha de dirección hacia el humedal en el extremo final
+          const pEnd = screenPts[screenPts.length - 1], pPrev = screenPts[screenPts.length - 2];
           const angle = Math.atan2(pEnd.y - pPrev.y, pEnd.x - pPrev.x);
-          const arrowLen = 9;
+          const arrowLen = 10;
           const x1 = pEnd.x - arrowLen * Math.cos(angle - Math.PI / 6);
           const y1 = pEnd.y - arrowLen * Math.sin(angle - Math.PI / 6);
           const x2 = pEnd.x - arrowLen * Math.cos(angle + Math.PI / 6);
@@ -2295,13 +2329,13 @@
           arrow.setAttribute("fill", corr.color);
           flowG.appendChild(arrow);
 
-          // Etiqueta del río/afluente
+          // Etiqueta del río/afluente con fondo blanco sutil
           const label = document.createElementNS(SVGNS, "text");
           label.setAttribute("x", String(screenPts[0].x + 8));
           label.setAttribute("y", String(screenPts[0].y - 6));
           label.setAttribute("font-family", "'Segoe UI', sans-serif");
-          label.setAttribute("font-size", "9.5px");
-          label.setAttribute("font-weight", "700");
+          label.setAttribute("font-size", "10px");
+          label.setAttribute("font-weight", "800");
           label.setAttribute("fill", corr.color);
           label.textContent = corr.name;
           flowG.appendChild(label);
