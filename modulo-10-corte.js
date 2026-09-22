@@ -600,8 +600,12 @@
     for (let i = 0; i < data.length; i += 4) {
       const intensity = data[i + 3] / 255;
       if (intensity < 0.04) { data[i + 3] = 0; continue; }
-      const t = Math.min(1, Math.pow(intensity, 2.4));
-      data[i + 3] = Math.round(255 * Math.min(1, (intensity - 0.04) / 0.12));
+      // Curva no lineal: concentra los valores altos cerca del centro de
+      // cada vehiculo y se desvanece suavemente hacia el borde (sin esto
+      // se guardaba un valor casi plano, por eso siempre daba "poco
+      // ruido" = amarillo en vez de un degradado real hasta rojo).
+      const t = Math.pow(intensity, 1.8);
+      data[i + 3] = Math.round(255 * t);
     }
     noiseFieldImg = img;
 
@@ -668,11 +672,13 @@
     const by = Math.floor(NOISE_BUF_H - ((y - noiseOriginY) / noiseGroundH) * NOISE_BUF_H);
     if (bx < 0 || by < 0 || bx >= NOISE_BUF_W || by >= NOISE_BUF_H) return NOISE_DB_BASE;
     const idx = (by * NOISE_BUF_W + bx) * 4;
-    const raw = noiseFieldImg.data[idx + 3] / 255;
-    const bright = (noiseFieldImg.data[idx] + noiseFieldImg.data[idx + 1] + noiseFieldImg.data[idx + 2]) / (3 * 255);
-    if (raw < 0.01) return NOISE_DB_BASE;
-    const t = 1 - bright;
-    return NOISE_DB_BASE + NOISE_DB_SPAN * Math.max(0, Math.min(1, t * 1.6));
+    // El buffer de datos ahora solo guarda la intensidad en el canal
+    // alfa (no color, eso se calcula aparte solo para lo visual) - se
+    // usa DIRECTAMENTE como nivel de ruido, sin pasar por el brillo del
+    // color (que ya no se escribe aqui y siempre daba blanco = "0 ruido").
+    const t = noiseFieldImg.data[idx + 3] / 255;
+    if (t < 0.01) return NOISE_DB_BASE;
+    return NOISE_DB_BASE + NOISE_DB_SPAN * t;
   }
   function noiseEscapeDir(x, y) {
     const paso = (noiseGroundW / NOISE_BUF_W) * 3;
@@ -692,7 +698,7 @@
     "Cerezo, capuli": { key: "capuli", color: 0xff5fa8, weight: 0.76, base: 200 },
     "Urapán, Fresno": { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 },
   };
-  const BIRD_VISION = 14, BIRD_ARRIVE = 1.4, BIRD_WIND = 1.5, BIRD_MAX_SPEED = 4.2; // vuelo mas lento (antes 2.6/7.8)
+  const BIRD_VISION = 14, BIRD_ARRIVE = 1.4, BIRD_WIND = 0.8, BIRD_MAX_SPEED = 2.4; // aun mas lento (antes 1.5/4.2)
   const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 50;
   let birds = [], birdTreesGrid = null, birdsGroup = null, birdOn = false;
   function sampleAttractorTrees(trees) {
@@ -816,7 +822,15 @@
         const esSauco = arbol.meta.key === "sauco";
         const fuerza = arbol.meta.weight * (esSauco ? 20 : 11);
         b.vx += ux * fuerza * dt; b.vy += uy * fuerza * dt;
-        if (dist < BIRD_ARRIVE * 10) { b.rest = 2 + Math.random(); b.cooldown = 7; b.landedAt = { x: arbol.x, y: arbol.y }; }
+        if (dist < BIRD_ARRIVE * 10) {
+          // Se quedan mas tiempo posadas en Sauco (la especie que predomina
+          // junto al humedal) que en las otras, para que se note mas
+          // presencia ahi en particular.
+          const esSauco2 = arbol.meta.key === "sauco";
+          b.rest = esSauco2 ? (5 + Math.random() * 3) : (2.5 + Math.random());
+          b.cooldown = esSauco2 ? 3 : 7;
+          b.landedAt = { x: arbol.x, y: arbol.y };
+        }
       }
       const sp = Math.hypot(b.vx, b.vy);
       if (sp > BIRD_MAX_SPEED) { b.vx = (b.vx / sp) * BIRD_MAX_SPEED; b.vy = (b.vy / sp) * BIRD_MAX_SPEED; }
@@ -1898,7 +1912,7 @@
   let zoomedLayer = null;
   function unzoomAll() {
     document.querySelectorAll(".explode-layer").forEach(l => {
-      l.style.transform = "scale(1)"; l.style.opacity = "1"; l.style.visibility = "visible"; l.style.zIndex = "1"; l.style.position = "relative"; l.style.top = ""; l.style.left = "";
+      l.style.transform = "scale(1)"; l.style.opacity = "1"; l.style.visibility = "visible"; l.style.zIndex = "1"; l.style.position = "relative"; l.style.top = ""; l.style.left = ""; l.style.width = "";
     });
     zoomedLayer = null;
   }
@@ -1912,12 +1926,17 @@
       allLayers.forEach((l, i) => {
         if (i + 1 === layerNum) {
           // La capa tocada se saca del flujo normal y se centra en TODA
-          // la pantalla (no solo dentro de la pila), bien grande pero
-          // sin pasarse.
-          l.style.transition = "transform 1.1s cubic-bezier(.16,.84,.24,1)";
+          // la pantalla. OJO: al pasar a position:fixed, el width:100%
+          // heredado deja de ser "100% del contenedor" y pasa a ser
+          // "100% de TODA LA VENTANA" (asi funciona fixed) - por eso se
+          // veia gigante. Se fija un ancho EXPLICITO en vw en vez de
+          // depender de un porcentaje, del mismo tamaño que ocupa la
+          // axonometria principal del modulo.
+          l.style.transition = "transform 1.1s cubic-bezier(.16,.84,.24,1), width 1.1s cubic-bezier(.16,.84,.24,1)";
           l.style.position = "fixed";
           l.style.top = "50%"; l.style.left = "50%";
-          l.style.transform = "translate(-50%,-50%) scale(1.9)";
+          l.style.width = "78vw";
+          l.style.transform = "translate(-50%,-50%)";
           l.style.zIndex = "60";
           l.style.opacity = "1"; l.style.visibility = "visible";
         } else {
