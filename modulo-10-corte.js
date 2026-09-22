@@ -1230,7 +1230,7 @@
     { x: 6508.8, y: 4106.2 },
   ];
   const fixedPolySvg = document.createElementNS(SVGNS, "polygon");
-  fixedPolySvg.setAttribute("fill", "rgba(10,10,10,0.35)");
+  fixedPolySvg.setAttribute("fill", "#0a0a0a");
   fixedPolySvg.setAttribute("stroke", "#0a0a0a");
   fixedPolySvg.setAttribute("stroke-width", "2.5");
   document.getElementById("fixedPolySvgOverlay").appendChild(fixedPolySvg);
