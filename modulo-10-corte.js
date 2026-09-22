@@ -128,6 +128,7 @@
 
   // ---- Suelo ----
   let netCenter = { x: 0, y: 0 };
+  let currentBoxRealBounds = null; // rango real (X/Y) de la caja de seccion actual, para que ruido/mirlas trabajen solo ahi
   function sceneToReal(x, z) { return [x / SCALE + netCenter.x, -z / SCALE + netCenter.y]; }
   let sceneExtentW = 100, sceneExtentH = 100; // ancho/alto de la escena en unidades (para la caja de seccion)
   let roadMat = null, waterMat = null, parqueMat = null; // referencias para los selectores de color en vivo
@@ -291,7 +292,7 @@
     viaTex.wrapS = THREE.RepeatWrapping;
     viaTex.wrapT = THREE.RepeatWrapping;
     const ribbonMat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr,
-      map: viaTex, color: 0xc0453f, roughness: 0.85, side: THREE.DoubleSide,
+      map: viaTex, color: 0x9099a3, roughness: 0.85, side: THREE.DoubleSide,
       transparent: true, opacity: 0.7,
     });
     roadMat = ribbonMat;
@@ -501,6 +502,7 @@
     });
     sceneRoot.add(mesh);
     treeMeshes = [{ mesh, data: trees }];
+    rebuildBirds(); // ahora que ya hay datos reales de arboles, se reconstruyen las mirlas con sus atractores correctos
     updateTreeBillboards();
   }
   // Recalcula la rotacion de TODAS las tarjetas para que miren hacia la
@@ -529,6 +531,281 @@
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + TREES_URL); return r.json(); })
       .then(data => { buildTrees(data); })
       .catch(err => console.warn("No se pudieron cargar los árboles:", err));
+  }
+
+  // ============================================================
+  // MAPA DE RUIDO EN VIVO (igual logica que modulo-08-3d.js, pero
+  // acotado SOLO al area de la caja de seccion actual, no toda la
+  // ciudad) + MIRLAS (Turdus fuscater), aves que se desplazan de oriente
+  // a occidente atraidas por arboles reales, huyendo del ruido - todo
+  // recalculado dentro de los limites reales que muestra la axonometria
+  // en cada momento (se ajusta solo si se mueve la caja de seccion).
+  // ============================================================
+  const NOISE_ALPHA = 0.42;
+  const NOISE_BUF_W = 200, NOISE_BUF_H = 200;
+  const NOISE_COLOR_STOPS = [
+    { t: 0.00, rgb: [255, 247, 179] }, { t: 0.20, rgb: [255, 224, 76] },
+    { t: 0.40, rgb: [255, 179, 77] }, { t: 0.60, rgb: [245, 124, 0] },
+    { t: 0.80, rgb: [230, 74, 25] }, { t: 1.00, rgb: [211, 47, 47] },
+  ];
+  function noiseColorAt(t) {
+    t = Math.max(0, Math.min(1, t));
+    for (let i = 0; i < NOISE_COLOR_STOPS.length - 1; i++) {
+      const a = NOISE_COLOR_STOPS[i], b = NOISE_COLOR_STOPS[i + 1];
+      if (t >= a.t && t <= b.t) {
+        const f = (t - a.t) / (b.t - a.t || 1);
+        return [Math.round(a.rgb[0] + (b.rgb[0] - a.rgb[0]) * f), Math.round(a.rgb[1] + (b.rgb[1] - a.rgb[1]) * f), Math.round(a.rgb[2] + (b.rgb[2] - a.rgb[2]) * f)];
+      }
+    }
+    return NOISE_COLOR_STOPS[NOISE_COLOR_STOPS.length - 1].rgb;
+  }
+  let noiseMesh = null, noiseTexture = null, noiseGroundW = 0, noiseGroundH = 0, noiseOriginX = 0, noiseOriginY = 0;
+  const noiseBufCanvas = document.createElement("canvas");
+  noiseBufCanvas.width = NOISE_BUF_W; noiseBufCanvas.height = NOISE_BUF_H;
+  const noiseBufCtx = noiseBufCanvas.getContext("2d", { willReadFrequently: true });
+  let noiseFieldImg = null;
+  function rebuildNoiseGround() {
+    if (!currentBoxRealBounds) return;
+    if (noiseMesh) { sceneRoot.remove(noiseMesh); noiseMesh.geometry.dispose(); }
+    noiseOriginX = currentBoxRealBounds.xMin; noiseOriginY = currentBoxRealBounds.yMin;
+    noiseGroundW = currentBoxRealBounds.xMax - currentBoxRealBounds.xMin;
+    noiseGroundH = currentBoxRealBounds.yMax - currentBoxRealBounds.yMin;
+    if (noiseGroundW <= 0 || noiseGroundH <= 0) return;
+    const c0 = toScene(currentBoxRealBounds.xMin, currentBoxRealBounds.yMin), c1 = toScene(currentBoxRealBounds.xMax, currentBoxRealBounds.yMax);
+    const w = Math.abs(c1.x - c0.x), h = Math.abs(c1.z - c0.z);
+    const geo = new THREE.PlaneGeometry(w, h);
+    noiseTexture = new THREE.CanvasTexture(noiseBufCanvas);
+    const mat = new THREE.MeshBasicMaterial({ map: noiseTexture, transparent: true, opacity: 1, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set((c0.x + c1.x) / 2, 0.06, (c0.z + c1.z) / 2);
+    mesh.visible = noiseOn;
+    sceneRoot.add(mesh);
+    noiseMesh = mesh;
+  }
+  const NOISE_VEH_RADIUS_M = 55;
+  let lastNoiseCompute = 0;
+  function computeLiveNoiseField(vehicles, now) {
+    if (!noiseGroundW || (now - lastNoiseCompute < 140)) return;
+    lastNoiseCompute = now;
+    noiseBufCtx.clearRect(0, 0, NOISE_BUF_W, NOISE_BUF_H);
+    noiseBufCtx.globalCompositeOperation = "lighter";
+    const sx = NOISE_BUF_W / noiseGroundW, sy = NOISE_BUF_H / noiseGroundH;
+    const blobR = NOISE_VEH_RADIUS_M * sx;
+    vehicles.forEach(v => {
+      if (v.x < noiseOriginX || v.x > noiseOriginX + noiseGroundW || v.y < noiseOriginY || v.y > noiseOriginY + noiseGroundH) return;
+      const bx = (v.x - noiseOriginX) * sx, by = NOISE_BUF_H - (v.y - noiseOriginY) * sy;
+      const grad = noiseBufCtx.createRadialGradient(bx, by, 0, bx, by, blobR);
+      grad.addColorStop(0, "rgba(255,255,255,0.9)");
+      grad.addColorStop(1, "rgba(255,255,255,0)");
+      noiseBufCtx.fillStyle = grad;
+      noiseBufCtx.beginPath(); noiseBufCtx.arc(bx, by, blobR, 0, Math.PI * 2); noiseBufCtx.fill();
+    });
+    noiseBufCtx.globalCompositeOperation = "source-over";
+    const img = noiseBufCtx.getImageData(0, 0, NOISE_BUF_W, NOISE_BUF_H);
+    const data = img.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const intensity = data[i + 3] / 255;
+      if (intensity < 0.02) { data[i + 3] = 0; continue; }
+      const t = Math.min(1, Math.pow(intensity, 2.4));
+      const [r, g, b] = noiseColorAt(t);
+      data[i] = r; data[i + 1] = g; data[i + 2] = b;
+      data[i + 3] = Math.round(NOISE_ALPHA * 255);
+    }
+    noiseFieldImg = img;
+    if (noiseMesh && noiseMesh.visible) {
+      noiseBufCtx.putImageData(img, 0, 0);
+      noiseTexture.needsUpdate = true;
+    }
+  }
+  const NOISE_DB_BASE = 40, NOISE_DB_SPAN = 52;
+  function noiseDbAt(x, y) {
+    if (!noiseFieldImg || !noiseGroundW) return NOISE_DB_BASE;
+    const bx = Math.floor(((x - noiseOriginX) / noiseGroundW) * NOISE_BUF_W);
+    const by = Math.floor(NOISE_BUF_H - ((y - noiseOriginY) / noiseGroundH) * NOISE_BUF_H);
+    if (bx < 0 || by < 0 || bx >= NOISE_BUF_W || by >= NOISE_BUF_H) return NOISE_DB_BASE;
+    const idx = (by * NOISE_BUF_W + bx) * 4;
+    const raw = noiseFieldImg.data[idx + 3] / 255;
+    const bright = (noiseFieldImg.data[idx] + noiseFieldImg.data[idx + 1] + noiseFieldImg.data[idx + 2]) / (3 * 255);
+    if (raw < 0.01) return NOISE_DB_BASE;
+    const t = 1 - bright;
+    return NOISE_DB_BASE + NOISE_DB_SPAN * Math.max(0, Math.min(1, t * 1.6));
+  }
+  function noiseEscapeDir(x, y) {
+    const paso = (noiseGroundW / NOISE_BUF_W) * 3;
+    const gx = noiseDbAt(x + paso, y) - noiseDbAt(x - paso, y);
+    const gy = noiseDbAt(x, y + paso) - noiseDbAt(x, y - paso);
+    const m = Math.hypot(gx, gy);
+    if (m < 1e-4) return null;
+    return [-gx / m, -gy / m];
+  }
+  let noiseOn = false;
+
+  // ---- MIRLAS: adaptadas para volar SOLO dentro del area de la caja de
+  // seccion actual (entran por el borde este del area visible, salen por
+  // el oeste, refugio en la esquina noroeste del area visible) ----
+  const BIRD_TREE_SPECIES = {
+    "Sauco": { key: "sauco", color: 0xb06bff, weight: 1.0, base: 260 },
+    "Cerezo, capuli": { key: "capuli", color: 0xff5fa8, weight: 0.76, base: 200 },
+    "Urapán, Fresno": { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 },
+  };
+  const BIRD_VISION = 14, BIRD_ARRIVE = 1.4, BIRD_WIND = 2.6, BIRD_MAX_SPEED = 7.8;
+  const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 50;
+  let birds = [], birdTreesGrid = null, birdsGroup = null, birdOn = false;
+  function sampleAttractorTrees(trees) {
+    const porEspecie = {};
+    trees.forEach(t => {
+      const meta = BIRD_TREE_SPECIES[t[3]]; // el codigo de especie va en el indice 3 (verificado con datos reales: 9250 coincidencias de 119886 arboles); mi "correccion" anterior a indice 4 (el codigo numerico de identificacion, no la especie) estaba mal
+      if (meta) (porEspecie[meta.key] || (porEspecie[meta.key] = [])).push({ x: t[0], y: t[1], meta });
+    });
+    const out = [];
+    Object.keys(porEspecie).forEach(k => {
+      const lista = porEspecie[k];
+      const meta = lista[0].meta;
+      const paso = Math.max(1, Math.floor(lista.length / meta.base));
+      for (let i = 0; i < lista.length; i += paso) out.push(lista[i]);
+    });
+    return out;
+  }
+  const BIRD_CELL = 25;
+  function buildBirdTreeGrid(attractors) {
+    const grid = new Map();
+    attractors.forEach(t => {
+      const key = Math.floor(t.x / BIRD_CELL) + "," + Math.floor(t.y / BIRD_CELL);
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key).push(t);
+    });
+    return grid;
+  }
+  function bestTreeNear(grid, x, y) {
+    const r = BIRD_VISION * 10;
+    const cx0 = Math.floor((x - r) / BIRD_CELL), cx1 = Math.floor((x + r) / BIRD_CELL);
+    const cy0 = Math.floor((y - r) / BIRD_CELL), cy1 = Math.floor((y + r) / BIRD_CELL);
+    let best = null, bestScore = 0, bestDist = 0;
+    for (let cx = cx0; cx <= cx1; cx++) for (let cy = cy0; cy <= cy1; cy++) {
+      const celda = grid.get(cx + "," + cy);
+      if (!celda) continue;
+      celda.forEach(t => {
+        const dx = t.x - x, dy = t.y - y, d2 = dx * dx + dy * dy;
+        if (d2 > r * r) return;
+        const d = Math.sqrt(d2) || 0.001;
+        const score = t.meta.weight / d;
+        if (score > bestScore) { bestScore = score; best = t; bestDist = d; }
+      });
+    }
+    return best ? { arbol: best, dist: bestDist } : null;
+  }
+  function makeBirdSprite() {
+    const c = document.createElement("canvas"); c.width = 64; c.height = 64;
+    const ctx = c.getContext("2d");
+    ctx.translate(32, 32);
+    ctx.fillStyle = "#20222c";
+    ctx.beginPath(); ctx.ellipse(0, 0, 13, 7.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#eef2f7"; ctx.lineWidth = 2.6; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-15, -13); ctx.lineTo(2, 0); ctx.lineTo(-15, 13); ctx.stroke();
+    ctx.fillStyle = "#f2a93b";
+    ctx.beginPath(); ctx.arc(14, 0, 3.6, 0, Math.PI * 2); ctx.fill();
+    return new THREE.CanvasTexture(c);
+  }
+  function makeBirdAgent(origen) {
+    const b0 = currentBoxRealBounds;
+    let x, y;
+    const refugeX = b0.xMin + (b0.xMax - b0.xMin) * 0.12, refugeY = b0.yMin + (b0.yMax - b0.yMin) * 0.88, refugeR = Math.min(b0.xMax - b0.xMin, b0.yMax - b0.yMin) * 0.12;
+    if (origen === "refugio") {
+      const a = Math.random() * Math.PI * 2, r = Math.random() * refugeR;
+      x = refugeX + Math.cos(a) * r; y = refugeY + Math.sin(a) * r;
+    } else {
+      x = b0.xMax - Math.random() * 20; y = b0.yMin + Math.random() * (b0.yMax - b0.yMin);
+    }
+    const residente = origen === "refugio";
+    return {
+      x, y, vx: residente ? (Math.random() - 0.5) * 2.2 : -(2.6 + Math.random() * 2.6),
+      vy: (Math.random() - 0.5) * (residente ? 2.2 : 1.2),
+      rest: 0, cooldown: 0, residente, estresada: false, phase: Math.random() * 6.28, sprite: null,
+      refugeX, refugeY, refugeR,
+    };
+  }
+  function updateBirdAgent(b, dt) {
+    b.phase += dt * 9;
+    if (b.rest > 0) {
+      b.rest -= dt;
+      b.vx += (Math.random() - 0.5) * 12 * dt; b.vy += (Math.random() - 0.5) * 12 * dt;
+      const freno = Math.pow(0.02, dt);
+      b.vx *= freno; b.vy *= freno;
+      const sp = Math.hypot(b.vx, b.vy);
+      if (sp > BIRD_REST_SPEED) { b.vx = (b.vx / sp) * BIRD_REST_SPEED; b.vy = (b.vy / sp) * BIRD_REST_SPEED; }
+    } else if (b.residente) {
+      if (b.cooldown > 0) b.cooldown -= dt;
+      b.vx += (Math.random() - 0.5) * 8 * dt; b.vy += (Math.random() - 0.5) * 8 * dt;
+      const d = Math.hypot(b.x - b.refugeX, b.y - b.refugeY);
+      if (d > b.refugeR) {
+        const ux = (b.refugeX - b.x) / d, uy = (b.refugeY - b.y) / d;
+        b.vx += ux * 11 * dt; b.vy += uy * 11 * dt;
+      }
+      const sp = Math.hypot(b.vx, b.vy);
+      if (sp > 4) { b.vx = (b.vx / sp) * 4; b.vy = (b.vy / sp) * 4; }
+    } else {
+      if (b.cooldown > 0) b.cooldown -= dt;
+      b.vx -= BIRD_WIND * dt;
+      b.vy += Math.sin(b.phase * 0.28) * 0.7 * dt;
+      const hallazgo = birdTreesGrid ? bestTreeNear(birdTreesGrid, b.x, b.y) : null;
+      if (hallazgo && b.cooldown <= 0) {
+        const { arbol, dist } = hallazgo;
+        const ux = (arbol.x - b.x) / dist, uy = (arbol.y - b.y) / dist;
+        const esSauco = arbol.meta.key === "sauco";
+        const fuerza = arbol.meta.weight * (esSauco ? 20 : 11);
+        b.vx += ux * fuerza * dt; b.vy += uy * fuerza * dt;
+        if (dist < BIRD_ARRIVE * 10) { b.rest = 2 + Math.random(); b.cooldown = 7; }
+      }
+      const sp = Math.hypot(b.vx, b.vy);
+      if (sp > BIRD_MAX_SPEED) { b.vx = (b.vx / sp) * BIRD_MAX_SPEED; b.vy = (b.vy / sp) * BIRD_MAX_SPEED; }
+    }
+    const db = noiseDbAt(b.x, b.y);
+    const exceso = Math.max(0, db - BIRD_NOISE_DB);
+    b.estresada = exceso > 0;
+    if (exceso > 0) {
+      const u = noiseEscapeDir(b.x, b.y);
+      if (u) { b.vx += BIRD_K_REP * exceso * u[0] * dt; b.vy += BIRD_K_REP * exceso * u[1] * dt; }
+      if (b.rest > 0) { b.rest = 0; b.cooldown = Math.max(b.cooldown, 3); }
+    }
+    b.x += b.vx * dt * 10;
+    b.y += b.vy * dt * 10;
+    const b0 = currentBoxRealBounds;
+    if (b.x < b0.xMin) Object.assign(b, makeBirdAgent(b.residente ? "refugio" : "oriente"), { sprite: b.sprite });
+  }
+  function rebuildBirds() {
+    if (!currentBoxRealBounds) return;
+    if (birdsGroup) { sceneRoot.remove(birdsGroup); birds = []; }
+    const attractors = treeMeshes && treeMeshes[0] ? sampleAttractorTrees(treeMeshes[0].data) : [];
+    birdTreesGrid = buildBirdTreeGrid(attractors);
+    birdsGroup = new THREE.Group();
+    birdsGroup.visible = birdOn;
+    const spriteTex = makeBirdSprite();
+    const spriteMat = new THREE.SpriteMaterial({ map: spriteTex, transparent: true });
+    const refugeCount = Math.max(4, Math.round(BIRD_COUNT * 0.15));
+    for (let i = 0; i < BIRD_COUNT; i++) {
+      const origen = i < refugeCount ? "refugio" : "oriente";
+      const b = makeBirdAgent(origen);
+      const sprite = new THREE.Sprite(spriteMat.clone());
+      sprite.scale.set(6, 6, 1);
+      birdsGroup.add(sprite);
+      b.sprite = sprite;
+      birds.push(b);
+    }
+    sceneRoot.add(birdsGroup);
+  }
+  let lastBirdUpdate = 0;
+  function updateBirds(now) {
+    if (!birdsGroup || !birdsGroup.visible) return;
+    const dt = lastBirdUpdate ? Math.min(0.05, (now - lastBirdUpdate) / 1000) : 0;
+    lastBirdUpdate = now;
+    if (dt > 0) birds.forEach(b => updateBirdAgent(b, dt));
+    birds.forEach(b => {
+      const p = toScene(b.x, b.y);
+      const bat = Math.sin(b.phase) * (b.rest > 0 ? 0.15 : 0.3);
+      b.sprite.position.set(p.x, 3.2 + bat, p.z);
+      b.sprite.material.color.set(b.estresada ? 0xff6b4d : 0xffffff);
+    });
   }
 
   // ---- Cuerpos de agua: poligonos planos (fan de triangulos) apenas
@@ -973,6 +1250,16 @@
 
   // ---- Botones de vista ----
   document.getElementById("viewReset").addEventListener("click", () => setAxonometricView(400));
+  document.getElementById("noiseToggleBtn").addEventListener("click", (e) => {
+    noiseOn = !noiseOn;
+    if (noiseMesh) noiseMesh.visible = noiseOn;
+    e.target.textContent = noiseOn ? "🔊 Ocultar ruido" : "🔊 Mostrar ruido";
+  });
+  document.getElementById("birdToggleBtn").addEventListener("click", (e) => {
+    birdOn = !birdOn;
+    if (birdsGroup) birdsGroup.visible = birdOn;
+    e.target.textContent = birdOn ? "🐦 Ocultar mirlas" : "🐦 Mostrar mirlas";
+  });
 
   // ---- Control del sol (mover las sombras) ----
   const sunAzInput = document.getElementById("sunAz"), sunElInput = document.getElementById("sunEl");
@@ -1060,7 +1347,9 @@
       slider.value = String(Math.round(currentTime));
       timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(maxT)}`;
       renderVehiclesAt(currentTime);
+      if (noiseOn || birdOn) computeLiveNoiseField(vehiclesAtTime(currentTime), now);
     }
+    if (birdOn) updateBirds(now);
     // Lineas de borde de edificios: opacidad FIJA, no cambia con el zoom
     // (se pidio que no aparezcan/desaparezcan ni cambien de grosor al
     // acercar o alejar la camara).
@@ -1123,10 +1412,16 @@
     // Coordenadas reales (mismo sistema que los archivos de datos), para
     // poder copiar y pegar la caja de seccion exacta.
     const r0 = sceneToReal(xMin, zMin), r1 = sceneToReal(xMax, zMax);
+    currentBoxRealBounds = { // rango REAL (mismo sistema que los datos) de la caja actual, para que el ruido y las mirlas trabajen solo dentro de esta area, no en toda la ciudad
+      xMin: Math.min(r0[0], r1[0]), xMax: Math.max(r0[0], r1[0]),
+      yMin: Math.min(r0[1], r1[1]), yMax: Math.max(r0[1], r1[1]),
+    };
     sectionBoxOutput.value =
       `X: ${secXMin.value}% a ${secXMax.value}%  (real ${Math.round(Math.min(r0[0],r1[0]))} a ${Math.round(Math.max(r0[0],r1[0]))})\n` +
       `Y (altura, m): ${(yMin / SCALE).toFixed(1)} a ${(yMax / SCALE).toFixed(1)}\n` +
       `Z: ${secZMin.value}% a ${secZMax.value}%  (real ${Math.round(Math.min(r0[1],r1[1]))} a ${Math.round(Math.max(r0[1],r1[1]))})`;
+    rebuildNoiseGround();
+    rebuildBirds();
   }
   let lastRebuildAt = 0;
   [secXMin, secXMax, secYMin, secYMax, secZMin, secZMax].forEach(el => {
