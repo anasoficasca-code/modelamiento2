@@ -929,10 +929,11 @@
     sceneRoot.add(waterMesh);
   }
 
+  let rawWaterData = null;
   function loadWaterBodies() {
     return fetch(WATER_URL)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + WATER_URL); return r.json(); })
-      .then(data => { buildWaterBodies(data); })
+      .then(data => { rawWaterData = data; buildWaterBodies(data); })
       .catch(err => console.warn("No se pudieron cargar los cuerpos de agua:", err));
   }
 
@@ -1909,9 +1910,352 @@
     if (zoomedLayer !== null && e.target === explodeOverlay) unzoomAll();
   });
 
-  // ---- Caja de coordenadas de los textos (arriba a la izquierda), para
-  // poder copiar y pegar el estado exacto de cada texto (posicion de
-  // esquinas, tamaño, color) y que quede fijo en la siguiente iteracion.
+  // ---- Clic en Escala Natural (Capa 1): abre la sub-explosión de 4 capas arquitectónicas ----
+  const natOverlay = document.getElementById("naturalExplodeOverlay");
+  const natBackBtn = document.getElementById("natExplodeBack");
+  const natBaseImg = document.getElementById("natBaseImg");
+  const natWaterCanvas = document.getElementById("natWaterCanvas");
+  const natWaterSvg = document.getElementById("natWaterSvg");
+  const natGuideSvg = document.getElementById("natGuideSvg");
+  const natMesSlider = document.getElementById("natMesSlider");
+  const natMesLabel = document.getElementById("natMesLabel");
+  const natFloodStats = document.getElementById("natFloodStats");
+  const natPlayYearBtn = document.getElementById("natPlayYearBtn");
+
+  const MESES_NAT = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  const HUMEDAL_CICLO = [
+    { mes: 1, expansion_pct: 41.7, profundidad_m: 1.32, temporada: "Temporada seca / intermedia" },
+    { mes: 2, expansion_pct: 42.6, profundidad_m: 1.39, temporada: "Temporada seca / intermedia" },
+    { mes: 3, expansion_pct: 46.7, profundidad_m: 1.73, temporada: "Inicio de temporada de lluvias" },
+    { mes: 4, expansion_pct: 50.0, profundidad_m: 2.00, temporada: "Pico de lluvias (máxima cota)" },
+    { mes: 5, expansion_pct: 47.4, profundidad_m: 1.78, temporada: "Temporada de lluvias" },
+    { mes: 6, expansion_pct: 41.5, profundidad_m: 1.30, temporada: "Temporada de estiaje" },
+    { mes: 7, expansion_pct: 37.7, profundidad_m: 0.99, temporada: "Temporada seca (estiaje)" },
+    { mes: 8, expansion_pct: 34.1, profundidad_m: 0.69, temporada: "Estiaje pronunciado" },
+    { mes: 9, expansion_pct: 33.0, profundidad_m: 0.60, temporada: "Mínimo anual de cota (estiaje)" },
+    { mes: 10, expansion_pct: 38.6, profundidad_m: 1.06, temporada: "Segunda temporada de lluvias" },
+    { mes: 11, expansion_pct: 43.8, profundidad_m: 1.49, temporada: "Pico de segunda temporada de lluvias" },
+    { mes: 12, expansion_pct: 43.3, profundidad_m: 1.45, temporada: "Descenso hacia temporada seca" },
+  ];
+
+  let natYearPlaying = false, natYearTimer = null;
+
+  function openNaturalExplode() {
+    if (!natOverlay) return;
+    // Captura fotográfica de la base
+    const fotoBase = renderer.domElement.toDataURL("image/png");
+    if (natBaseImg) natBaseImg.src = fotoBase;
+
+    natOverlay.style.display = "flex";
+    void natOverlay.offsetWidth;
+
+    // Despliegue pausado y suave de las 4 capas
+    const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
+    sublayers.forEach(l => {
+      l.style.opacity = "1";
+      l.style.transform = "translateY(0)";
+    });
+
+    renderNaturalWaterLayer(parseInt(natMesSlider.value, 10));
+    drawNaturalGuideLines();
+  }
+
+  function closeNaturalExplode() {
+    if (!natOverlay) return;
+    const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
+    sublayers.forEach(l => {
+      l.style.opacity = "0";
+      l.style.transform = "translateY(-20px)";
+    });
+    if (natYearPlaying) stopNatPlayYear();
+    setTimeout(() => {
+      natOverlay.style.display = "none";
+      unzoomAll();
+    }, 400);
+  }
+
+  if (natBackBtn) natBackBtn.addEventListener("click", closeNaturalExplode);
+
+  // Renderizar la capa hídrica sobre su propio canvas/SVG
+  function renderNaturalWaterLayer(mesNum) {
+    if (!natWaterCanvas || !rawWaterData) return;
+    const info = HUMEDAL_CICLO[mesNum - 1] || HUMEDAL_CICLO[3];
+    natMesLabel.textContent = MESES_NAT[mesNum - 1];
+    natFloodStats.innerHTML = `Espejo de agua: <strong style="color:#0284c7">+${info.expansion_pct.toFixed(1)}%</strong> · Profundidad: <strong style="color:#0284c7">${info.profundidad_m.toFixed(2)} m</strong> (${info.temporada})`;
+
+    const rect = natWaterCanvas.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = rect.width, h = rect.height;
+    if (natWaterCanvas.width !== Math.round(w * dpr) || natWaterCanvas.height !== Math.round(h * dpr)) {
+      natWaterCanvas.width = Math.round(w * dpr);
+      natWaterCanvas.height = Math.round(h * dpr);
+    }
+    const ctx = natWaterCanvas.getContext("2d");
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    // Proyección 3D a 2D sobre el canvas de la capa
+    const proj = new THREE.Vector3();
+    function projectPoint(rx, ry, elevation = 0.05) {
+      const sp = toScene(rx, ry);
+      proj.set(sp.x, elevation, sp.z);
+      proj.project(camera);
+      return {
+        x: (proj.x * 0.5 + 0.5) * w,
+        y: (-proj.y * 0.5 + 0.5) * h,
+        inFront: proj.z <= 1
+      };
+    }
+
+    // Identificar Humedal El Burro y calcular expansión estacional
+    const burro = rawWaterData.find(b => (b.nombre || "").includes("Burro"));
+    const expansionFactor = 1 + (info.expansion_pct / 100) * 0.6; // factor calibrado de expansión
+
+    // Dibujar cuerpos de agua (canales y humedal)
+    rawWaterData.forEach(body => {
+      const isBurro = body === burro;
+      let pts = body.pts;
+      if (isBurro) {
+        const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+        const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+        pts = pts.map(p => [cx + (p[0] - cx) * expansionFactor, cy + (p[1] - cy) * expansionFactor]);
+      }
+
+      const scrPts = pts.map(p => projectPoint(p[0], p[1]));
+      if (scrPts.length < 3) return;
+
+      ctx.beginPath();
+      ctx.moveTo(scrPts[0].x, scrPts[0].y);
+      for (let i = 1; i < scrPts.length; i++) ctx.lineTo(scrPts[i].x, scrPts[i].y);
+      ctx.closePath();
+
+      if (isBurro) {
+        // Agua del humedal: degradado suave celeste-cian arquitectónico
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, "rgba(56, 189, 248, 0.78)");
+        grad.addColorStop(1, "rgba(14, 116, 144, 0.85)");
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.lineWidth = 1.8;
+        ctx.strokeStyle = "#0284c7";
+        ctx.stroke();
+      } else {
+        // Canales afluentes
+        ctx.fillStyle = "rgba(125, 211, 252, 0.65)";
+        ctx.fill();
+        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = "#38bdf8";
+        ctx.stroke();
+      }
+    });
+
+    // Punto más hondo en tramo suroriental (13.9 ha): aprox [7584.95, 2973.14]
+    const hondoPt = projectPoint(7584.95, 2973.14);
+
+    // Dibujar SVG con indicador topográfico "Punto más hondo" y vectores de flujo (de dónde viene el agua)
+    if (natWaterSvg) {
+      natWaterSvg.innerHTML = "";
+      const SVGNS = "http://www.w3.org/2000/svg";
+
+      // 1. NODO TOPOGRÁFICO: Punto más hondo
+      if (hondoPt.inFront) {
+        // Círculo concéntrico animado
+        const g = document.createElementNS(SVGNS, "g");
+        g.setAttribute("transform", `translate(${hondoPt.x}, ${hondoPt.y})`);
+
+        const ring = document.createElementNS(SVGNS, "circle");
+        ring.setAttribute("r", "12");
+        ring.setAttribute("fill", "none");
+        ring.setAttribute("stroke", "#0284c7");
+        ring.setAttribute("stroke-width", "1.5");
+        ring.setAttribute("stroke-dasharray", "3 2");
+        g.appendChild(ring);
+
+        const dot = document.createElementNS(SVGNS, "circle");
+        dot.setAttribute("r", "4.5");
+        dot.setAttribute("fill", "#0369a1");
+        dot.setAttribute("stroke", "#ffffff");
+        dot.setAttribute("stroke-width", "2");
+        g.appendChild(dot);
+
+        // Línea directriz inclinada hacia la etiqueta
+        const line = document.createElementNS(SVGNS, "polyline");
+        line.setAttribute("points", "0,0 26,-26 95,-26");
+        line.setAttribute("fill", "none");
+        line.setAttribute("stroke", "#0f172a");
+        line.setAttribute("stroke-width", "1.5");
+        g.appendChild(line);
+
+        // Texto etiqueta
+        const txt = document.createElementNS(SVGNS, "text");
+        txt.setAttribute("x", "30");
+        txt.setAttribute("y", "-32");
+        txt.setAttribute("font-family", "'Segoe UI', sans-serif");
+        txt.setAttribute("font-size", "11.5px");
+        txt.setAttribute("font-weight", "800");
+        txt.setAttribute("fill", "#0f172a");
+        txt.textContent = "Punto más hondo";
+        g.appendChild(txt);
+
+        const subTxt = document.createElementNS(SVGNS, "text");
+        subTxt.setAttribute("x", "30");
+        subTxt.setAttribute("y", "-14");
+        subTxt.setAttribute("font-family", "'Segoe UI', sans-serif");
+        subTxt.setAttribute("font-size", "9.5px");
+        subTxt.setAttribute("font-weight", "600");
+        subTxt.setAttribute("fill", "#64748b");
+        subTxt.textContent = `Tramo suroriental (13.9 ha) · -${info.profundidad_m.toFixed(2)}m`;
+        g.appendChild(subTxt);
+
+        natWaterSvg.appendChild(g);
+      }
+
+      // 2. AFLUENTES: Vectores de flujo que muestran de dónde viene el agua (Canal Los Ángeles / Cuenca alta)
+      const flowInletPts = [
+        [8100, 2700], [7850, 2850], [7650, 2960]
+      ].map(p => projectPoint(p[0], p[1]));
+
+      if (flowInletPts.length >= 2) {
+        const flowG = document.createElementNS(SVGNS, "g");
+        const pathD = `M ${flowInletPts[0].x} ${flowInletPts[0].y} Q ${flowInletPts[1].x} ${flowInletPts[1].y} ${flowInletPts[2].x} ${flowInletPts[2].y}`;
+        
+        const flowPath = document.createElementNS(SVGNS, "path");
+        flowPath.setAttribute("d", pathD);
+        flowPath.setAttribute("fill", "none");
+        flowPath.setAttribute("stroke", "#0284c7");
+        flowPath.setAttribute("stroke-width", "2.2");
+        flowPath.setAttribute("stroke-dasharray", "6 4");
+        flowG.appendChild(flowPath);
+
+        // Flecha en la punta
+        const arrow = document.createElementNS(SVGNS, "polygon");
+        const pEnd = flowInletPts[2], pPrev = flowInletPts[1];
+        const angle = Math.atan2(pEnd.y - pPrev.y, pEnd.x - pPrev.x);
+        const arrowLen = 9;
+        const x1 = pEnd.x - arrowLen * Math.cos(angle - Math.PI / 6);
+        const y1 = pEnd.y - arrowLen * Math.sin(angle - Math.PI / 6);
+        const x2 = pEnd.x - arrowLen * Math.cos(angle + Math.PI / 6);
+        const y2 = pEnd.y - arrowLen * Math.sin(angle + Math.PI / 6);
+        arrow.setAttribute("points", `${pEnd.x},${pEnd.y} ${x1},${y1} ${x2},${y2}`);
+        arrow.setAttribute("fill", "#0284c7");
+        flowG.appendChild(arrow);
+
+        // Etiqueta de flujo
+        const inletLabel = document.createElementNS(SVGNS, "text");
+        inletLabel.setAttribute("x", String(flowInletPts[0].x + 10));
+        inletLabel.setAttribute("y", String(flowInletPts[0].y - 8));
+        inletLabel.setAttribute("font-family", "'Segoe UI', sans-serif");
+        inletLabel.setAttribute("font-size", "10px");
+        inletLabel.setAttribute("font-weight", "700");
+        inletLabel.setAttribute("fill", "#0284c7");
+        inletLabel.textContent = "Afluente principal (origen del agua)";
+        flowG.appendChild(inletLabel);
+
+        natWaterSvg.appendChild(flowG);
+      }
+    }
+  }
+
+  // Líneas guía arquitectónicas punteadas verticales que conectan los vértices de las capas
+  function drawNaturalGuideLines() {
+    if (!natGuideSvg || !natOverlay) return;
+    natGuideSvg.innerHTML = "";
+    const SVGNS = "http://www.w3.org/2000/svg";
+    const layerTop = document.getElementById("natLayerWater");
+    const layerBase = document.getElementById("natLayerBase");
+    if (!layerTop || !layerBase) return;
+
+    const rTop = layerTop.getBoundingClientRect();
+    const rBase = layerBase.getBoundingClientRect();
+    const rStage = natGuideSvg.getBoundingClientRect();
+
+    // 4 esquinas del rombo (50% 0%, 100% 50%, 50% 100%, 0% 50%)
+    const cornersRel = [
+      { rx: 0.5, ry: 0.0 }, // norte
+      { rx: 1.0, ry: 0.5 }, // este
+      { rx: 0.5, ry: 1.0 }, // sur
+      { rx: 0.0, ry: 0.5 }, // oeste
+    ];
+
+    cornersRel.forEach(c => {
+      const x1 = rTop.left + rTop.width * c.rx - rStage.left;
+      const y1 = rTop.top + rTop.height * c.ry - rStage.top;
+      const x2 = rBase.left + rBase.width * c.rx - rStage.left;
+      const y2 = rBase.top + rBase.height * c.ry - rStage.top;
+
+      const line = document.createElementNS(SVGNS, "line");
+      line.setAttribute("x1", String(x1));
+      line.setAttribute("y1", String(y1));
+      line.setAttribute("x2", String(x2));
+      line.setAttribute("y2", String(y2));
+      line.setAttribute("stroke", "rgba(15, 23, 42, 0.22)");
+      line.setAttribute("stroke-width", "1.2");
+      line.setAttribute("stroke-dasharray", "4 4");
+      natGuideSvg.appendChild(line);
+
+      // Pequeño marcador en los extremos
+      const dot1 = document.createElementNS(SVGNS, "circle");
+      dot1.setAttribute("cx", String(x1)); dot1.setAttribute("cy", String(y1)); dot1.setAttribute("r", "2.5");
+      dot1.setAttribute("fill", "rgba(15, 23, 42, 0.35)");
+      natGuideSvg.appendChild(dot1);
+
+      const dot2 = document.createElementNS(SVGNS, "circle");
+      dot2.setAttribute("cx", String(x2)); dot2.setAttribute("cy", String(y2)); dot2.setAttribute("r", "2.5");
+      dot2.setAttribute("fill", "rgba(15, 23, 42, 0.35)");
+      natGuideSvg.appendChild(dot2);
+    });
+  }
+
+  window.addEventListener("resize", () => {
+    if (natOverlay && natOverlay.style.display !== "none") {
+      renderNaturalWaterLayer(parseInt(natMesSlider.value, 10));
+      drawNaturalGuideLines();
+    }
+  });
+
+  if (natMesSlider) {
+    natMesSlider.addEventListener("input", () => {
+      renderNaturalWaterLayer(parseInt(natMesSlider.value, 10));
+    });
+  }
+
+  function stopNatPlayYear() {
+    natYearPlaying = false;
+    if (natYearTimer) { clearInterval(natYearTimer); natYearTimer = null; }
+    if (natPlayYearBtn) natPlayYearBtn.textContent = "▶ Reproducir año completo";
+  }
+
+  if (natPlayYearBtn) {
+    natPlayYearBtn.addEventListener("click", () => {
+      natYearPlaying = !natYearPlaying;
+      if (natYearPlaying) {
+        natPlayYearBtn.textContent = "⏸ Pausar año";
+        natYearTimer = setInterval(() => {
+          let m = parseInt(natMesSlider.value, 10) + 1;
+          if (m > 12) m = 1;
+          natMesSlider.value = String(m);
+          renderNaturalWaterLayer(m);
+        }, 850);
+      } else {
+        stopNatPlayYear();
+      }
+    });
+  }
+
+  // Interceptar el clic en la Escala Natural (layer 1) para lanzar el zoom y la sub-explosión
+  const naturalLayerClip = document.querySelector('.explode-layer[data-layer="1"] .explode-clip');
+  if (naturalLayerClip) {
+    naturalLayerClip.addEventListener("click", (e) => {
+      e.stopPropagation();
+      // Tras el zoom suave, desplegar la sub-explosión de 4 capas
+      setTimeout(() => {
+        openNaturalExplode();
+      }, 1400);
+    });
+  }
+
+  // ---- Caja de coordenadas de los textos (arriba a la izquierda) ----
   const textCoordsBox = document.createElement("textarea");
   textCoordsBox.id = "textCoordsOutput";
   textCoordsBox.style.cssText = "display:none; position:absolute; top:18px; left:18px; z-index:16; width:340px; height:160px; font-size:10px; background:rgba(10,12,14,.92); color:#fff; border:1px solid rgba(255,255,255,.2); border-radius:6px; padding:8px;";
