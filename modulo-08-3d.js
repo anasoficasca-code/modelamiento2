@@ -705,7 +705,7 @@
       const origen = i < refugeCount ? "refugio" : (i % 2 ? "humedal" : "oriente");
       const b = makeBirdAgent(origen);
       const sprite = new THREE.Sprite(spriteMat.clone());
-      sprite.scale.set(3.2, 3.2, 1);
+      sprite.scale.set(9, 9, 1); // mas grande que en modulo-10-corte (3.2): aqui se ve TODA la ciudad, no un sector acercado, y con el sprite chico no se alcanzaban a ver las mirlas
       sprite.renderOrder = 999;
       birdsGroup.add(sprite);
       b.sprite = sprite;

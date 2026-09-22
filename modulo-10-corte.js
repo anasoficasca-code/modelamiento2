@@ -638,7 +638,7 @@
     for (let i = 1; i < boxCorners.length; i++) noiseOverlayCtx.lineTo(boxCorners[i].x, boxCorners[i].y);
     noiseOverlayCtx.closePath();
     noiseOverlayCtx.clip();
-    noiseOverlayCtx.globalCompositeOperation = "source-over";
+    noiseOverlayCtx.globalCompositeOperation = "lighter"; // igual mezcla que en modulo-08-3d.js: las manchas de vehiculos cercanos se acumulan/mezclan entre si en vez de pintarse una encima de otra, dando el mismo efecto de "resplandor" continuo
     // Radio en pixeles: se calcula proyectando 2 puntos separados por el
     // radio real en metros y midiendo la distancia resultante en pantalla,
     // para que el tamaño de la mancha se vea coherente con el zoom actual.
