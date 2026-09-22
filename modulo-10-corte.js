@@ -1939,7 +1939,8 @@
   });
 
   // ---- Zoom individual al hacer clic en cada capa: la que se toca crece
-  // lentamente (zoom zoom zoom suave y progresivo), las otras se desvanecen. ----
+  // lentamente (zoom zoom zoom suave y progresivo), las otras se desvanecen.
+  // Y al hacer clic por SEGUNDA VEZ sobre la capa que ya tiene zoom, se abre la sub-explosión temática. ----
   let zoomedLayer = null;
   function unzoomAll() {
     document.querySelectorAll(".explode-layer").forEach(l => {
@@ -1948,25 +1949,41 @@
     });
     zoomedLayer = null;
   }
-  document.querySelectorAll(".explode-clip").forEach((clip, idx) => {
+  document.querySelectorAll(".explode-layer").forEach((layerEl) => {
+    const clip = layerEl.querySelector(".explode-clip");
+    if (!clip) return;
     clip.addEventListener("click", (e) => {
       e.stopPropagation();
-      const layerNum = idx + 1;
-      if (zoomedLayer === layerNum) { unzoomAll(); return; }
+      const layerNum = parseInt(layerEl.dataset.layer, 10);
+      
+      // Si la capa YA está en zoom y el usuario le vuelve a hacer clic:
+      if (zoomedLayer === layerNum) {
+        if (layerNum === 1) {
+          // Explota la sub-explosión de Escala Natural
+          openNaturalExplode();
+        } else {
+          // Para las otras escalas, des-zoomea si se vuelve a tocar
+          unzoomAll();
+        }
+        return;
+      }
+
+      // PRIMER CLIC: zoom zoom zoom muy lento y suave
       zoomedLayer = layerNum;
       const allLayers = document.querySelectorAll(".explode-layer");
-      allLayers.forEach((l, i) => {
-        if (i + 1 === layerNum) {
-          // La capa tocada se centra y se va haciendo zoom zoom zoom muy lento
+      allLayers.forEach((l) => {
+        const lNum = parseInt(l.dataset.layer, 10);
+        if (lNum === layerNum) {
+          // La capa tocada se centra y se va haciendo zoom muy lento
           l.style.transition = "transform 2.6s cubic-bezier(.2,.85,.25,1), width 2.6s cubic-bezier(.2,.85,.25,1), opacity 1.8s ease";
           l.style.position = "fixed";
           l.style.top = "50%"; l.style.left = "50%";
-          l.style.width = "82vw";
-          l.style.transform = "translate(-50%,-50%) scale(1.08)";
+          l.style.width = "78vw";
+          l.style.transform = "translate(-50%,-50%) scale(1.06)";
           l.style.zIndex = "60";
           l.style.opacity = "1"; l.style.visibility = "visible";
         } else {
-          // Las otras 2 se desvanecen lentamente
+          // Las otras se desvanecen lentamente
           l.style.transition = "opacity 1.2s ease, transform 1.2s ease";
           l.style.opacity = "0";
           l.style.visibility = "hidden";
@@ -2009,11 +2026,24 @@
   ];
 
   let natYearPlaying = false, natYearTimer = null;
+  let natWaterAnimFrame = null;
+  let natWaterTime = 0;
 
   function openNaturalExplode() {
     if (!natOverlay) return;
-    // Captura fotográfica de la base
+    // Captura fotográfica de la base limpia
+    const origRoadColor = roadMat ? roadMat.color.getHex() : null;
+    const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
+    const origBirdsVis = birdsGroup ? birdsGroup.visible : false;
+    if (noiseMesh) noiseMesh.visible = false;
+    if (birdsGroup) birdsGroup.visible = false;
+    if (roadMat) roadMat.color.set(0x9099a3);
+    renderer.render(scene, camera);
     const fotoBase = renderer.domElement.toDataURL("image/png");
+    if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
+    if (noiseMesh) noiseMesh.visible = origNoiseVis;
+    if (birdsGroup) birdsGroup.visible = origBirdsVis;
+
     if (natBaseImg) natBaseImg.src = fotoBase;
 
     natOverlay.style.display = "flex";
@@ -2028,10 +2058,26 @@
 
     renderNaturalWaterLayer(parseInt(natMesSlider.value, 10));
     drawNaturalGuideLines();
+
+    // Iniciar loop continuo de agua viva fluida y oleaje
+    startNatWaterAnimation();
+  }
+
+  function startNatWaterAnimation() {
+    if (natWaterAnimFrame) cancelAnimationFrame(natWaterAnimFrame);
+    function loopWater() {
+      if (natOverlay.style.display !== "none") {
+        natWaterTime += 0.035;
+        renderNaturalWaterLayer(parseInt(natMesSlider.value, 10));
+        natWaterAnimFrame = requestAnimationFrame(loopWater);
+      }
+    }
+    natWaterAnimFrame = requestAnimationFrame(loopWater);
   }
 
   function closeNaturalExplode() {
     if (!natOverlay) return;
+    if (natWaterAnimFrame) { cancelAnimationFrame(natWaterAnimFrame); natWaterAnimFrame = null; }
     const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
     sublayers.forEach(l => {
       l.style.opacity = "0";
@@ -2046,7 +2092,7 @@
 
   if (natBackBtn) natBackBtn.addEventListener("click", closeNaturalExplode);
 
-  // Renderizar la capa hídrica sobre su propio canvas/SVG
+  // Renderizar la capa hídrica sobre su propio canvas/SVG con agua fluida en movimiento
   function renderNaturalWaterLayer(mesNum) {
     if (!natWaterCanvas || !rawWaterData) return;
     const info = HUMEDAL_CICLO[mesNum - 1] || HUMEDAL_CICLO[3];
@@ -2080,7 +2126,7 @@
 
     // Identificar Humedal El Burro y calcular expansión estacional
     const burro = rawWaterData.find(b => (b.nombre || "").includes("Burro"));
-    const expansionFactor = 1 + (info.expansion_pct / 100) * 0.6; // factor calibrado de expansión
+    const expansionFactor = 1 + (info.expansion_pct / 100) * 0.6;
 
     // Dibujar cuerpos de agua (canales y humedal)
     rawWaterData.forEach(body => {
@@ -2101,18 +2147,35 @@
       ctx.closePath();
 
       if (isBurro) {
-        // Agua del humedal: degradado suave celeste-cian arquitectónico
-        const grad = ctx.createLinearGradient(0, 0, w, h);
-        grad.addColorStop(0, "rgba(56, 189, 248, 0.78)");
-        grad.addColorStop(1, "rgba(14, 116, 144, 0.85)");
+        // Agua del humedal: degradado dinámico fluido
+        const waveX = Math.sin(natWaterTime * 0.7) * 25;
+        const waveY = Math.cos(natWaterTime * 0.9) * 20;
+        const grad = ctx.createLinearGradient(waveX, waveY, w + waveX, h + waveY);
+        grad.addColorStop(0, "rgba(56, 189, 248, 0.82)");
+        grad.addColorStop(0.5, "rgba(14, 165, 233, 0.78)");
+        grad.addColorStop(1, "rgba(3, 105, 161, 0.88)");
         ctx.fillStyle = grad;
         ctx.fill();
         ctx.lineWidth = 1.8;
         ctx.strokeStyle = "#0284c7";
         ctx.stroke();
+
+        // Ondas concéntricas de agua fluida en movimiento continuo
+        for (let ring = 1; ring <= 3; ring++) {
+          const rOffset = ((natWaterTime * 12 + ring * 22) % 65);
+          const rAlpha = Math.max(0, 1 - rOffset / 65) * 0.45;
+          const centerSO = projectPoint(7518.49, 3137.57);
+          if (centerSO.inFront) {
+            ctx.beginPath();
+            ctx.ellipse(centerSO.x, centerSO.y, rOffset * 1.5, rOffset * 0.8, -0.35, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${rAlpha})`;
+            ctx.lineWidth = 1.4;
+            ctx.stroke();
+          }
+        }
       } else {
-        // Canales afluentes
-        ctx.fillStyle = "rgba(125, 211, 252, 0.65)";
+        // Canales afluentes con flujo de agua suave
+        ctx.fillStyle = "rgba(125, 211, 252, 0.7)";
         ctx.fill();
         ctx.lineWidth = 1.2;
         ctx.strokeStyle = "#38bdf8";
@@ -2120,110 +2183,132 @@
       }
     });
 
-    // Punto más hondo en tramo suroriental (13.9 ha): aprox [7584.95, 2973.14]
-    const hondoPt = projectPoint(7584.95, 2973.14);
+    // Punto más hondo: UBICACIÓN GEOMÉTRICA EXACTA EN EL CENTRO DEL CUERPO PRINCIPAL DEL TRAMO SURORIENTAL (13.9 ha)
+    // Coordenadas calculadas: [7518.49, 3137.57] (al oriente de la Av. Ciudad de Cali)
+    const hondoPt = projectPoint(7518.49, 3137.57);
 
-    // Dibujar SVG con indicador topográfico "Punto más hondo" y vectores de flujo (de dónde viene el agua)
+    // Dibujar SVG con indicador topográfico y conectividad hídrica regional (Subcuenca El Tintal)
     if (natWaterSvg) {
       natWaterSvg.innerHTML = "";
       const SVGNS = "http://www.w3.org/2000/svg";
 
-      // 1. NODO TOPOGRÁFICO: Punto más hondo
+      // 1. NODO TOPOGRÁFICO: Punto más hondo (en el centro del cuerpo de agua suroriental)
       if (hondoPt.inFront) {
-        // Círculo concéntrico animado
         const g = document.createElementNS(SVGNS, "g");
         g.setAttribute("transform", `translate(${hondoPt.x}, ${hondoPt.y})`);
 
+        // Onda circular animada
+        const pulseR = 12 + Math.sin(natWaterTime * 3) * 3;
         const ring = document.createElementNS(SVGNS, "circle");
-        ring.setAttribute("r", "12");
+        ring.setAttribute("r", pulseR.toFixed(1));
         ring.setAttribute("fill", "none");
         ring.setAttribute("stroke", "#0284c7");
-        ring.setAttribute("stroke-width", "1.5");
+        ring.setAttribute("stroke-width", "1.6");
         ring.setAttribute("stroke-dasharray", "3 2");
         g.appendChild(ring);
 
         const dot = document.createElementNS(SVGNS, "circle");
-        dot.setAttribute("r", "4.5");
+        dot.setAttribute("r", "5");
         dot.setAttribute("fill", "#0369a1");
         dot.setAttribute("stroke", "#ffffff");
-        dot.setAttribute("stroke-width", "2");
+        dot.setAttribute("stroke-width", "2.2");
         g.appendChild(dot);
 
-        // Línea directriz inclinada hacia la etiqueta
+        // Línea directriz hacia la etiqueta derecha
         const line = document.createElementNS(SVGNS, "polyline");
-        line.setAttribute("points", "0,0 26,-26 95,-26");
+        line.setAttribute("points", "0,0 28,-28 120,-28");
         line.setAttribute("fill", "none");
         line.setAttribute("stroke", "#0f172a");
-        line.setAttribute("stroke-width", "1.5");
+        line.setAttribute("stroke-width", "1.6");
         g.appendChild(line);
 
         // Texto etiqueta
         const txt = document.createElementNS(SVGNS, "text");
-        txt.setAttribute("x", "30");
-        txt.setAttribute("y", "-32");
+        txt.setAttribute("x", "32");
+        txt.setAttribute("y", "-34");
         txt.setAttribute("font-family", "'Segoe UI', sans-serif");
         txt.setAttribute("font-size", "11.5px");
         txt.setAttribute("font-weight", "800");
         txt.setAttribute("fill", "#0f172a");
-        txt.textContent = "Punto más hondo";
+        txt.textContent = "Punto más hondo (Cota mínima)";
         g.appendChild(txt);
 
         const subTxt = document.createElementNS(SVGNS, "text");
-        subTxt.setAttribute("x", "30");
-        subTxt.setAttribute("y", "-14");
+        subTxt.setAttribute("x", "32");
+        subTxt.setAttribute("y", "-16");
         subTxt.setAttribute("font-family", "'Segoe UI', sans-serif");
         subTxt.setAttribute("font-size", "9.5px");
         subTxt.setAttribute("font-weight", "600");
-        subTxt.setAttribute("fill", "#64748b");
-        subTxt.textContent = `Tramo suroriental (13.9 ha) · -${info.profundidad_m.toFixed(2)}m`;
+        subTxt.setAttribute("fill", "#0369a1");
+        subTxt.textContent = `Centro Sector Suroriental (13.9 ha) · Prof. ${info.profundidad_m.toFixed(2)} m`;
         g.appendChild(subTxt);
 
         natWaterSvg.appendChild(g);
       }
 
-      // 2. AFLUENTES: Vectores de flujo que muestran de dónde viene el agua (Canal Los Ángeles / Cuenca alta)
-      const flowInletPts = [
-        [8100, 2700], [7850, 2850], [7650, 2960]
-      ].map(p => projectPoint(p[0], p[1]));
+      // 2. SUBCUENCA EL TINTAL: Vectores de flujo desde los Ríos Fucha, Tunjuelo y Bogotá hacia el Humedal
+      const flowCorridors = [
+        {
+          name: "Río Fucha → Canal Américas",
+          pts: [[8350, 4200], [7950, 3750], [7640, 3450]],
+          color: "#0284c7"
+        },
+        {
+          name: "Río Tunjuelo → Afluente Sur",
+          pts: [[7800, 2400], [7650, 2800], [7550, 3050]],
+          color: "#0ea5e9"
+        },
+        {
+          name: "Interconexión Río Bogotá / Subcuenca El Tintal",
+          pts: [[6700, 3350], [6950, 3420], [7250, 3400]],
+          color: "#06b6d4"
+        }
+      ];
 
-      if (flowInletPts.length >= 2) {
-        const flowG = document.createElementNS(SVGNS, "g");
-        const pathD = `M ${flowInletPts[0].x} ${flowInletPts[0].y} Q ${flowInletPts[1].x} ${flowInletPts[1].y} ${flowInletPts[2].x} ${flowInletPts[2].y}`;
-        
-        const flowPath = document.createElementNS(SVGNS, "path");
-        flowPath.setAttribute("d", pathD);
-        flowPath.setAttribute("fill", "none");
-        flowPath.setAttribute("stroke", "#0284c7");
-        flowPath.setAttribute("stroke-width", "2.2");
-        flowPath.setAttribute("stroke-dasharray", "6 4");
-        flowG.appendChild(flowPath);
+      flowCorridors.forEach(corr => {
+        const screenPts = corr.pts.map(p => projectPoint(p[0], p[1]));
+        if (screenPts.length >= 3 && screenPts[0].inFront && screenPts[2].inFront) {
+          const flowG = document.createElementNS(SVGNS, "g");
+          const pathD = `M ${screenPts[0].x} ${screenPts[0].y} Q ${screenPts[1].x} ${screenPts[1].y} ${screenPts[2].x} ${screenPts[2].y}`;
 
-        // Flecha en la punta
-        const arrow = document.createElementNS(SVGNS, "polygon");
-        const pEnd = flowInletPts[2], pPrev = flowInletPts[1];
-        const angle = Math.atan2(pEnd.y - pPrev.y, pEnd.x - pPrev.x);
-        const arrowLen = 9;
-        const x1 = pEnd.x - arrowLen * Math.cos(angle - Math.PI / 6);
-        const y1 = pEnd.y - arrowLen * Math.sin(angle - Math.PI / 6);
-        const x2 = pEnd.x - arrowLen * Math.cos(angle + Math.PI / 6);
-        const y2 = pEnd.y - arrowLen * Math.sin(angle + Math.PI / 6);
-        arrow.setAttribute("points", `${pEnd.x},${pEnd.y} ${x1},${y1} ${x2},${y2}`);
-        arrow.setAttribute("fill", "#0284c7");
-        flowG.appendChild(arrow);
+          const flowPath = document.createElementNS(SVGNS, "path");
+          flowPath.setAttribute("d", pathD);
+          flowPath.setAttribute("fill", "none");
+          flowPath.setAttribute("stroke", corr.color);
+          flowPath.setAttribute("stroke-width", "2.2");
+          flowPath.setAttribute("stroke-dasharray", "6 4");
+          // Desplazamiento animado de las líneas punteadas para simular el caudal del río fluyendo
+          const dashOffset = (natWaterTime * 20) % 20;
+          flowPath.setAttribute("stroke-dashoffset", (-dashOffset).toFixed(1));
+          flowG.appendChild(flowPath);
 
-        // Etiqueta de flujo
-        const inletLabel = document.createElementNS(SVGNS, "text");
-        inletLabel.setAttribute("x", String(flowInletPts[0].x + 10));
-        inletLabel.setAttribute("y", String(flowInletPts[0].y - 8));
-        inletLabel.setAttribute("font-family", "'Segoe UI', sans-serif");
-        inletLabel.setAttribute("font-size", "10px");
-        inletLabel.setAttribute("font-weight", "700");
-        inletLabel.setAttribute("fill", "#0284c7");
-        inletLabel.textContent = "Afluente principal (origen del agua)";
-        flowG.appendChild(inletLabel);
+          // Flecha de dirección hacia el humedal
+          const pEnd = screenPts[2], pPrev = screenPts[1];
+          const angle = Math.atan2(pEnd.y - pPrev.y, pEnd.x - pPrev.x);
+          const arrowLen = 9;
+          const x1 = pEnd.x - arrowLen * Math.cos(angle - Math.PI / 6);
+          const y1 = pEnd.y - arrowLen * Math.sin(angle - Math.PI / 6);
+          const x2 = pEnd.x - arrowLen * Math.cos(angle + Math.PI / 6);
+          const y2 = pEnd.y - arrowLen * Math.sin(angle + Math.PI / 6);
+          const arrow = document.createElementNS(SVGNS, "polygon");
+          arrow.setAttribute("points", `${pEnd.x},${pEnd.y} ${x1},${y1} ${x2},${y2}`);
+          arrow.setAttribute("fill", corr.color);
+          flowG.appendChild(arrow);
 
-        natWaterSvg.appendChild(flowG);
-      }
+          // Etiqueta del río/afluente
+          const label = document.createElementNS(SVGNS, "text");
+          label.setAttribute("x", String(screenPts[0].x + 8));
+          label.setAttribute("y", String(screenPts[0].y - 6));
+          label.setAttribute("font-family", "'Segoe UI', sans-serif");
+          label.setAttribute("font-size", "9.5px");
+          label.setAttribute("font-weight", "700");
+          label.setAttribute("fill", corr.color);
+          label.textContent = corr.name;
+          flowG.appendChild(label);
+
+          natWaterSvg.appendChild(flowG);
+        }
+      });
     }
   }
 

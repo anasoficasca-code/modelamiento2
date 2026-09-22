@@ -272,20 +272,23 @@
 
     <div id="explodeHint" style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:6; font-size:11px; color:var(--ink-dim); background:rgba(17,20,24,.75); padding:6px 12px; border-radius:8px; pointer-events:none;">💥 Toca la axonometría para explotarla en 3 capas</div>
 
-    <div id="explodeOverlay" style="position:absolute; inset:0; z-index:300; background:#f3f4f5; display:none; align-items:center; justify-content:flex-end; flex-direction:column; padding-bottom:3vh;">
-      <button type="button" id="explodeClose" style="position:absolute; top:20px; right:26px; width:36px; height:36px; border-radius:50%; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.08); color:#fff; font-size:16px; cursor:pointer; z-index:2; pointer-events:auto;">✕</button>
-      <div id="explodeStack" style="display:flex; flex-direction:column; align-items:center; width:64vw; max-width:740px; pointer-events:auto;">
-        <div class="explode-layer" data-layer="1" style="position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-7.5%; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1), opacity 1.8s ease, z-index 0s;">
-          <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer;"><img id="explodeImg1" style="width:100%; height:100%; object-fit:cover;"></div>
-          <div class="explode-text" contenteditable="true" data-layer="1" style="position:absolute; top:calc(50% - 20px); right:14px; width:220px; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.45); padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala natural</div>
+    <div id="explodeOverlay" style="position:absolute; inset:0; z-index:300; background:#f3f4f5; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
+      <button type="button" id="explodeClose" style="position:absolute; top:20px; right:26px; width:36px; height:36px; border-radius:50%; border:1px solid rgba(0,0,0,.15); background:#ffffff; color:#111; font-size:16px; cursor:pointer; z-index:20; pointer-events:auto; box-shadow:0 2px 8px rgba(0,0,0,.1);">✕</button>
+      <div id="explodeStack" style="display:flex; flex-direction:column; align-items:center; width:58vw; max-width:680px; pointer-events:auto; margin-top:-2vh;">
+        <!-- Arriba: Escala Tecnológica -->
+        <div class="explode-layer" data-layer="3" style="position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-9%; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1), opacity 1.8s ease, z-index 0s;">
+          <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer;"><img id="explodeImg3" style="width:100%; height:100%; object-fit:cover;"></div>
+          <div class="explode-text" contenteditable="true" data-layer="3" style="position:absolute; top:calc(50% - 20px); right:14px; width:220px; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.45); padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala tecnológica</div>
         </div>
-        <div class="explode-layer" data-layer="2" style="position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-7.5%; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1) .4s, opacity 1.8s ease .4s, z-index 0s;">
+        <!-- Medio: Escala Cultural -->
+        <div class="explode-layer" data-layer="2" style="position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-9%; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1) .35s, opacity 1.8s ease .35s, z-index 0s;">
           <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer;"><img id="explodeImg2" style="width:100%; height:100%; object-fit:cover;"></div>
           <div class="explode-text" contenteditable="true" data-layer="2" style="position:absolute; top:calc(50% - 20px); right:14px; width:220px; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.45); padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala cultural</div>
         </div>
-        <div class="explode-layer" data-layer="3" style="position:relative; width:100%; aspect-ratio:16/9; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1) .8s, opacity 1.8s ease .8s, z-index 0s;">
-          <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer;"><img id="explodeImg3" style="width:100%; height:100%; object-fit:cover;"></div>
-          <div class="explode-text" contenteditable="true" data-layer="3" style="position:absolute; top:calc(50% - 20px); right:14px; width:220px; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.45); padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala tecnológica</div>
+        <!-- Abajo: Escala Natural -->
+        <div class="explode-layer" data-layer="1" style="position:relative; width:100%; aspect-ratio:16/9; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1) .7s, opacity 1.8s ease .7s, z-index 0s;">
+          <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer;"><img id="explodeImg1" style="width:100%; height:100%; object-fit:cover;"></div>
+          <div class="explode-text" contenteditable="true" data-layer="1" style="position:absolute; top:calc(50% - 20px); right:14px; width:220px; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.45); padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala natural</div>
         </div>
       </div>
     </div>
@@ -371,6 +374,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=80"></script>
+<script src="modulo-10-corte.js?v=81"></script>
 </body>
 </html>
