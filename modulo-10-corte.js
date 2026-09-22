@@ -1217,10 +1217,10 @@
     });
     if (penPoints.length >= 2) {
       const pts = penPoints.map(p => `${p.sx},${p.sy}`).join(" ");
-      const poly = document.createElementNS(SVGNS, "polyline");
+      const poly = document.createElementNS(SVGNS, "polygon"); // "polygon" (no "polyline") cierra la forma sola y permite rellenarla, como una herramienta de pluma normal
       poly.setAttribute("points", pts);
-      poly.setAttribute("fill", "none");
-      poly.setAttribute("stroke", "#0a0a0a"); // negro, solo el perimetro (sin relleno)
+      poly.setAttribute("fill", "rgba(10,10,10,0.35)"); // forma rellena mientras se dibuja, como en Illustrator
+      poly.setAttribute("stroke", "#0a0a0a");
       poly.setAttribute("stroke-width", "2.5");
       penSvg.appendChild(poly);
     }
@@ -1244,7 +1244,8 @@
   window.addEventListener("click", (e) => {
     if (!penActive) return;
     const pt3d = screenToGround(e.clientX, e.clientY);
-    penPoints.push({ sx: e.clientX, sy: e.clientY, x: pt3d.x, y: pt3d.y });
+    const svgRect = penSvg.getBoundingClientRect(); // el SVG esta dentro de .main (corrido por el menu lateral), asi que hay que restar su propio origen, no usar las coordenadas de toda la ventana directamente
+    penPoints.push({ sx: e.clientX - svgRect.left, sy: e.clientY - svgRect.top, x: pt3d.x, y: pt3d.y });
     redrawPenSvg();
     updatePenOutput();
   });
@@ -1260,6 +1261,7 @@
     const foto = renderer.domElement.toDataURL("image/png");
     if (roadMat) roadMat.color.set(colorOriginal);
     explodeImgs.forEach(img => { img.src = foto; });
+    document.getElementById("sceneWrap").style.display = "none"; // la axonometria principal desaparece (no se queda de fondo al lado de las 3 nuevas)
     explodeOverlay.style.display = "flex";
     // fuerza un reflow antes de aplicar la clase, para que la transicion
     // de aparicion (de escala 0.05 a 1) se vea animada y no instantanea
@@ -1268,6 +1270,7 @@
   });
   document.getElementById("explodeClose").addEventListener("click", () => {
     explodeOverlay.style.display = "none";
+    document.getElementById("sceneWrap").style.display = "block"; // vuelve a aparecer la axonometria principal al cerrar
     explodeLayers.forEach(el => { el.style.opacity = "0"; el.style.transform = "scale(.05)"; });
   });
 })();
