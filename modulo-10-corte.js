@@ -2012,6 +2012,8 @@
   // ---- Clic en Escala Natural (Capa 1): abre la sub-explosión de 4 capas arquitectónicas ----
   const natOverlay = document.getElementById("naturalExplodeOverlay");
   const natBackBtn = document.getElementById("natExplodeBack");
+  const natAssembleBtn = document.getElementById("natAssembleBtn");
+  const natAssembleBtnText = document.getElementById("natAssembleBtnText");
   const natBaseImg = document.getElementById("natBaseImg");
   const natWaterCanvas = document.getElementById("natWaterCanvas");
   const natWaterSvg = document.getElementById("natWaterSvg");
@@ -2042,6 +2044,7 @@
   let natYearPlaying = false, natYearTimer = null;
   let natWaterAnimFrame = null;
   let natWaterTime = 0;
+  let natIsAssembled = false; // Estado: true si las capas bajaron y se colocaron sobre la base axo
 
   function openNaturalExplode() {
     if (!natOverlay) return;
@@ -2073,12 +2076,8 @@
     natOverlay.style.display = "flex";
     void natOverlay.offsetWidth;
 
-    // Despliegue pausado y suave de las 4 capas manteniendo alineación central con la base
-    const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
-    sublayers.forEach(l => {
-      l.style.opacity = "1";
-      l.style.transform = "translate(-50%, 0)";
-    });
+    // Abrir siempre en modo explosionado inicial ordenado
+    setNaturalLayersExploded(false);
 
     renderNaturalWaterLayer(parseInt(natMesSlider.value, 10));
     renderNaturalVegLayer();
@@ -2098,6 +2097,100 @@
 
     // Iniciar loop continuo de agua viva fluida y oleaje
     startNatWaterAnimation();
+  }
+
+  // Animación para bajar las capas y ponerlas exactamente en la base axo
+  function setNaturalLayersAssembled() {
+    natIsAssembled = true;
+    if (natAssembleBtnText) natAssembleBtnText.textContent = "Explotar capas suspendidas";
+    if (natAssembleBtn) {
+      natAssembleBtn.style.background = "#0284c7";
+      natAssembleBtn.style.borderColor = "rgba(2,132,199,.3)";
+    }
+
+    // Ocultar suavemente líneas guía punteadas y etiquetas laterales
+    if (natGuideSvg) natGuideSvg.style.opacity = "0";
+    const tags = natOverlay.querySelectorAll(".nat-layer-tag");
+    tags.forEach(t => { t.style.opacity = "0"; });
+
+    const baseTop = "67%";
+    const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
+    sublayers.forEach((l, idx) => {
+      l.style.top = baseTop;
+      l.style.opacity = "1";
+      l.style.transform = "translate(-50%, 0)";
+      // Remover fondos tintados para fusionar la simulación completa limpia sobre la foto de la base
+      const diamond = l.querySelector(".sublayer-diamond");
+      if (diamond) {
+        diamond.style.background = "transparent";
+        diamond.style.borderColor = "transparent";
+        diamond.style.boxShadow = "none";
+      }
+    });
+  }
+
+  // Animación para volver a explotar hacia arriba las capas suspendidas
+  function setNaturalLayersExploded(animated = true) {
+    natIsAssembled = false;
+    if (natAssembleBtnText) natAssembleBtnText.textContent = "Bajar y ensamblar en base axo";
+    if (natAssembleBtn) {
+      natAssembleBtn.style.background = "#2a856a";
+      natAssembleBtn.style.borderColor = "rgba(42,133,106,.3)";
+    }
+
+    const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
+    sublayers.forEach(l => {
+      const expTop = l.dataset.explodedTop || "67%";
+      l.style.top = expTop;
+      l.style.opacity = "1";
+      l.style.transform = "translate(-50%, 0)";
+
+      // Restaurar fondos arquitectónicos semitransparentes según capa
+      const diamond = l.querySelector(".sublayer-diamond");
+      if (diamond) {
+        if (l.id === "natLayerWater") {
+          diamond.style.background = "rgba(235,243,247,.35)";
+          diamond.style.borderColor = "";
+        } else if (l.id === "natLayer2") {
+          diamond.style.background = "rgba(240,253,244,.35)";
+          diamond.style.borderColor = "rgba(16,185,129,.55)";
+        } else if (l.id === "natLayer3") {
+          diamond.style.background = "rgba(239,246,255,.15)";
+          diamond.style.borderColor = "rgba(59,130,246,.3)";
+        }
+      }
+    });
+
+    if (animated) {
+      setTimeout(() => {
+        if (natGuideSvg) natGuideSvg.style.opacity = "1";
+        const tags = natOverlay.querySelectorAll(".nat-layer-tag");
+        tags.forEach(t => { t.style.opacity = "1"; });
+        drawNaturalGuideLines();
+      }, 1000);
+    } else {
+      if (natGuideSvg) natGuideSvg.style.opacity = "1";
+      const tags = natOverlay.querySelectorAll(".nat-layer-tag");
+      tags.forEach(t => { t.style.opacity = "1"; });
+    }
+  }
+
+  function toggleNaturalAssemble() {
+    if (natIsAssembled) {
+      setNaturalLayersExploded(true);
+    } else {
+      setNaturalLayersAssembled();
+    }
+  }
+
+  if (natAssembleBtn) natAssembleBtn.addEventListener("click", toggleNaturalAssemble);
+
+  // Al hacer clic en la propia base axo, alterna entre bajar las capas o explotarlas
+  const natBaseLayerEl = document.getElementById("natLayerBase");
+  if (natBaseLayerEl) {
+    natBaseLayerEl.addEventListener("click", () => {
+      toggleNaturalAssemble();
+    });
   }
 
   function startNatWaterAnimation() {
