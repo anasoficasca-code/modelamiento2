@@ -2073,11 +2073,11 @@
     natOverlay.style.display = "flex";
     void natOverlay.offsetWidth;
 
-    // Despliegue pausado y suave de las 4 capas
+    // Despliegue pausado y suave de las 4 capas manteniendo alineación central con la base
     const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
     sublayers.forEach(l => {
       l.style.opacity = "1";
-      l.style.transform = "translateY(0)";
+      l.style.transform = "translate(-50%, 0)";
     });
 
     renderNaturalWaterLayer(parseInt(natMesSlider.value, 10));
@@ -2118,7 +2118,7 @@
     const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
     sublayers.forEach(l => {
       l.style.opacity = "0";
-      l.style.transform = "translateY(-20px)";
+      l.style.transform = "translate(-50%, -20px)";
     });
     if (natYearPlaying) stopNatPlayYear();
     setTimeout(() => {

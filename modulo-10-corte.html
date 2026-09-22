@@ -278,17 +278,17 @@
         <!-- Arriba: Escala Tecnológica -->
         <div class="explode-layer" data-layer="3" style="position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-9%; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1), opacity 1.8s ease, z-index 0s;">
           <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer;"><img id="explodeImg3" style="width:100%; height:100%; object-fit:cover;"></div>
-          <div class="explode-text" contenteditable="true" data-layer="3" style="position:absolute; top:calc(50% - 20px); right:14px; width:220px; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.45); padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala tecnológica</div>
+          <div class="explode-text" contenteditable="true" data-layer="3" style="position:absolute; top:calc(50% - 20px); right:14px; min-width:210px; width:max-content; white-space:nowrap; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.55); padding:6px 14px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala tecnológica</div>
         </div>
         <!-- Medio: Escala Cultural -->
         <div class="explode-layer" data-layer="2" style="position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-9%; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1) .35s, opacity 1.8s ease .35s, z-index 0s;">
           <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer;"><img id="explodeImg2" style="width:100%; height:100%; object-fit:cover;"></div>
-          <div class="explode-text" contenteditable="true" data-layer="2" style="position:absolute; top:calc(50% - 20px); right:14px; width:220px; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.45); padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala cultural</div>
+          <div class="explode-text" contenteditable="true" data-layer="2" style="position:absolute; top:calc(50% - 20px); right:14px; min-width:210px; width:max-content; white-space:nowrap; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.55); padding:6px 14px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala cultural</div>
         </div>
         <!-- Abajo: Escala Natural -->
         <div class="explode-layer" data-layer="1" style="position:relative; width:100%; aspect-ratio:16/9; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1) .7s, opacity 1.8s ease .7s, z-index 0s;">
           <div class="explode-clip" style="width:100%; height:100%; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); cursor:pointer;"><img id="explodeImg1" style="width:100%; height:100%; object-fit:cover;"></div>
-          <div class="explode-text" contenteditable="true" data-layer="1" style="position:absolute; top:calc(50% - 20px); right:14px; width:220px; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.45); padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala natural</div>
+          <div class="explode-text" contenteditable="true" data-layer="1" style="position:absolute; top:calc(50% - 20px); right:14px; min-width:210px; width:max-content; white-space:nowrap; font-size:20px; color:#ffffff; text-align:right; font-family:'Segoe UI',sans-serif; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); outline:none; transform-origin:0 0; background:rgba(10,12,16,.55); padding:6px 14px; border-radius:6px; border:1px solid rgba(255,255,255,.2); box-sizing:border-box;">Escala natural</div>
         </div>
       </div>
     </div>
@@ -323,52 +323,52 @@
       </div>
 
       <!-- Contenedor central apilado estilo referente (líneas punteadas y capas suspendidas) -->
-      <div id="natExplodeStage" style="position:relative; width:88vw; max-width:980px; height:84vh; display:flex; align-items:center; justify-content:center;">
+      <div id="natExplodeStage" style="position:relative; width:92vw; max-width:880px; height:84vh; display:flex; align-items:center; justify-content:center;">
         <svg id="natGuideSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1;"></svg>
 
         <!-- Capa 1 suspendida: Cuerpo hídrico, afluentes, punto más hondo -->
-        <div id="natLayerWater" class="nat-sublayer" style="position:absolute; top:8%; width:64vw; max-width:720px; aspect-ratio:16/9; z-index:3; opacity:0; transform:translateY(-30px); transition:transform 1.8s cubic-bezier(.16,1,.3,1), opacity 1.5s ease;">
+        <div id="natLayerWater" class="nat-sublayer" style="position:absolute; top:7%; left:50%; width:58vw; max-width:640px; aspect-ratio:16/9; z-index:3; opacity:0; transform:translate(-50%, -30px); transition:transform 1.8s cubic-bezier(.16,1,.3,1), opacity 1.5s ease;">
           <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(235,243,247,.45); box-shadow:0 8px 30px rgba(0,0,0,.04);">
             <canvas id="natWaterCanvas" style="width:100%; height:100%; display:block;"></canvas>
             <svg id="natWaterSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
           <!-- Etiqueta temática derecha sin corte de texto -->
-          <div style="position:absolute; top:45%; left:calc(100% + 24px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none;">
+          <div style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10;">
             <span style="display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#0284c7; background:#e0f2fe; padding:3px 8px; border-radius:4px; margin-bottom:4px;">Capa 01</span>
-            <div style="font-size:17px; font-weight:800; color:#0f172a; line-height:1.15;">CUERPO HÍDRICO</div>
-            <div style="font-size:11.5px; color:#475569; font-weight:600;">Humedal El Burro & Subcuenca El Tintal</div>
+            <div style="font-size:16px; font-weight:800; color:#0f172a; line-height:1.15;">CUERPO HÍDRICO</div>
+            <div style="font-size:11px; color:#475569; font-weight:600;">Humedal El Burro & Subcuenca El Tintal</div>
           </div>
         </div>
 
         <!-- Capa 2: Vegetación, Árboles y Zonas Verdes del Humedal -->
-        <div id="natLayer2" class="nat-sublayer" style="position:absolute; top:28%; width:64vw; max-width:720px; aspect-ratio:16/9; z-index:2; opacity:0; transform:translateY(-20px); transition:transform 1.8s cubic-bezier(.16,1,.3,1) .2s, opacity 1.5s ease .2s;">
+        <div id="natLayer2" class="nat-sublayer" style="position:absolute; top:27%; left:50%; width:58vw; max-width:640px; aspect-ratio:16/9; z-index:2; opacity:0; transform:translate(-50%, -20px); transition:transform 1.8s cubic-bezier(.16,1,.3,1) .2s, opacity 1.5s ease .2s;">
           <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; border:1.5px dashed rgba(16,185,129,.55); background:rgba(240,253,244,.45); box-shadow:0 8px 30px rgba(0,0,0,.03);">
             <canvas id="natVegCanvas" style="width:100%; height:100%; display:block;"></canvas>
             <svg id="natVegSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
-          <div style="position:absolute; top:45%; left:calc(100% + 24px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none;">
+          <div style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10;">
             <span style="display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#059669; background:#d1fae5; padding:3px 8px; border-radius:4px; margin-bottom:4px;">Capa 02</span>
-            <div style="font-size:17px; font-weight:800; color:#0f172a; line-height:1.15;">VEGETACIÓN & COBERTURA</div>
-            <div style="font-size:11.5px; color:#475569; font-weight:600;">Arbolado georreferenciado y zonas verdes</div>
+            <div style="font-size:16px; font-weight:800; color:#0f172a; line-height:1.15;">VEGETACIÓN & COBERTURA</div>
+            <div style="font-size:11px; color:#475569; font-weight:600;">Arbolado georreferenciado y zonas verdes</div>
           </div>
         </div>
 
         <!-- Capa 3 (placeholder): Corredor Biológico / Aves -->
-        <div id="natLayer3" class="nat-sublayer" style="position:absolute; top:46%; width:64vw; max-width:720px; aspect-ratio:16/9; z-index:2; opacity:0; transform:translateY(-10px); transition:transform 1.8s cubic-bezier(.16,1,.3,1) .4s, opacity 1.5s ease .4s; pointer-events:none;">
+        <div id="natLayer3" class="nat-sublayer" style="position:absolute; top:47%; left:50%; width:58vw; max-width:640px; aspect-ratio:16/9; z-index:2; opacity:0; transform:translate(-50%, -10px); transition:transform 1.8s cubic-bezier(.16,1,.3,1) .4s, opacity 1.5s ease .4s; pointer-events:none;">
           <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); border:1px dashed rgba(59,130,246,.3); background:rgba(239,246,255,.15);"></div>
-          <div style="position:absolute; top:45%; left:calc(100% + 24px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; opacity:.5; white-space:nowrap;">
+          <div style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; opacity:.6; white-space:nowrap; z-index:10;">
             <span style="font-size:9.5px; font-weight:800; text-transform:uppercase; color:#2563eb;">Capa 03</span>
             <div style="font-size:15px; font-weight:700; color:#334155;">CORREDOR BIÓTICO</div>
           </div>
         </div>
 
         <!-- Capa Base inferior: Contexto existente / Corte base -->
-        <div id="natLayerBase" class="nat-sublayer" style="position:absolute; bottom:4%; width:64vw; max-width:720px; aspect-ratio:16/9; z-index:2; opacity:0; transform:translateY(20px); transition:transform 1.8s cubic-bezier(.16,1,.3,1) .6s, opacity 1.5s ease .6s;">
+        <div id="natLayerBase" class="nat-sublayer" style="position:absolute; bottom:5%; left:50%; width:58vw; max-width:640px; aspect-ratio:16/9; z-index:2; opacity:0; transform:translate(-50%, 20px); transition:transform 1.8s cubic-bezier(.16,1,.3,1) .6s, opacity 1.5s ease .6s;">
           <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer;"><img id="natBaseImg" style="width:100%; height:100%; object-fit:cover;"></div>
-          <div style="position:absolute; top:45%; left:calc(100% + 24px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap;">
+          <div style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; z-index:10;">
             <span style="display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:3px 8px; border-radius:4px; margin-bottom:4px;">Base</span>
-            <div style="font-size:17px; font-weight:800; color:#0f172a; line-height:1.15;">EXISTING FEATURES</div>
-            <div style="font-size:11.5px; color:#475569; font-weight:600;">Axonometría Base Cortada</div>
+            <div style="font-size:16px; font-weight:800; color:#0f172a; line-height:1.15;">EXISTING FEATURES</div>
+            <div style="font-size:11px; color:#475569; font-weight:600;">Axonometría Base Cortada</div>
           </div>
         </div>
       </div>
@@ -378,6 +378,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=84"></script>
+<script src="modulo-10-corte.js?v=85"></script>
 </body>
 </html>
