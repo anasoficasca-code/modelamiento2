@@ -2048,6 +2048,25 @@
 
   function openNaturalExplode() {
     if (!natOverlay) return;
+
+    // Sincronizar dimensiones exactas del lienzo de capa
+    const targetW = 960;
+    const targetH = 540; // Relación fija 16:9 exacta
+
+    // Guardar estado original de la cámara y renderer
+    const origW = wrap.clientWidth;
+    const origH = wrap.clientHeight;
+    const origAspect = camera.right / camera.top;
+
+    // Configurar cámara y renderer temporalmente a 16:9 exacto para la captura de la base
+    const layerAspect = targetW / targetH; // 16/9 = 1.7777777777777777
+    camera.left = -viewSize * layerAspect;
+    camera.right = viewSize * layerAspect;
+    camera.top = viewSize;
+    camera.bottom = -viewSize;
+    camera.updateProjectionMatrix();
+    renderer.setSize(targetW, targetH, false);
+
     // Captura fotográfica de la base limpia (cero carros, cero ruido, cero mirlas)
     const origRoadColor = roadMat ? roadMat.color.getHex() : null;
     const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
@@ -2063,6 +2082,15 @@
     renderer.render(scene, camera);
     const fotoBase = renderer.domElement.toDataURL("image/png");
 
+    // Restaurar inmediatamente el viewport del 3D general
+    renderer.setSize(origW, origH, false);
+    const restoreAspect = origW / origH;
+    camera.left = -viewSize * restoreAspect;
+    camera.right = viewSize * restoreAspect;
+    camera.top = viewSize;
+    camera.bottom = -viewSize;
+    camera.updateProjectionMatrix();
+
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
     if (noiseMesh) noiseMesh.visible = origNoiseVis;
     if (birdsGroup) birdsGroup.visible = origBirdsVis;
@@ -2071,7 +2099,10 @@
       vehInstanced.count = origVehCount;
     }
 
-    if (natBaseImg) natBaseImg.src = fotoBase;
+    if (natBaseImg) {
+      natBaseImg.src = fotoBase;
+      natBaseImg.style.objectFit = "fill"; // Para que calce de esquina a esquina exactamente igual al canvas
+    }
 
     natOverlay.style.display = "flex";
     void natOverlay.offsetWidth;
@@ -2346,32 +2377,53 @@
         dot.setAttribute("stroke-width", "2.2");
         g.appendChild(dot);
 
-        // Línea directriz hacia la etiqueta derecha
+        // Orientación de la etiqueta hacia la izquierda o derecha según la posición en pantalla
+        const toLeft = hondoPt.x > w * 0.65;
+        const dirX = toLeft ? -1 : 1;
+        const lineEndX = toLeft ? -130 : 130;
+        const textAnchor = toLeft ? "end" : "start";
+        const textX = toLeft ? -32 : 32;
+
+        // Línea directriz hacia la etiqueta
         const line = document.createElementNS(SVGNS, "polyline");
-        line.setAttribute("points", "0,0 28,-28 120,-28");
+        line.setAttribute("points", `0,0 ${24 * dirX},-26 ${lineEndX},-26`);
         line.setAttribute("fill", "none");
-        line.setAttribute("stroke", "#0f172a");
+        line.setAttribute("stroke", "#0369a1");
         line.setAttribute("stroke-width", "1.6");
         g.appendChild(line);
 
+        // Fondo protector para la etiqueta
+        const bgWidth = 205;
+        const bgX = toLeft ? lineEndX - 4 : 26;
+        const bgRect = document.createElementNS(SVGNS, "rect");
+        bgRect.setAttribute("x", String(bgX));
+        bgRect.setAttribute("y", "-45");
+        bgRect.setAttribute("width", String(bgWidth));
+        bgRect.setAttribute("height", "34");
+        bgRect.setAttribute("rx", "5");
+        bgRect.setAttribute("fill", "rgba(255,255,255,0.95)");
+        bgRect.setAttribute("stroke", "#0284c7");
+        bgRect.setAttribute("stroke-width", "1.2");
+        g.appendChild(bgRect);
+
         // Texto etiqueta
         const txt = document.createElementNS(SVGNS, "text");
-        txt.setAttribute("x", "32");
-        txt.setAttribute("y", "-34");
+        txt.setAttribute("x", String(toLeft ? lineEndX + bgWidth - 12 : 32));
+        txt.setAttribute("y", "-31");
         txt.setAttribute("font-family", "'Segoe UI', sans-serif");
-        txt.setAttribute("font-size", "11.5px");
+        txt.setAttribute("font-size", "11px");
         txt.setAttribute("font-weight", "800");
         txt.setAttribute("fill", "#0f172a");
         txt.textContent = "Punto más hondo (Cota mínima)";
         g.appendChild(txt);
 
         const subTxt = document.createElementNS(SVGNS, "text");
-        subTxt.setAttribute("x", "32");
+        subTxt.setAttribute("x", String(toLeft ? lineEndX + bgWidth - 12 : 32));
         subTxt.setAttribute("y", "-16");
         subTxt.setAttribute("font-family", "'Segoe UI', sans-serif");
         subTxt.setAttribute("font-size", "9.5px");
-        subTxt.setAttribute("font-weight", "600");
-        subTxt.setAttribute("fill", "#0369a1");
+        subTxt.setAttribute("font-weight", "700");
+        subTxt.setAttribute("fill", "#0284c7");
         subTxt.textContent = `Centro Sector Suroriental (13.9 ha) · Prof. ${info.profundidad_m.toFixed(2)} m`;
         g.appendChild(subTxt);
 
@@ -2484,9 +2536,14 @@
           arrow.setAttribute("stroke-width", "1.2");
           flowG.appendChild(arrow);
 
-          // Etiqueta clara con fondo blanco para que se lea perfectamente
+          // Etiqueta clara con fondo blanco para que se lea perfectamente sin cortarse
+          const midIdx = Math.floor(screenPts.length / 2);
+          const pLabel = screenPts[midIdx] || screenPts[0];
           const labelG = document.createElementNS(SVGNS, "g");
-          labelG.setAttribute("transform", `translate(${screenPts[0].x + 10}, ${screenPts[0].y - 8})`);
+          // Ubicar la etiqueta hacia adentro del canvas para evitar recortes en los bordes
+          const offsetX = pLabel.x > w * 0.5 ? -150 : 10;
+          const offsetY = pLabel.y < 50 ? 25 : -12;
+          labelG.setAttribute("transform", `translate(${pLabel.x + offsetX}, ${pLabel.y + offsetY})`);
 
           const textWidth = corr.name.length * 6.5 + 16;
           const rectBg = document.createElementNS(SVGNS, "rect");
@@ -2495,9 +2552,9 @@
           rectBg.setAttribute("width", String(textWidth));
           rectBg.setAttribute("height", "18");
           rectBg.setAttribute("rx", "4");
-          rectBg.setAttribute("fill", "rgba(255,255,255,0.92)");
+          rectBg.setAttribute("fill", "rgba(255,255,255,0.95)");
           rectBg.setAttribute("stroke", corr.color);
-          rectBg.setAttribute("stroke-width", "1");
+          rectBg.setAttribute("stroke-width", "1.2");
           labelG.appendChild(rectBg);
 
           const label = document.createElementNS(SVGNS, "text");
@@ -2650,18 +2707,18 @@
 
         // Rectángulo de fondo para que el texto sea 100% legible
         const bgRect = document.createElementNS(SVGNS, "rect");
-        bgRect.setAttribute("x", "26");
+        bgRect.setAttribute("x", "24");
         bgRect.setAttribute("y", "-40");
-        bgRect.setAttribute("width", "165");
-        bgRect.setAttribute("height", "32");
-        bgRect.setAttribute("rx", "4");
-        bgRect.setAttribute("fill", "rgba(255,255,255,0.92)");
+        bgRect.setAttribute("width", "185");
+        bgRect.setAttribute("height", "34");
+        bgRect.setAttribute("rx", "5");
+        bgRect.setAttribute("fill", "rgba(255,255,255,0.95)");
         bgRect.setAttribute("stroke", "#059669");
-        bgRect.setAttribute("stroke-width", "1");
+        bgRect.setAttribute("stroke-width", "1.2");
         g.appendChild(bgRect);
 
         const txt = document.createElementNS(SVGNS, "text");
-        txt.setAttribute("x", "32");
+        txt.setAttribute("x", "30");
         txt.setAttribute("y", "-26");
         txt.setAttribute("font-family", "'Segoe UI', sans-serif");
         txt.setAttribute("font-size", "11px");
@@ -2671,8 +2728,8 @@
         g.appendChild(txt);
 
         const sub = document.createElementNS(SVGNS, "text");
-        sub.setAttribute("x", "32");
-        sub.setAttribute("y", "-13");
+        sub.setAttribute("x", "30");
+        sub.setAttribute("y", "-12");
         sub.setAttribute("font-family", "'Segoe UI', sans-serif");
         sub.setAttribute("font-size", "9.5px");
         sub.setAttribute("font-weight", "600");
