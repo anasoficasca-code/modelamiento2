@@ -2013,6 +2013,8 @@
   const natBaseImg = document.getElementById("natBaseImg");
   const natWaterCanvas = document.getElementById("natWaterCanvas");
   const natWaterSvg = document.getElementById("natWaterSvg");
+  const natVegCanvas = document.getElementById("natVegCanvas");
+  const natVegSvg = document.getElementById("natVegSvg");
   const natGuideSvg = document.getElementById("natGuideSvg");
   const natMesSlider = document.getElementById("natMesSlider");
   const natMesLabel = document.getElementById("natMesLabel");
@@ -2041,18 +2043,28 @@
 
   function openNaturalExplode() {
     if (!natOverlay) return;
-    // Captura fotográfica de la base limpia
+    // Captura fotográfica de la base limpia (cero carros, cero ruido, cero mirlas)
     const origRoadColor = roadMat ? roadMat.color.getHex() : null;
     const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
     const origBirdsVis = birdsGroup ? birdsGroup.visible : false;
+    const origVehVis = vehInstanced ? vehInstanced.visible : false;
+    const origVehCount = vehInstanced ? vehInstanced.count : 0;
+
     if (noiseMesh) noiseMesh.visible = false;
     if (birdsGroup) birdsGroup.visible = false;
+    if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
+
     renderer.render(scene, camera);
     const fotoBase = renderer.domElement.toDataURL("image/png");
+
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
     if (noiseMesh) noiseMesh.visible = origNoiseVis;
     if (birdsGroup) birdsGroup.visible = origBirdsVis;
+    if (vehInstanced) {
+      vehInstanced.visible = origVehVis;
+      vehInstanced.count = origVehCount;
+    }
 
     if (natBaseImg) natBaseImg.src = fotoBase;
 
@@ -2067,6 +2079,7 @@
     });
 
     renderNaturalWaterLayer(parseInt(natMesSlider.value, 10));
+    renderNaturalVegLayer();
     drawNaturalGuideLines();
 
     // Iniciar loop continuo de agua viva fluida y oleaje
@@ -2258,38 +2271,52 @@
         natWaterSvg.appendChild(g);
       }
 
-      // 2. SUBCUENCA EL TINTAL: Trazado real de corrientes hacia el Humedal El Burro con coordenadas geográficas reales del dataset
-      // Canal Los Ángeles (cuenca alta / Río Fucha), Canal Castilla y conexión Río Bogotá
+      // 2. SUBCUENCA EL TINTAL: Corrientes que SALEN de los Ríos (Río Fucha, Río Bogotá, Río Tunjuelo) a través de los canales hacia el Humedal
       const flowCorridors = [
         {
           name: "Río Fucha → C. Los Ángeles de Castilla",
-          // Coordenadas reales del dataset: desde cabecera del canal [8334.8, 2551.5] bajando hacia el humedal [7588.3, 2974.2]
+          tag: "RÍO FUCHA",
+          // Trazado real exacto: Nace en la cuenca del Río Fucha [8308.3, 2562.3], desciende por el Canal Los Ángeles y descarga en el humedal [7588.3, 2974.2]
           pts: [
-            [8334.8, 2551.5],
-            [8012.0, 2640.9],
-            [7720.9, 2856.0],
+            [8308.3, 2562.3],
+            [8180.0, 2589.2],
+            [7978.3, 2669.2],
+            [7833.3, 2778.2],
+            [7738.4, 2839.9],
+            [7598.2, 2966.1],
             [7588.3, 2974.2]
           ],
           color: "#0284c7"
         },
         {
-          name: "Subcuenca Fucha → Canal Castilla",
-          // Coordenadas reales del dataset: desde [6368.3, 4674.2] pasando por [6625.0, 4240.8] hacia El Burro [6983.1, 3865.5]
+          name: "Cuenca Río Fucha → Canal Castilla",
+          tag: "C. CASTILLA",
+          // Trazado real exacto: Nace al norte en la derivación del Río Fucha [6368.3, 4674.2], atraviesa Castilla y entra a El Burro [6983.1, 3865.5]
           pts: [
-            [6368.3, 4674.2],
-            [6625.0, 4240.8],
+            [6367.3, 4677.7],
+            [6390.1, 4631.6],
+            [6505.9, 4446.9],
+            [6604.7, 4286.1],
+            [6733.5, 4076.6],
+            [6820.7, 3942.2],
             [6983.1, 3865.5],
-            [7150.0, 3650.0]
+            [7080.0, 3750.0]
           ],
           color: "#0ea5e9"
         },
         {
-          name: "Río Tunjuelo / Interconexión Río Bogotá",
-          // Conexión sur-occidental de la planicie aluvial hacia la cuenca del humedal
+          name: "Río Tunjuelo & Río Bogotá → Canal Américas",
+          tag: "RÍO BOGOTÁ / TUNJUELO",
+          // Trazado real exacto: Conexión aluvial suroccidental por Canal Américas hacia la cubeta de El Burro
           pts: [
-            [6005.0, 2600.0],
+            [5497.5, 4670.4],
+            [5556.4, 4581.7],
+            [5737.0, 4386.5],
+            [6104.6, 3975.6],
+            [6419.8, 3631.9],
+            [6572.5, 3453.6],
             [6658.1, 3306.9],
-            [7100.0, 3380.0]
+            [7020.0, 3360.0]
           ],
           color: "#0284c7"
         }
@@ -2305,21 +2332,40 @@
             pathD += ` L ${screenPts[pi].x} ${screenPts[pi].y}`;
           }
 
+          // Línea exterior para contraste y legibilidad impecable
+          const flowBg = document.createElementNS(SVGNS, "path");
+          flowBg.setAttribute("d", pathD);
+          flowBg.setAttribute("fill", "none");
+          flowBg.setAttribute("stroke", "rgba(255,255,255,0.75)");
+          flowBg.setAttribute("stroke-width", "4.8");
+          flowG.appendChild(flowBg);
+
           const flowPath = document.createElementNS(SVGNS, "path");
           flowPath.setAttribute("d", pathD);
           flowPath.setAttribute("fill", "none");
           flowPath.setAttribute("stroke", corr.color);
-          flowPath.setAttribute("stroke-width", "2.4");
-          flowPath.setAttribute("stroke-dasharray", "7 4");
-          // Desplazamiento animado de las líneas punteadas simulando la corriente de agua
-          const dashOffset = (natWaterTime * 22) % 22;
+          flowPath.setAttribute("stroke-width", "2.8");
+          flowPath.setAttribute("stroke-dasharray", "8 5");
+          // Desplazamiento animado continuo simulando el agua saliendo del río hacia el humedal
+          const dashOffset = (natWaterTime * 24) % 26;
           flowPath.setAttribute("stroke-dashoffset", (-dashOffset).toFixed(1));
           flowG.appendChild(flowPath);
 
-          // Flecha de dirección hacia el humedal en el extremo final
+          // Círculo emisor en el punto de origen del río
+          const pStart = screenPts[0];
+          const startDot = document.createElementNS(SVGNS, "circle");
+          startDot.setAttribute("cx", String(pStart.x));
+          startDot.setAttribute("cy", String(pStart.y));
+          startDot.setAttribute("r", "4.5");
+          startDot.setAttribute("fill", corr.color);
+          startDot.setAttribute("stroke", "#ffffff");
+          startDot.setAttribute("stroke-width", "2");
+          flowG.appendChild(startDot);
+
+          // Flecha direccional en el extremo que entra al humedal
           const pEnd = screenPts[screenPts.length - 1], pPrev = screenPts[screenPts.length - 2];
           const angle = Math.atan2(pEnd.y - pPrev.y, pEnd.x - pPrev.x);
-          const arrowLen = 10;
+          const arrowLen = 11;
           const x1 = pEnd.x - arrowLen * Math.cos(angle - Math.PI / 6);
           const y1 = pEnd.y - arrowLen * Math.sin(angle - Math.PI / 6);
           const x2 = pEnd.x - arrowLen * Math.cos(angle + Math.PI / 6);
@@ -2327,22 +2373,168 @@
           const arrow = document.createElementNS(SVGNS, "polygon");
           arrow.setAttribute("points", `${pEnd.x},${pEnd.y} ${x1},${y1} ${x2},${y2}`);
           arrow.setAttribute("fill", corr.color);
+          arrow.setAttribute("stroke", "#ffffff");
+          arrow.setAttribute("stroke-width", "1.2");
           flowG.appendChild(arrow);
 
-          // Etiqueta del río/afluente con fondo blanco sutil
+          // Etiqueta clara con fondo blanco para que se lea perfectamente
+          const labelG = document.createElementNS(SVGNS, "g");
+          labelG.setAttribute("transform", `translate(${screenPts[0].x + 10}, ${screenPts[0].y - 8})`);
+
+          const textWidth = corr.name.length * 6.5 + 16;
+          const rectBg = document.createElementNS(SVGNS, "rect");
+          rectBg.setAttribute("x", "-4");
+          rectBg.setAttribute("y", "-14");
+          rectBg.setAttribute("width", String(textWidth));
+          rectBg.setAttribute("height", "18");
+          rectBg.setAttribute("rx", "4");
+          rectBg.setAttribute("fill", "rgba(255,255,255,0.92)");
+          rectBg.setAttribute("stroke", corr.color);
+          rectBg.setAttribute("stroke-width", "1");
+          labelG.appendChild(rectBg);
+
           const label = document.createElementNS(SVGNS, "text");
-          label.setAttribute("x", String(screenPts[0].x + 8));
-          label.setAttribute("y", String(screenPts[0].y - 6));
+          label.setAttribute("x", "4");
+          label.setAttribute("y", "0");
           label.setAttribute("font-family", "'Segoe UI', sans-serif");
           label.setAttribute("font-size", "10px");
           label.setAttribute("font-weight", "800");
           label.setAttribute("fill", corr.color);
           label.textContent = corr.name;
-          flowG.appendChild(label);
+          labelG.appendChild(label);
 
+          flowG.appendChild(labelG);
           natWaterSvg.appendChild(flowG);
         }
       });
+    }
+  }
+
+  // Renderizar Capa 02: Vegetación, Árboles del Humedal y Cobertura Ripárea
+  function renderNaturalVegLayer() {
+    if (!natVegCanvas || !treeMeshes || !treeMeshes[0]) return;
+    const rect = natVegCanvas.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = rect.width, h = rect.height;
+    if (natVegCanvas.width !== Math.round(w * dpr) || natVegCanvas.height !== Math.round(h * dpr)) {
+      natVegCanvas.width = Math.round(w * dpr);
+      natVegCanvas.height = Math.round(h * dpr);
+    }
+    const ctx = natVegCanvas.getContext("2d");
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const proj = new THREE.Vector3();
+    function projectPoint(rx, ry, elevation = 0.05) {
+      const sp = toScene(rx, ry);
+      proj.set(sp.x, elevation, sp.z);
+      proj.project(camera);
+      return {
+        x: (proj.x * 0.5 + 0.5) * w,
+        y: (-proj.y * 0.5 + 0.5) * h,
+        inFront: proj.z <= 1
+      };
+    }
+
+    // 1. Mancha orgánica del bosque protector y cinturón de vegetación del humedal
+    if (rawWaterData) {
+      const burro = rawWaterData.find(b => (b.nombre || "").includes("Burro"));
+      if (burro && burro.pts && burro.pts.length > 3) {
+        // Expandir ligeramente el contorno para representar la orla de vegetación ripárea
+        const cx = burro.pts.reduce((s, p) => s + p[0], 0) / burro.pts.length;
+        const cy = burro.pts.reduce((s, p) => s + p[1], 0) / burro.pts.length;
+        const vegPts = burro.pts.map(p => [cx + (p[0] - cx) * 1.25, cy + (p[1] - cy) * 1.25]);
+        const scrPts = vegPts.map(p => projectPoint(p[0], p[1]));
+
+        ctx.beginPath();
+        ctx.moveTo(scrPts[0].x, scrPts[0].y);
+        for (let i = 1; i < scrPts.length; i++) ctx.lineTo(scrPts[i].x, scrPts[i].y);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(16, 185, 129, 0.22)";
+        ctx.fill();
+        ctx.lineWidth = 1.4;
+        ctx.strokeStyle = "rgba(5, 150, 105, 0.45)";
+        ctx.stroke();
+      }
+    }
+
+    // 2. Dibujar árboles reales con su especie y color correspondiente
+    const trees = treeMeshes[0].data;
+    // Filtrar árboles de la zona del humedal y su entorno
+    const localTrees = trees.filter(t => t[0] >= 6800 && t[0] <= 7900 && t[1] >= 2800 && t[1] <= 4150);
+
+    localTrees.forEach(t => {
+      const [x, y, hMeters, especie] = t;
+      const pt = projectPoint(x, y);
+      if (!pt.inFront) return;
+
+      const r = Math.max(2.2, Math.min(6.5, hMeters * 0.55));
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+
+      const isSauco = (especie || "").includes("Sauco");
+      const isAcacia = (especie || "").includes("Acacia");
+      const isCedro = (especie || "").includes("Cedro");
+
+      if (isSauco) ctx.fillStyle = "rgba(139, 92, 246, 0.85)"; // Sauco (morado biótico)
+      else if (isCedro) ctx.fillStyle = "rgba(16, 185, 129, 0.88)"; // Cedro andino (verde esmeralda)
+      else if (isAcacia) ctx.fillStyle = "rgba(234, 179, 8, 0.82)"; // Acacia (amarillo nativo)
+      else ctx.fillStyle = "rgba(34, 197, 94, 0.80)"; // Verde general
+
+      ctx.fill();
+      ctx.lineWidth = 0.8;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+      ctx.stroke();
+    });
+
+    // 3. Anotaciones arquitectónicas en SVG
+    if (natVegSvg) {
+      natVegSvg.innerHTML = "";
+      const SVGNS = "http://www.w3.org/2000/svg";
+
+      // Marcador de rodal arbóreo nativo
+      const tagPt = projectPoint(7420, 3350);
+      if (tagPt.inFront) {
+        const g = document.createElementNS(SVGNS, "g");
+        g.setAttribute("transform", `translate(${tagPt.x}, ${tagPt.y})`);
+
+        const line = document.createElementNS(SVGNS, "polyline");
+        line.setAttribute("points", "0,0 24,-24 130,-24");
+        line.setAttribute("fill", "none");
+        line.setAttribute("stroke", "#059669");
+        line.setAttribute("stroke-width", "1.5");
+        g.appendChild(line);
+
+        const dot = document.createElementNS(SVGNS, "circle");
+        dot.setAttribute("r", "3.5");
+        dot.setAttribute("fill", "#059669");
+        dot.setAttribute("stroke", "#fff");
+        dot.setAttribute("stroke-width", "1.5");
+        g.appendChild(dot);
+
+        const txt = document.createElementNS(SVGNS, "text");
+        txt.setAttribute("x", "28");
+        txt.setAttribute("y", "-30");
+        txt.setAttribute("font-family", "'Segoe UI', sans-serif");
+        txt.setAttribute("font-size", "11px");
+        txt.setAttribute("font-weight", "800");
+        txt.setAttribute("fill", "#065f46");
+        txt.textContent = "Bosque Ripáreo y Sauces";
+        g.appendChild(txt);
+
+        const sub = document.createElementNS(SVGNS, "text");
+        sub.setAttribute("x", "28");
+        sub.setAttribute("y", "-14");
+        sub.setAttribute("font-family", "'Segoe UI', sans-serif");
+        sub.setAttribute("font-size", "9px");
+        sub.setAttribute("font-weight", "600");
+        sub.setAttribute("fill", "#059669");
+        sub.textContent = `${localTrees.length} árboles georreferenciados`;
+        g.appendChild(sub);
+
+        natVegSvg.appendChild(g);
+      }
     }
   }
 
@@ -2399,6 +2591,7 @@
   window.addEventListener("resize", () => {
     if (natOverlay && natOverlay.style.display !== "none") {
       renderNaturalWaterLayer(parseInt(natMesSlider.value, 10));
+      renderNaturalVegLayer();
       drawNaturalGuideLines();
     }
   });
@@ -2429,18 +2622,6 @@
       } else {
         stopNatPlayYear();
       }
-    });
-  }
-
-  // Interceptar el clic en la Escala Natural (layer 1) para lanzar el zoom y la sub-explosión
-  const naturalLayerClip = document.querySelector('.explode-layer[data-layer="1"] .explode-clip');
-  if (naturalLayerClip) {
-    naturalLayerClip.addEventListener("click", (e) => {
-      e.stopPropagation();
-      // Tras el zoom suave, desplegar la sub-explosión de 4 capas
-      setTimeout(() => {
-        openNaturalExplode();
-      }, 1400);
     });
   }
 
