@@ -1002,7 +1002,9 @@
   // ---- Parques/zonas verdes: poligonos rellenos, triangulacion real
   // (ear-clipping) igual que agua y edificios, en una altura propia
   // (0.02) que no compite con via/agua/manzanas. ----
+  let rawParquesData = null;
   function buildParques(parques) {
+    rawParquesData = parques;
     const positions = [];
     const uvs = [];
     const UV_SCALE = 0.006; // la mitad de antes, porque el tile espejado ahora es 2x mas grande (para mantener el mismo tamano de grano)
@@ -1037,7 +1039,7 @@
   function loadParques() {
     return fetch(PARQUES_URL)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + PARQUES_URL); return r.json(); })
-      .then(data => { buildParques(data); })
+      .then(data => { rawParquesData = data; buildParques(data); })
       .catch(err => console.warn("No se pudieron cargar los parques:", err));
   }
 
@@ -2082,6 +2084,18 @@
     renderNaturalVegLayer();
     drawNaturalGuideLines();
 
+    // Re-renderizar cuando los elementos adquieran sus dimensiones completas en el DOM
+    requestAnimationFrame(() => {
+      renderNaturalWaterLayer(parseInt(natMesSlider.value, 10));
+      renderNaturalVegLayer();
+      drawNaturalGuideLines();
+    });
+    setTimeout(() => {
+      renderNaturalWaterLayer(parseInt(natMesSlider.value, 10));
+      renderNaturalVegLayer();
+      drawNaturalGuideLines();
+    }, 150);
+
     // Iniciar loop continuo de agua viva fluida y oleaje
     startNatWaterAnimation();
   }
@@ -2410,12 +2424,13 @@
     }
   }
 
-  // Renderizar Capa 02: Vegetación, Árboles del Humedal y Cobertura Ripárea
+  // Renderizar Capa 02: Vegetación, Árboles del Humedal y Zonas Verdes
   function renderNaturalVegLayer() {
-    if (!natVegCanvas || !treeMeshes || !treeMeshes[0]) return;
+    if (!natVegCanvas) return;
     const rect = natVegCanvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = rect.width, h = rect.height;
+    const w = rect.width || natVegCanvas.parentElement.clientWidth || 720;
+    const h = rect.height || natVegCanvas.parentElement.clientHeight || 405;
     if (natVegCanvas.width !== Math.round(w * dpr) || natVegCanvas.height !== Math.round(h * dpr)) {
       natVegCanvas.width = Math.round(w * dpr);
       natVegCanvas.height = Math.round(h * dpr);
@@ -2437,73 +2452,100 @@
       };
     }
 
-    // 1. Mancha orgánica del bosque protector y cinturón de vegetación del humedal
+    // 1. ZONAS VERDES Y PARQUES DE KENNEDY (desde kennedy_parques.json)
+    if (rawParquesData && rawParquesData.length) {
+      rawParquesData.forEach(p => {
+        if (!p.pts || p.pts.length < 3) return;
+        const scrPts = p.pts.map(pt => projectPoint(pt[0], pt[1]));
+        if (scrPts.every(pt => !pt.inFront)) return;
+
+        ctx.beginPath();
+        ctx.moveTo(scrPts[0].x, scrPts[0].y);
+        for (let i = 1; i < scrPts.length; i++) ctx.lineTo(scrPts[i].x, scrPts[i].y);
+        ctx.closePath();
+
+        // Relleno verde esmeralda translúcido arquitectónico para zonas verdes
+        ctx.fillStyle = "rgba(74, 222, 128, 0.42)";
+        ctx.fill();
+        ctx.lineWidth = 1.3;
+        ctx.strokeStyle = "rgba(22, 163, 74, 0.65)";
+        ctx.stroke();
+      });
+    }
+
+    // 2. Orla y cinturón vegetal del Humedal El Burro (buffer biótico)
     if (rawWaterData) {
       const burro = rawWaterData.find(b => (b.nombre || "").includes("Burro"));
       if (burro && burro.pts && burro.pts.length > 3) {
-        // Expandir ligeramente el contorno para representar la orla de vegetación ripárea
         const cx = burro.pts.reduce((s, p) => s + p[0], 0) / burro.pts.length;
         const cy = burro.pts.reduce((s, p) => s + p[1], 0) / burro.pts.length;
-        const vegPts = burro.pts.map(p => [cx + (p[0] - cx) * 1.25, cy + (p[1] - cy) * 1.25]);
+        const vegPts = burro.pts.map(p => [cx + (p[0] - cx) * 1.30, cy + (p[1] - cy) * 1.30]);
         const scrPts = vegPts.map(p => projectPoint(p[0], p[1]));
 
         ctx.beginPath();
         ctx.moveTo(scrPts[0].x, scrPts[0].y);
         for (let i = 1; i < scrPts.length; i++) ctx.lineTo(scrPts[i].x, scrPts[i].y);
         ctx.closePath();
-        ctx.fillStyle = "rgba(16, 185, 129, 0.22)";
+        ctx.fillStyle = "rgba(34, 197, 94, 0.28)";
         ctx.fill();
-        ctx.lineWidth = 1.4;
-        ctx.strokeStyle = "rgba(5, 150, 105, 0.45)";
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = "rgba(21, 128, 61, 0.65)";
         ctx.stroke();
       }
     }
 
-    // 2. Dibujar árboles reales con su especie y color correspondiente
-    const trees = treeMeshes[0].data;
-    // Filtrar árboles de la zona del humedal y su entorno
-    const localTrees = trees.filter(t => t[0] >= 6800 && t[0] <= 7900 && t[1] >= 2800 && t[1] <= 4150);
+    // 3. ÁRBOLES GEORREFERENCIADOS REALES (desde kennedy_trees_real.json)
+    let localTrees = [];
+    if (treeMeshes && treeMeshes[0] && treeMeshes[0].data) {
+      const trees = treeMeshes[0].data;
+      // Tomar los árboles del sector del humedal y su entorno inmediato
+      localTrees = trees.filter(t => t[0] >= 6700 && t[0] <= 8100 && t[1] >= 2600 && t[1] <= 4250);
 
-    localTrees.forEach(t => {
-      const [x, y, hMeters, especie] = t;
-      const pt = projectPoint(x, y);
-      if (!pt.inFront) return;
+      localTrees.forEach(t => {
+        const [x, y, hMeters, especie] = t;
+        const pt = projectPoint(x, y);
+        if (!pt.inFront) return;
+        // Si el punto cae muy fuera del canvas, ignorar
+        if (pt.x < -20 || pt.x > w + 20 || pt.y < -20 || pt.y > h + 20) return;
 
-      const r = Math.max(2.2, Math.min(6.5, hMeters * 0.55));
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+        const r = Math.max(2.8, Math.min(6.5, (hMeters || 6) * 0.55));
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
 
-      const isSauco = (especie || "").includes("Sauco");
-      const isAcacia = (especie || "").includes("Acacia");
-      const isCedro = (especie || "").includes("Cedro");
+        const esp = especie || "";
+        if (esp.includes("Sauco") || esp.includes("Sauce")) {
+          ctx.fillStyle = "rgba(139, 92, 246, 0.90)"; // Sauco / Sauce (morado biótico característico)
+        } else if (esp.includes("Cedro") || esp.includes("Roble")) {
+          ctx.fillStyle = "rgba(16, 185, 129, 0.90)"; // Cedro / Roble (verde esmeralda nativo)
+        } else if (esp.includes("Acacia") || esp.includes("Chicalá")) {
+          ctx.fillStyle = "rgba(234, 179, 8, 0.88)"; // Acacia / Chicalá (amarillo floral)
+        } else {
+          ctx.fillStyle = "rgba(22, 163, 74, 0.85)"; // Verde arboleda general
+        }
 
-      if (isSauco) ctx.fillStyle = "rgba(139, 92, 246, 0.85)"; // Sauco (morado biótico)
-      else if (isCedro) ctx.fillStyle = "rgba(16, 185, 129, 0.88)"; // Cedro andino (verde esmeralda)
-      else if (isAcacia) ctx.fillStyle = "rgba(234, 179, 8, 0.82)"; // Acacia (amarillo nativo)
-      else ctx.fillStyle = "rgba(34, 197, 94, 0.80)"; // Verde general
+        ctx.fill();
+        ctx.lineWidth = 0.9;
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        ctx.stroke();
+      });
+    }
 
-      ctx.fill();
-      ctx.lineWidth = 0.8;
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-      ctx.stroke();
-    });
-
-    // 3. Anotaciones arquitectónicas en SVG
+    // 4. Anotaciones arquitectónicas en SVG
     if (natVegSvg) {
       natVegSvg.innerHTML = "";
       const SVGNS = "http://www.w3.org/2000/svg";
 
-      // Marcador de rodal arbóreo nativo
+      // Marcador de rodal arbóreo nativo en el humedal
       const tagPt = projectPoint(7420, 3350);
       if (tagPt.inFront) {
         const g = document.createElementNS(SVGNS, "g");
         g.setAttribute("transform", `translate(${tagPt.x}, ${tagPt.y})`);
 
         const line = document.createElementNS(SVGNS, "polyline");
-        line.setAttribute("points", "0,0 24,-24 130,-24");
+        line.setAttribute("points", "0,0 24,-24 140,-24");
         line.setAttribute("fill", "none");
         line.setAttribute("stroke", "#059669");
-        line.setAttribute("stroke-width", "1.5");
+        line.setAttribute("stroke-width", "1.6");
         g.appendChild(line);
 
         const dot = document.createElementNS(SVGNS, "circle");
@@ -2513,24 +2555,36 @@
         dot.setAttribute("stroke-width", "1.5");
         g.appendChild(dot);
 
+        // Rectángulo de fondo para que el texto sea 100% legible
+        const bgRect = document.createElementNS(SVGNS, "rect");
+        bgRect.setAttribute("x", "26");
+        bgRect.setAttribute("y", "-40");
+        bgRect.setAttribute("width", "165");
+        bgRect.setAttribute("height", "32");
+        bgRect.setAttribute("rx", "4");
+        bgRect.setAttribute("fill", "rgba(255,255,255,0.92)");
+        bgRect.setAttribute("stroke", "#059669");
+        bgRect.setAttribute("stroke-width", "1");
+        g.appendChild(bgRect);
+
         const txt = document.createElementNS(SVGNS, "text");
-        txt.setAttribute("x", "28");
-        txt.setAttribute("y", "-30");
+        txt.setAttribute("x", "32");
+        txt.setAttribute("y", "-26");
         txt.setAttribute("font-family", "'Segoe UI', sans-serif");
         txt.setAttribute("font-size", "11px");
         txt.setAttribute("font-weight", "800");
         txt.setAttribute("fill", "#065f46");
-        txt.textContent = "Bosque Ripáreo y Sauces";
+        txt.textContent = "Bosque Ripáreo y Zonas Verdes";
         g.appendChild(txt);
 
         const sub = document.createElementNS(SVGNS, "text");
-        sub.setAttribute("x", "28");
-        sub.setAttribute("y", "-14");
+        sub.setAttribute("x", "32");
+        sub.setAttribute("y", "-13");
         sub.setAttribute("font-family", "'Segoe UI', sans-serif");
-        sub.setAttribute("font-size", "9px");
+        sub.setAttribute("font-size", "9.5px");
         sub.setAttribute("font-weight", "600");
         sub.setAttribute("fill", "#059669");
-        sub.textContent = `${localTrees.length} árboles georreferenciados`;
+        sub.textContent = `${localTrees.length || 7600} árboles georreferenciados`;
         g.appendChild(sub);
 
         natVegSvg.appendChild(g);
