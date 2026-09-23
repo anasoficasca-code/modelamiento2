@@ -344,16 +344,16 @@
       </div>
 
       <!-- Contenedor central apilado estilo referente (líneas punteadas y capas suspendidas) -->
-      <div id="natExplodeStage" style="position:relative; width:min(94vw, 880px); height:min(82vh, 680px); display:flex; align-items:center; justify-content:center; margin-top:20px;">
+      <div id="natExplodeStage" style="position:relative; width:min(96vw, 940px); height:min(86vh, 720px); display:flex; align-items:center; justify-content:center; margin-top:20px;">
         <svg id="natGuideSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1; transition:opacity .8s ease;"></svg>
 
         <!-- Capa 1: Sistema Inerte y Límite Físico-Hidrológico -->
-        <div id="natLayerWater" class="nat-sublayer" data-exploded-top="3%" style="position:absolute; top:71%; left:50%; width:min(54vw, 560px); aspect-ratio:16/9; z-index:6; opacity:0; transform:translate(-50%, 0); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+        <div id="natLayerWater" class="nat-sublayer" data-exploded-top="6%" style="position:absolute; top:50%; left:50%; width:min(58vw, 620px); aspect-ratio:16/9; z-index:6; opacity:0; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:transparent; box-shadow:none;">
             <img id="natWaterImg" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill;">
             <canvas id="natWaterCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
-            <svg id="natWaterSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
+          <svg id="natWaterSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#0369a1; background:#e0f2fe; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(2,132,199,.2);">Capa 01</span>
@@ -363,12 +363,12 @@
         </div>
 
         <!-- Capa 2: Cobertura Vegetal y Zonificación Florística -->
-        <div id="natLayer2" class="nat-sublayer" data-exploded-top="20%" style="position:absolute; top:71%; left:50%; width:min(54vw, 560px); aspect-ratio:16/9; z-index:5; opacity:0; transform:translate(-50%, 0); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+        <div id="natLayer2" class="nat-sublayer" data-exploded-top="22%" style="position:absolute; top:50%; left:50%; width:min(58vw, 620px); aspect-ratio:16/9; z-index:5; opacity:0; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:transparent; box-shadow:none;">
             <img id="natVegImg" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill;">
             <canvas id="natVegCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
-            <svg id="natVegSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
+          <svg id="natVegSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#2e6930; background:#edf7ed; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(46,105,48,.2);">Capa 02</span>
@@ -378,12 +378,12 @@
         </div>
 
         <!-- Capa 3: Agentes Faunísticos y Dinámicas Estacionales de Aves -->
-        <div id="natLayer3" class="nat-sublayer" data-exploded-top="37%" style="position:absolute; top:71%; left:50%; width:min(54vw, 560px); aspect-ratio:16/9; z-index:4; opacity:0; transform:translate(-50%, 0); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+        <div id="natLayer3" class="nat-sublayer" data-exploded-top="38%" style="position:absolute; top:50%; left:50%; width:min(58vw, 620px); aspect-ratio:16/9; z-index:4; opacity:0; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:transparent; box-shadow:none;">
             <img id="natBirdImg" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill;">
             <canvas id="natBirdCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
-            <svg id="natBirdSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
+          <svg id="natBirdSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#854d0e; background:#fef9c3; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(133,77,14,.2);">Capa 03</span>
@@ -393,12 +393,12 @@
         </div>
 
         <!-- Capa 4: Límite Corológico e Intercambio Genético Macro-regional -->
-        <div id="natLayer4" class="nat-sublayer" data-exploded-top="54%" style="position:absolute; top:71%; left:50%; width:min(54vw, 560px); aspect-ratio:16/9; z-index:3; opacity:0; transform:translate(-50%, 0); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+        <div id="natLayer4" class="nat-sublayer" data-exploded-top="54%" style="position:absolute; top:50%; left:50%; width:min(58vw, 620px); aspect-ratio:16/9; z-index:3; opacity:0; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:transparent; box-shadow:none;">
             <img id="natMacroImg" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill;">
             <canvas id="natMacroCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
-            <svg id="natMacroSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
+          <svg id="natMacroSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#475569; background:#e2e8f0; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(71,85,105,.25);">Capa 04</span>
@@ -408,7 +408,7 @@
         </div>
 
         <!-- Capa Base inferior: Contexto existente / Corte base -->
-        <div id="natLayerBase" class="nat-sublayer" data-exploded-top="71%" style="position:absolute; top:71%; left:50%; width:min(54vw, 560px); aspect-ratio:16/9; z-index:2; opacity:1; transform:translate(-50%, 0); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+        <div id="natLayerBase" class="nat-sublayer" data-exploded-top="70%" style="position:absolute; top:50%; left:50%; width:min(58vw, 620px); aspect-ratio:16/9; z-index:2; opacity:1; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="natBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">

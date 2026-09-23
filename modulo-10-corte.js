@@ -2217,31 +2217,34 @@
     });
 
     if (natExplodeStep === 0) {
-      // Paso 0: Únicamente la base limpia visible
-      if (baseEl) { baseEl.style.top = "71%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, 0)"; }
-      sublayers.forEach(l => { if (l) { l.style.opacity = "0"; l.style.top = "71%"; } });
+      // Paso 0: Únicamente la base limpia visible en el centro de la pantalla
+      if (baseEl) { baseEl.style.top = "50%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
+      sublayers.forEach(l => { if (l) { l.style.opacity = "0"; l.style.top = "50%"; l.style.transform = "translate(-50%, -40%)"; } });
       tags.forEach(t => { t.style.opacity = "0"; });
       if (natGuideSvg) natGuideSvg.style.opacity = "0";
       if (natAssembleBtnText) natAssembleBtnText.textContent = "Extraer Capa 1: Sistema Hídrico";
       return;
     }
 
-    // Pasos impares (1, 3, 5, 7): Capa i extraída flotando arriba para inspección
+    // Pasos impares (1, 3, 5, 7): Capa i extraída flotando arriba; base centrada abajo en la mitad de la pantalla
     if (natExplodeStep % 2 === 1 && natExplodeStep <= 7) {
       const activeIdx = Math.floor(natExplodeStep / 2);
 
+      if (baseEl) { baseEl.style.top = "54%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l, index) => {
         if (!l) return;
         if (index === activeIdx) {
           // Capa activa flotando arriba
-          const expTop = l.dataset.explodedTop || "20%";
+          const expTop = l.dataset.explodedTop || "12%";
           l.style.top = expTop;
+          l.style.transform = "translate(-50%, 0)";
           l.style.opacity = "1";
           const tag = l.querySelector(".nat-layer-tag");
           if (tag) tag.style.opacity = "1";
         } else {
-          // Ocultas mientras se inspecciona la activa arriba
-          l.style.top = "71%";
+          // Ocultas sobre la base
+          l.style.top = "54%";
+          l.style.transform = "translate(-50%, -40%)";
           l.style.opacity = "0";
           const tag = l.querySelector(".nat-layer-tag");
           if (tag) tag.style.opacity = "0";
@@ -2254,21 +2257,23 @@
       return;
     }
 
-    // Pasos pares (2, 4, 6, 8): Capa i asentada abajo en el territorio simulando en contexto
+    // Pasos pares (2, 4, 6, 8): Capa i asentada en el territorio simulando en el centro de la pantalla
     if (natExplodeStep % 2 === 0 && natExplodeStep <= 8) {
       const settledIdx = (natExplodeStep / 2) - 1;
       const nextNames = ["Capa 2: Vegetación", "Capa 3: Aves/Fauna", "Capa 4: Conectividad", "Ver Apilamiento Explotado Completo"];
 
+      if (baseEl) { baseEl.style.top = "50%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l, index) => {
         if (!l) return;
         if (index === settledIdx) {
-          // Capa asentada abajo en la base simulando en contexto
-          l.style.top = "71%";
+          l.style.top = "50%";
+          l.style.transform = "translate(-50%, -40%)";
           l.style.opacity = "1";
           const tag = l.querySelector(".nat-layer-tag");
           if (tag) tag.style.opacity = "1";
         } else {
-          l.style.top = "71%";
+          l.style.top = "50%";
+          l.style.transform = "translate(-50%, -40%)";
           l.style.opacity = "0";
           const tag = l.querySelector(".nat-layer-tag");
           if (tag) tag.style.opacity = "0";
@@ -2282,10 +2287,12 @@
 
     if (natExplodeStep === 9) {
       // Paso 9: Apilamiento explotado completo (las 4 capas flotando apiladas)
+      if (baseEl) { baseEl.style.top = "70%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, 0)"; }
       sublayers.forEach((l) => {
         if (!l) return;
-        const expTop = l.dataset.explodedTop || "71%";
+        const expTop = l.dataset.explodedTop || "54%";
         l.style.top = expTop;
+        l.style.transform = "translate(-50%, 0)";
         l.style.opacity = "1";
         const tag = l.querySelector(".nat-layer-tag");
         if (tag) tag.style.opacity = "1";
@@ -2299,9 +2306,11 @@
 
     if (natExplodeStep === 10) {
       // Paso 10: Integración Total (todas las 4 capas asentadas abajo simulando simultáneamente)
+      if (baseEl) { baseEl.style.top = "50%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l) => {
         if (!l) return;
-        l.style.top = "71%";
+        l.style.top = "50%";
+        l.style.transform = "translate(-50%, -40%)";
         l.style.opacity = "1";
         const tag = l.querySelector(".nat-layer-tag");
         if (tag) tag.style.opacity = "0";
@@ -3423,7 +3432,7 @@
 
       // Panel explicativo superior izquierdo con estructura territorial
       const boxG = document.createElementNS(SVGNS, "g");
-      boxG.setAttribute("transform", "translate(16, 16)");
+      boxG.setAttribute("transform", "translate(24, 0)");
 
       const boxBg = document.createElementNS(SVGNS, "rect");
       boxBg.setAttribute("x", "0"); boxBg.setAttribute("y", "0");
@@ -3486,13 +3495,22 @@
     if (!natGuideSvg || !natOverlay) return;
     natGuideSvg.innerHTML = "";
     const SVGNS = "http://www.w3.org/2000/svg";
-    const layerTop = document.getElementById("natLayerWater");
     const layerBase = document.getElementById("natLayerBase");
-    if (!layerTop || !layerBase) return;
+    if (!layerBase) return;
+
+    const sublayers = [
+      document.getElementById("natLayerWater"),
+      document.getElementById("natLayer2"),
+      document.getElementById("natLayer3"),
+      document.getElementById("natLayer4")
+    ];
+    let layerTop = sublayers.find(l => l && parseFloat(l.style.opacity || "0") > 0.1 && (l.getBoundingClientRect().top < layerBase.getBoundingClientRect().top - 15));
+    if (!layerTop) layerTop = document.getElementById("natLayerWater");
 
     const rTop = layerTop.getBoundingClientRect();
     const rBase = layerBase.getBoundingClientRect();
     const rStage = natGuideSvg.getBoundingClientRect();
+    if (Math.abs(rTop.top - rBase.top) < 15) return;
 
     // 4 esquinas del rombo (50% 0%, 100% 50%, 50% 100%, 0% 50%)
     const cornersRel = [
@@ -3513,20 +3531,19 @@
       line.setAttribute("y1", String(y1));
       line.setAttribute("x2", String(x2));
       line.setAttribute("y2", String(y2));
-      line.setAttribute("stroke", "rgba(15, 23, 42, 0.22)");
-      line.setAttribute("stroke-width", "1.2");
+      line.setAttribute("stroke", "rgba(15, 23, 42, 0.28)");
+      line.setAttribute("stroke-width", "1.3");
       line.setAttribute("stroke-dasharray", "4 4");
       natGuideSvg.appendChild(line);
 
-      // Pequeño marcador en los extremos
       const dot1 = document.createElementNS(SVGNS, "circle");
       dot1.setAttribute("cx", String(x1)); dot1.setAttribute("cy", String(y1)); dot1.setAttribute("r", "2.5");
-      dot1.setAttribute("fill", "rgba(15, 23, 42, 0.35)");
+      dot1.setAttribute("fill", "rgba(15, 23, 42, 0.4)");
       natGuideSvg.appendChild(dot1);
 
       const dot2 = document.createElementNS(SVGNS, "circle");
       dot2.setAttribute("cx", String(x2)); dot2.setAttribute("cy", String(y2)); dot2.setAttribute("r", "2.5");
-      dot2.setAttribute("fill", "rgba(15, 23, 42, 0.35)");
+      dot2.setAttribute("fill", "rgba(15, 23, 42, 0.4)");
       natGuideSvg.appendChild(dot2);
     });
   }
