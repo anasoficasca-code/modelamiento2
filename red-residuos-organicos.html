@@ -633,6 +633,45 @@
     });
   }
 
+  const SAVED_FULL_POSITIONS = {
+    "s1_1": { x: 95.1, y: 136.9, r: 43.8 },
+    "s1_2": { x: 64.0, y: 410.7, r: 62.4 },
+    "s1_3": { x: 446.2, y: 110.2, r: 54.3 },
+    "s1_4": { x: 343.1, y: 311.1, r: 54.3 },
+    "s1_5": { x: 753.8, y: 213.3, r: 54.3 },
+    "s1_6": { x: 597.3, y: 150.2, r: 43.8 },
+    "s2_1": { x: 995.6, y: 153.8, r: 62.4 },
+    "s2_2": { x: 1235.6, y: 107.6, r: 43.8 },
+    "s2_3": { x: 1552.0, y: 192.0, r: 62.4 },
+    "s2_4": { x: 1239.1, y: 404.4, r: 43.8 },
+    "s2_5": { x: 524.4, y: 700.4, r: 54.3 },
+    "s3_1": { x: 1294.2, y: 505.8, r: 54.3 },
+    "s3_2": { x: 832.0, y: 495.1, r: 54.3 },
+    "s3_3": { x: 1128.9, y: 262.2, r: 54.3 },
+    "s3_4": { x: 640.9, y: 344.0, r: 54.3 },
+    "s3_5": { x: 234.7, y: 136.0, r: 43.8 },
+    "s4_1": { x: 1560.0, y: 458.7, r: 62.4 },
+    "s4_2": { x: 1483.6, y: 858.7, r: 54.3 },
+    "s4_3": { x: 1462.2, y: 647.1, r: 18.5 },
+    "s4_4": { x: 1274.7, y: 729.8, r: 62.4 },
+    "s4_5": { x: 1308.4, y: 602.7, r: 18.5 },
+    "s5_1": { x: 1060.4, y: 845.3, r: 43.8 },
+    "s5_2": { x: 887.1, y: 787.6, r: 62.4 },
+    "s5_3": { x: 1008.9, y: 637.3, r: 54.3 },
+    "s5_4": { x: 1215.1, y: 614.2, r: 43.8 },
+    "s5_5": { x: 1137.8, y: 741.3, r: 43.8 },
+    "s6_1": { x: 656.0, y: 787.6, r: 43.8 },
+    "s6_2": { x: 215.1, y: 784.9, r: 62.4 },
+    "s6_3": { x: 48.9, y: 584.9, r: 43.8 },
+    "s6_4": { x: 94.2, y: 892.4, r: 54.3 },
+    "s6_5": { x: 531.6, y: 865.8, r: 54.3 },
+    "s7_1": { x: 989.3, y: 912.9, r: 43.8 },
+    "s7_2": { x: 824.0, y: 910.2, r: 54.3 },
+    "s7_3": { x: 525.3, y: 438.2, r: 54.3 },
+    "s7_4": { x: 836.4, y: 648.0, r: 43.8 },
+    "s7_5": { x: 1217.8, y: 909.3, r: 43.8 }
+  };
+
   function buildNetwork(nodes, rel, byIdMap, opts) {
     const loopType = opts.loopType || "R";
     clearNetwork();
@@ -684,11 +723,24 @@
       return c;
     }
     let best = null, bestC = Infinity;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const cand = forceLayout(nodes, rel, cx, cy, spread, radiusOf, gapMult, margin);
-      const c = countCrossings(cand);
-      if (c < bestC) { bestC = c; best = cand; }
-      if (bestC === 0) break;
+    if (opts.savedPositions) {
+      best = {};
+      nodes.forEach(n => {
+        if (opts.savedPositions[n.id]) {
+          best[n.id] = { x: opts.savedPositions[n.id].x, y: opts.savedPositions[n.id].y };
+          if (opts.savedPositions[n.id].r) {
+            baseRadiusMap[n.id] = opts.savedPositions[n.id].r;
+            nodeRadiusMap[n.id] = opts.savedPositions[n.id].r * globalSizeScale;
+          }
+        }
+      });
+    } else {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const cand = forceLayout(nodes, rel, cx, cy, spread, radiusOf, gapMult, margin);
+        const c = countCrossings(cand);
+        if (c < bestC) { bestC = c; best = cand; }
+        if (bestC === 0) break;
+      }
     }
     if (!best) {
       best = {};
@@ -760,6 +812,7 @@
     buildNetwork(allNodesList, allRelCombined, allNodesById, {
       maxR: 35,
       wFrac: 0.042,
+      savedPositions: SAVED_FULL_POSITIONS,
       colorOf: (id) => macroById[allNodesById[id].macroId].color
     });
     intro.style.opacity = "0";
