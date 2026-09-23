@@ -689,6 +689,16 @@
       if (c < bestC) { bestC = c; best = cand; }
       if (bestC === 0) break;
     }
+    if (!best) {
+      best = {};
+      const step = (Math.PI * 2) / Math.max(1, nodes.length);
+      nodes.forEach((n, i) => {
+        best[n.id] = {
+          x: cx + spread * Math.cos(i * step),
+          y: cy + spread * Math.sin(i * step)
+        };
+      });
+    }
     nodePos = best;
 
     nodes.forEach(n => {
@@ -825,9 +835,9 @@
   });
 
   if (document.readyState === "loading") {
-    window.addEventListener("DOMContentLoaded", () => setTimeout(showFullNetwork, 50));
+    window.addEventListener("DOMContentLoaded", () => setTimeout(showMacro, 50));
   } else {
-    setTimeout(showFullNetwork, 50);
+    setTimeout(showMacro, 50);
   }
 
   function openRelPopup(r) {
