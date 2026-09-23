@@ -1693,7 +1693,7 @@
 (function () {
   const POT_CATS = {
     econ: { label: "Actividades económicas", color: "#c9a877" },
-    eep: { label: "Estructura ecológica principal", color: "#6b4a42" },
+    eep: { label: "Estructura ecológica principal", color: "#5c8f52" },
     habit: { label: "Habitabilidad e informalidad", color: "#7a6a4a" },
     suelo: { label: "Clasificación del suelo", color: "#8d7d8a" },
     cuidado: { label: "Sistema de cuidado", color: "#c9a9b5" },
@@ -1703,13 +1703,11 @@
     equip: { label: "Equipamientos", color: "#c9b291" },
     servicios: { label: "Servicios públicos", color: "#8fa39c" },
     movilidad: { label: "Movilidad y transporte", color: "#9bad6b" },
-    upl: { label: "UPL", color: "#7d8f52" },
     riesgo: { label: "Gestión de riesgo", color: "#d19a5a" },
   };
-  const POT_NODES = [
+  const RAW_POT_NODES = [
     { id: "alameda_porvenir", t: "Alameda El Porvenir", cat: "movilidad", x: 700, y: 35 },
     { id: "veeduria", t: "Comisión de Veeduría Ciudadana POT", cat: "gob", x: 560, y: 85 },
-    { id: "upl15", t: "UPL 15 Porvenir (compartida Bosa-Kennedy)", cat: "upl", x: 690, y: 130 },
     { id: "reparto_cargas", t: "Reparto Proporcional de Cargas y Beneficios", cat: "gob", x: 555, y: 165 },
     { id: "manzana_bosa", t: "Manzana del Cuidado Bosa", cat: "cuidado", x: 690, y: 170 },
     { id: "colegio_bosa", t: "Colegio Sede Bosa Porvenir", cat: "equip", x: 610, y: 200 },
@@ -1722,8 +1720,6 @@
     { id: "trat_occidente", t: "Tratamiento de Desarrollo Zona Occidente", cat: "habit", x: 385, y: 280 },
     { id: "trat_habitabilidad", t: "Tratamiento de Mejoramiento Integral Habitabilidad", cat: "habit", x: 525, y: 285 },
     { id: "zonas_reasentamiento", t: "Zonas de Reasentamiento Prioritario", cat: "riesgo", x: 585, y: 290 },
-    { id: "upl13", t: "UPL 13 Tintal", cat: "upl", x: 455, y: 320 },
-    { id: "upl14", t: "UPL 14 Patio Bonito", cat: "upl", x: 545, y: 320 },
     { id: "corredor_eco_rio", t: "Corredor Ecológico de Ronda Río Bogotá", cat: "eep", x: 365, y: 335 },
     { id: "suelos_riesgo", t: "Suelos de Protección por Riesgo no Mitigable", cat: "riesgo", x: 615, y: 325 },
     { id: "amer_rio", t: "Área de Manejo Especial del Río Bogotá", cat: "eep", x: 365, y: 355 },
@@ -1740,7 +1736,6 @@
     { id: "centro_corabastos", t: "Centro de Abasto Corabastos", cat: "econ", x: 440, y: 415 },
     { id: "biblioteca_tintal", t: "Biblioteca Pública El Tintal Manuel Zapata Olivella", cat: "equip", x: 495, y: 415 },
     { id: "rio_fucha", t: "Río Fucha", cat: "eep", x: 615, y: 415 },
-    { id: "upl18", t: "UPL 18 Kennedy", cat: "upl", x: 665, y: 420 },
     { id: "zona_franca", t: "Zona Franca Fontibón", cat: "econ", x: 210, y: 425 },
     { id: "plaza_fontibon", t: "Plaza de Mercado Fontibón", cat: "econ", x: 335, y: 435 },
     { id: "metro_plmb", t: "Primera Línea del Metro de Bogotá PLMB", cat: "movilidad", x: 470, y: 440 },
@@ -1757,32 +1752,36 @@
     { id: "patio_metro_bosa", t: "Patio Taller Metro Bosa", cat: "movilidad", x: 450, y: 555 },
     { id: "hospital_bosa", t: "Hospital de Bosa", cat: "cuidado", x: 795, y: 555 },
   ];
-  const POT_EDGES = [
-    ["alameda_porvenir", "upl15"], ["veeduria", "reparto_cargas"],
-    ["upl15", "manzana_bosa"], ["reparto_cargas", "colegio_bosa"], ["manzana_bosa", "colegio_bosa"],
-    ["colegio_bosa", "subsidio_vivienda"], ["mis", "subsidio_vivienda"], ["subsidio_vivienda", "upl14"],
+  // Excluir cualquier nodo con cat === "upl"
+  const POT_NODES = RAW_POT_NODES.filter(n => n.cat !== "upl");
+
+  const RAW_POT_EDGES = [
+    ["veeduria", "reparto_cargas"],
+    ["reparto_cargas", "colegio_bosa"], ["manzana_bosa", "colegio_bosa"],
+    ["colegio_bosa", "subsidio_vivienda"], ["mis", "subsidio_vivienda"],
     ["eru", "tejido_informal"], ["tejido_informal", "trat_estructural"], ["humedal_techo", "trat_estructural"],
-    ["trat_occidente", "upl13"], ["trat_estructural", "upl14"], ["trat_habitabilidad", "upl14"],
-    ["zonas_reasentamiento", "upl14"], ["trat_habitabilidad", "upl13"],
-    ["corredor_eco_rio", "upl13"], ["amer_rio", "upl13"], ["cai_corabastos", "upl13"], ["alo_sur", "upl13"],
-    ["suelos_riesgo", "upl14"], ["idiger", "upl14"], ["canal_americas", "upl14"],
-    ["quebrada_limas", "upl18"], ["humedal_vaca", "upl18"],
-    ["rio_bogota", "upl13"], ["rio_bogota", "upl14"], ["rio_bogota", "cai_corabastos"], ["rio_bogota", "avenida_boyaca"],
-    ["avenida_boyaca", "upl18"], ["canal_cundinamarca", "upl18"], ["rio_fucha", "upl18"],
+    ["rio_bogota", "cai_corabastos"], ["rio_bogota", "avenida_boyaca"],
     ["nodo_logistico13", "zona_franca"], ["zona_franca", "data_center"], ["zona_franca", "areas_industriales"],
     ["centro_corabastos", "cai_corabastos"], ["centro_corabastos", "rio_bogota"],
     ["biblioteca_tintal", "rio_bogota"], ["plaza_fontibon", "centro_corabastos"],
     ["metro_plmb", "centro_corabastos"], ["metro_plmb", "portal_americas"],
-    ["upl18", "hospital_kennedy"], ["upl18", "manzana_kennedy"], ["upl18", "parque_timiza"],
     ["portal_americas", "ciclorrutas"], ["ciclorrutas", "corredor_cali"], ["corredor_cali", "patio_metro_bosa"],
     ["hospital_kennedy", "manzana_kennedy"], ["manzana_kennedy", "humedal_burro"],
     ["humedal_burro", "ptar_canoas"], ["ptar_canoas", "hospital_bosa"],
   ];
+  const potNodeIds = new Set(POT_NODES.map(n => n.id));
+  const POT_EDGES = RAW_POT_EDGES.filter(([a, b]) => potNodeIds.has(a) && potNodeIds.has(b));
+
   const potById = {}; POT_NODES.forEach(n => potById[n.id] = n);
   const potDegree = {}; POT_NODES.forEach(n => potDegree[n.id] = 0);
   POT_EDGES.forEach(([a, b]) => { potDegree[a] = (potDegree[a] || 0) + 1; potDegree[b] = (potDegree[b] || 0) + 1; });
 
   let potBuilt = false;
+  const posPx = {};
+  const radiusPx = {};
+  const nodeElements = {};
+  const edgeLineEls = [];
+
   function wrapToFit(text, maxCharsPerLine, maxLines) {
     const words = text.split(" ");
     const lines = []; let current = "";
@@ -1801,6 +1800,22 @@
     }
     return lines.join("<br>");
   }
+
+  function updatePotEdgeLines() {
+    edgeLineEls.forEach(({ line, a, b }) => {
+      const pa = posPx[a], pb = posPx[b];
+      const ra = radiusPx[a], rb = radiusPx[b];
+      if (!pa || !pb) return;
+      const dx = pb.x - pa.x, dy = pb.y - pa.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const ux = dx / dist, uy = dy / dist;
+      line.setAttribute("x1", pa.x + ux * (ra + 2));
+      line.setAttribute("y1", pa.y + uy * (ra + 2));
+      line.setAttribute("x2", pb.x - ux * (rb + 2));
+      line.setAttribute("y2", pb.y - uy * (rb + 2));
+    });
+  }
+
   function buildPotNetwork() {
     if (potBuilt) return;
     potBuilt = true;
@@ -1812,26 +1827,18 @@
     const SVGNS = "http://www.w3.org/2000/svg";
     function sc(v, total, size) { return (v / total) * size; }
     const W = 900, H = 590;
-    // Radios bastante mas grandes que antes (0-based en grado de
-    // conexion), para que el texto quepa adentro de cada burbuja.
-    const posPx = {};
-    const radiusPx = {};
+
     POT_NODES.forEach(n => {
       const p = { x: sc(n.x, W, rect.width), y: sc(n.y, H, rect.height) };
       posPx[n.id] = p;
-      radiusPx[n.id] = 32 + (potDegree[n.id] || 0) * 5.5; // burbujas bastante mas grandes
+      radiusPx[n.id] = 32 + (potDegree[n.id] || 0) * 5.5;
     });
-    // Pasada de separacion: como los radios ahora son mucho mas grandes
-    // que cuando se ubicaron las posiciones a mano (copiadas del
-    // referente), muchas burbujas quedarian encimadas - se corren varias
-    // iteraciones de repulsion simple partiendo de esas mismas
-    // posiciones (para conservar la forma general del referente), para
-    // separarlas lo justo y aprovechar mejor el espacio disponible.
+
     const ids = POT_NODES.map(n => n.id);
     for (let pass = 0; pass < 400; pass++) {
       for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
         const a = posPx[ids[i]], b = posPx[ids[j]];
-        const minDist = (radiusPx[ids[i]] + radiusPx[ids[j]]) * 1.55; // aun mas separacion, para asegurar que ninguna burbuja se toque
+        const minDist = (radiusPx[ids[i]] + radiusPx[ids[j]]) * 1.55;
         let dx = a.x - b.x, dy = a.y - b.y;
         let dist = Math.hypot(dx, dy) || 0.001;
         if (dist < minDist) {
@@ -1848,34 +1855,23 @@
     });
 
     POT_EDGES.forEach(([a, b]) => {
-      const pa = posPx[a], pb = posPx[b];
-      const ra = radiusPx[a], rb = radiusPx[b];
-      const dx = pb.x - pa.x, dy = pb.y - pa.y;
-      const dist = Math.hypot(dx, dy) || 1;
-      const ux = dx / dist, uy = dy / dist;
-      // La linea arranca y termina justo en el borde de cada burbuja (no
-      // en su centro), para que no se vea entrando/atravesando el
-      // circulo - solo se ve la linea en el espacio VACIO entre ambas.
-      const startX = pa.x + ux * (ra + 2), startY = pa.y + uy * (ra + 2);
-      const endX = pb.x - ux * (rb + 2), endY = pb.y - uy * (rb + 2);
       const line = document.createElementNS(SVGNS, "line");
-      line.setAttribute("x1", startX); line.setAttribute("y1", startY);
-      line.setAttribute("x2", endX); line.setAttribute("y2", endY);
-      line.setAttribute("stroke", "#c8ccd2"); line.setAttribute("stroke-width", "1.3"); line.setAttribute("stroke-opacity", "0.55");
+      line.setAttribute("stroke", "#c8ccd2");
+      line.setAttribute("stroke-width", "1.3");
+      line.setAttribute("stroke-opacity", "0.55");
       svg.appendChild(line);
+      edgeLineEls.push({ line, a, b });
     });
+    updatePotEdgeLines();
+
     POT_NODES.forEach(n => {
       const p = posPx[n.id];
       const r = radiusPx[n.id];
+      const catObj = POT_CATS[n.cat] || { color: "#777" };
       const blob = document.createElement("div");
-      blob.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; width:${r * 2}px; height:${r * 2}px; margin:-${r}px 0 0 -${r}px; border-radius:50%; background:${POT_CATS[n.cat].color}; cursor:pointer; pointer-events:auto; transition:transform .15s ease;`;
-      blob.addEventListener("mouseenter", () => { blob.style.transform = "scale(1.1)"; });
-      blob.addEventListener("mouseleave", () => { blob.style.transform = "scale(1)"; });
-      blob.addEventListener("click", () => openPotInfo(n));
+      blob.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; width:${r * 2}px; height:${r * 2}px; margin:-${r}px 0 0 -${r}px; border-radius:50%; background:${catObj.color}; cursor:grab; pointer-events:auto; transition:transform .15s ease; user-select:none;`;
       gooLayer.appendChild(blob);
-      // El nombre (lo que quepa) ahora se muestra SIEMPRE dentro de la
-      // burbuja; el texto completo + categoria + conexiones se ve al
-      // hacer clic, en el panel lateral.
+
       const label = document.createElement("div");
       const fontPx = 9.5, lineH = fontPx * 1.22;
       let maxLines = Math.max(2, Math.floor((r * 2 * 0.82) / lineH));
@@ -1884,35 +1880,131 @@
       const safeWidth = 2 * Math.sqrt(Math.max(0, r * r - halfH * halfH)) * 0.86;
       const maxCharsPerLine = Math.max(5, Math.floor(safeWidth / (fontPx * 0.56)));
       label.innerHTML = wrapToFit(n.t, maxCharsPerLine, maxLines);
-      label.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; transform:translate(-50%,-50%); width:${safeWidth}px; text-align:center; font-size:${fontPx}px; font-weight:600; color:#ffffff; text-shadow:0 1px 2px rgba(0,0,0,.55); line-height:${lineH}px; pointer-events:none;`;
+      label.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; transform:translate(-50%,-50%); width:${safeWidth}px; text-align:center; font-size:${fontPx}px; font-weight:600; color:#ffffff; text-shadow:0 1px 2px rgba(0,0,0,.55); line-height:${lineH}px; pointer-events:none; user-select:none;`;
       labelLayer.appendChild(label);
+
+      nodeElements[n.id] = { blob, label };
+
+      // Soporte para arrastrar bola (Drag & Drop)
+      let isDragging = false;
+      let startMouseX = 0, startMouseY = 0;
+      let startPosX = 0, startPosY = 0;
+
+      const onPointerDown = (e) => {
+        isDragging = true;
+        blob.style.cursor = "grabbing";
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        startMouseX = clientX;
+        startMouseY = clientY;
+        startPosX = posPx[n.id].x;
+        startPosY = posPx[n.id].y;
+        e.stopPropagation();
+      };
+
+      const onPointerMove = (e) => {
+        if (!isDragging) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const dx = clientX - startMouseX;
+        const dy = clientY - startMouseY;
+        const newX = Math.max(r + 4, Math.min(rect.width - r - 4, startPosX + dx));
+        const newY = Math.max(r + 4, Math.min(rect.height - r - 4, startPosY + dy));
+        posPx[n.id].x = newX;
+        posPx[n.id].y = newY;
+        blob.style.left = `${newX}px`;
+        blob.style.top = `${newY}px`;
+        label.style.left = `${newX}px`;
+        label.style.top = `${newY}px`;
+        updatePotEdgeLines();
+      };
+
+      const onPointerUp = () => {
+        if (isDragging) {
+          isDragging = false;
+          blob.style.cursor = "grab";
+        }
+      };
+
+      blob.addEventListener("mousedown", onPointerDown);
+      blob.addEventListener("touchstart", onPointerDown, { passive: true });
+      window.addEventListener("mousemove", onPointerMove);
+      window.addEventListener("touchmove", onPointerMove, { passive: true });
+      window.addEventListener("mouseup", onPointerUp);
+      window.addEventListener("touchend", onPointerUp);
+
+      blob.addEventListener("mouseenter", () => { if (!isDragging) blob.style.transform = "scale(1.1)"; });
+      blob.addEventListener("mouseleave", () => { if (!isDragging) blob.style.transform = "scale(1)"; });
+      blob.addEventListener("click", (e) => {
+        if (Math.hypot(posPx[n.id].x - startPosX, posPx[n.id].y - startPosY) < 4) {
+          openPotInfo(n);
+        }
+      });
     });
+
     const legend = document.getElementById("potLegend");
-    Object.values(POT_CATS).forEach(c => {
-      const el = document.createElement("span");
-      el.style.cssText = "display:flex; align-items:center; gap:5px; font-size:10.5px; color:#c3cad2;";
-      el.innerHTML = `<i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c.color};"></i>${c.label}`;
-      legend.appendChild(el);
-    });
+    if (legend) {
+      legend.innerHTML = "";
+      Object.values(POT_CATS).forEach(c => {
+        const el = document.createElement("span");
+        el.style.cssText = "display:flex; align-items:center; gap:5px; font-size:10.5px; color:#c3cad2;";
+        el.innerHTML = `<i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c.color};"></i>${c.label}`;
+        legend.appendChild(el);
+      });
+    }
+
+    // Botón para copiar coordenadas POT
+    const copyBtn = document.getElementById("copyPotCoordsBtn");
+    const outputTxt = document.getElementById("potCoordsOutput");
+    if (copyBtn && outputTxt) {
+      copyBtn.addEventListener("click", () => {
+        const exported = POT_NODES.map(n => {
+          const p = posPx[n.id] || { x: n.x, y: n.y };
+          const relX = Math.round((p.x / rect.width) * W * 10) / 10;
+          const relY = Math.round((p.y / rect.height) * H * 10) / 10;
+          return `  { id: "${n.id}", t: "${n.t}", cat: "${n.cat}", x: ${relX}, y: ${relY} },`;
+        });
+        const codeStr = `const POT_NODES = [\n${exported.join("\n")}\n];`;
+        outputTxt.value = codeStr;
+        outputTxt.style.display = "block";
+        navigator.clipboard.writeText(codeStr).then(() => {
+          const originalText = copyBtn.innerHTML;
+          copyBtn.innerHTML = `<i class="fa-solid fa-check"></i> ¡Copiado!`;
+          setTimeout(() => { copyBtn.innerHTML = originalText; }, 2000);
+        }).catch(() => {
+          outputTxt.select();
+        });
+      });
+    }
   }
+
   const potInfoPanel = document.getElementById("potInfoPanel");
   const potInfoBody = document.getElementById("potInfoBody");
   function openPotInfo(n) {
-    const desde = POT_EDGES.filter(([a, b]) => b === n.id).map(([a]) => potById[a]);
-    const hacia = POT_EDGES.filter(([a, b]) => a === n.id).map(([, b]) => potById[b]);
+    const desde = POT_EDGES.filter(([a, b]) => b === n.id).map(([a]) => potById[a]).filter(Boolean);
+    const hacia = POT_EDGES.filter(([a, b]) => a === n.id).map(([, b]) => potById[b]).filter(Boolean);
+    const catObj = POT_CATS[n.cat] || { label: n.cat, color: "#777" };
     potInfoBody.innerHTML = `
-      <p style="font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:${POT_CATS[n.cat].color}; margin:0 0 4px; font-weight:700;">${POT_CATS[n.cat].label}</p>
+      <p style="font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:${catObj.color}; margin:0 0 4px; font-weight:700;">${catObj.label}</p>
       <h2 style="font-size:16px; color:#fff; margin:0 0 14px; line-height:1.3;">${n.t}</h2>
       ${desde.length ? `<div style="margin-bottom:12px;"><b style="font-size:11px; color:#9aa3ad;">Se relaciona desde</b>${desde.map(x => `<div style="font-size:12px; color:#e8ecf1; background:rgba(255,255,255,.06); border-radius:8px; padding:6px 9px; margin-top:5px;">${x.t}</div>`).join("")}</div>` : ""}
       ${hacia.length ? `<div><b style="font-size:11px; color:#9aa3ad;">Se conecta hacia</b>${hacia.map(x => `<div style="font-size:12px; color:#e8ecf1; background:rgba(255,255,255,.06); border-radius:8px; padding:6px 9px; margin-top:5px;">${x.t}</div>`).join("")}</div>` : ""}
     `;
     potInfoPanel.style.transform = "translateX(0)";
   }
-  document.getElementById("potInfoClose").addEventListener("click", () => { potInfoPanel.style.transform = "translateX(100%)"; });
+  const potInfoClose = document.getElementById("potInfoClose");
+  if (potInfoClose) potInfoClose.addEventListener("click", () => { potInfoPanel.style.transform = "translateX(100%)"; });
   const potModal = document.getElementById("potModal");
-  document.getElementById("potBtn").addEventListener("click", () => {
-    potModal.style.display = "flex";
-    buildPotNetwork();
-  });
-  document.getElementById("potModalClose").addEventListener("click", () => { potModal.style.display = "none"; });
+  const potBtn = document.getElementById("potBtn");
+  if (potBtn && potModal) {
+    potBtn.addEventListener("click", () => {
+      potModal.style.display = "flex";
+      buildPotNetwork();
+    });
+  }
+  const potModalClose = document.getElementById("potModalClose");
+  if (potModalClose && potModal) {
+    potModalClose.addEventListener("click", () => { potModal.style.display = "none"; });
+  }
 })();
+
