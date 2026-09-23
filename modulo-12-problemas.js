@@ -1549,15 +1549,45 @@
   }
   function updateNetPositions() {
     Object.keys(allSubEls).forEach(mid => {
+      if (mid === "_allLines") return;
       const subEls = allSubEls[mid];
       const sub = SUBNETS[mid];
+      if (!sub || !sub.nodes) return;
       sub.nodes.forEach(n => {
         const p = projectPoint(n.x, n.y, 0.25);
-        placeBlob(subEls.blobs[n.id], p.x, p.y, p.visible);
-        subEls.labels[n.id].style.left = p.x + "px"; subEls.labels[n.id].style.top = p.y + "px";
-        subEls.labels[n.id].style.display = p.visible ? "block" : "none";
+        if (subEls.blobs && subEls.blobs[n.id]) placeBlob(subEls.blobs[n.id], p.x, p.y, p.visible);
+        if (subEls.labels && subEls.labels[n.id]) {
+          subEls.labels[n.id].style.left = p.x + "px"; subEls.labels[n.id].style.top = p.y + "px";
+          subEls.labels[n.id].style.display = p.visible ? "block" : "none";
+        }
       });
-      subEls.lines.forEach(l => {
+      if (subEls.lines) {
+        subEls.lines.forEach(l => {
+          const pa = projectPoint(l.from.x, l.from.y, 0.25);
+          const pb = projectPoint(l.to.x, l.to.y, 0.25);
+          if (l.isPol) {
+            l.el.setAttribute("x", pa.x + (pb.x - pa.x) * 0.72);
+            l.el.setAttribute("y", pa.y + (pb.y - pa.y) * 0.72);
+          } else if (l.isLoopBadge) {
+            l.el.setAttribute("x", pa.x + (pb.x - pa.x) * 0.42);
+            l.el.setAttribute("y", pa.y + (pb.y - pa.y) * 0.42 - 12);
+          } else {
+            const dx = pb.x - pa.x, dy = pb.y - pa.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            const rFrom = (getSubNodeDiameter(l.fromId || l.from.id) / 2);
+            const rTo = (getSubNodeDiameter(l.toId || l.to.id) / 2);
+            const ux = dx / dist, uy = dy / dist;
+            l.el.setAttribute("x1", pa.x + ux * rFrom);
+            l.el.setAttribute("y1", pa.y + uy * rFrom);
+            l.el.setAttribute("x2", pb.x - ux * (rTo + 3));
+            l.el.setAttribute("y2", pb.y - uy * (rTo + 3));
+          }
+        });
+      }
+    });
+
+    if (allSubEls["_allLines"] && allSubEls["_allLines"].lines) {
+      allSubEls["_allLines"].lines.forEach(l => {
         const pa = projectPoint(l.from.x, l.from.y, 0.25);
         const pb = projectPoint(l.to.x, l.to.y, 0.25);
         if (l.isPol) {
@@ -1578,7 +1608,7 @@
           l.el.setAttribute("y2", pb.y - uy * (rTo + 3));
         }
       });
-    });
+    }
   }
   let lastNetUpdate = 0;
   controls.addEventListener("change", () => {
