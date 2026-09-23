@@ -1110,17 +1110,44 @@
   // todavia NO tienen coordenadas propias (los nodos temporales
   // "Pendiente...") se colocan con un pequeno desplazamiento alrededor
   // del macro-nodo, como marcador provisional.
+  // Anti-overlap pass: repulsión garantizada entre todas las bolas para que NINGUNA bola se toque entre sí
+  const allSubNodesList = [];
   Object.keys(SUBNETS).forEach(mid => {
     const m = macroById[mid];
     const nodes = SUBNETS[mid].nodes;
     nodes.forEach((n, i) => {
-      if (n.x !== undefined && n.y !== undefined) return; // ya tiene coordenada real, no tocar
-      const angle = (i / nodes.length) * Math.PI * 2;
-      const r = 55 + (i % 3) * 18;
-      n.x = m.x + Math.cos(angle) * r;
-      n.y = m.y + Math.sin(angle) * r;
+      if (n.x === undefined || n.y === undefined) {
+        const angle = (i / nodes.length) * Math.PI * 2;
+        const r = 55 + (i % 3) * 18;
+        n.x = m.x + Math.cos(angle) * r;
+        n.y = m.y + Math.sin(angle) * r;
+      }
+      n.macroId = mid;
+      allSubNodesList.push(n);
     });
   });
+
+  const MIN_NODE_DIST = 95.0; // Distancia mínima para que no se toquen ni se solapen las bolas
+  for (let iter = 0; iter < 180; iter++) {
+    for (let i = 0; i < allSubNodesList.length; i++) {
+      for (let j = i + 1; j < allSubNodesList.length; j++) {
+        const a = allSubNodesList[i], b = allSubNodesList[j];
+        let dx = b.x - a.x, dy = b.y - a.y;
+        let dist = Math.hypot(dx, dy);
+        if (dist < MIN_NODE_DIST) {
+          if (dist < 0.1) {
+            dx = (Math.random() - 0.5) * 12;
+            dy = (Math.random() - 0.5) * 12;
+            dist = Math.hypot(dx, dy) || 1;
+          }
+          const overlap = (MIN_NODE_DIST - dist) / 2;
+          const ux = dx / dist, uy = dy / dist;
+          a.x -= ux * overlap; a.y -= uy * overlap;
+          b.x += ux * overlap; b.y += uy * overlap;
+        }
+      }
+    }
+  }
 
   const netGooLayer = document.getElementById("netGooLayer");
   const netSvg = document.getElementById("netSvg");
@@ -1235,24 +1262,62 @@
     });
   });
 
+  const deletedNodeIds = new Set();
+
   function getSubNodeDiameter(nodeId) {
     const deg = nodeDegrees[nodeId] || 0;
-    if (deg <= 1) return 46;
-    if (deg === 2) return 58;
-    if (deg === 3) return 68;
-    return 78; // Mas conectadas = bolas mas grandes
+    if (deg <= 1) return 32;
+    if (deg === 2) return 40;
+    if (deg === 3) return 48;
+    return 56;
+  }
+
+  function deleteNode(causeId) {
+    deletedNodeIds.add(causeId);
+    Object.keys(allSubEls).forEach(mid => {
+      const subEls = allSubEls[mid];
+      if (subEls.blobs[causeId]) {
+        subEls.blobs[causeId].style.display = "none";
+        subEls.blobs[causeId].remove();
+        delete subEls.blobs[causeId];
+      }
+      if (subEls.labels[causeId]) {
+        subEls.labels[causeId].style.display = "none";
+        subEls.labels[causeId].remove();
+        delete subEls.labels[causeId];
+      }
+      subEls.lines = subEls.lines.filter(l => {
+        if (l.fromId === causeId || l.toId === causeId || (l.from && l.from.id === causeId) || (l.to && l.to.id === causeId)) {
+          if (l.el) l.el.remove();
+          return false;
+        }
+        return true;
+      });
+    });
+    netPanel.classList.remove("open");
+    updateNetPositions();
   }
 
   const copyAllBtn = document.getElementById("copyAllCoordsBtn");
   if (copyAllBtn) {
     copyAllBtn.addEventListener("click", async () => {
-      let out = "";
-      VISIBLE_MACRO.forEach(m => {
-        out += `// === ${m.corto} ===\n`;
-        SUBNETS[m.id].nodes.forEach(n => {
-          out += `{ id: "${n.id}", t: "${n.t}", x: ${n.x.toFixed(1)}, y: ${n.y.toFixed(1)} }, // lat: ${localToLat(n.y).toFixed(6)}, lng: ${localToLng(n.x).toFixed(6)}\n`;
+      let activeCount = 0;
+      let out = `// === COORDENADAS DE SUB-PROBLEMAS REACOMODADOS (MÓDULO 12 AXO 3D) ===\nconst SUBNETS_ACOMODADAS = {\n`;
+      Object.keys(SUBNETS).forEach(mid => {
+        const m = macroById[mid];
+        out += `  // --- ${m.corto} ---\n`;
+        SUBNETS[mid].nodes.forEach(n => {
+          const isDeleted = deletedNodeIds.has(n.id);
+          if (!isDeleted) activeCount++;
+          const delLabel = isDeleted ? ` [ELIMINADO]` : ``;
+          out += `  { id: "${n.id}", t: "${n.t.replace(/"/g, '\\"')}", x: ${n.x.toFixed(1)}, y: ${n.y.toFixed(1)}${isDeleted ? `, deleted: true` : ``} }, //${delLabel} lat: ${localToLat(n.y).toFixed(6)}, lng: ${localToLng(n.x).toFixed(6)}\n`;
         });
       });
+      out += `};\n`;
+      if (deletedNodeIds.size > 0) {
+        out += `\n// LISTA DE ID ELIMINADOS POR EL USUARIO (${deletedNodeIds.size}):\n`;
+        out += `const DELETED_IDS = [${Array.from(deletedNodeIds).map(id => `"${id}"`).join(", ")}];\n`;
+      }
       out = out.trim();
       const box = document.getElementById("allCoordsOutput");
       if (box) {
@@ -1261,8 +1326,8 @@
         box.select();
       }
       try { await navigator.clipboard.writeText(out); } catch (err) {}
-      copyAllBtn.innerHTML = `<i class="fa-solid fa-check"></i> ¡Copiado!`;
-      setTimeout(() => { copyAllBtn.innerHTML = `<i class="fa-regular fa-copy"></i> Copiar Coordenadas`; }, 2000);
+      copyAllBtn.innerHTML = `<i class="fa-solid fa-check"></i> ¡Copiado (${activeCount} activas${deletedNodeIds.size > 0 ? `, ${deletedNodeIds.size} elim.` : ''})!`;
+      setTimeout(() => { copyAllBtn.innerHTML = `<i class="fa-regular fa-copy"></i> Copiar Coordenadas`; }, 2500);
     });
   }
 
@@ -1297,8 +1362,6 @@
   const macroEls = {}; // id -> {blob, num, label}
   const allSubEls = {}; // id -> {blobs:{}, lines:[], labels:{}} - TODAS las subredes, siempre visibles
 
-  // Flecha para las lineas causa->causa (direccion del diagrama causal) -
-  // se define ANTES de crear las lineas que la usan.
   const arrowDefs = svgEl("defs", {});
   netSvg.appendChild(arrowDefs);
   const arrowMarker = svgEl("marker", { id: "netArrow", viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto-start-reverse" });
@@ -1309,8 +1372,6 @@
   const MACRO_D = 74;
   const SUB_D = 58;
 
-  // Renderizar ÚNICAMENTE los sub-problemas (causas reales con sus conexiones),
-  // eliminando los 7 nodos macro iniciales a petición del usuario.
   Object.keys(SUBNETS).forEach(mId => {
     const m = macroById[mId];
     const sub = SUBNETS[mId];
@@ -1354,6 +1415,7 @@
     `;
     netPanel.classList.add("open");
   }
+
   function openCausePanel(macroId, causeId) {
     const sub = SUBNETS[macroId];
     const byId = {}; sub.nodes.forEach(n => byId[n.id] = n);
@@ -1367,7 +1429,19 @@
       ${vieneDe.length ? `<div class="block"><b>Viene de</b>${vieneDe.map(x => `<div class="rel-chip">${x.t}</div>`).join("")}</div>` : ""}
       ${alimentaA.length ? `<div class="block"><b>Alimenta a</b>${alimentaA.map(x => `<div class="rel-chip">${x.t}</div>`).join("")}</div>` : ""}
       ${esLoop ? `<div class="block"><b>Bucle de retroalimentación</b><p style="font-size:12px;color:var(--ink);margin:0;font-style:italic;">${sub.loopNote}</p></div>` : ""}
+      <div class="block" style="margin-top:18px;">
+        <button type="button" id="deleteNodeBtn" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(226,99,90,.5); background:rgba(226,99,90,.15); color:#e2635a; font-size:12px; font-weight:700; cursor:pointer; transition:all .15s ease;">
+          <i class="fa-solid fa-trash"></i> Eliminar esta bola
+        </button>
+      </div>
     `;
+    const delBtn = document.getElementById("deleteNodeBtn");
+    if (delBtn) {
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteNode(causeId);
+      });
+    }
     netPanel.classList.add("open");
   }
 
