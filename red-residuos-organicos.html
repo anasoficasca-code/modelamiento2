@@ -988,8 +988,7 @@
     if (moved >= 8 || isDragging) return;
     if (target === hitCenter) { showMacro(); return; }
     if (!nId) return;
-    if (level === "macro") showDetail(nId);
-    else openPanel(nId);
+    openPanel(nId);
   });
 
   if (document.readyState === "loading") {
