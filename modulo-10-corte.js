@@ -23,8 +23,8 @@
   const canvas = document.getElementById("sceneCanvas");
   const wrap = document.getElementById("sceneWrap");
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xf3f4f5);
-  scene.fog = new THREE.Fog(0xf3f4f5, 900, 3200);
+  scene.background = new THREE.Color(0xffffff);
+  scene.fog = new THREE.Fog(0xffffff, 900, 3200);
   // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
   // se agrega a este grupo, no directamente a la escena, para poder
   // rotarlo entero en X/Y/Z con los controles manuales de orientacion.
@@ -1767,8 +1767,8 @@
     const origVehVis = vehInstanced ? vehInstanced.visible : false;
     const origBg = scene.background;
 
-    // Usar fondo transparente para que NO se genere un recuadro blanco alrededor del corte 3D
-    scene.background = null;
+    // Usar fondo blanco sólido para que NO aparezcan zonas oscuras o negras
+    scene.background = new THREE.Color(0xffffff);
 
     // 1. Escala Natural: base arquitectónica 100% limpia, CERO carros, CERO ruido, CERO mirlas
     if (noiseMesh) noiseMesh.visible = false;
@@ -2139,8 +2139,8 @@
     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
 
-    // Renderizar con fondo transparente para eliminar cualquier recuadro blanco
-    scene.background = null;
+    // Renderizar con fondo blanco puro
+    scene.background = new THREE.Color(0xffffff);
     renderer.render(scene, camera);
     const fotoBase = renderer.domElement.toDataURL("image/png");
     scene.background = origBg;
@@ -2401,7 +2401,7 @@
     const origVehCount = vehInstanced ? vehInstanced.count : 0;
 
     const origBg = scene.background;
-    scene.background = null;
+    scene.background = new THREE.Color(0xffffff);
 
     // 1. CAPA BASE (Sin ruido, sin carros)
     if (noiseMesh) noiseMesh.visible = false;
