@@ -1648,28 +1648,31 @@
   // ---- Dibuja el mismo polígono de la axo principal proyectado sobre las 3 capas explotadas y ajusta el recorte ----
   function updateExplodePolygons() {
     const polySvgs = document.querySelectorAll(".explode-poly-svg");
-    const clipDivs = document.querySelectorAll(".explode-clip");
+    const origW = wrap.clientWidth;
+    const origH = wrap.clientHeight;
     const pts = FIXED_POLYGON.map(p => {
       const s = toScene(p.x, p.y);
       fixedProjVec.set(s.x, 0, s.z);
       fixedProjVec.project(camera);
       return {
-        x: (fixedProjVec.x * 0.5 + 0.5) * 100,
-        y: (-fixedProjVec.y * 0.5 + 0.5) * 100
+        x: (fixedProjVec.x * 0.5 + 0.5) * origW,
+        y: (-fixedProjVec.y * 0.5 + 0.5) * origH
       };
     });
 
-    const ptsAttr = pts.map(pt => `${(pt.x * 10).toFixed(2)},${(pt.y * 5.625).toFixed(2)}`).join(" ");
+    const ptsAttr = pts.map(pt => `${pt.x.toFixed(2)},${pt.y.toFixed(2)}`).join(" ");
 
     polySvgs.forEach(svg => {
-      svg.setAttribute("viewBox", "0 0 1000 562.5");
-      svg.setAttribute("preserveAspectRatio", "none");
+      // Usar exactamente la resolución capturada para que coincida con object-fit
+      svg.setAttribute("viewBox", `0 0 ${origW} ${origH}`);
+      // Y preserveAspectRatio debe ser xMidYMid meet (igual que object-fit: contain)
+      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
       svg.innerHTML = "";
       const poly = document.createElementNS(SVGNS, "polygon");
       poly.setAttribute("points", ptsAttr);
       poly.setAttribute("fill", "none");
       poly.setAttribute("stroke", "#0a0a0a");
-      poly.setAttribute("stroke-width", "5");
+      poly.setAttribute("stroke-width", "3");
       svg.appendChild(poly);
     });
   }
@@ -1757,23 +1760,15 @@
   canvas.addEventListener("click", (e) => {
     if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
 
-    // --- CAPTURA INDEPENDIENTE PARA LAS 3 ESCALAS ---
-    // Guardamos el estado actual del viewport y elementos vivos
+    // Guardar estado y fondo original
     const origRoadColor = roadMat ? roadMat.color.getHex() : null;
     const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
     const origBirdsVis = birdsGroup ? birdsGroup.visible : false;
     const origVehVis = vehInstanced ? vehInstanced.visible : false;
+    const origBg = scene.background;
 
-    // Forzar render a 16:9 temporalmente para alinear con exactitud el clip-path
-    const origW = wrap.clientWidth;
-    const origH = wrap.clientHeight;
-    const targetW = 1920;
-    const targetH = 1080;
-    renderer.setSize(targetW, targetH, false);
-    const aspect = targetW / targetH;
-    camera.left = -viewSize * aspect;
-    camera.right = viewSize * aspect;
-    camera.updateProjectionMatrix();
+    // Usar fondo transparente para que NO se genere un recuadro blanco alrededor del corte 3D
+    scene.background = null;
 
     // 1. Escala Natural: base arquitectónica 100% limpia, CERO carros, CERO ruido, CERO mirlas
     if (noiseMesh) noiseMesh.visible = false;
@@ -1799,14 +1794,8 @@
     renderer.render(scene, camera);
     const fotoTecno = renderer.domElement.toDataURL("image/png");
 
-    // Restaurar el tamaño original
-    renderer.setSize(origW, origH, false);
-    const origAspect = origW / origH;
-    camera.left = -viewSize * origAspect;
-    camera.right = viewSize * origAspect;
-    camera.updateProjectionMatrix();
-
-    // Restaurar estado de la escena base
+    // Restaurar fondo original y estado de la escena base
+    scene.background = origBg;
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
     if (noiseMesh) noiseMesh.visible = origNoiseVis;
     if (birdsGroup) birdsGroup.visible = origBirdsVis;
@@ -1887,10 +1876,10 @@
     const h = textEl.offsetHeight || 20;
     const originLeft = textEl.offsetLeft;
     const originTop = textEl.offsetTop;
-    // Coordenadas para el lado DERECHO (alineado con borde inferior derecho)
+    // Coordenadas exactas entregadas por la usuaria
     textStates[layerNum] = {
       w, h, originLeft, originTop,
-      corners: [{ x: 192, y: 5 }, { x: 356, y: 94 }, { x: 356, y: 117 }, { x: 190, y: 29 }]
+      corners: [{ x: 28, y: 94 }, { x: 192, y: 5 }, { x: 190, y: 29 }, { x: 28, y: 117 }]
     };
     buildHandles(textEl, layerNum);
     applyDistort(textEl, layerNum);
@@ -2137,20 +2126,24 @@
     camera.updateProjectionMatrix();
     renderer.setSize(targetW, targetH, false);
 
-    // Captura fotográfica de la base limpia (cero carros, cero ruido, cero mirlas)
+    // Captura fotográfica de la base limpia con fondo transparente (cero carros, cero ruido, cero mirlas)
     const origRoadColor = roadMat ? roadMat.color.getHex() : null;
     const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
     const origBirdsVis = birdsGroup ? birdsGroup.visible : false;
     const origVehVis = vehInstanced ? vehInstanced.visible : false;
     const origVehCount = vehInstanced ? vehInstanced.count : 0;
+    const origBg = scene.background;
 
     if (noiseMesh) noiseMesh.visible = false;
     if (birdsGroup) birdsGroup.visible = false;
     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
 
+    // Renderizar con fondo transparente para eliminar cualquier recuadro blanco
+    scene.background = null;
     renderer.render(scene, camera);
     const fotoBase = renderer.domElement.toDataURL("image/png");
+    scene.background = origBg;
 
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
     if (noiseMesh) noiseMesh.visible = origNoiseVis;
@@ -2162,17 +2155,18 @@
 
     if (natBaseImg) {
       natBaseImg.src = fotoBase;
-      natBaseImg.style.objectFit = "fill"; // Para que calce de esquina a esquina exactamente igual al canvas
+      natBaseImg.style.objectFit = "fill";
     }
-    const l1 = document.getElementById("natWaterImg"); if (l1) l1.src = fotoBase;
-    const l2 = document.getElementById("natVegImg"); if (l2) l2.src = fotoBase;
-    const l3 = document.getElementById("natBirdImg"); if (l3) l3.src = fotoBase;
-    const l4 = document.getElementById("natMacroImg"); if (l4) l4.src = fotoBase;
+    // ÚNICAMENTE natBaseImg tiene la foto de la base; las demás subcapas son sólo lienzos vectoriales transparentes
+    const l1 = document.getElementById("natWaterImg"); if (l1) l1.removeAttribute("src");
+    const l2 = document.getElementById("natVegImg"); if (l2) l2.removeAttribute("src");
+    const l3 = document.getElementById("natBirdImg"); if (l3) l3.removeAttribute("src");
+    const l4 = document.getElementById("natMacroImg"); if (l4) l4.removeAttribute("src");
 
     natOverlay.style.display = "flex";
     void natOverlay.offsetWidth;
 
-    // Iniciar con las capas en la base axo (Paso 0)
+    // Iniciar con solo la base axonométrica limpia (Paso 0)
     natExplodeStep = 0;
     updateNaturalLayersStep(false);
     renderAllNaturalSublayers();
@@ -2190,110 +2184,117 @@
     drawNaturalGuideLines();
   }
 
-  let natExplodeStep = 0; // 0: all assembled, 1: layer 1 exploded, ..., 4: all exploded
+  let natExplodeStep = 0; // 0: Only Base, 1: Layer 1 extracted, 2: Layer 2 extracted, 3: Layer 3 extracted, 4: Layer 4 extracted, 5: All 4 exploded
 
-  // Animación para bajar las capas y ponerlas exactamente en la base axo
-  function setNaturalLayersAssembled() {
-    natExplodeStep = 0;
-    if (natAssembleBtnText) natAssembleBtnText.textContent = "Explotar capa 1";
-    if (natAssembleBtn) {
-      natAssembleBtn.style.background = "#0284c7";
-      natAssembleBtn.style.borderColor = "rgba(2,132,199,.3)";
-    }
-
-    // Ocultar suavemente líneas guía punteadas y etiquetas laterales
-    if (natGuideSvg) natGuideSvg.style.opacity = "0";
-    const tags = natOverlay.querySelectorAll(".nat-layer-tag");
-    tags.forEach(t => { t.style.opacity = "0"; });
-
-    const baseTop = "71%";
-    const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
-    sublayers.forEach((l) => {
-      l.style.top = baseTop;
-      if (l.id !== "natLayerBase") l.style.opacity = "1";
-      l.style.transform = "translate(-50%, 0)";
-      const diamond = l.querySelector(".sublayer-diamond");
-      if (diamond) {
-        diamond.style.background = "transparent";
-        diamond.style.borderColor = "transparent";
-        diamond.style.boxShadow = "none";
-      }
-    });
-  }
-
-  // Animación para mover una o más capas a su estado explotado según natExplodeStep
+  // Animación paso a paso de extracción e integración de capas sobre la base axonométrica
   function updateNaturalLayersStep(animated = true) {
-    if (natExplodeStep === 0) {
-      setNaturalLayersAssembled();
-      return;
-    }
-    
-    if (natAssembleBtnText) natAssembleBtnText.textContent = natExplodeStep < 4 ? `Explotar capa ${natExplodeStep + 1}` : "Ensamblar en base";
-    if (natAssembleBtn) {
-      natAssembleBtn.style.background = "#2a856a";
-      natAssembleBtn.style.borderColor = "rgba(42,133,106,.3)";
-    }
-
     const sublayers = [
       document.getElementById("natLayerWater"),
       document.getElementById("natLayer2"),
       document.getElementById("natLayer3"),
       document.getElementById("natLayer4")
     ];
+    const baseEl = document.getElementById("natLayerBase");
 
-    sublayers.forEach((l, index) => {
-      if (!l) return;
-      if (index < natExplodeStep) {
-        // Explotada
+    // Asegurar que todos los rombos de subcapa tengan fondo 100% transparente (CERO recuadro blanco)
+    const allDiamonds = natOverlay.querySelectorAll(".sublayer-diamond");
+    allDiamonds.forEach(d => {
+      d.style.background = "transparent";
+      d.style.boxShadow = "none";
+      d.style.borderColor = "transparent";
+    });
+
+    const tags = natOverlay.querySelectorAll(".nat-layer-tag");
+
+    if (natExplodeStep === 0) {
+      // Paso 0: ÚNICAMENTE LA BASE AXONOMÉTRICA ES VISIBLE
+      if (baseEl) {
+        baseEl.style.top = "71%";
+        baseEl.style.opacity = "1";
+        baseEl.style.transform = "translate(-50%, 0)";
+      }
+      sublayers.forEach(l => {
+        if (l) {
+          l.style.opacity = "0";
+          l.style.top = "71%";
+          l.style.transform = "translate(-50%, 0)";
+        }
+      });
+      tags.forEach(t => { t.style.opacity = "0"; });
+      if (natGuideSvg) natGuideSvg.style.opacity = "0";
+      if (natAssembleBtnText) natAssembleBtnText.textContent = "Extraer Capa 1: Sistema Hídrico";
+      return;
+    }
+
+    if (natExplodeStep >= 1 && natExplodeStep <= 4) {
+      const activeIdx = natExplodeStep - 1;
+
+      sublayers.forEach((l, index) => {
+        if (!l) return;
+        if (index < activeIdx) {
+          // Capa anterior asentada sobre la base
+          l.style.top = "71%";
+          l.style.opacity = "1";
+          l.style.transform = "translate(-50%, 0)";
+          const tag = l.querySelector(".nat-layer-tag");
+          if (tag) tag.style.opacity = "0";
+        } else if (index === activeIdx) {
+          // Capa activa extraída hacia arriba
+          const expTop = l.dataset.explodedTop || "20%";
+          l.style.top = expTop;
+          l.style.opacity = "1";
+          l.style.transform = "translate(-50%, 0)";
+          const tag = l.querySelector(".nat-layer-tag");
+          if (tag) tag.style.opacity = "1";
+        } else {
+          // Aún no extraída
+          l.style.top = "71%";
+          l.style.opacity = "0";
+          l.style.transform = "translate(-50%, 0)";
+          const tag = l.querySelector(".nat-layer-tag");
+          if (tag) tag.style.opacity = "0";
+        }
+      });
+
+      if (natAssembleBtnText) {
+        const stepNames = ["Capa 2: Vegetación", "Capa 3: Aves/Fauna", "Capa 4: Conectividad", "Ver Explosión Completa"];
+        natAssembleBtnText.textContent = `Extraer ${stepNames[activeIdx]}`;
+      }
+      if (natGuideSvg) natGuideSvg.style.opacity = "1";
+      drawNaturalGuideLines();
+      return;
+    }
+
+    if (natExplodeStep === 5) {
+      // Paso 5: Las 4 capas explotadas simultáneamente
+      sublayers.forEach((l) => {
+        if (!l) return;
         const expTop = l.dataset.explodedTop || "71%";
         l.style.top = expTop;
         l.style.opacity = "1";
         l.style.transform = "translate(-50%, 0)";
-        
-        // Restaurar fondos arquitectónicos semitransparentes
-        const diamond = l.querySelector(".sublayer-diamond");
-        if (diamond) {
-          if (l.id === "natLayerWater") diamond.style.background = "rgba(241, 245, 249, 0.45)";
-          else if (l.id === "natLayer2") diamond.style.background = "rgba(244, 246, 243, 0.45)";
-          else if (l.id === "natLayer3") diamond.style.background = "rgba(247, 246, 243, 0.45)";
-          else if (l.id === "natLayer4") diamond.style.background = "rgba(243, 244, 248, 0.45)";
-        }
-      } else {
-        // Abajo (Ensamblada)
-        l.style.top = "71%";
-        l.style.opacity = "1";
-        l.style.transform = "translate(-50%, 0)";
-        const diamond = l.querySelector(".sublayer-diamond");
-        if (diamond) diamond.style.background = "transparent";
-      }
-    });
-
-    if (animated) {
-      setTimeout(() => {
-        if (natGuideSvg) natGuideSvg.style.opacity = "1";
-        const tags = natOverlay.querySelectorAll(".nat-layer-tag");
-        tags.forEach(t => { t.style.opacity = "1"; });
-        drawNaturalGuideLines();
-      }, 900);
-    } else {
-      if (natGuideSvg) natGuideSvg.style.opacity = "1";
-      const tags = natOverlay.querySelectorAll(".nat-layer-tag");
+        const tag = l.querySelector(".nat-layer-tag");
+        if (tag) tag.style.opacity = "1";
+      });
       tags.forEach(t => { t.style.opacity = "1"; });
+      if (natGuideSvg) natGuideSvg.style.opacity = "1";
+      drawNaturalGuideLines();
+      if (natAssembleBtnText) natAssembleBtnText.textContent = "Reiniciar en Base";
     }
   }
 
   function advanceNaturalAssemble() {
     natExplodeStep++;
-    if (natExplodeStep > 4) natExplodeStep = 0;
+    if (natExplodeStep > 5) natExplodeStep = 0;
     updateNaturalLayersStep(true);
   }
 
   if (natAssembleBtn) natAssembleBtn.addEventListener("click", advanceNaturalAssemble);
 
-  // Al hacer clic en la propia base axo, alterna entre bajar las capas o explotarlas
-  const natBaseLayerEl = document.getElementById("natLayerBase");
-  if (natBaseLayerEl) {
-    natBaseLayerEl.addEventListener("click", () => {
+  // Al hacer clic en el contenedor de las subcapas, avanza al siguiente paso de extracción
+  const natStageEl = document.getElementById("natExplodeStage");
+  if (natStageEl) {
+    natStageEl.addEventListener("click", (e) => {
       advanceNaturalAssemble();
     });
   }
@@ -2370,6 +2371,9 @@
     const origVehVis = vehInstanced ? vehInstanced.visible : false;
     const origVehCount = vehInstanced ? vehInstanced.count : 0;
 
+    const origBg = scene.background;
+    scene.background = null;
+
     // 1. CAPA BASE (Sin ruido, sin carros)
     if (noiseMesh) noiseMesh.visible = false;
     if (birdsGroup) birdsGroup.visible = false;
@@ -2394,6 +2398,7 @@
     const fotoRuido = renderer.domElement.toDataURL("image/png");
 
     // Restaurar estado
+    scene.background = origBg;
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
     if (noiseMesh) noiseMesh.visible = origNoiseVis;
     if (birdsGroup) birdsGroup.visible = origBirdsVis;
