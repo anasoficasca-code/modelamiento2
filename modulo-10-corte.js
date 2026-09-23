@@ -1660,11 +1660,6 @@
     });
 
     const ptsAttr = pts.map(pt => `${(pt.x * 10).toFixed(2)},${(pt.y * 5.625).toFixed(2)}`).join(" ");
-    const clipPolyCSS = `polygon(${pts.map(pt => `${pt.x.toFixed(2)}% ${pt.y.toFixed(2)}%`).join(", ")})`;
-
-    clipDivs.forEach(cd => {
-      cd.style.clipPath = clipPolyCSS;
-    });
 
     polySvgs.forEach(svg => {
       svg.setAttribute("viewBox", "0 0 1000 562.5");
@@ -1892,10 +1887,10 @@
     const h = textEl.offsetHeight || 20;
     const originLeft = textEl.offsetLeft;
     const originTop = textEl.offsetTop;
-    // Coordenadas de distorsión ajustadas en escala compacta para caber limpiamente dentro del polígono
+    // Coordenadas para el lado DERECHO (alineado con borde inferior derecho)
     textStates[layerNum] = {
       w, h, originLeft, originTop,
-      corners: [{ x: 28, y: 94 }, { x: 192, y: 5 }, { x: 190, y: 29 }, { x: 28, y: 117 }]
+      corners: [{ x: 192, y: 5 }, { x: 356, y: 94 }, { x: 356, y: 117 }, { x: 190, y: 29 }]
     };
     buildHandles(textEl, layerNum);
     applyDistort(textEl, layerNum);
