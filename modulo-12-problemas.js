@@ -773,11 +773,19 @@
 
   function finishLoadingTimesteps() {
     const totalTime = timesteps.length ? timesteps[timesteps.length - 1].time : 0;
-    slider.max = String(Math.round(totalTime));
-    slider.disabled = false;
-    playBtn.disabled = false;
+    if (slider) {
+      slider.max = String(Math.round(totalTime));
+      slider.disabled = false;
+    }
+    if (playBtn) {
+      playBtn.disabled = false;
+      playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+    }
     setStatus("", false);
-    timeLabel.textContent = `00:00 / ${fmtTime(totalTime)}`;
+    if (timeLabel) timeLabel.textContent = `00:00 / ${fmtTime(totalTime)}`;
+    playing = true;
+    lastFrameAt = null;
+    currentTime = 0;
     renderVehiclesAt(0);
   }
 
@@ -938,10 +946,12 @@
       const dt = (now - lastFrameAt) / 1000;
       lastFrameAt = now;
       currentTime += dt * speed;
-      const maxT = parseFloat(slider.max) || 0;
-      if (currentTime > maxT) currentTime = 0;
-      slider.value = String(Math.round(currentTime));
-      timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(maxT)}`;
+      const maxT = parseFloat(slider ? slider.max : 0) || (timesteps.length ? timesteps[timesteps.length - 1].time : 0);
+      if (maxT > 0 && currentTime >= maxT) {
+        currentTime = currentTime % maxT;
+      }
+      if (slider) slider.value = String(Math.round(currentTime));
+      if (timeLabel) timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(maxT)}`;
       renderVehiclesAt(currentTime);
     }
     // Lineas de borde de edificios: opacidad FIJA y baja, no cambia con
