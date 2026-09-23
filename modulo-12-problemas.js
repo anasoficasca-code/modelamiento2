@@ -2006,5 +2006,257 @@
   if (potModalClose && potModal) {
     potModalClose.addEventListener("click", () => { potModal.style.display = "none"; });
   }
+
+  // === RED DE MACROMODELOS CIUDAD PROPIA ===
+  const MACRO_CATS = {
+    sintaxis: { label: "Sintaxis Espacial & Movilidad", color: "#38bdf8" },
+    intermodalidad: { label: "Intermodalidad & Flujos", color: "#60a5fa" },
+    metabolismo: { label: "Metabolismo Urbano", color: "#34d399" },
+    cronosistemas: { label: "Cronosistemas & Tiempo", color: "#fbbf24" },
+    sets: { label: "SETS & Socioecología", color: "#a78bfa" },
+    coevolucion: { label: "Co-Evolución Territorio", color: "#f472b6" },
+    adaptabilidad: { label: "Reconfiguración de Redes", color: "#818cf8" },
+    simbiosis: { label: "Simbiosis Ecoindustrial", color: "#10b981" },
+    prospectiva: { label: "Modelación & Gemelo Digital", color: "#22d3ee" },
+    resiliencia: { label: "Resiliencia & Contingencia", color: "#f87171" }
+  };
+
+  const MACRO_NODES = [
+    { id: "m1", t: "Macromodelo de Sintaxis Espacial y Economía de Movimiento", cat: "sintaxis", desc: "Examinar cómo la configuración geométrica, la profundidad topológica y la elección de rutas condicionan el movimiento y la autoorganización morfológica de la ciudad.", x: 200, y: 150 },
+    { id: "m2", t: "Macromodelo de Intermodalidad y Metabolismo de Movilidad", cat: "intermodalidad", desc: "Estudiar la articulación eficiente de los flujos viales, el transporte masivo y la conectividad entre los distintos modos de desplazamiento en el territorio.", x: 450, y: 120 },
+    { id: "m3", t: "Macromodelo de Metabolismo Urbano", cat: "metabolismo", desc: "Analizar y cuantificar las entradas, salidas, la acumulación de recursos, la gestión de residuos y las emisiones del sistema urbano.", x: 700, y: 160 },
+    { id: "m4", t: "Macromodelo de Cronosistemas y Temporalidad Social", cat: "cronosistemas", desc: "Comprender cómo varían los ciclos de actividad, la ocupación temporal del espacio y los pulsos de demanda u horas pico de los habitantes.", x: 180, y: 310 },
+    { id: "m5", t: "Macromodelo de Sistemas Socioecológicos y Tecnológicos (SETS)", cat: "sets", desc: "Evaluar la interacción profunda entre la infraestructura construida, la sociedad y el entorno natural, incluyendo las respuestas microclimáticas y ecológicas.", x: 450, y: 280 },
+    { id: "m6", t: "Macromodelo de Co-Evolución Adaptativa Territorio-Sociedad", cat: "coevolucion", desc: "Investigar los procesos de transformación conjunta y adaptación mutua a largo plazo entre los asentamientos humanos y la estructura territorial.", x: 720, y: 300 },
+    { id: "m7", t: "Macromodelo de Adaptabilidad y Reconfiguración de Redes", cat: "adaptabilidad", desc: "Modelar los cambios estructurales en las redes físicas y funcionales de la ciudad frente a transformaciones o nuevas demandas sistémicas.", x: 260, y: 460 },
+    { id: "m8", t: "Macromodelo de Simbiosis Urbana y Ecoindustrial", cat: "simbiosis", desc: "Identificar oportunidades de aprovechamiento cruzado de subproductos, energía y recursos entre los diferentes sectores e industrias de la ciudad.", x: 640, y: 460 },
+    { id: "m9", t: "Macromodelo de Modelación Computacional y Prospectiva Urbana", cat: "prospectiva", desc: "Utilizar herramientas tecnológicas como gemelos digitales, escenarios hipotéticos y simulación basada en agentes para probar, anticipar y experimentar con el comportamiento futuro de la ciudad.", x: 450, y: 420 },
+    { id: "m10", t: "Macromodelo de Resiliencia Operativa y Contingencia", cat: "resiliencia", desc: "Analizar la vulnerabilidad sistémica de la ciudad y simular rutas de contingencia y respuesta frente a eventos de perturbación crítica.", x: 450, y: 530 }
+  ];
+
+  const MACRO_EDGES = [
+    ["m1", "m2"], ["m2", "m3"], ["m1", "m4"], ["m4", "m5"], ["m5", "m6"],
+    ["m3", "m8"], ["m2", "m7"], ["m5", "m9"], ["m7", "m9"], ["m8", "m9"],
+    ["m9", "m10"], ["m7", "m10"], ["m6", "m8"], ["m4", "m6"]
+  ];
+
+  const macroById = {}; MACRO_NODES.forEach(n => macroById[n.id] = n);
+  const macroDegree = {}; MACRO_NODES.forEach(n => macroDegree[n.id] = 0);
+  MACRO_EDGES.forEach(([a, b]) => { macroDegree[a] = (macroDegree[a] || 0) + 1; macroDegree[b] = (macroDegree[b] || 0) + 1; });
+
+  let macroBuilt = false;
+  const macroPosPx = {};
+  const macroRadiusPx = {};
+  const macroEdgeLineEls = [];
+
+  function updateMacroEdgeLines() {
+    macroEdgeLineEls.forEach(({ line, a, b }) => {
+      const pa = macroPosPx[a], pb = macroPosPx[b];
+      const ra = macroRadiusPx[a], rb = macroRadiusPx[b];
+      if (!pa || !pb) return;
+      const dx = pb.x - pa.x, dy = pb.y - pa.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const ux = dx / dist, uy = dy / dist;
+      line.setAttribute("x1", pa.x + ux * (ra + 2));
+      line.setAttribute("y1", pa.y + uy * (ra + 2));
+      line.setAttribute("x2", pb.x - ux * (rb + 2));
+      line.setAttribute("y2", pb.y - uy * (rb + 2));
+    });
+  }
+
+  function buildMacroNetwork() {
+    if (macroBuilt) return;
+    macroBuilt = true;
+    const stage = document.getElementById("macroStage");
+    const gooLayer = document.getElementById("macroGooLayer");
+    const svg = document.getElementById("macroSvg");
+    const labelLayer = document.getElementById("macroLabelLayer");
+    if (!stage || !gooLayer || !svg || !labelLayer) return;
+    const rect = stage.getBoundingClientRect();
+    const SVGNS = "http://www.w3.org/2000/svg";
+    function sc(v, total, size) { return (v / total) * size; }
+    const W = 900, H = 590;
+
+    MACRO_NODES.forEach(n => {
+      const p = { x: sc(n.x, W, rect.width), y: sc(n.y, H, rect.height) };
+      macroPosPx[n.id] = p;
+      macroRadiusPx[n.id] = 42 + (macroDegree[n.id] || 0) * 4;
+    });
+
+    const ids = MACRO_NODES.map(n => n.id);
+    for (let pass = 0; pass < 350; pass++) {
+      for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+        const a = macroPosPx[ids[i]], b = macroPosPx[ids[j]];
+        const minDist = (macroRadiusPx[ids[i]] + macroRadiusPx[ids[j]]) * 1.45;
+        let dx = a.x - b.x, dy = a.y - b.y;
+        let dist = Math.hypot(dx, dy) || 0.001;
+        if (dist < minDist) {
+          if (dist < 0.01) { dx = (Math.random() - 0.5) * 2; dy = (Math.random() - 0.5) * 2; dist = Math.hypot(dx, dy); }
+          const overlap = (minDist - dist) / 2, ux = dx / dist, uy = dy / dist;
+          a.x += ux * overlap; a.y += uy * overlap; b.x -= ux * overlap; b.y -= uy * overlap;
+        }
+      }
+    }
+    ids.forEach(id => {
+      const r = macroRadiusPx[id];
+      macroPosPx[id].x = Math.max(r + 4, Math.min(rect.width - r - 4, macroPosPx[id].x));
+      macroPosPx[id].y = Math.max(r + 4, Math.min(rect.height - r - 4, macroPosPx[id].y));
+    });
+
+    MACRO_EDGES.forEach(([a, b]) => {
+      const line = document.createElementNS(SVGNS, "line");
+      line.setAttribute("stroke", "#ffffff");
+      line.setAttribute("stroke-width", "1.5");
+      line.setAttribute("stroke-opacity", "0.65");
+      svg.appendChild(line);
+      macroEdgeLineEls.push({ line, a, b });
+    });
+    updateMacroEdgeLines();
+
+    MACRO_NODES.forEach(n => {
+      const p = macroPosPx[n.id];
+      const r = macroRadiusPx[n.id];
+      const catObj = MACRO_CATS[n.cat] || { color: "#777" };
+      const blob = document.createElement("div");
+      blob.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; width:${r * 2}px; height:${r * 2}px; margin:-${r}px 0 0 -${r}px; border-radius:50%; background:${catObj.color}; box-shadow:0 0 16px ${catObj.color}66; cursor:grab; pointer-events:auto; transition:transform .15s ease; user-select:none;`;
+      gooLayer.appendChild(blob);
+
+      const label = document.createElement("div");
+      const fontPx = 10, lineH = fontPx * 1.2;
+      let maxLines = Math.max(2, Math.floor((r * 2 * 0.85) / lineH));
+      let halfH = (maxLines * lineH) / 2;
+      while (halfH >= r * 0.86 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
+      const safeWidth = 2 * Math.sqrt(Math.max(0, r * r - halfH * halfH)) * 0.88;
+      const maxCharsPerLine = Math.max(6, Math.floor(safeWidth / (fontPx * 0.54)));
+      label.innerHTML = wrapToFit(n.t, maxCharsPerLine, maxLines);
+      label.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; transform:translate(-50%,-50%); width:${safeWidth}px; text-align:center; font-size:${fontPx}px; font-weight:700; color:#ffffff; text-shadow:0 1px 3px rgba(0,0,0,.7); line-height:${lineH}px; pointer-events:none; user-select:none;`;
+      labelLayer.appendChild(label);
+
+      // Soporte para arrastrar bola (Drag & Drop)
+      let isDragging = false;
+      let startMouseX = 0, startMouseY = 0;
+      let startPosX = 0, startPosY = 0;
+
+      const onPointerDown = (e) => {
+        isDragging = true;
+        blob.style.cursor = "grabbing";
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        startMouseX = clientX;
+        startMouseY = clientY;
+        startPosX = macroPosPx[n.id].x;
+        startPosY = macroPosPx[n.id].y;
+        e.stopPropagation();
+      };
+
+      const onPointerMove = (e) => {
+        if (!isDragging) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const dx = clientX - startMouseX;
+        const dy = clientY - startMouseY;
+        const newX = Math.max(r + 4, Math.min(rect.width - r - 4, startPosX + dx));
+        const newY = Math.max(r + 4, Math.min(rect.height - r - 4, startPosY + dy));
+        macroPosPx[n.id].x = newX;
+        macroPosPx[n.id].y = newY;
+        blob.style.left = `${newX}px`;
+        blob.style.top = `${newY}px`;
+        label.style.left = `${newX}px`;
+        label.style.top = `${newY}px`;
+        updateMacroEdgeLines();
+      };
+
+      const onPointerUp = () => {
+        if (isDragging) {
+          isDragging = false;
+          blob.style.cursor = "grab";
+        }
+      };
+
+      blob.addEventListener("mousedown", onPointerDown);
+      blob.addEventListener("touchstart", onPointerDown, { passive: true });
+      window.addEventListener("mousemove", onPointerMove);
+      window.addEventListener("touchmove", onPointerMove, { passive: true });
+      window.addEventListener("mouseup", onPointerUp);
+      window.addEventListener("touchend", onPointerUp);
+
+      blob.addEventListener("mouseenter", () => { if (!isDragging) blob.style.transform = "scale(1.1)"; });
+      blob.addEventListener("mouseleave", () => { if (!isDragging) blob.style.transform = "scale(1)"; });
+      blob.addEventListener("click", (e) => {
+        if (Math.hypot(macroPosPx[n.id].x - startPosX, macroPosPx[n.id].y - startPosY) < 4) {
+          openMacroInfo(n);
+        }
+      });
+    });
+
+    const legend = document.getElementById("macroLegend");
+    if (legend) {
+      legend.innerHTML = "";
+      Object.values(MACRO_CATS).forEach(c => {
+        const el = document.createElement("span");
+        el.style.cssText = "display:flex; align-items:center; gap:5px; font-size:10.5px; color:#c3cad2;";
+        el.innerHTML = `<i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c.color};box-shadow:0 0 6px ${c.color};"></i>${c.label}`;
+        legend.appendChild(el);
+      });
+    }
+
+    // Botón para copiar coordenadas Macromodelos
+    const copyBtn = document.getElementById("copyMacroCoordsBtn");
+    const outputTxt = document.getElementById("macroCoordsOutput");
+    if (copyBtn && outputTxt) {
+      copyBtn.addEventListener("click", () => {
+        const exported = MACRO_NODES.map(n => {
+          const p = macroPosPx[n.id] || { x: n.x, y: n.y };
+          const relX = Math.round((p.x / rect.width) * W * 10) / 10;
+          const relY = Math.round((p.y / rect.height) * H * 10) / 10;
+          return `  { id: "${n.id}", t: "${n.t}", cat: "${n.cat}", x: ${relX}, y: ${relY} },`;
+        });
+        const codeStr = `const MACRO_NODES = [\n${exported.join("\n")}\n];`;
+        outputTxt.value = codeStr;
+        outputTxt.style.display = "block";
+        navigator.clipboard.writeText(codeStr).then(() => {
+          const originalText = copyBtn.innerHTML;
+          copyBtn.innerHTML = `<i class="fa-solid fa-check"></i> ¡Copiado!`;
+          setTimeout(() => { copyBtn.innerHTML = originalText; }, 2000);
+        }).catch(() => {
+          outputTxt.select();
+        });
+      });
+    }
+  }
+
+  const macroInfoPanel = document.getElementById("macroInfoPanel");
+  const macroInfoBody = document.getElementById("macroInfoBody");
+  function openMacroInfo(n) {
+    const desde = MACRO_EDGES.filter(([a, b]) => b === n.id).map(([a]) => macroById[a]).filter(Boolean);
+    const hacia = MACRO_EDGES.filter(([a, b]) => a === n.id).map(([, b]) => macroById[b]).filter(Boolean);
+    const catObj = MACRO_CATS[n.cat] || { label: n.cat, color: "#777" };
+    macroInfoBody.innerHTML = `
+      <p style="font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:${catObj.color}; margin:0 0 4px; font-weight:700;">${catObj.label}</p>
+      <h2 style="font-size:16px; color:#fff; margin:0 0 10px; line-height:1.3;">${n.t}</h2>
+      <div style="background:rgba(36,200,189,.1); border:1px solid rgba(36,200,189,.25); border-radius:8px; padding:10px 12px; margin-bottom:14px;">
+        <p style="font-size:11px; font-weight:700; color:#24c8bd; margin:0 0 4px;">¿Qué busca este macromodelo?</p>
+        <p style="font-size:12px; color:#e8ecf1; margin:0; line-height:1.45;">${n.desc}</p>
+      </div>
+      ${desde.length ? `<div style="margin-bottom:12px;"><b style="font-size:11px; color:#9aa3ad;">Se relaciona desde</b>${desde.map(x => `<div style="font-size:11.5px; color:#e8ecf1; background:rgba(255,255,255,.06); border-radius:8px; padding:6px 9px; margin-top:5px;">${x.t}</div>`).join("")}</div>` : ""}
+      ${hacia.length ? `<div><b style="font-size:11px; color:#9aa3ad;">Se conecta hacia</b>${hacia.map(x => `<div style="font-size:11.5px; color:#e8ecf1; background:rgba(255,255,255,.06); border-radius:8px; padding:6px 9px; margin-top:5px;">${x.t}</div>`).join("")}</div>` : ""}
+    `;
+    macroInfoPanel.style.transform = "translateX(0)";
+  }
+
+  const macroInfoClose = document.getElementById("macroInfoClose");
+  if (macroInfoClose) macroInfoClose.addEventListener("click", () => { macroInfoPanel.style.transform = "translateX(100%)"; });
+  const macroModal = document.getElementById("macroModal");
+  const macroBtn = document.getElementById("macroBtn");
+  if (macroBtn && macroModal) {
+    macroBtn.addEventListener("click", () => {
+      macroModal.style.display = "flex";
+      buildMacroNetwork();
+    });
+  }
+  const macroModalClose = document.getElementById("macroModalClose");
+  if (macroModalClose && macroModal) {
+    macroModalClose.addEventListener("click", () => { macroModal.style.display = "none"; });
+  }
 })();
 
