@@ -839,17 +839,14 @@
   // ---- Vista axonometrica fija: 45 grados de elevacion (bloqueado en
   // los controles) y 45 grados de acimut, proyeccion en paralelo (sin
   // fuga de perspectiva). ----
-  function setAxonometricView(distance) {
-    // Vista recalculada para que TODAS las 40 bolitas reales (repartidas
-    // desde Corabastos hasta el Humedal El Techo) queden dentro del
-    // encuadre por defecto - antes la vista original solo cubria una
-    // zona chica y las bolitas quedaban invisibles fuera de camara.
-    // Mismo angulo/elevacion axonometrica que antes, solo recentrada y
-    // con mas zona visible.
-    camera.position.set(16.08, 700.96, 815.48);
-    controls.target.set(137.62, -54.42, 69.94);
-    camera.zoom = 1.0;
+  function setAxonometricView() {
+    camera.position.set(197.22, 780.06, 747.66);
+    controls.target.set(144.45, 24.68, -5.88);
+    camera.zoom = 1.23;
+    viewSize = 190.0;
+    resize();
     camera.updateProjectionMatrix();
+    controls.update();
   }
 
   // ---- Botones de vista ----
@@ -1177,11 +1174,12 @@
     netLabelLayer.appendChild(d);
     return d;
   }
-  function makeBlob(diameter, color) {
+  function makeBlob(diameter, colorHex) {
     const d = document.createElement("div");
     d.className = "net-blob";
     d.style.width = d.style.height = diameter + "px";
-    d.style.background = color; // color solido, a pedido del usuario (antes transparente)
+    d.style.background = hexToRgba(colorHex, 0.55);
+    d.style.border = `2px solid ${colorHex}`;
     netGooLayer.appendChild(d);
     return d;
   }
@@ -1226,29 +1224,53 @@
   function localToLng(x) { return (x - CAL_B) / CAL_A; }
   function localToLat(y) { return (y - CAL_D) / CAL_C; }
 
-  // Boton para copiar de UNA vez las coordenadas ACTUALES (ya movidas o
-  // no) de TODAS las bolitas de TODAS las problematicas visibles, para
-  // mandar un solo mensaje en vez de una bola a la vez.
-  document.getElementById("copyAllCoordsBtn").addEventListener("click", async () => {
-    let out = "";
-    VISIBLE_MACRO.forEach(m => {
-      out += `\n=== ${m.corto} ===\n`;
-      SUBNETS[m.id].nodes.forEach(n => {
-        out += `${n.t}\n  lat: ${localToLat(n.y).toFixed(6)}, lng: ${localToLng(n.x).toFixed(6)}  (local x:${n.x.toFixed(1)} y:${n.y.toFixed(1)})\n`;
-      });
+  // Calcular el grado (numero de conexiones) de cada causa para que las bolas mas conectadas sean mas grandes
+  const nodeDegrees = {};
+  Object.keys(SUBNETS).forEach(mid => {
+    const sub = SUBNETS[mid];
+    sub.nodes.forEach(n => nodeDegrees[n.id] = 0);
+    sub.rel.forEach(r => {
+      if (nodeDegrees[r.from] !== undefined) nodeDegrees[r.from]++;
+      if (nodeDegrees[r.to] !== undefined) nodeDegrees[r.to]++;
     });
-    out = out.trim();
-    const box = document.getElementById("allCoordsOutput");
-    box.value = out;
-    box.style.display = "block";
-    try { await navigator.clipboard.writeText(out); } catch (err) {}
-    box.select();
   });
+
+  function getSubNodeDiameter(nodeId) {
+    const deg = nodeDegrees[nodeId] || 0;
+    if (deg <= 1) return 46;
+    if (deg === 2) return 58;
+    if (deg === 3) return 68;
+    return 78; // Mas conectadas = bolas mas grandes
+  }
+
+  const copyAllBtn = document.getElementById("copyAllCoordsBtn");
+  if (copyAllBtn) {
+    copyAllBtn.addEventListener("click", async () => {
+      let out = "";
+      VISIBLE_MACRO.forEach(m => {
+        out += `// === ${m.corto} ===\n`;
+        SUBNETS[m.id].nodes.forEach(n => {
+          out += `{ id: "${n.id}", t: "${n.t}", x: ${n.x.toFixed(1)}, y: ${n.y.toFixed(1)} }, // lat: ${localToLat(n.y).toFixed(6)}, lng: ${localToLng(n.x).toFixed(6)}\n`;
+        });
+      });
+      out = out.trim();
+      const box = document.getElementById("allCoordsOutput");
+      if (box) {
+        box.value = out;
+        box.style.display = "block";
+        box.select();
+      }
+      try { await navigator.clipboard.writeText(out); } catch (err) {}
+      copyAllBtn.innerHTML = `<i class="fa-solid fa-check"></i> ¡Copiado!`;
+      setTimeout(() => { copyAllBtn.innerHTML = `<i class="fa-regular fa-copy"></i> Copiar Coordenadas`; }, 2000);
+    });
+  }
+
   let draggingNode = null; // { data, worldY }
   function startDrag(nodeData, worldY, e) {
     e.stopPropagation();
     draggingNode = { data: nodeData, worldY };
-    controls.enabled = false; // evita que la camara gire mientras se arrastra
+    controls.enabled = false;
   }
   window.addEventListener("pointermove", (e) => {
     if (!draggingNode) return;
@@ -1256,8 +1278,13 @@
     if (!real) return;
     draggingNode.data.x = real.x;
     draggingNode.data.y = real.y;
-    dragCoordBox.style.display = "block";
-    dragCoordBox.textContent = `local x:${real.x.toFixed(1)} y:${real.y.toFixed(1)} · lat:${localToLat(real.y).toFixed(6)}, lng:${localToLng(real.x).toFixed(6)}`;
+    if (dragCoordBox) {
+      dragCoordBox.innerHTML = `
+        <strong style="color:#fff;">${draggingNode.data.t || draggingNode.data.corto}</strong><br>
+        <span style="font-family:monospace; color:#24c8bd;">lat: ${localToLat(real.y).toFixed(6)}, lng: ${localToLng(real.x).toFixed(6)}</span><br>
+        <span style="font-family:monospace; color:#a0aec0;">(local x: ${real.x.toFixed(1)}, y: ${real.y.toFixed(1)})</span>
+      `;
+    }
     updateNetPositions();
   });
   window.addEventListener("pointerup", () => {
@@ -1317,11 +1344,12 @@
       }
     });
     sub.nodes.forEach(n => {
-      const blob = makeBlob(SUB_D, m.color);
+      const diameter = getSubNodeDiameter(n.id);
+      const blob = makeBlob(diameter, m.color);
       blob.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(m.id, n.id); });
       blob.addEventListener("pointerdown", (e) => startDrag(n, 0.25, e));
       subEls.blobs[n.id] = blob;
-      subEls.labels[n.id] = makeLabel(n.t, SUB_D);
+      subEls.labels[n.id] = makeLabel(n.t, diameter);
     });
     allSubEls[m.id] = subEls;
   });
@@ -1356,7 +1384,7 @@
 
   function placeBlob(blob, x, y, visible) {
     blob.style.left = x + "px"; blob.style.top = y + "px";
-    blob.style.opacity = visible ? "0.55" : "0"; // Opacidad al 55% a pedido de la usuaria
+    blob.style.display = visible ? "block" : "none";
   }
 
   // Actualización en vivo del cuadro HUD flotante de zoom y coordenadas
@@ -1407,11 +1435,8 @@
       const els = macroEls[m.id];
       placeBlob(els.blob, p.x, p.y, p.visible);
       els.label.style.left = p.x + "px"; els.label.style.top = p.y + "px";
-      const visible = p.visible ? "1" : "0";
-      els.label.style.opacity = visible;
+      els.label.style.display = p.visible ? "block" : "none";
     });
-    // Se actualizan TODAS las subredes (de todos los macro-nodos), no
-    // solo una "abierta" - ahora todo queda siempre visible sobre el mapa.
     Object.keys(allSubEls).forEach(mid => {
       const subEls = allSubEls[mid];
       const sub = SUBNETS[mid];
@@ -1419,7 +1444,7 @@
         const p = projectPoint(n.x, n.y, 0.25);
         placeBlob(subEls.blobs[n.id], p.x, p.y, p.visible);
         subEls.labels[n.id].style.left = p.x + "px"; subEls.labels[n.id].style.top = p.y + "px";
-        subEls.labels[n.id].style.opacity = p.visible ? "1" : "0";
+        subEls.labels[n.id].style.display = p.visible ? "block" : "none";
       });
       subEls.lines.forEach(l => {
         const pa = projectPoint(l.from.x, l.from.y, 0.25);
