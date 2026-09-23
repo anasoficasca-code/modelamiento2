@@ -1645,25 +1645,36 @@
   controls.addEventListener("change", updateFixedPolygon);
   window.addEventListener("resize", updateFixedPolygon);
 
-  // ---- Dibuja el mismo polígono de la axo principal proyectado sobre las 3 capas explotadas ----
+  // ---- Dibuja el mismo polígono de la axo principal proyectado sobre las 3 capas explotadas y ajusta el recorte ----
   function updateExplodePolygons() {
     const polySvgs = document.querySelectorAll(".explode-poly-svg");
+    const clipDivs = document.querySelectorAll(".explode-clip");
     const pts = FIXED_POLYGON.map(p => {
       const s = toScene(p.x, p.y);
       fixedProjVec.set(s.x, 0, s.z);
       fixedProjVec.project(camera);
-      return `${((fixedProjVec.x * 0.5 + 0.5) * 1000).toFixed(2)},${((-fixedProjVec.y * 0.5 + 0.5) * 562.5).toFixed(2)}`;
-    }).join(" ");
+      return {
+        x: (fixedProjVec.x * 0.5 + 0.5) * 100,
+        y: (-fixedProjVec.y * 0.5 + 0.5) * 100
+      };
+    });
+
+    const ptsAttr = pts.map(pt => `${(pt.x * 10).toFixed(2)},${(pt.y * 5.625).toFixed(2)}`).join(" ");
+    const clipPolyCSS = `polygon(${pts.map(pt => `${pt.x.toFixed(2)}% ${pt.y.toFixed(2)}%`).join(", ")})`;
+
+    clipDivs.forEach(cd => {
+      cd.style.clipPath = clipPolyCSS;
+    });
 
     polySvgs.forEach(svg => {
       svg.setAttribute("viewBox", "0 0 1000 562.5");
       svg.setAttribute("preserveAspectRatio", "none");
       svg.innerHTML = "";
       const poly = document.createElementNS(SVGNS, "polygon");
-      poly.setAttribute("points", pts);
-      poly.setAttribute("fill", "#0a0a0a");
+      poly.setAttribute("points", ptsAttr);
+      poly.setAttribute("fill", "none");
       poly.setAttribute("stroke", "#0a0a0a");
-      poly.setAttribute("stroke-width", "4");
+      poly.setAttribute("stroke-width", "5");
       svg.appendChild(poly);
     });
   }
@@ -1858,15 +1869,15 @@
     textEl.style.background = "transparent";
     textEl.style.border = "none";
     textEl.style.padding = "0";
-    textEl.style.fontSize = "13.5px";
-    const w = textEl.offsetWidth || 145;
-    const h = textEl.offsetHeight || 22;
+    textEl.style.fontSize = "12px";
+    const w = textEl.offsetWidth || 130;
+    const h = textEl.offsetHeight || 20;
     const originLeft = textEl.offsetLeft;
     const originTop = textEl.offsetTop;
     // Coordenadas de distorsión ajustadas en escala compacta para caber limpiamente dentro del polígono
     textStates[layerNum] = {
       w, h, originLeft, originTop,
-      corners: [{ x: 10, y: 38 }, { x: 130, y: 4 }, { x: 128, y: 22 }, { x: 10, y: 52 }]
+      corners: [{ x: 8, y: 32 }, { x: 118, y: 4 }, { x: 116, y: 20 }, { x: 8, y: 44 }]
     };
     buildHandles(textEl, layerNum);
     applyDistort(textEl, layerNum);
@@ -2144,19 +2155,13 @@
     natOverlay.style.display = "flex";
     void natOverlay.offsetWidth;
 
-    // Abrir siempre en modo explosionado inicial ordenado
-    setNaturalLayersExploded(false);
-
+    // Iniciar con las capas en la base axo y explosionar hacia arriba automáticamente con animación fluida
+    setNaturalLayersAssembled();
     renderAllNaturalSublayers();
 
-    requestAnimationFrame(() => {
-      renderAllNaturalSublayers();
-      drawNaturalGuideLines();
-    });
     setTimeout(() => {
-      renderAllNaturalSublayers();
-      drawNaturalGuideLines();
-    }, 150);
+      setNaturalLayersExploded(true);
+    }, 450);
 
     // Iniciar loop continuo de agua viva fluida y oleaje
     startNatWaterAnimation();
