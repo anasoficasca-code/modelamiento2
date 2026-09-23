@@ -1306,32 +1306,21 @@
   arrowMarker.appendChild(arrowPath);
   arrowDefs.appendChild(arrowMarker);
 
-  const MACRO_D = 74; // Agrandadas un poco a pedido del usuario (antes 60)
-  const SUB_D = 58;   // Agrandadas un poco a pedido del usuario (antes 48)
-  // Por ahora SOLO se muestra la problematica rosada (N2, contaminacion
-  // hidrica) - el usuario pidio explicitamente que no se muestren las
-  // otras 6 todavia (siguen sin coordenadas reales definidas).
-  const VISIBLE_MACRO_IDS = ["n1", "n2", "n3", "n4", "n5", "n6"];
-  const VISIBLE_MACRO = MACRO.filter(m => VISIBLE_MACRO_IDS.includes(m.id));
-  VISIBLE_MACRO.forEach((m, i) => {
-    const blob = makeBlob(MACRO_D, m.color);
-    blob.addEventListener("click", (e) => { e.stopPropagation(); openMacroPanel(m.id); });
-    blob.addEventListener("pointerdown", (e) => startDrag(m, 0.3, e));
-    const label = makeLabel(m.corto, MACRO_D);
-    macroEls[m.id] = { blob, label };
+  const MACRO_D = 74;
+  const SUB_D = 58;
 
-    // Se crean TODAS las burbujas de causas de una vez (no solo al hacer
-    // clic) - todos los nodos quedan siempre visibles sobre el mapa, sin
-    // necesidad de desplegar nada. Sin lineas del macro hacia cada causa
-    // (se veian como una "explosion" radiando desde el centro) - solo se
-    // dibujan las flechas causales reales entre las propias causas.
-    const sub = SUBNETS[m.id];
+  // Renderizar ÚNICAMENTE los sub-problemas (causas reales con sus conexiones),
+  // eliminando los 7 nodos macro iniciales a petición del usuario.
+  Object.keys(SUBNETS).forEach(mId => {
+    const m = macroById[mId];
+    const sub = SUBNETS[mId];
     const subEls = { blobs: {}, lines: [], labels: {} };
     sub.rel.forEach(r => {
       const a = sub.nodes.find(n => n.id === r.from), b = sub.nodes.find(n => n.id === r.to);
+      if (!a || !b) return;
       const line = svgEl("line", { class: "net-line", stroke: m.color, "stroke-width": 2.2, "stroke-opacity": 0.85, "marker-end": "url(#netArrow)" });
       netSvg.insertBefore(line, netSvg.firstChild);
-      subEls.lines.push({ el: line, from: a, to: b });
+      subEls.lines.push({ el: line, from: a, to: b, fromId: r.from, toId: r.to });
       const polText = svgEl("text", { class: "net-pol", "text-anchor": "middle", "dominant-baseline": "central", "font-size": 14, "font-weight": 800, fill: "#fff", stroke: "#0b0c0f", "stroke-width": 3, "paint-order": "stroke" });
       polText.textContent = r.pol || "+";
       netSvg.appendChild(polText);
@@ -1346,12 +1335,12 @@
     sub.nodes.forEach(n => {
       const diameter = getSubNodeDiameter(n.id);
       const blob = makeBlob(diameter, m.color);
-      blob.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(m.id, n.id); });
+      blob.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(mId, n.id); });
       blob.addEventListener("pointerdown", (e) => startDrag(n, 0.25, e));
       subEls.blobs[n.id] = blob;
       subEls.labels[n.id] = makeLabel(n.t, diameter);
     });
-    allSubEls[m.id] = subEls;
+    allSubEls[mId] = subEls;
   });
 
   function openMacroPanel(id) {
@@ -1430,13 +1419,6 @@
     });
   }
   function updateNetPositions() {
-    VISIBLE_MACRO.forEach((m, i) => {
-      const p = projectPoint(m.x, m.y, 0.3);
-      const els = macroEls[m.id];
-      placeBlob(els.blob, p.x, p.y, p.visible);
-      els.label.style.left = p.x + "px"; els.label.style.top = p.y + "px";
-      els.label.style.display = p.visible ? "block" : "none";
-    });
     Object.keys(allSubEls).forEach(mid => {
       const subEls = allSubEls[mid];
       const sub = SUBNETS[mid];
@@ -1456,8 +1438,15 @@
           l.el.setAttribute("x", pa.x + (pb.x - pa.x) * 0.42);
           l.el.setAttribute("y", pa.y + (pb.y - pa.y) * 0.42 - 12);
         } else {
-          l.el.setAttribute("x1", pa.x); l.el.setAttribute("y1", pa.y);
-          l.el.setAttribute("x2", pb.x); l.el.setAttribute("y2", pb.y);
+          const dx = pb.x - pa.x, dy = pb.y - pa.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          const rFrom = (getSubNodeDiameter(l.fromId || l.from.id) / 2);
+          const rTo = (getSubNodeDiameter(l.toId || l.to.id) / 2);
+          const ux = dx / dist, uy = dy / dist;
+          l.el.setAttribute("x1", pa.x + ux * rFrom);
+          l.el.setAttribute("y1", pa.y + uy * rFrom);
+          l.el.setAttribute("x2", pb.x - ux * (rTo + 3));
+          l.el.setAttribute("y2", pb.y - uy * (rTo + 3));
         }
       });
     });

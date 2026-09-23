@@ -738,7 +738,7 @@
     buildNetwork(sub.nodes, sub.rel, byId, { maxR: 66, wFrac: 0.09, colorOf: () => macroColor, loopType: sub.loopType });
     levelTitleText.textContent = macroById[macroId].full;
     levelSubText.textContent = "Variables causales internas — toca una para ver más, o el bucle para ver el mecanismo reforzador";
-    backBtn.textContent = "← Volver a los 7 problemas de fondo";
+    backBtn.textContent = "← Volver a Ver Red Completa (35 Sub-Problemas)";
     backBtn.classList.add("show");
     document.getElementById("panel").classList.remove("open");
   }
@@ -753,10 +753,9 @@
     });
     intro.style.opacity = "0";
     levelTitle.classList.add("show");
-    levelTitleText.textContent = "🌐 Red Interconectada Completa";
-    levelSubText.textContent = "Visualizando todas las causas de las 7 problemáticas y las 13 relaciones inter-red";
-    backBtn.textContent = "← Volver a los 7 problemas de fondo";
-    backBtn.classList.add("show");
+    levelTitleText.textContent = "🌐 Red Interconectada de Sub-Problemas Causales";
+    levelSubText.textContent = "Visualizando los 35 sub-problemas territoriales de Kennedy y sus 13 relaciones inter-red";
+    backBtn.classList.remove("show");
     centerBlob.style.opacity = "0"; centerLabel.style.opacity = "0"; hitCenter.style.pointerEvents = "none";
     document.getElementById("panel").classList.remove("open");
   }
@@ -766,14 +765,7 @@
   }
 
   function backAction() {
-    if (level === "detail" || level === "full") { showMacro(); return; }
-    level = "none"; currentDetailId = null;
-    clearNetwork();
-    intro.style.opacity = "1";
-    levelTitle.classList.remove("show");
-    backBtn.classList.remove("show");
-    centerBlob.style.opacity = "1"; centerLabel.style.opacity = "1"; hitCenter.style.pointerEvents = "auto";
-    document.getElementById("panel").classList.remove("open");
+    showFullNetwork();
   }
   backBtn.addEventListener("click", backAction);
 
@@ -832,7 +824,7 @@
     else openPanel(nId);
   });
 
-  showMacro();
+  showFullNetwork();
 
   function openRelPopup(r) {
     const panel = document.getElementById("panel"), body = document.getElementById("panelBody");
