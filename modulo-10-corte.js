@@ -1627,7 +1627,7 @@
     { x: 6508.8, y: 4106.2 },
   ];
   const fixedPolySvg = document.createElementNS(SVGNS, "polygon");
-  fixedPolySvg.setAttribute("fill", "none");
+  fixedPolySvg.setAttribute("fill", "rgba(10,10,10,0.35)");
   fixedPolySvg.setAttribute("stroke", "#0a0a0a");
   fixedPolySvg.setAttribute("stroke-width", "2.5");
   document.getElementById("fixedPolySvgOverlay").appendChild(fixedPolySvg);
@@ -2184,9 +2184,20 @@
     drawNaturalGuideLines();
   }
 
-  let natExplodeStep = 0; // 0: Only Base, 1: Layer 1 extracted, 2: Layer 2 extracted, 3: Layer 3 extracted, 4: Layer 4 extracted, 5: All 4 exploded
+  let natExplodeStep = 0;
+  // Secuencia de pasos interactivos:
+  // 0: Base limpia
+  // 1: Capa 1 (Agua) extraída arriba
+  // 2: Capa 1 asentada en la base (simulación en territorio)
+  // 3: Capa 2 (Vegetación) extraída arriba
+  // 4: Capa 2 asentada en la base
+  // 5: Capa 3 (Aves) extraída arriba
+  // 6: Capa 3 asentada en la base
+  // 7: Capa 4 (Conectividad) extraída arriba
+  // 8: Capa 4 asentada en la base
+  // 9: Vista explotada completa (todas las capas flotando apiladas)
+  // 10: Integración total (todas las capas asentadas en la base simulando en conjunto)
 
-  // Animación paso a paso de extracción e integración de capas sobre la base axonométrica
   function updateNaturalLayersStep(animated = true) {
     const sublayers = [
       document.getElementById("natLayerWater"),
@@ -2195,8 +2206,9 @@
       document.getElementById("natLayer4")
     ];
     const baseEl = document.getElementById("natLayerBase");
+    const tags = natOverlay.querySelectorAll(".nat-layer-tag");
 
-    // Asegurar que todos los rombos de subcapa tengan fondo 100% transparente (CERO recuadro blanco)
+    // Limpiar fondos/sombras no deseados en los rombos
     const allDiamonds = natOverlay.querySelectorAll(".sublayer-diamond");
     allDiamonds.forEach(d => {
       d.style.background = "transparent";
@@ -2204,88 +2216,105 @@
       d.style.borderColor = "transparent";
     });
 
-    const tags = natOverlay.querySelectorAll(".nat-layer-tag");
-
     if (natExplodeStep === 0) {
-      // Paso 0: ÚNICAMENTE LA BASE AXONOMÉTRICA ES VISIBLE
-      if (baseEl) {
-        baseEl.style.top = "71%";
-        baseEl.style.opacity = "1";
-        baseEl.style.transform = "translate(-50%, 0)";
-      }
-      sublayers.forEach(l => {
-        if (l) {
-          l.style.opacity = "0";
-          l.style.top = "71%";
-          l.style.transform = "translate(-50%, 0)";
-        }
-      });
+      // Paso 0: Únicamente la base limpia visible
+      if (baseEl) { baseEl.style.top = "71%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, 0)"; }
+      sublayers.forEach(l => { if (l) { l.style.opacity = "0"; l.style.top = "71%"; } });
       tags.forEach(t => { t.style.opacity = "0"; });
       if (natGuideSvg) natGuideSvg.style.opacity = "0";
       if (natAssembleBtnText) natAssembleBtnText.textContent = "Extraer Capa 1: Sistema Hídrico";
       return;
     }
 
-    if (natExplodeStep >= 1 && natExplodeStep <= 4) {
-      const activeIdx = natExplodeStep - 1;
+    // Pasos impares (1, 3, 5, 7): Capa i extraída flotando arriba para inspección
+    if (natExplodeStep % 2 === 1 && natExplodeStep <= 7) {
+      const activeIdx = Math.floor(natExplodeStep / 2);
 
       sublayers.forEach((l, index) => {
         if (!l) return;
-        if (index < activeIdx) {
-          // Capa anterior asentada sobre la base
-          l.style.top = "71%";
-          l.style.opacity = "1";
-          l.style.transform = "translate(-50%, 0)";
-          const tag = l.querySelector(".nat-layer-tag");
-          if (tag) tag.style.opacity = "0";
-        } else if (index === activeIdx) {
-          // Capa activa extraída hacia arriba
+        if (index === activeIdx) {
+          // Capa activa flotando arriba
           const expTop = l.dataset.explodedTop || "20%";
           l.style.top = expTop;
           l.style.opacity = "1";
-          l.style.transform = "translate(-50%, 0)";
           const tag = l.querySelector(".nat-layer-tag");
           if (tag) tag.style.opacity = "1";
         } else {
-          // Aún no extraída
+          // Ocultas mientras se inspecciona la activa arriba
           l.style.top = "71%";
           l.style.opacity = "0";
-          l.style.transform = "translate(-50%, 0)";
           const tag = l.querySelector(".nat-layer-tag");
           if (tag) tag.style.opacity = "0";
         }
       });
 
-      if (natAssembleBtnText) {
-        const stepNames = ["Capa 2: Vegetación", "Capa 3: Aves/Fauna", "Capa 4: Conectividad", "Ver Explosión Completa"];
-        natAssembleBtnText.textContent = `Extraer ${stepNames[activeIdx]}`;
-      }
       if (natGuideSvg) natGuideSvg.style.opacity = "1";
       drawNaturalGuideLines();
+      if (natAssembleBtnText) natAssembleBtnText.textContent = `Asentar Capa ${activeIdx + 1} en el Territorio`;
       return;
     }
 
-    if (natExplodeStep === 5) {
-      // Paso 5: Las 4 capas explotadas simultáneamente
+    // Pasos pares (2, 4, 6, 8): Capa i asentada abajo en el territorio simulando en contexto
+    if (natExplodeStep % 2 === 0 && natExplodeStep <= 8) {
+      const settledIdx = (natExplodeStep / 2) - 1;
+      const nextNames = ["Capa 2: Vegetación", "Capa 3: Aves/Fauna", "Capa 4: Conectividad", "Ver Apilamiento Explotado Completo"];
+
+      sublayers.forEach((l, index) => {
+        if (!l) return;
+        if (index === settledIdx) {
+          // Capa asentada abajo en la base simulando en contexto
+          l.style.top = "71%";
+          l.style.opacity = "1";
+          const tag = l.querySelector(".nat-layer-tag");
+          if (tag) tag.style.opacity = "1";
+        } else {
+          l.style.top = "71%";
+          l.style.opacity = "0";
+          const tag = l.querySelector(".nat-layer-tag");
+          if (tag) tag.style.opacity = "0";
+        }
+      });
+
+      if (natGuideSvg) natGuideSvg.style.opacity = "0";
+      if (natAssembleBtnText) natAssembleBtnText.textContent = `Extraer ${nextNames[settledIdx]}`;
+      return;
+    }
+
+    if (natExplodeStep === 9) {
+      // Paso 9: Apilamiento explotado completo (las 4 capas flotando apiladas)
       sublayers.forEach((l) => {
         if (!l) return;
         const expTop = l.dataset.explodedTop || "71%";
         l.style.top = expTop;
         l.style.opacity = "1";
-        l.style.transform = "translate(-50%, 0)";
         const tag = l.querySelector(".nat-layer-tag");
         if (tag) tag.style.opacity = "1";
       });
       tags.forEach(t => { t.style.opacity = "1"; });
       if (natGuideSvg) natGuideSvg.style.opacity = "1";
       drawNaturalGuideLines();
-      if (natAssembleBtnText) natAssembleBtnText.textContent = "Reiniciar en Base";
+      if (natAssembleBtnText) natAssembleBtnText.textContent = "Integrar TODAS las capas en el Territorio";
+      return;
+    }
+
+    if (natExplodeStep === 10) {
+      // Paso 10: Integración Total (todas las 4 capas asentadas abajo simulando simultáneamente)
+      sublayers.forEach((l) => {
+        if (!l) return;
+        l.style.top = "71%";
+        l.style.opacity = "1";
+        const tag = l.querySelector(".nat-layer-tag");
+        if (tag) tag.style.opacity = "0";
+      });
+      if (natGuideSvg) natGuideSvg.style.opacity = "0";
+      if (natAssembleBtnText) natAssembleBtnText.textContent = "Reiniciar Recorrido en Base";
+      return;
     }
   }
 
   function advanceNaturalAssemble() {
     natExplodeStep++;
-    if (natExplodeStep > 5) natExplodeStep = 0;
+    if (natExplodeStep > 10) natExplodeStep = 0;
     updateNaturalLayersStep(true);
   }
 
