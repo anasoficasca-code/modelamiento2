@@ -144,7 +144,7 @@
 </div>
 
 <div class="intro" id="intro">
-  <h1>Sobrecarga territorial en Kennedy: colisión entre el metabolismo agrocomercial metropolitano, la densificación residencial en altura y la capacidad de soporte urbano e hídrico</h1>
+  <h1>Colapso operativo y logístico del modelo de ocupación de Kennedy frente a la capacidad de soporte del territorio</h1>
   <p>Toca la burbuja para revelar la red — toca una flecha o su signo (+/–) para ver el mecanismo completo</p>
 </div>
 <div class="level-title" id="levelTitle">
@@ -359,7 +359,7 @@
   const CENTER_R = 108;
   let NODE_R = 62;
 
-  function forceLayout(nodeList, edgeList, centerX, centerY, spread, radiusOf, gapMult, margin, iterations = 400) {
+  function forceLayout(nodeList, edgeList, centerX, centerY, spread, radiusOf, gapMult, margin, iterations = 60) {
     const pos = {};
     const areaW = mainW() - margin * 2, areaH = mainH() - margin * 2;
     const cols = Math.ceil(Math.sqrt(nodeList.length * areaW / areaH));
@@ -405,7 +405,7 @@
       });
     }
     // Pasada final de separación garantizada sin superposición ni contacto
-    for (let pass = 0; pass < 400; pass++) {
+    for (let pass = 0; pass < 40; pass++) {
       for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
         const a = pos[ids[i]], b = pos[ids[j]];
         const minDist = minDistFor(ids[i], ids[j]);
@@ -683,7 +683,7 @@
       return c;
     }
     let best = null, bestC = Infinity;
-    for (let attempt = 0; attempt < 30; attempt++) {
+    for (let attempt = 0; attempt < 2; attempt++) {
       const cand = forceLayout(nodes, rel, cx, cy, spread, radiusOf, gapMult, margin);
       const c = countCrossings(cand);
       if (c < bestC) { bestC = c; best = cand; }
