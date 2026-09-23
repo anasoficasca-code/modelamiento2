@@ -723,9 +723,17 @@
     NODE_R = Math.max(20, Math.min(opts.maxR, mainW() * opts.wFrac));
     const R_MIN = Math.max(15, NODE_R * 0.48);
     const R_MAX = NODE_R * 1.62;
+    const degreeRadiusTable = {};
+    degValues.forEach(d => {
+      const t = degMax === degMin ? 0.5 : (d - degMin) / (degMax - degMin);
+      degreeRadiusTable[d] = R_MIN + (R_MAX - R_MIN) * Math.sqrt(t);
+    });
+
     nodes.forEach(n => {
-      const t = degMax === degMin ? 0.5 : (degree[n.id] - degMin) / (degMax - degMin);
-      const baseR = R_MIN + (R_MAX - R_MIN) * Math.sqrt(t);
+      let baseR = degreeRadiusTable[degree[n.id]];
+      if (opts.savedPositions && opts.savedPositions[n.id] && opts.savedPositions[n.id].r) {
+        baseR = opts.savedPositions[n.id].r;
+      }
       baseRadiusMap[n.id] = baseR;
       nodeRadiusMap[n.id] = baseR * globalSizeScale;
     });
