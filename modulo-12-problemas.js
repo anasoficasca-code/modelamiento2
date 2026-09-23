@@ -993,11 +993,11 @@
   const SUBNETS = {
     n1: {
       nodes:[
-        { id:"s1_1", t:"Infiltración de camiones pesados de escala regional en calles barriales de una sola calzada", x:6290.5, y:2559.6 },
-        { id:"s1_2", t:"Filas de camiones y congestión represada sobre las avenidas principales", x:5585.4, y:2475.9 },
-        { id:"s1_3", t:"Deterioro continuo de la capa de rodadura ante el tránsito de carga pesada", x:5544.1, y:2806.7 },
-        { id:"s1_4", t:"Conflicto y entrecruzamiento de flujos entre camiones, vehículos particulares, bicipatios y peatones", x:6014.7, y:2474.7 },
-        { id:"s1_5", t:"Ingreso vehicular en ángulo recto que obliga a frenar sobre la calzada arterial", x:6125.7, y:2429.2 },
+        { id:"s1_1", t:"Infiltración de camiones pesados de escala regional en calles barriales de una sola calzada", x:6311.7, y:2532.0 },
+        { id:"s1_2", t:"Filas de camiones y congestión represada sobre las avenidas principales", x:7075.7, y:2292.1 },
+        { id:"s1_3", t:"Deterioro continuo de la capa de rodadura ante el tránsito de carga pesada", x:7211.5, y:3715.4 },
+        { id:"s1_4", t:"Conflicto y entrecruzamiento de flujos entre camiones, vehículos particulares, bicipatios y peatones", x:6591.5, y:3147.9 },
+        { id:"s1_5", t:"Ingreso vehicular en ángulo recto que obliga a frenar sobre la calzada arterial", x:6433.7, y:3748.6 },
       ],
       rel:[
         { from:"s1_5", to:"s1_2", pol:"+" },
@@ -1107,7 +1107,7 @@
       nodes:[
         { id:"s7_1", t:"Rigidez de los instrumentos normativos distritales frente a la autoorganización local", x:6420.0, y:2120.0 },
         { id:"s7_2", t:"Brecha entre las determinantes del POT y las dinámicas reales de uso del suelo", x:6460.0, y:2180.0 },
-        { id:"s7_3", t:"Coexistencia de regímenes normativos entre regulación pública y administración privada", x:6500.0, y:2240.0 },
+        { id:"s7_3", t:"Coexistencia de regímetros normativos entre regulación pública y administración privada", x:6500.0, y:2240.0 },
         { id:"s7_4", t:"Consolidación de dinámicas informales al margen de controles institucionales", x:6540.0, y:2300.0 },
         { id:"s7_5", t:"Pérdida de eficacia en los mecanismos institucionales de regulación territorial", x:6580.0, y:2360.0 },
       ],
@@ -1196,20 +1196,22 @@
     }
     return lines.join("<br>");
   }
-  function makeLabel(text, diameter) {
+  function makeLabel(text, diameter, nodeId) {
     const d = document.createElement("div");
     d.className = "net-label";
-    const fontPx = 9.5, lineH = fontPx * 1.2; // texto un poco mas chico, para que quepa completo sin cortarse
+    const fontPx = 9.5, lineH = fontPx * 1.2;
     const rr = diameter / 2;
-    let maxLines = Math.min(3, Math.max(2, Math.floor((diameter * 0.86) / lineH))); // tope de 3 lineas: se resume con "…" en vez de intentar meter todo el texto
+    let maxLines = Math.min(3, Math.max(2, Math.floor((diameter * 0.86) / lineH)));
     let halfH = (maxLines * lineH) / 2;
     while (halfH >= rr * 0.9 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
     const safeWidth = 2 * Math.sqrt(Math.max(0, rr * rr - halfH * halfH)) * 0.9;
     const maxCharsPerLine = Math.max(5, Math.floor(safeWidth / (fontPx * 0.54)));
+    d.dataset.fullHtml = wrapToFit(text, maxCharsPerLine, maxLines);
+    d.dataset.shortHtml = `<span style="font-weight:800; font-size:11px; letter-spacing:0.5px; opacity:0.9;">${nodeId ? nodeId.toUpperCase() : ''}</span>`;
     d.style.width = safeWidth + "px";
     d.style.fontSize = fontPx + "px";
     d.style.lineHeight = lineH + "px";
-    d.innerHTML = wrapToFit(text, maxCharsPerLine, maxLines);
+    d.innerHTML = d.dataset.fullHtml;
     netLabelLayer.appendChild(d);
     return d;
   }
@@ -1305,7 +1307,7 @@
     if (nodeDegrees[r.to] !== undefined) nodeDegrees[r.to]++;
   });
 
-  const deletedNodeIds = new Set();
+  const deletedNodeIds = new Set(["s2_6", "s3_2", "s4_2", "s5_4"]);
 
   function getSubNodeDiameter(nodeId) {
     const deg = nodeDegrees[nodeId] || 0;
@@ -1425,7 +1427,7 @@
       blob.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(mId, n.id); });
       blob.addEventListener("pointerdown", (e) => startDrag(n, 0.25, e));
       subEls.blobs[n.id] = blob;
-      const label = makeLabel(n.t, diameter);
+      const label = makeLabel(n.t, diameter, n.id);
       label.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(mId, n.id); });
       label.addEventListener("pointerdown", (e) => startDrag(n, 0.25, e));
       subEls.labels[n.id] = label;
@@ -1553,23 +1555,40 @@
     });
   }
   function updateNetPositions() {
+    const isZoomedOut = camera.zoom < 1.6;
     Object.keys(allSubEls).forEach(mid => {
       if (mid === "_allLines") return;
       const subEls = allSubEls[mid];
       const sub = SUBNETS[mid];
       if (!sub || !sub.nodes) return;
       sub.nodes.forEach(n => {
+        const isDeleted = deletedNodeIds.has(n.id);
         const p = projectPoint(n.x, n.y, 0.25);
-        if (subEls.blobs && subEls.blobs[n.id]) placeBlob(subEls.blobs[n.id], p.x, p.y, p.visible);
+        if (subEls.blobs && subEls.blobs[n.id]) placeBlob(subEls.blobs[n.id], p.x, p.y, p.visible && !isDeleted);
         if (subEls.labels && subEls.labels[n.id]) {
-          subEls.labels[n.id].style.left = p.x + "px"; subEls.labels[n.id].style.top = p.y + "px";
-          subEls.labels[n.id].style.display = p.visible ? "block" : "none";
+          const lbl = subEls.labels[n.id];
+          lbl.style.left = p.x + "px"; lbl.style.top = p.y + "px";
+          lbl.style.display = (p.visible && !isDeleted) ? "block" : "none";
+          const targetHtml = isZoomedOut ? (lbl.dataset.shortHtml || lbl.dataset.fullHtml) : lbl.dataset.fullHtml;
+          if (lbl.innerHTML !== targetHtml) {
+            lbl.innerHTML = targetHtml;
+          }
         }
       });
       if (subEls.lines) {
         subEls.lines.forEach(l => {
+          const isDeleted = deletedNodeIds.has(l.fromId || l.from.id) || deletedNodeIds.has(l.toId || l.to.id);
+          if (isDeleted) {
+            l.el.style.display = "none";
+            return;
+          }
           const pa = projectPoint(l.from.x, l.from.y, 0.25);
           const pb = projectPoint(l.to.x, l.to.y, 0.25);
+          if (!pa.visible || !pb.visible) {
+            l.el.style.display = "none";
+            return;
+          }
+          l.el.style.display = "block";
           if (l.isPol) {
             l.el.setAttribute("x", pa.x + (pb.x - pa.x) * 0.72);
             l.el.setAttribute("y", pa.y + (pb.y - pa.y) * 0.72);
@@ -1593,8 +1612,18 @@
 
     if (allSubEls["_allLines"] && allSubEls["_allLines"].lines) {
       allSubEls["_allLines"].lines.forEach(l => {
+        const isDeleted = deletedNodeIds.has(l.fromId || l.from.id) || deletedNodeIds.has(l.toId || l.to.id);
+        if (isDeleted) {
+          l.el.style.display = "none";
+          return;
+        }
         const pa = projectPoint(l.from.x, l.from.y, 0.25);
         const pb = projectPoint(l.to.x, l.to.y, 0.25);
+        if (!pa.visible || !pb.visible) {
+          l.el.style.display = "none";
+          return;
+        }
+        l.el.style.display = "block";
         if (l.isPol) {
           l.el.setAttribute("x", pa.x + (pb.x - pa.x) * 0.72);
           l.el.setAttribute("y", pa.y + (pb.y - pa.y) * 0.72);
