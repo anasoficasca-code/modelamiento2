@@ -2016,7 +2016,7 @@
         if (layerNum === 1) {
           openNaturalExplode();
         } else if (layerNum === 2) {
-          openTechExplode();
+          openCulturalExplode();
         } else {
           unzoomAll();
         }
@@ -3604,4 +3604,874 @@
     t.addEventListener("input", updateTextCoordsOutput);
   });
 
+  // ============================================================
+  // ESCALA CULTURAL Y SOCIO-URBANA (4 CAPAS DE SIMULACIÓN)
+  // ============================================================
+  const cultOverlay = document.getElementById("culturalExplodeOverlay");
+  const cultBackBtn = document.getElementById("cultExplodeBack");
+  const cultAssembleBtn = document.getElementById("cultAssembleBtn");
+  const cultAssembleBtnText = document.getElementById("cultAssembleBtnText");
+  const cultBaseImg = document.getElementById("cultBaseImg");
+  const cultGuideSvg = document.getElementById("cultGuideSvg");
+  const cultStageEl = document.getElementById("culturalExplodeStage");
+
+  // Capas
+  const cultLayer1 = document.getElementById("cultLayer1");
+  const cultLayer1Canvas = document.getElementById("cultLayer1Canvas");
+  const cultLayer1Svg = document.getElementById("cultLayer1Svg");
+
+  const cultLayer2 = document.getElementById("cultLayer2");
+  const cultLayer2Canvas = document.getElementById("cultLayer2Canvas");
+  const cultLayer2Svg = document.getElementById("cultLayer2Svg");
+
+  const cultLayer3 = document.getElementById("cultLayer3");
+  const cultLayer3Canvas = document.getElementById("cultLayer3Canvas");
+  const cultLayer3Svg = document.getElementById("cultLayer3Svg");
+
+  const cultLayer4 = document.getElementById("cultLayer4");
+  const cultLayer4Canvas = document.getElementById("cultLayer4Canvas");
+  const cultLayer4Svg = document.getElementById("cultLayer4Svg");
+
+  const cultLayerBase = document.getElementById("cultLayerBase");
+
+  // Paneles flotantes de control
+  const cultCapa1Panel = document.getElementById("cultCapa1Panel");
+  const cultYearSlider = document.getElementById("cultYearSlider");
+  const cultYearLabel = document.getElementById("cultYearLabel");
+  const cultHistoryStats = document.getElementById("cultHistoryStats");
+  const cultPlayHistoryBtn = document.getElementById("cultPlayHistoryBtn");
+
+  const cultCapa2Panel = document.getElementById("cultCapa2Panel");
+  const cultCapa3Panel = document.getElementById("cultCapa3Panel");
+
+  const cultCapa4Panel = document.getElementById("cultCapa4Panel");
+  const cultTadBadge = document.getElementById("cultTadBadge");
+  const cultSotToggleBtn = document.getElementById("cultSotToggleBtn");
+
+  let cultExplodeStep = 0;
+  let cultAnimFrame = null;
+  let cultTime = 0;
+  let cultHistPlaying = false;
+  let cultHistTimer = null;
+  let isSotElevated = false;
+
+  function openCulturalExplode() {
+    if (!cultOverlay) return;
+
+    const targetW = 960, targetH = 540;
+    const layerAspect = targetW / targetH;
+
+    camera.left = -viewSize * layerAspect;
+    camera.right = viewSize * layerAspect;
+    camera.top = viewSize;
+    camera.bottom = -viewSize;
+    camera.updateProjectionMatrix();
+    renderer.setSize(targetW, targetH, false);
+
+    const origRoadColor = roadMat ? roadMat.color.getHex() : null;
+    const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
+    const origBirdsVis = birdsGroup ? birdsGroup.visible : false;
+    const origVehVis = vehInstanced ? vehInstanced.visible : false;
+    const origVehCount = vehInstanced ? vehInstanced.count : 0;
+    const origBg = scene.background;
+
+    if (noiseMesh) noiseMesh.visible = false;
+    if (birdsGroup) birdsGroup.visible = false;
+    if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
+    if (roadMat) roadMat.color.set(0x9099a3);
+
+    scene.background = new THREE.Color(0xffffff);
+    renderer.render(scene, camera);
+    const fotoBase = renderer.domElement.toDataURL("image/png");
+    scene.background = origBg;
+
+    if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
+    if (noiseMesh) noiseMesh.visible = origNoiseVis;
+    if (birdsGroup) birdsGroup.visible = origBirdsVis;
+    if (vehInstanced) {
+      vehInstanced.visible = origVehVis;
+      vehInstanced.count = origVehCount;
+    }
+
+    if (cultBaseImg) {
+      cultBaseImg.src = fotoBase;
+      cultBaseImg.style.objectFit = "fill";
+    }
+
+    cultOverlay.style.display = "flex";
+    void cultOverlay.offsetWidth;
+
+    cultExplodeStep = 0;
+    updateCulturalLayersStep(false);
+    renderAllCulturalSublayers();
+    startCultAnimation();
+  }
+
+  function closeCulturalExplode() {
+    if (!cultOverlay) return;
+    if (cultAnimFrame) { cancelAnimationFrame(cultAnimFrame); cultAnimFrame = null; }
+    if (cultHistPlaying) stopCultHistory();
+
+    const sublayers = cultOverlay.querySelectorAll(".cult-sublayer");
+    sublayers.forEach(l => {
+      l.style.opacity = "0";
+      l.style.transform = "translate(-50%, -20px)";
+    });
+
+    const origW = wrap.clientWidth, origH = wrap.clientHeight;
+    renderer.setSize(origW, origH, false);
+    const restoreAspect = origW / origH;
+    camera.left = -viewSize * restoreAspect;
+    camera.right = viewSize * restoreAspect;
+    camera.top = viewSize;
+    camera.bottom = -viewSize;
+    camera.updateProjectionMatrix();
+
+    setTimeout(() => {
+      cultOverlay.style.display = "none";
+      unzoomAll();
+    }, 400);
+  }
+
+  if (cultBackBtn) cultBackBtn.addEventListener("click", closeCulturalExplode);
+
+  function updateCulturalLayersStep(animated = true) {
+    const sublayers = [cultLayer1, cultLayer2, cultLayer3, cultLayer4];
+    const panels = [cultCapa1Panel, cultCapa2Panel, cultCapa3Panel, cultCapa4Panel];
+    const tags = cultOverlay.querySelectorAll(".cult-layer-tag");
+
+    const allDiamonds = cultOverlay.querySelectorAll(".sublayer-diamond");
+    allDiamonds.forEach(d => {
+      d.style.background = "transparent";
+      d.style.boxShadow = "none";
+      d.style.borderColor = "transparent";
+    });
+
+    panels.forEach(p => { if (p) p.style.display = "none"; });
+
+    if (cultExplodeStep === 0) {
+      if (cultLayerBase) { cultLayerBase.style.top = "50%"; cultLayerBase.style.opacity = "1"; cultLayerBase.style.transform = "translate(-50%, -40%)"; }
+      sublayers.forEach(l => { if (l) { l.style.opacity = "0"; l.style.top = "50%"; l.style.transform = "translate(-50%, -40%)"; } });
+      tags.forEach(t => { t.style.opacity = "0"; });
+      if (cultGuideSvg) cultGuideSvg.style.opacity = "0";
+      if (cultAssembleBtnText) cultAssembleBtnText.textContent = "Extraer Capa 1: Memoria Histórica";
+      return;
+    }
+
+    if (cultExplodeStep % 2 === 1 && cultExplodeStep <= 7) {
+      const activeIdx = Math.floor(cultExplodeStep / 2);
+      if (cultLayerBase) { cultLayerBase.style.top = "54%"; cultLayerBase.style.opacity = "1"; cultLayerBase.style.transform = "translate(-50%, -40%)"; }
+      sublayers.forEach((l, index) => {
+        if (!l) return;
+        if (index === activeIdx) {
+          const expTop = l.dataset.explodedTop || "12%";
+          l.style.top = expTop;
+          l.style.transform = "translate(-50%, 0)";
+          l.style.opacity = "1";
+          const tag = l.querySelector(".cult-layer-tag");
+          if (tag) tag.style.opacity = "1";
+        } else {
+          l.style.top = "54%";
+          l.style.transform = "translate(-50%, -40%)";
+          l.style.opacity = "0";
+          const tag = l.querySelector(".cult-layer-tag");
+          if (tag) tag.style.opacity = "0";
+        }
+      });
+      if (panels[activeIdx]) panels[activeIdx].style.display = "block";
+      if (cultGuideSvg) cultGuideSvg.style.opacity = "1";
+      drawCulturalGuideLines();
+      if (cultAssembleBtnText) cultAssembleBtnText.textContent = `Asentar Capa ${activeIdx + 1} en el Territorio`;
+      return;
+    }
+
+    if (cultExplodeStep % 2 === 0 && cultExplodeStep <= 8) {
+      const settledIdx = (cultExplodeStep / 2) - 1;
+      const nextNames = ["Capa 2: Cerramiento Borde", "Capa 3: Recorrido Pedagógico", "Capa 4: Fricción Vial SOT", "Ver Apilamiento Explotado Completo"];
+
+      if (cultLayerBase) { cultLayerBase.style.top = "50%"; cultLayerBase.style.opacity = "1"; cultLayerBase.style.transform = "translate(-50%, -40%)"; }
+      sublayers.forEach((l, index) => {
+        if (!l) return;
+        if (index === settledIdx) {
+          l.style.top = "50%";
+          l.style.transform = "translate(-50%, -40%)";
+          l.style.opacity = "1";
+          const tag = l.querySelector(".cult-layer-tag");
+          if (tag) tag.style.opacity = "1";
+        } else {
+          l.style.top = "50%";
+          l.style.transform = "translate(-50%, -40%)";
+          l.style.opacity = "0";
+          const tag = l.querySelector(".cult-layer-tag");
+          if (tag) tag.style.opacity = "0";
+        }
+      });
+      if (panels[settledIdx]) panels[settledIdx].style.display = "block";
+      if (cultGuideSvg) cultGuideSvg.style.opacity = "0";
+      if (cultAssembleBtnText) cultAssembleBtnText.textContent = `Extraer ${nextNames[settledIdx]}`;
+      return;
+    }
+
+    if (cultExplodeStep === 9) {
+      if (cultLayerBase) { cultLayerBase.style.top = "70%"; cultLayerBase.style.opacity = "1"; cultLayerBase.style.transform = "translate(-50%, 0)"; }
+      sublayers.forEach((l) => {
+        if (!l) return;
+        const expTop = l.dataset.explodedTop || "54%";
+        l.style.top = expTop;
+        l.style.transform = "translate(-50%, 0)";
+        l.style.opacity = "1";
+        const tag = l.querySelector(".cult-layer-tag");
+        if (tag) tag.style.opacity = "1";
+      });
+      tags.forEach(t => { t.style.opacity = "1"; });
+      if (cultGuideSvg) cultGuideSvg.style.opacity = "1";
+      drawCulturalGuideLines();
+      if (cultAssembleBtnText) cultAssembleBtnText.textContent = "Integrar TODAS las capas en el Territorio";
+      return;
+    }
+
+    if (cultExplodeStep === 10) {
+      if (cultLayerBase) { cultLayerBase.style.top = "50%"; cultLayerBase.style.opacity = "1"; cultLayerBase.style.transform = "translate(-50%, -40%)"; }
+      sublayers.forEach((l) => {
+        if (!l) return;
+        l.style.top = "50%";
+        l.style.transform = "translate(-50%, -40%)";
+        l.style.opacity = "1";
+        const tag = l.querySelector(".cult-layer-tag");
+        if (tag) tag.style.opacity = "0";
+      });
+      if (cultGuideSvg) cultGuideSvg.style.opacity = "0";
+      if (cultAssembleBtnText) cultAssembleBtnText.textContent = "Reiniciar Recorrido en Base";
+      return;
+    }
+  }
+
+  function advanceCulturalAssemble() {
+    cultExplodeStep++;
+    if (cultExplodeStep > 10) cultExplodeStep = 0;
+    updateCulturalLayersStep(true);
+  }
+
+  if (cultAssembleBtn) cultAssembleBtn.addEventListener("click", advanceCulturalAssemble);
+  if (cultStageEl) {
+    cultStageEl.addEventListener("click", () => { advanceCulturalAssemble(); });
+  }
+
+  function drawCulturalGuideLines() {
+    if (!cultGuideSvg || !cultOverlay) return;
+    cultGuideSvg.innerHTML = "";
+    const SVGNS = "http://www.w3.org/2000/svg";
+    const layerBase = cultLayerBase;
+    if (!layerBase) return;
+
+    const sublayers = [cultLayer1, cultLayer2, cultLayer3, cultLayer4];
+    let layerTop = sublayers.find(l => l && parseFloat(l.style.opacity || "0") > 0.1 && (l.getBoundingClientRect().top < layerBase.getBoundingClientRect().top - 15));
+    if (!layerTop) layerTop = cultLayer1;
+
+    const rTop = layerTop.getBoundingClientRect();
+    const rBase = layerBase.getBoundingClientRect();
+    const rStage = cultGuideSvg.getBoundingClientRect();
+    if (Math.abs(rTop.top - rBase.top) < 15) return;
+
+    const cornersRel = [
+      { rx: 0.5, ry: 0.0 },
+      { rx: 1.0, ry: 0.5 },
+      { rx: 0.5, ry: 1.0 },
+      { rx: 0.0, ry: 0.5 },
+    ];
+
+    cornersRel.forEach(c => {
+      const x1 = rTop.left + rTop.width * c.rx - rStage.left;
+      const y1 = rTop.top + rTop.height * c.ry - rStage.top;
+      const x2 = rBase.left + rBase.width * c.rx - rStage.left;
+      const y2 = rBase.top + rBase.height * c.ry - rStage.top;
+
+      const line = document.createElementNS(SVGNS, "line");
+      line.setAttribute("x1", String(x1)); line.setAttribute("y1", String(y1));
+      line.setAttribute("x2", String(x2)); line.setAttribute("y2", String(y2));
+      line.setAttribute("stroke", "rgba(162, 28, 175, 0.35)");
+      line.setAttribute("stroke-width", "1.3");
+      line.setAttribute("stroke-dasharray", "4 4");
+      cultGuideSvg.appendChild(line);
+
+      const dot1 = document.createElementNS(SVGNS, "circle");
+      dot1.setAttribute("cx", String(x1)); dot1.setAttribute("cy", String(y1)); dot1.setAttribute("r", "2.5");
+      dot1.setAttribute("fill", "rgba(162, 28, 175, 0.5)");
+      cultGuideSvg.appendChild(dot1);
+
+      const dot2 = document.createElementNS(SVGNS, "circle");
+      dot2.setAttribute("cx", String(x2)); dot2.setAttribute("cy", String(y2)); dot2.setAttribute("r", "2.5");
+      dot2.setAttribute("fill", "rgba(162, 28, 175, 0.5)");
+      cultGuideSvg.appendChild(dot2);
+    });
+  }
+
+  function startCultAnimation() {
+    if (cultAnimFrame) cancelAnimationFrame(cultAnimFrame);
+    function loopCult() {
+      if (cultOverlay.style.display !== "none") {
+        cultTime += 0.035;
+        const year = cultYearSlider ? parseInt(cultYearSlider.value, 10) : 1956;
+        renderCulturalCapa1(year);
+        renderCulturalCapa2();
+        renderCulturalCapa3();
+        renderCulturalCapa4(isSotElevated);
+        cultAnimFrame = requestAnimationFrame(loopCult);
+      }
+    }
+    cultAnimFrame = requestAnimationFrame(loopCult);
+  }
+
+  function renderAllCulturalSublayers() {
+    const year = cultYearSlider ? parseInt(cultYearSlider.value, 10) : 1956;
+    renderCulturalCapa1(year);
+    renderCulturalCapa2();
+    renderCulturalCapa3();
+    renderCulturalCapa4(isSotElevated);
+    drawCulturalGuideLines();
+  }
+
+  if (cultYearSlider) {
+    cultYearSlider.addEventListener("input", () => {
+      const year = parseInt(cultYearSlider.value, 10);
+      if (cultYearLabel) cultYearLabel.textContent = String(year);
+      renderCulturalCapa1(year);
+    });
+  }
+
+  function stopCultHistory() {
+    cultHistPlaying = false;
+    if (cultHistTimer) { clearInterval(cultHistTimer); cultHistTimer = null; }
+    if (cultPlayHistoryBtn) cultPlayHistoryBtn.textContent = "▶ Simular evolución histórica (1950 ➔ 2024)";
+  }
+
+  if (cultPlayHistoryBtn) {
+    cultPlayHistoryBtn.addEventListener("click", () => {
+      cultHistPlaying = !cultHistPlaying;
+      if (cultHistPlaying) {
+        cultPlayHistoryBtn.textContent = "⏸ Pausar evolución histórica";
+        cultHistTimer = setInterval(() => {
+          let y = parseInt(cultYearSlider.value, 10) + 1;
+          if (y > 2024) y = 1950;
+          cultYearSlider.value = String(y);
+          if (cultYearLabel) cultYearLabel.textContent = String(y);
+          renderCulturalCapa1(y);
+        }, 150);
+      } else {
+        stopCultHistory();
+      }
+    });
+  }
+
+  if (cultSotToggleBtn) {
+    cultSotToggleBtn.addEventListener("click", () => {
+      isSotElevated = !isSotElevated;
+      if (isSotElevated) {
+        cultSotToggleBtn.textContent = "DESACTIVAR WHAT-IF";
+        cultSotToggleBtn.style.background = "#dc2626";
+        cultSotToggleBtn.style.borderColor = "#dc2626";
+        if (cultTadBadge) {
+          cultTadBadge.textContent = "TAD: Normal (Vía Elevada SOT)";
+          cultTadBadge.style.background = "#16a34a";
+        }
+      } else {
+        cultSotToggleBtn.textContent = "ACTIVAR WHAT-IF";
+        cultSotToggleBtn.style.background = "#16a34a";
+        cultSotToggleBtn.style.borderColor = "#16a34a";
+        if (cultTadBadge) {
+          cultTadBadge.textContent = "TAD: +2 horas";
+          cultTadBadge.style.background = "#dc2626";
+        }
+      }
+      renderCulturalCapa4(isSotElevated);
+    });
+  }
+
+  // ------------------------------------------------------------
+  // RENDERIZADORES DE LAS 4 CAPAS CULTURALES
+  // ------------------------------------------------------------
+
+  // Capa 1: Memoria Histórica (1950–2024)
+  function renderCulturalCapa1(year) {
+    if (!cultLayer1Canvas) return;
+    const rect = cultLayer1Canvas.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = rect.width || 720, h = rect.height || 405;
+    if (cultLayer1Canvas.width !== Math.round(w * dpr) || cultLayer1Canvas.height !== Math.round(h * dpr)) {
+      cultLayer1Canvas.width = Math.round(w * dpr);
+      cultLayer1Canvas.height = Math.round(h * dpr);
+    }
+    const ctx = cultLayer1Canvas.getContext("2d");
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const projectPoint = (rx, ry, el = 0.05) => projectPointToLayer(rx, ry, el, w, h);
+
+    // Reducción del área: 1956 (171.54 ha) -> 2024 (18.84 ha)
+    const tNorm = Math.max(0, Math.min(1, (year - 1956) / (2024 - 1956)));
+    const areaHa = 171.54 - (171.54 - 18.84) * tNorm;
+    const scaleFactor = 1.0 + (1 - tNorm) * 2.1;
+
+    if (cultHistoryStats) {
+      const redPct = ((171.54 - areaHa) / 171.54 * 100).toFixed(1);
+      const perceptionStr = year < 1990 ? '"Potrero / Pantano a secar"' : (year < 2010 ? '"Ecosistema en recuperación"' : '"Reserva de biodiversidad protegida"');
+      const percColor = year < 1990 ? '#e11d48' : (year < 2010 ? '#d97706' : '#16a34a');
+      cultHistoryStats.innerHTML = `Año <strong>${year}</strong> · Área: <strong style="color:#9333ea;">${areaHa.toFixed(2)} ha</strong> (-${redPct}%) · Percepción: <strong style="color:${percColor};">${perceptionStr}</strong>`;
+    }
+
+    if (rawWaterData) {
+      const burro = rawWaterData.find(b => (b.nombre || "").includes("Burro"));
+      if (burro && burro.pts && burro.pts.length > 3) {
+        const cx = burro.pts.reduce((s, p) => s + p[0], 0) / burro.pts.length;
+        const cy = burro.pts.reduce((s, p) => s + p[1], 0) / burro.pts.length;
+
+        const histPts = burro.pts.map(p => [cx + (p[0] - cx) * scaleFactor, cy + (p[1] - cy) * scaleFactor]);
+        const scrHist = histPts.map(p => projectPoint(p[0], p[1]));
+
+        ctx.beginPath();
+        ctx.moveTo(scrHist[0].x, scrHist[0].y);
+        for (let i = 1; i < scrHist.length; i++) ctx.lineTo(scrHist[i].x, scrHist[i].y);
+        ctx.closePath();
+
+        if (year < 1990) {
+          ctx.fillStyle = "rgba(217, 119, 6, 0.35)";
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = "#b45309";
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "rgba(147, 51, 234, 0.30)";
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = "#7e22ce";
+          ctx.stroke();
+        }
+
+        const isCareNode = year >= 2000;
+        const numAgents = 14;
+        for (let a = 0; a < numAgents; a++) {
+          const ang = (a / numAgents) * Math.PI * 2 + cultTime * (isCareNode ? 0.2 : 0.8);
+          const radDist = isCareNode ? 45 : (30 + Math.sin(cultTime * 3 + a) * 15);
+          const agPt = projectPoint(cx + Math.cos(ang) * radDist * 10, cy + Math.sin(ang) * radDist * 10);
+
+          if (agPt.inFront) {
+            ctx.beginPath();
+            ctx.arc(agPt.x, agPt.y, isCareNode ? 5 : 4, 0, Math.PI * 2);
+            ctx.fillStyle = isCareNode ? "#16a34a" : "#dc2626";
+            ctx.fill();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = "#ffffff";
+            ctx.stroke();
+
+            if (!isCareNode) {
+              ctx.beginPath();
+              ctx.moveTo(agPt.x, agPt.y);
+              ctx.lineTo(agPt.x - Math.cos(ang) * 12, agPt.y - Math.sin(ang) * 12);
+              ctx.strokeStyle = "#dc2626";
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+            } else {
+              ctx.beginPath();
+              ctx.arc(agPt.x, agPt.y, 8 + Math.sin(cultTime * 4 + a) * 3, 0, Math.PI * 2);
+              ctx.strokeStyle = "rgba(22, 163, 74, 0.4)";
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+          }
+        }
+      }
+    }
+
+    if (cultLayer1Svg) {
+      cultLayer1Svg.innerHTML = "";
+      const SVGNS = "http://www.w3.org/2000/svg";
+      const centerPt = projectPoint(7518.49, 3137.57);
+      if (centerPt.inFront) {
+        const g = document.createElementNS(SVGNS, "g");
+        g.setAttribute("transform", `translate(${centerPt.x}, ${centerPt.y})`);
+
+        const bg = document.createElementNS(SVGNS, "rect");
+        bg.setAttribute("x", "-90"); bg.setAttribute("y", "-34");
+        bg.setAttribute("width", "180"); bg.setAttribute("height", "28");
+        bg.setAttribute("rx", "6"); bg.setAttribute("fill", "rgba(255,255,255,0.96)");
+        bg.setAttribute("stroke", year >= 2000 ? "#16a34a" : "#dc2626");
+        bg.setAttribute("stroke-width", "1.5");
+        g.appendChild(bg);
+
+        const txt = document.createElementNS(SVGNS, "text");
+        txt.setAttribute("x", "0"); txt.setAttribute("y", "-20");
+        txt.setAttribute("text-anchor", "middle");
+        txt.setAttribute("font-family", "'Segoe UI', sans-serif");
+        txt.setAttribute("font-size", "9.5px"); txt.setAttribute("font-weight", "800");
+        txt.setAttribute("fill", "#0f172a");
+        txt.textContent = year < 2000 ? "⚠️ Vectores de Potrero & Escombros" : "🛡️ Nodos de Cuidado Comunitario";
+        g.appendChild(txt);
+
+        const sub = document.createElementNS(SVGNS, "text");
+        sub.setAttribute("x", "0"); sub.setAttribute("y", "-10");
+        sub.setAttribute("text-anchor", "middle");
+        sub.setAttribute("font-family", "'Segoe UI', sans-serif");
+        sub.setAttribute("font-size", "8px"); sub.setAttribute("font-weight", "600");
+        sub.setAttribute("fill", "#475569");
+        sub.textContent = `Área: ${areaHa.toFixed(1)} ha (${year})`;
+        g.appendChild(sub);
+
+        cultLayer1Svg.appendChild(g);
+      }
+    }
+  }
+
+  // Capa 2: Cerramiento EAAB & Filtro de Borde Urbano
+  function renderCulturalCapa2() {
+    if (!cultLayer2Canvas) return;
+    const rect = cultLayer2Canvas.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = rect.width || 720, h = rect.height || 405;
+    if (cultLayer2Canvas.width !== Math.round(w * dpr) || cultLayer2Canvas.height !== Math.round(h * dpr)) {
+      cultLayer2Canvas.width = Math.round(w * dpr);
+      cultLayer2Canvas.height = Math.round(h * dpr);
+    }
+    const ctx = cultLayer2Canvas.getContext("2d");
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const projectPoint = (rx, ry, el = 0.05) => projectPointToLayer(rx, ry, el, w, h);
+
+    const porvenirPts = [
+      [6800, 2400], [7100, 2700], [7400, 3000], [7700, 3300], [8000, 3600]
+    ];
+    const scrPorvenir = porvenirPts.map(p => projectPoint(p[0], p[1]));
+    ctx.beginPath();
+    ctx.moveTo(scrPorvenir[0].x, scrPorvenir[0].y);
+    for (let i = 1; i < scrPorvenir.length; i++) ctx.lineTo(scrPorvenir[i].x, scrPorvenir[i].y);
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = "#e11d48";
+    ctx.stroke();
+
+    const gatePt = projectPoint(7400, 3000);
+
+    for (let p = 0; p < 8; p++) {
+      const prog = (cultTime * 0.4 + p * 0.125) % 1.0;
+      const idx = Math.floor(prog * (scrPorvenir.length - 1));
+      const subProg = (prog * (scrPorvenir.length - 1)) - idx;
+      const p1 = scrPorvenir[idx], p2 = scrPorvenir[idx + 1] || p1;
+      const px = p1.x + (p2.x - p1.x) * subProg;
+      const py = p1.y + (p2.y - p1.y) * subProg;
+
+      ctx.beginPath();
+      ctx.arc(px, py, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#e11d48";
+      ctx.fill();
+    }
+
+    const zmpaInsidePts = [
+      [7420, 3050], [7460, 3100], [7500, 3150], [7530, 3180]
+    ];
+    const scrZmpaIn = zmpaInsidePts.map(p => projectPoint(p[0], p[1]));
+
+    for (let p = 0; p < 5; p++) {
+      const prog = (cultTime * 0.08 + p * 0.2) % 1.0;
+      const idx = Math.floor(prog * (scrZmpaIn.length - 1));
+      const subProg = (prog * (scrZmpaIn.length - 1)) - idx;
+      const p1 = scrZmpaIn[idx], p2 = scrZmpaIn[idx + 1] || p1;
+      const px = p1.x + (p2.x - p1.x) * subProg;
+      const py = p1.y + (p2.y - p1.y) * subProg;
+
+      ctx.beginPath();
+      ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#16a34a";
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+    }
+
+    if (cultLayer2Svg) {
+      cultLayer2Svg.innerHTML = "";
+      const SVGNS = "http://www.w3.org/2000/svg";
+
+      if (gatePt.inFront) {
+        const g = document.createElementNS(SVGNS, "g");
+        g.setAttribute("transform", `translate(${gatePt.x}, ${gatePt.y})`);
+
+        const gateCircle = document.createElementNS(SVGNS, "circle");
+        gateCircle.setAttribute("r", "7");
+        gateCircle.setAttribute("fill", "#0284c7");
+        gateCircle.setAttribute("stroke", "#ffffff");
+        gateCircle.setAttribute("stroke-width", "2");
+        g.appendChild(gateCircle);
+
+        const bg = document.createElementNS(SVGNS, "rect");
+        bg.setAttribute("x", "12"); bg.setAttribute("y", "-18");
+        bg.setAttribute("width", "185"); bg.setAttribute("height", "32");
+        bg.setAttribute("rx", "6"); bg.setAttribute("fill", "rgba(255,255,255,0.96)");
+        bg.setAttribute("stroke", "#0284c7"); bg.setAttribute("stroke-width", "1.5");
+        g.appendChild(bg);
+
+        const txt = document.createElementNS(SVGNS, "text");
+        txt.setAttribute("x", "18"); txt.setAttribute("y", "-5");
+        txt.setAttribute("font-family", "'Segoe UI', sans-serif");
+        txt.setAttribute("font-size", "9.5px"); txt.setAttribute("font-weight", "800");
+        txt.setAttribute("fill", "#0f172a");
+        txt.textContent = "🚪 Portón EAAB & Filtro de Borde";
+        g.appendChild(txt);
+
+        const sub = document.createElementNS(SVGNS, "text");
+        sub.setAttribute("x", "18"); sub.setAttribute("y", "6");
+        sub.setAttribute("font-family", "'Segoe UI', sans-serif");
+        sub.setAttribute("font-size", "8px"); sub.setAttribute("font-weight", "600");
+        sub.setAttribute("fill", "#0284c7");
+        sub.textContent = "Filtro: Velocidad 25 km/h ➔ 3 km/h (ZMPA 12.14 ha)";
+        g.appendChild(sub);
+
+        cultLayer2Svg.appendChild(g);
+      }
+    }
+  }
+
+  // Capa 3: Recorrido Pedagógico y Experiencia Sensorial
+  function renderCulturalCapa3() {
+    if (!cultLayer3Canvas) return;
+    const rect = cultLayer3Canvas.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = rect.width || 720, h = rect.height || 405;
+    if (cultLayer3Canvas.width !== Math.round(w * dpr) || cultLayer3Canvas.height !== Math.round(h * dpr)) {
+      cultLayer3Canvas.width = Math.round(w * dpr);
+      cultLayer3Canvas.height = Math.round(h * dpr);
+    }
+    const ctx = cultLayer3Canvas.getContext("2d");
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const projectPoint = (rx, ry, el = 0.05) => projectPointToLayer(rx, ry, el, w, h);
+
+    const tourPts = [
+      [7900, 2700],
+      [7700, 2900],
+      [7550, 3050],
+      [7480, 3140]
+    ];
+    const scrTour = tourPts.map(p => projectPoint(p[0], p[1]));
+
+    ctx.beginPath();
+    ctx.moveTo(scrTour[0].x, scrTour[0].y);
+    for (let i = 1; i < scrTour.length; i++) ctx.lineTo(scrTour[i].x, scrTour[i].y);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "#15803d";
+    ctx.setLineDash([5, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const prog = (cultTime * 0.15) % 1.0;
+    const idx = Math.floor(prog * (scrTour.length - 1));
+    const subProg = (prog * (scrTour.length - 1)) - idx;
+    const p1 = scrTour[idx], p2 = scrTour[idx + 1] || p1;
+    const stX = p1.x + (p2.x - p1.x) * subProg;
+    const stY = p1.y + (p2.y - p1.y) * subProg;
+
+    for (let s = 0; s < 4; s++) {
+      ctx.beginPath();
+      ctx.arc(stX + (s - 1.5) * 5, stY + (s % 2) * 4, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#16a34a";
+      ctx.fill();
+    }
+
+    const platformPt = scrTour[3];
+    if (platformPt.inFront) {
+      const pulseR = 35 + Math.sin(cultTime * 3) * 6;
+      ctx.beginPath();
+      ctx.ellipse(platformPt.x, platformPt.y, pulseR * 1.5, pulseR * 0.8, -0.3, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(22, 163, 74, 0.15)";
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "rgba(22, 163, 74, 0.6)";
+      ctx.stroke();
+
+      if (idx === 2 || idx === 3) {
+        for (let b = 0; b < 6; b++) {
+          const bAng = (b / 6) * Math.PI * 2 + cultTime * 0.5;
+          const bx = platformPt.x + Math.cos(bAng) * (pulseR + 15);
+          const by = platformPt.y + Math.sin(bAng) * (pulseR * 0.5 + 8);
+          ctx.beginPath();
+          ctx.arc(bx, by, 3, 0, Math.PI * 2);
+          ctx.fillStyle = "#0284c7";
+          ctx.fill();
+        }
+      }
+    }
+
+    if (cultLayer3Svg) {
+      cultLayer3Svg.innerHTML = "";
+      const SVGNS = "http://www.w3.org/2000/svg";
+
+      const bibPt = scrTour[0];
+      if (bibPt.inFront) {
+        const g1 = document.createElementNS(SVGNS, "g");
+        g1.setAttribute("transform", `translate(${bibPt.x}, ${bibPt.y})`);
+        const dot1 = document.createElementNS(SVGNS, "circle");
+        dot1.setAttribute("r", "5"); dot1.setAttribute("fill", "#15803d");
+        g1.appendChild(dot1);
+        const t1 = document.createElementNS(SVGNS, "text");
+        t1.setAttribute("x", "8"); t1.setAttribute("y", "4");
+        t1.setAttribute("font-family", "'Segoe UI', sans-serif");
+        t1.setAttribute("font-size", "9px"); t1.setAttribute("font-weight", "800");
+        t1.setAttribute("fill", "#0f172a");
+        t1.textContent = "📚 Biblioteca El Tintal (Inicio)";
+        g1.appendChild(t1);
+        cultLayer3Svg.appendChild(g1);
+      }
+
+      if (platformPt.inFront) {
+        const g2 = document.createElementNS(SVGNS, "g");
+        g2.setAttribute("transform", `translate(${platformPt.x}, ${platformPt.y})`);
+
+        const bg = document.createElementNS(SVGNS, "rect");
+        bg.setAttribute("x", "-85"); bg.setAttribute("y", "-38");
+        bg.setAttribute("width", "170"); bg.setAttribute("height", "28");
+        bg.setAttribute("rx", "6"); bg.setAttribute("fill", "rgba(255,255,255,0.96)");
+        bg.setAttribute("stroke", "#15803d"); bg.setAttribute("stroke-width", "1.5");
+        g2.appendChild(bg);
+
+        const txt = document.createElementNS(SVGNS, "text");
+        txt.setAttribute("x", "0"); txt.setAttribute("y", "-24");
+        txt.setAttribute("text-anchor", "middle");
+        txt.setAttribute("font-family", "'Segoe UI', sans-serif");
+        txt.setAttribute("font-size", "9.5px"); txt.setAttribute("font-weight", "800");
+        txt.setAttribute("fill", "#0f172a");
+        txt.textContent = "🤫 Franja de Silencio & Avistamiento";
+        g2.appendChild(txt);
+
+        const sub = document.createElementNS(SVGNS, "text");
+        sub.setAttribute("x", "0"); sub.setAttribute("y", "-14");
+        sub.setAttribute("text-anchor", "middle");
+        sub.setAttribute("font-family", "'Segoe UI', sans-serif");
+        sub.setAttribute("font-size", "8px"); sub.setAttribute("font-weight", "600");
+        sub.setAttribute("fill", "#15803d");
+        sub.textContent = "Aves se acercan al espejo de agua";
+        g2.appendChild(sub);
+
+        cultLayer3Svg.appendChild(g2);
+      }
+    }
+  }
+
+  // Capa 4: Fricción Vial y Solución Adaptativa SOT
+  function renderCulturalCapa4(elevated) {
+    if (!cultLayer4Canvas) return;
+    const rect = cultLayer4Canvas.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = rect.width || 720, h = rect.height || 405;
+    if (cultLayer4Canvas.width !== Math.round(w * dpr) || cultLayer4Canvas.height !== Math.round(h * dpr)) {
+      cultLayer4Canvas.width = Math.round(w * dpr);
+      cultLayer4Canvas.height = Math.round(h * dpr);
+    }
+    const ctx = cultLayer4Canvas.getContext("2d");
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const projectPoint = (rx, ry, el = 0.05) => projectPointToLayer(rx, ry, el, w, h);
+
+    const caliPts = [
+      [7100, 3700], [7300, 3400], [7500, 3100], [7700, 2800]
+    ];
+    const scrCali = caliPts.map(p => projectPoint(p[0], p[1], elevated ? 0.35 : 0.05));
+
+    if (elevated) {
+      ctx.beginPath();
+      ctx.moveTo(scrCali[0].x, scrCali[0].y);
+      for (let i = 1; i < scrCali.length; i++) ctx.lineTo(scrCali[i].x, scrCali[i].y);
+      ctx.lineWidth = 7.0;
+      ctx.strokeStyle = "#16a34a";
+      ctx.stroke();
+
+      ctx.lineWidth = 4.0;
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+
+      for (let v = 0; v < 6; v++) {
+        const prog = (cultTime * 0.5 + v * 0.16) % 1.0;
+        const idx = Math.floor(prog * (scrCali.length - 1));
+        const subProg = (prog * (scrCali.length - 1)) - idx;
+        const p1 = scrCali[idx], p2 = scrCali[idx + 1] || p1;
+        const vx = p1.x + (p2.x - p1.x) * subProg;
+        const vy = p1.y + (p2.y - p1.y) * subProg;
+
+        ctx.beginPath();
+        ctx.arc(vx, vy, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#16a34a";
+        ctx.fill();
+      }
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(scrCali[0].x, scrCali[0].y);
+      for (let i = 1; i < scrCali.length; i++) ctx.lineTo(scrCali[i].x, scrCali[i].y);
+      ctx.lineWidth = 5.0;
+      ctx.strokeStyle = "#dc2626";
+      ctx.stroke();
+
+      ctx.lineWidth = 12.0;
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+      ctx.stroke();
+
+      for (let v = 0; v < 8; v++) {
+        const p1 = scrCali[1], p2 = scrCali[2];
+        const f = v / 7;
+        const vx = p1.x + (p2.x - p1.x) * f + (Math.sin(v) * 4);
+        const vy = p1.y + (p2.y - p1.y) * f + (Math.cos(v) * 3);
+
+        ctx.beginPath();
+        ctx.rect(vx - 5, vy - 3, 10, 6);
+        ctx.fillStyle = "#dc2626";
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "#ffffff";
+        ctx.stroke();
+      }
+    }
+
+    if (cultLayer4Svg) {
+      cultLayer4Svg.innerHTML = "";
+      const SVGNS = "http://www.w3.org/2000/svg";
+      const midPt = scrCali[Math.floor(scrCali.length / 2)];
+
+      if (midPt.inFront) {
+        const g = document.createElementNS(SVGNS, "g");
+        g.setAttribute("transform", `translate(${midPt.x}, ${midPt.y})`);
+
+        const bg = document.createElementNS(SVGNS, "rect");
+        bg.setAttribute("x", "-100"); bg.setAttribute("y", "-42");
+        bg.setAttribute("width", "200"); bg.setAttribute("height", "32");
+        bg.setAttribute("rx", "6"); bg.setAttribute("fill", "rgba(255,255,255,0.96)");
+        bg.setAttribute("stroke", elevated ? "#16a34a" : "#dc2626");
+        bg.setAttribute("stroke-width", "1.5");
+        g.appendChild(bg);
+
+        const txt = document.createElementNS(SVGNS, "text");
+        txt.setAttribute("x", "0"); txt.setAttribute("y", "-28");
+        txt.setAttribute("text-anchor", "middle");
+        txt.setAttribute("font-family", "'Segoe UI', sans-serif");
+        txt.setAttribute("font-size", "9.5px"); txt.setAttribute("font-weight", "800");
+        txt.setAttribute("fill", "#0f172a");
+        txt.textContent = elevated ? "🌉 Vía Elevada Flotante SOT" : "🚌 Fricción Vial Av. Ciudad de Cali";
+        g.appendChild(txt);
+
+        const sub = document.createElementNS(SVGNS, "text");
+        sub.setAttribute("x", "0"); sub.setAttribute("y", "-17");
+        sub.setAttribute("text-anchor", "middle");
+        sub.setAttribute("font-family", "'Segoe UI', sans-serif");
+        sub.setAttribute("font-size", "8px"); sub.setAttribute("font-weight", "600");
+        sub.setAttribute("fill", elevated ? "#16a34a" : "#dc2626");
+        sub.textContent = elevated ? "Conexión hídrica libre bajo puente (4.9 ha ↔ 13.9 ha)" : "Inundación por lluvias · TAD: +2 horas";
+        g.appendChild(sub);
+
+        cultLayer4Svg.appendChild(g);
+      }
+    }
+  }
+
 })();
+
