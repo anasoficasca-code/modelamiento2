@@ -1283,7 +1283,8 @@
   const allNodesById = {};
   Object.keys(SUBNETS).forEach(mId => {
     SUBNETS[mId].nodes.forEach(n => {
-      allNodesById[n.id] = { ...n, macroId: mId };
+      n.macroId = mId;
+      allNodesById[n.id] = n;
     });
   });
 
