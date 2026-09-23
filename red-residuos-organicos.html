@@ -692,13 +692,13 @@
   };
 
   const SAVED_MACRO_POSITIONS = {
-    "n1": { x: 1160.9, y: 374.9, r: 52.4 },
-    "n2": { x: 167.1, y: 328.7, r: 140.4 },
-    "n3": { x: 721.8, y: 276.2, r: 176.9 },
-    "n4": { x: 511.1, y: 569.6, r: 140.4 },
-    "n5": { x: 1444.4, y: 184.7, r: 140.4 },
-    "n6": { x: 408.0, y: 175.8, r: 52.4 },
-    "n7": { x: 1248.0, y: 628.2, r: 140.4 }
+    "n1": { x: 1105.8, y: 485.3, r: 124.4, t: "Colapso de la red vial local y arterial" },
+    "n2": { x: 136.9, y: 534.2, r: 116.4, t: "Contaminación de la red hídrica" },
+    "n3": { x: 678.2, y: 301.3, r: 176.9, t: "Concentración del mercado mayorista" },
+    "n4": { x: 467.6, y: 774.2, r: 132.4, t: "Sobrecarga por densificación en altura" },
+    "n5": { x: 1407.1, y: 264.9, r: 140.4, t: "Interferencia en el espacio público" },
+    "n6": { x: 178.7, y: 248.9, r: 108.4, t: "Acumulación de residuos y transporte pesado" },
+    "n7": { x: 1180.4, y: 789.3, r: 140.4, t: "Inoperancia del ordenamiento oficial" },
   };
 
   function resizeIndividualNode(id, delta) {
@@ -910,7 +910,7 @@
     });
     intro.style.opacity = "0";
     levelTitle.classList.add("show");
-    levelTitleText.textContent = "Los 7 grandes problemas de fondo";
+    levelTitleText.textContent = "El colapso operativo y logístico del modelo de ocupación de Kennedy frente a la capacidad de soporte del territorio";
     levelSubText.textContent = "Toca un problema para ver sus relaciones, o una flecha para ver el mecanismo causal";
     backBtn.classList.remove("show");
     centerBlob.style.opacity = "0"; centerLabel.style.opacity = "0"; hitCenter.style.pointerEvents = "none";
