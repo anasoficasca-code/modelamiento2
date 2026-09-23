@@ -411,33 +411,45 @@
       </div>
     </div>
 
-    <!-- Overlay interactivo para la Escala Técnica/Cultural (Ruido y Tráfico) -->
+    <!-- Overlay interactivo para la Escala Técnica/Cultural (Vías, Ruido y Tráfico) -->
     <div id="techExplodeOverlay" style="position:absolute; inset:0; z-index:400; background:#f3f4f5; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:auto;">
       <button type="button" id="techExplodeBack" style="position:absolute; top:20px; left:26px; font-family:'Segoe UI',sans-serif; font-size:12px; font-weight:700; color:#1e293b; background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:8px 16px; cursor:pointer; z-index:20; pointer-events:auto; box-shadow:0 2px 8px rgba(0,0,0,.06);">← Volver a apilamiento principal</button>
       <div id="techExplodeStack" style="position:relative; width:min(48vw, 500px); aspect-ratio:16/9; margin-top:20px;">
         
-        <!-- Capa 1: Tráfico y Ruido -->
-        <div id="techLayer1" class="tech-sublayer" style="position:absolute; top:35%; left:50%; width:min(48vw, 500px); aspect-ratio:16/9; z-index:3; opacity:0; transform:translate(-50%, -20px); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(250, 246, 246, 0.55); box-shadow:0 10px 30px rgba(15,23,42,.06);">
+        <!-- Capa 2: Tráfico y Ruido Urbano -->
+        <div id="techLayer2" class="tech-sublayer" style="position:absolute; top:15%; left:50%; width:min(48vw, 500px); aspect-ratio:16/9; z-index:4; opacity:0; transform:translate(-50%, 0); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:transparent; box-shadow:none;">
             <img id="techNoiseImg" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill;">
             <canvas id="techNoiseCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
           </div>
           <div class="tech-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10;">
-            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#991b1b; background:#fef2f2; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(153,27,27,.2);">Capa 01</span>
+            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#991b1b; background:#fef2f2; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(153,27,27,.2);">Capa 02</span>
             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">TRÁFICO Y RUIDO URBANO</div>
-            <div style="font-size:10px; color:#64748b; font-weight:600;">Simulación de ruido vehicular (Corabastos) · Emisiones sonoras</div>
+            <div style="font-size:10px; color:#64748b; font-weight:600;">Simulación de flujo vehicular e impacto acústico (Corabastos / Av. Cali)</div>
+          </div>
+        </div>
+
+        <!-- Capa 1: Malla Vial e Infraestructura -->
+        <div id="techLayer1" class="tech-sublayer" style="position:absolute; top:42%; left:50%; width:min(48vw, 500px); aspect-ratio:16/9; z-index:3; opacity:0; transform:translate(-50%, 0); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:transparent; box-shadow:none;">
+            <img id="techRoadsImg" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill;">
+          </div>
+          <div class="tech-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10;">
+            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#1d4ed8; background:#eff6ff; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(29,78,216,.2);">Capa 01</span>
+            <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">MALLA VIAL E INFRAESTRUCTURA DE CONECTIVIDAD</div>
+            <div style="font-size:10px; color:#64748b; font-weight:600;">Ejes principales de movilidad vehicular · Av. Ciudad de Cali / Av. Villavicencio</div>
           </div>
         </div>
 
         <!-- Capa Base: Contexto -->
         <div id="techLayerBase" class="tech-sublayer" style="position:absolute; top:71%; left:50%; width:min(48vw, 500px); aspect-ratio:16/9; z-index:2; opacity:0; transform:translate(-50%, 0px); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:0 12px 36px rgba(0,0,0,.08);">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:none; background:transparent;">
             <img id="techBaseImg" style="width:100%; height:100%; object-fit:fill;">
           </div>
           <div class="tech-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; z-index:10;">
             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(100,116,139,.2);">Base</span>
             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">EXISTING FEATURES</div>
-            <div style="font-size:10px; color:#64748b; font-weight:600;">Axonometría Base Cortada · Infraestructura vial</div>
+            <div style="font-size:10px; color:#64748b; font-weight:600;">Axonometría Base Cortada · Masa edificada y topografía</div>
           </div>
         </div>
 
