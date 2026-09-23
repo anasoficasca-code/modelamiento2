@@ -2022,16 +2022,16 @@
   };
 
   const MACRO_NODES = [
-    { id: "m1", t: "Macromodelo de Sintaxis Espacial y Economía de Movimiento", cat: "sintaxis", desc: "Examinar cómo la configuración geométrica, la profundidad topológica y la elección de rutas condicionan el movimiento y la autoorganización morfológica de la ciudad.", x: 200, y: 150 },
+    { id: "m1", t: "Macromodelo de Sintaxis Espacial y Economía de Movimiento", cat: "sintaxis", desc: "Examinar cómo la configuración geométrica, la profundidad topológica y la elección de rutas condicionan el movimiento y la autoorganización morfológica de la ciudad.", x: 185, y: 112.7 },
     { id: "m2", t: "Macromodelo de Intermodalidad y Metabolismo de Movilidad", cat: "intermodalidad", desc: "Estudiar la articulación eficiente de los flujos viales, el transporte masivo y la conectividad entre los distintos modos de desplazamiento en el territorio.", x: 450, y: 120 },
-    { id: "m3", t: "Macromodelo de Metabolismo Urbano", cat: "metabolismo", desc: "Analizar y cuantificar las entradas, salidas, la acumulación de recursos, la gestión de residuos y las emisiones del sistema urbano.", x: 700, y: 160 },
-    { id: "m4", t: "Macromodelo de Cronosistemas y Temporalidad Social", cat: "cronosistemas", desc: "Comprender cómo varían los ciclos de actividad, la ocupación temporal del espacio y los pulsos de demanda u horas pico de los habitantes.", x: 180, y: 310 },
-    { id: "m5", t: "Macromodelo de Sistemas Socioecológicos y Tecnológicos (SETS)", cat: "sets", desc: "Evaluar la interacción profunda entre la infraestructura construida, la sociedad y el entorno natural, incluyendo las respuestas microclimáticas y ecológicas.", x: 450, y: 280 },
-    { id: "m6", t: "Macromodelo de Co-Evolución Adaptativa Territorio-Sociedad", cat: "coevolucion", desc: "Investigar los procesos de transformación conjunta y adaptación mutua a largo plazo entre los asentamientos humanos y la estructura territorial.", x: 720, y: 300 },
-    { id: "m7", t: "Macromodelo de Adaptabilidad y Reconfiguración de Redes", cat: "adaptabilidad", desc: "Modelar los cambios estructurales en las redes físicas y funcionales de la ciudad frente a transformaciones o nuevas demandas sistémicas.", x: 260, y: 460 },
-    { id: "m8", t: "Macromodelo de Simbiosis Urbana y Ecoindustrial", cat: "simbiosis", desc: "Identificar oportunidades de aprovechamiento cruzado de subproductos, energía y recursos entre los diferentes sectores e industrias de la ciudad.", x: 640, y: 460 },
-    { id: "m9", t: "Macromodelo de Modelación Computacional y Prospectiva Urbana", cat: "prospectiva", desc: "Utilizar herramientas tecnológicas como gemelos digitales, escenarios hipotéticos y simulación basada en agentes para probar, anticipar y experimentar con el comportamiento futuro de la ciudad.", x: 450, y: 420 },
-    { id: "m10", t: "Macromodelo de Resiliencia Operativa y Contingencia", cat: "resiliencia", desc: "Analizar la vulnerabilidad sistémica de la ciudad y simular rutas de contingencia y respuesta frente a eventos de perturbación crítica.", x: 450, y: 530 }
+    { id: "m3", t: "Macromodelo de Metabolismo Urbano", cat: "metabolismo", desc: "Analizar y cuantificar las entradas, salidas, la acumulación de recursos, la gestión de residuos y las emisiones del sistema urbano.", x: 700, y: 149.3 },
+    { id: "m4", t: "Macromodelo de Cronosistemas y Temporalidad Social", cat: "cronosistemas", desc: "Comprender cómo varían los ciclos de actividad, la ocupación temporal del espacio y los pulsos de demanda u horas pico de los habitantes.", x: 121.7, y: 363.3 },
+    { id: "m5", t: "Macromodelo de Sistemas Socioecológicos y Tecnológicos (SETS)", cat: "sets", desc: "Evaluar la interacción profunda entre la infraestructura construida, la sociedad y el entorno natural, incluyendo las respuestas microclimáticas y ecológicas.", x: 272.4, y: 225.7 },
+    { id: "m6", t: "Macromodelo de Co-Evolución Adaptativa Territorio-Sociedad", cat: "coevolucion", desc: "Investigar los procesos de transformación conjunta y adaptación mutua a largo plazo entre los asentamientos humanos y la estructura territorial.", x: 556.8, y: 298.2 },
+    { id: "m7", t: "Macromodelo de Adaptabilidad y Reconfiguración de Redes", cat: "adaptabilidad", desc: "Modelar los cambios estructurales en las redes físicas y funcionales de la ciudad frente a transformaciones o nuevas demandas sistémicas.", x: 193.4, y: 482.2 },
+    { id: "m8", t: "Macromodelo de Simbiosis Urbana y Ecoindustrial", cat: "simbiosis", desc: "Identificar oportunidades de aprovechamiento cruzado de subproductos, energía y recursos entre los diferentes sectores e industrias de la ciudad.", x: 696.1, y: 506.2 },
+    { id: "m9", t: "Macromodelo de Modelación Computacional y Prospectiva Urbana", cat: "prospectiva", desc: "Utilizar herramientas tecnológicas como gemelos digitales, escenarios hipotéticos y simulación basada en agentes para probar, anticipar y experimentar con el comportamiento futuro de la ciudad.", x: 460.5, y: 397.5 },
+    { id: "m10", t: "Macromodelo de Resiliencia Operativa y Contingencia", cat: "resiliencia", desc: "Analizar la vulnerabilidad sistémica de la ciudad y simular rutas de contingencia y respuesta frente a eventos de perturbación crítica.", x: 544.4, y: 525.2 }
   ];
 
   const MACRO_EDGES = [
@@ -2080,7 +2080,7 @@
     MACRO_NODES.forEach(n => {
       const p = { x: sc(n.x, W, rect.width), y: sc(n.y, H, rect.height) };
       macroPosPx[n.id] = p;
-      macroRadiusPx[n.id] = 42 + (macroDegree[n.id] || 0) * 4;
+      macroRadiusPx[n.id] = 36 + (macroDegree[n.id] || 0) * 11.5;
     });
 
     const ids = MACRO_NODES.map(n => n.id);
