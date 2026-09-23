@@ -2017,6 +2017,8 @@
           openNaturalExplode();
         } else if (layerNum === 2) {
           openCulturalExplode();
+        } else if (layerNum === 3) {
+          openTechExplode();
         } else {
           unzoomAll();
         }
@@ -2381,10 +2383,19 @@
   if (natBackBtn) natBackBtn.addEventListener("click", closeNaturalExplode);
 
   // ============================================================
-  // LÓGICA PARA ESCALA TÉCNICA/CULTURAL (Capa 2)
+  // LÓGICA PARA ESCALA TECNOLÓGICA (Vías + Carros | Mapa de Ruido)
   // ============================================================
   const techOverlay = document.getElementById("techExplodeOverlay");
   const techBackBtn = document.getElementById("techExplodeBack");
+  const techAssembleBtn = document.getElementById("techAssembleBtn");
+  const techAssembleBtnText = document.getElementById("techAssembleBtnText");
+  const techGuideSvg = document.getElementById("techGuideSvg");
+  const techStageEl = document.getElementById("techExplodeStage");
+  const techLayer1 = document.getElementById("techLayer1");
+  const techLayer2 = document.getElementById("techLayer2");
+  const techLayerBase = document.getElementById("techLayerBase");
+
+  let techExplodeStep = 0;
   let techAnimFrame = null;
   let techTime = 0;
   
@@ -2392,7 +2403,6 @@
     if (!techOverlay) return;
 
     const targetW = 960, targetH = 540;
-    const origW = wrap.clientWidth, origH = wrap.clientHeight;
     const layerAspect = targetW / targetH;
     
     camera.left = -viewSize * layerAspect;
@@ -2421,21 +2431,26 @@
     renderer.render(scene, camera);
     const fotoBase = renderer.domElement.toDataURL("image/png");
 
-    // 2. CAPA RUIDO Y TRÁFICO (Con ruido, con carros)
-    if (noiseMesh) noiseMesh.visible = true;
+    // 2. CAPA 1: VÍAS Y CARROS (Con carros, sin ruido)
+    if (noiseMesh) noiseMesh.visible = false;
     if (vehInstanced) {
       vehInstanced.visible = true;
       vehInstanced.count = vehiclesAtTime(currentTime).length || 120;
     }
+    if (roadMat) roadMat.color.set(0xe11d48);
+
+    renderer.render(scene, camera);
+    const fotoRoadsVeh = renderer.domElement.toDataURL("image/png");
+
+    // 3. CAPA 2: SIMULACIÓN DE RUIDO (Con ruido, con carros)
+    if (noiseMesh) noiseMesh.visible = true;
     if (roadMat) roadMat.color.set(0x7a838d);
-    
-    // Forzar actualización del ruido antes de renderizar
     if (typeof computeLiveNoiseField === "function") computeLiveNoiseField(vehiclesAtTime(currentTime), performance.now() + 150);
 
     renderer.render(scene, camera);
-    const fotoRuido = renderer.domElement.toDataURL("image/png");
+    const fotoNoise = renderer.domElement.toDataURL("image/png");
 
-    // Restaurar estado
+    // Restaurar estado original de la escena
     scene.background = origBg;
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
     if (noiseMesh) noiseMesh.visible = origNoiseVis;
@@ -2446,31 +2461,183 @@
     }
 
     const tBase = document.getElementById("techBaseImg"); if (tBase) tBase.src = fotoBase;
-    const tNoise = document.getElementById("techNoiseImg"); if (tNoise) tNoise.src = fotoRuido;
-    // Ocultar el canvas porque el ruido ya viene renderizado en fotoRuido por WebGL
-    const tNoiseCanvas = document.getElementById("techNoiseCanvas");
-    if (tNoiseCanvas) tNoiseCanvas.style.display = "none";
+    const tRoads = document.getElementById("techRoadsVehImg"); if (tRoads) tRoads.src = fotoRoadsVeh;
+    const tNoise = document.getElementById("techNoiseImg"); if (tNoise) tNoise.src = fotoNoise;
 
     techOverlay.style.display = "flex";
     void techOverlay.offsetWidth;
 
-    // Animación de separación de capas
-    const sublayers = techOverlay.querySelectorAll(".tech-sublayer");
-    sublayers.forEach((l) => {
-      l.style.opacity = "1";
-      if (l.id === "techLayer1") {
-        l.style.transform = "translate(-50%, -40px)";
-      } else {
-        l.style.transform = "translate(-50%, 0)";
-      }
+    techExplodeStep = 0;
+    updateTechLayersStep(false);
+    startTechAnimation();
+  }
+
+  function updateTechLayersStep(animated = true) {
+    const sublayers = [techLayer1, techLayer2];
+    const tags = techOverlay.querySelectorAll(".tech-layer-tag");
+
+    const allDiamonds = techOverlay.querySelectorAll(".sublayer-diamond");
+    allDiamonds.forEach(d => {
+      d.style.background = "transparent";
+      d.style.boxShadow = "none";
+      d.style.borderColor = "transparent";
     });
 
-    startTechAnimation();
+    if (techExplodeStep === 0) {
+      if (techLayerBase) { techLayerBase.style.top = "50%"; techLayerBase.style.opacity = "1"; techLayerBase.style.transform = "translate(-50%, -40%)"; }
+      sublayers.forEach(l => { if (l) { l.style.opacity = "0"; l.style.top = "50%"; l.style.transform = "translate(-50%, -40%)"; } });
+      tags.forEach(t => { t.style.opacity = "0"; });
+      if (techGuideSvg) techGuideSvg.style.opacity = "0";
+      if (techAssembleBtnText) techAssembleBtnText.textContent = "Extraer Capa 1: Red Vial y Tráfico";
+      return;
+    }
+
+    if (techExplodeStep % 2 === 1 && techExplodeStep <= 3) {
+      const activeIdx = Math.floor(techExplodeStep / 2);
+      if (techLayerBase) { techLayerBase.style.top = "54%"; techLayerBase.style.opacity = "1"; techLayerBase.style.transform = "translate(-50%, -40%)"; }
+      sublayers.forEach((l, index) => {
+        if (!l) return;
+        if (index === activeIdx) {
+          const expTop = l.dataset.explodedTop || "32%";
+          l.style.top = expTop;
+          l.style.transform = "translate(-50%, 0)";
+          l.style.opacity = "1";
+          const tag = l.querySelector(".tech-layer-tag");
+          if (tag) tag.style.opacity = "1";
+        } else {
+          l.style.top = "54%";
+          l.style.transform = "translate(-50%, -40%)";
+          l.style.opacity = "0";
+          const tag = l.querySelector(".tech-layer-tag");
+          if (tag) tag.style.opacity = "0";
+        }
+      });
+      if (techGuideSvg) techGuideSvg.style.opacity = "1";
+      drawTechGuideLines();
+      if (techAssembleBtnText) techAssembleBtnText.textContent = `Asentar Capa ${activeIdx + 1} en el Territorio`;
+      return;
+    }
+
+    if (techExplodeStep % 2 === 0 && techExplodeStep <= 4) {
+      const settledIdx = (techExplodeStep / 2) - 1;
+      const nextNames = ["Capa 2: Simulación de Ruido", "Ver Apilamiento Explotado Completo"];
+
+      if (techLayerBase) { techLayerBase.style.top = "50%"; techLayerBase.style.opacity = "1"; techLayerBase.style.transform = "translate(-50%, -40%)"; }
+      sublayers.forEach((l, index) => {
+        if (!l) return;
+        if (index === settledIdx) {
+          l.style.top = "50%";
+          l.style.transform = "translate(-50%, -40%)";
+          l.style.opacity = "1";
+          const tag = l.querySelector(".tech-layer-tag");
+          if (tag) tag.style.opacity = "1";
+        } else {
+          l.style.top = "50%";
+          l.style.transform = "translate(-50%, -40%)";
+          l.style.opacity = "0";
+          const tag = l.querySelector(".tech-layer-tag");
+          if (tag) tag.style.opacity = "0";
+        }
+      });
+      if (techGuideSvg) techGuideSvg.style.opacity = "0";
+      if (techAssembleBtnText) techAssembleBtnText.textContent = `Extraer ${nextNames[settledIdx]}`;
+      return;
+    }
+
+    if (techExplodeStep === 5) {
+      if (techLayerBase) { techLayerBase.style.top = "72%"; techLayerBase.style.opacity = "1"; techLayerBase.style.transform = "translate(-50%, 0)"; }
+      sublayers.forEach((l) => {
+        if (!l) return;
+        const expTop = l.dataset.explodedTop || "52%";
+        l.style.top = expTop;
+        l.style.transform = "translate(-50%, 0)";
+        l.style.opacity = "1";
+        const tag = l.querySelector(".tech-layer-tag");
+        if (tag) tag.style.opacity = "1";
+      });
+      tags.forEach(t => { t.style.opacity = "1"; });
+      if (techGuideSvg) techGuideSvg.style.opacity = "1";
+      drawTechGuideLines();
+      if (techAssembleBtnText) techAssembleBtnText.textContent = "Integrar TODAS las capas en el Territorio";
+      return;
+    }
+
+    if (techExplodeStep === 6) {
+      if (techLayerBase) { techLayerBase.style.top = "50%"; techLayerBase.style.opacity = "1"; techLayerBase.style.transform = "translate(-50%, -40%)"; }
+      sublayers.forEach((l) => {
+        if (!l) return;
+        l.style.top = "50%";
+        l.style.transform = "translate(-50%, -40%)";
+        l.style.opacity = "1";
+        const tag = l.querySelector(".tech-layer-tag");
+        if (tag) tag.style.opacity = "0";
+      });
+      if (techGuideSvg) techGuideSvg.style.opacity = "0";
+      if (techAssembleBtnText) techAssembleBtnText.textContent = "Reiniciar Recorrido en Base";
+      return;
+    }
+  }
+
+  function advanceTechAssemble() {
+    techExplodeStep++;
+    if (techExplodeStep > 6) techExplodeStep = 0;
+    updateTechLayersStep(true);
+  }
+
+  if (techAssembleBtn) techAssembleBtn.addEventListener("click", advanceTechAssemble);
+  if (techStageEl) techStageEl.addEventListener("click", () => { advanceTechAssemble(); });
+
+  function drawTechGuideLines() {
+    if (!techGuideSvg || !techOverlay) return;
+    techGuideSvg.innerHTML = "";
+    const SVGNS = "http://www.w3.org/2000/svg";
+    const layerBase = techLayerBase;
+    if (!layerBase) return;
+
+    const sublayers = [techLayer1, techLayer2];
+    let layerTop = sublayers.find(l => l && parseFloat(l.style.opacity || "0") > 0.1 && (l.getBoundingClientRect().top < layerBase.getBoundingClientRect().top - 15));
+    if (!layerTop) layerTop = techLayer1;
+
+    const rTop = layerTop.getBoundingClientRect();
+    const rBase = layerBase.getBoundingClientRect();
+    const rStage = techGuideSvg.getBoundingClientRect();
+    if (Math.abs(rTop.top - rBase.top) < 15) return;
+
+    const cornersRel = [
+      { rx: 0.5, ry: 0.0 },
+      { rx: 1.0, ry: 0.5 },
+      { rx: 0.5, ry: 1.0 },
+      { rx: 0.0, ry: 0.5 },
+    ];
+
+    cornersRel.forEach(c => {
+      const x1 = rTop.left + rTop.width * c.rx - rStage.left;
+      const y1 = rTop.top + rTop.height * c.ry - rStage.top;
+      const x2 = rBase.left + rBase.width * c.rx - rStage.left;
+      const y2 = rBase.top + rBase.height * c.ry - rStage.top;
+
+      const line = document.createElementNS(SVGNS, "line");
+      line.setAttribute("x1", String(x1)); line.setAttribute("y1", String(y1));
+      line.setAttribute("x2", String(x2)); line.setAttribute("y2", String(y2));
+      line.setAttribute("stroke", "rgba(225, 29, 72, 0.35)");
+      line.setAttribute("stroke-width", "1.3");
+      line.setAttribute("stroke-dasharray", "4 4");
+      techGuideSvg.appendChild(line);
+
+      const dot1 = document.createElementNS(SVGNS, "circle");
+      dot1.setAttribute("cx", String(x1)); dot1.setAttribute("cy", String(y1)); dot1.setAttribute("r", "2.5");
+      dot1.setAttribute("fill", "rgba(225, 29, 72, 0.5)");
+      techGuideSvg.appendChild(dot1);
+
+      const dot2 = document.createElementNS(SVGNS, "circle");
+      dot2.setAttribute("cx", String(x2)); dot2.setAttribute("cy", String(y2)); dot2.setAttribute("r", "2.5");
+      dot2.setAttribute("fill", "rgba(225, 29, 72, 0.5)");
+      techGuideSvg.appendChild(dot2);
+    });
   }
 
   function startTechAnimation() {
     if (techAnimFrame) cancelAnimationFrame(techAnimFrame);
-    // Ya no usamos rawNoiseData, la capa es estática por ahora
   }
 
   function closeTechExplode() {
