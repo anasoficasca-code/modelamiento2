@@ -2189,10 +2189,187 @@
       });
     });
 
+  let currentMacroMode = "macromodelos";
+
+  function renderCurrentMacroMode() {
+    const titleEl = document.querySelector("#macroModal h2");
+    const subEl = document.querySelector("#macroModal p");
+    const toggleBtn = document.getElementById("toggleMacroModeBtn");
+    const gooLayer = document.getElementById("macroGooLayer");
+    const svg = document.getElementById("macroSvg");
+    const labelLayer = document.getElementById("macroLabelLayer");
+    if (!gooLayer || !svg || !labelLayer) return;
+
+    gooLayer.innerHTML = "";
+    svg.innerHTML = "";
+    labelLayer.innerHTML = "";
+    macroEdgeLineEls.length = 0;
+    Object.keys(macroPosPx).forEach(k => delete macroPosPx[k]);
+    Object.keys(macroRadiusPx).forEach(k => delete macroRadiusPx[k]);
+
+    const activeNodes = currentMacroMode === "papers" ? PAPERS_NODES : MACRO_NODES;
+    const activeEdges = currentMacroMode === "papers" ? PAPERS_EDGES : MACRO_EDGES;
+    const activeCats = currentMacroMode === "papers" ? PAPERS_CATS : MACRO_CATS;
+    const activeById = {}; activeNodes.forEach(n => activeById[n.id] = n);
+    const activeDegree = {}; activeNodes.forEach(n => activeDegree[n.id] = 0);
+    activeEdges.forEach(([a, b]) => { activeDegree[a] = (activeDegree[a] || 0) + 1; activeDegree[b] = (activeDegree[b] || 0) + 1; });
+
+    if (titleEl && subEl) {
+      if (currentMacroMode === "papers") {
+        titleEl.textContent = "MODELO DE COMPLEJIDAD URBANA · PAPERS DE MACROMODELOS";
+        titleEl.style.color = "#60a5fa";
+        subEl.textContent = "Red de sub-modelos e investigación causal de la complejidad territorial";
+      } else {
+        titleEl.textContent = "MACROMODELOS CIUDAD PROPIA";
+        titleEl.style.color = "#24c8bd";
+        subEl.textContent = "Red interconectada de macromodelos para el análisis, simulación y gobernanza territorial";
+      }
+    }
+    if (toggleBtn) {
+      toggleBtn.innerHTML = currentMacroMode === "papers"
+        ? `<i class="fa-solid fa-network-wired"></i> Ver 10 Macromodelos Principales`
+        : `<i class="fa-solid fa-scroll"></i> Ver Papers de Macromodelos`;
+    }
+
+    const stage = document.getElementById("macroStage");
+    const rect = stage.getBoundingClientRect();
+    const SVGNS = "http://www.w3.org/2000/svg";
+    function sc(v, total, size) { return (v / total) * size; }
+    const W = 900, H = 590;
+
+    // Dibujar anillos concéntricos / regiones de fondo en modo Papers (igual a la imagen subida)
+    if (currentMacroMode === "papers") {
+      const domains = [
+        { name: "MODELO DE COMPLEJIDAD URBANA", cx: rect.width / 2, cy: rect.height / 2, rx: rect.width * 0.46, ry: rect.height * 0.46, angle: 0 },
+        { name: "MODELO DE GEMELOS DIGITALES Y SIMULACIÓN COMPUTACIONAL", cx: sc(320, W, rect.width), cy: sc(190, H, rect.height), rx: sc(170, W, rect.width), ry: sc(120, H, rect.height), angle: -15 },
+        { name: "MACROMODELO DE CRONOSISTEMAS Y TEMPORALIDAD SOCIAL", cx: sc(480, W, rect.width), cy: sc(150, H, rect.height), rx: sc(150, W, rect.width), ry: sc(90, H, rect.height), angle: 0 },
+        { name: "SINTAXIS ESPACIAL Y ECONOMÍA DE MOVIMIENTO", cx: sc(660, W, rect.width), cy: sc(270, H, rect.height), rx: sc(160, W, rect.width), ry: sc(150, H, rect.height), angle: 20 },
+        { name: "MACROMODELO DE METABOLISMO URBANO", cx: sc(580, W, rect.width), cy: sc(440, H, rect.height), rx: sc(170, W, rect.width), ry: sc(130, H, rect.height), angle: -10 },
+        { name: "SISTEMAS SOCIOECOLÓGICOS Y TECNOLÓGICOS (SETS)", cx: sc(260, W, rect.width), cy: sc(390, H, rect.height), rx: sc(170, W, rect.width), ry: sc(150, H, rect.height), angle: -25 }
+      ];
+
+      domains.forEach((d, idx) => {
+        const ellipse = document.createElementNS(SVGNS, "ellipse");
+        ellipse.setAttribute("cx", d.cx);
+        ellipse.setAttribute("cy", d.cy);
+        ellipse.setAttribute("rx", d.rx);
+        ellipse.setAttribute("ry", d.ry);
+        ellipse.setAttribute("fill", "rgba(96,165,250,0.02)");
+        ellipse.setAttribute("stroke", idx === 0 ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.22)");
+        ellipse.setAttribute("stroke-dasharray", idx === 0 ? "6 4" : "4 3");
+        ellipse.setAttribute("stroke-width", idx === 0 ? "1.8" : "1.2");
+        if (d.angle) ellipse.setAttribute("transform", `rotate(${d.angle}, ${d.cx}, ${d.cy})`);
+        svg.appendChild(ellipse);
+
+        // Texto curvado/etiqueta de dominio
+        const label = document.createElement("div");
+        label.textContent = d.name;
+        label.style.cssText = `position:absolute; left:${d.cx}px; top:${d.cy - d.ry + 8}px; transform:translate(-50%,-50%); font-size:${idx === 0 ? '11px' : '9px'}; font-weight:800; color:rgba(255,255,255,0.65); letter-spacing:.08em; text-transform:uppercase; pointer-events:none; white-space:nowrap; user-select:none; text-shadow:0 1px 3px rgba(0,0,0,.8);`;
+        labelLayer.appendChild(label);
+      });
+    }
+
+    activeNodes.forEach(n => {
+      const p = { x: sc(n.x, W, rect.width), y: sc(n.y, H, rect.height) };
+      macroPosPx[n.id] = p;
+      if (currentMacroMode === "papers") {
+        macroRadiusPx[n.id] = (n.r ? sc(n.r, 900, rect.width) * 0.72 : 36) + (activeDegree[n.id] || 0) * 2.5;
+      } else {
+        macroRadiusPx[n.id] = 36 + (activeDegree[n.id] || 0) * 11.5;
+      }
+    });
+
+    activeEdges.forEach(([a, b]) => {
+      const line = document.createElementNS(SVGNS, "line");
+      line.setAttribute("stroke", currentMacroMode === "papers" ? "#60a5fa" : "#ffffff");
+      line.setAttribute("stroke-width", currentMacroMode === "papers" ? "1.4" : "1.5");
+      line.setAttribute("stroke-opacity", currentMacroMode === "papers" ? "0.6" : "0.65");
+      if (currentMacroMode === "papers") line.setAttribute("stroke-dasharray", "4 3");
+      svg.appendChild(line);
+      macroEdgeLineEls.push({ line, a, b });
+    });
+    updateMacroEdgeLines();
+
+    activeNodes.forEach(n => {
+      const p = macroPosPx[n.id];
+      const r = macroRadiusPx[n.id];
+      const catObj = activeCats[n.cat] || { color: "#777" };
+      const blob = document.createElement("div");
+      blob.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; width:${r * 2}px; height:${r * 2}px; margin:-${r}px 0 0 -${r}px; border-radius:50%; background:${catObj.color}; box-shadow:0 0 16px ${catObj.color}66; cursor:grab; pointer-events:auto; transition:transform .15s ease; user-select:none;`;
+      gooLayer.appendChild(blob);
+
+      const label = document.createElement("div");
+      const fontPx = currentMacroMode === "papers" ? 8.5 : 10, lineH = fontPx * 1.2;
+      let maxLines = Math.max(2, Math.floor((r * 2 * 0.85) / lineH));
+      let halfH = (maxLines * lineH) / 2;
+      while (halfH >= r * 0.86 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
+      const safeWidth = 2 * Math.sqrt(Math.max(0, r * r - halfH * halfH)) * 0.88;
+      const maxCharsPerLine = Math.max(5, Math.floor(safeWidth / (fontPx * 0.54)));
+      label.innerHTML = wrapToFit(n.t, maxCharsPerLine, maxLines);
+      label.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; transform:translate(-50%,-50%); width:${safeWidth}px; text-align:center; font-size:${fontPx}px; font-weight:700; color:#ffffff; text-shadow:0 1px 3px rgba(0,0,0,.7); line-height:${lineH}px; pointer-events:none; user-select:none;`;
+      labelLayer.appendChild(label);
+
+      // Soporte para arrastrar bola (Drag & Drop)
+      let isDragging = false;
+      let startMouseX = 0, startMouseY = 0;
+      let startPosX = 0, startPosY = 0;
+
+      const onPointerDown = (e) => {
+        isDragging = true;
+        blob.style.cursor = "grabbing";
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        startMouseX = clientX;
+        startMouseY = clientY;
+        startPosX = macroPosPx[n.id].x;
+        startPosY = macroPosPx[n.id].y;
+        e.stopPropagation();
+      };
+
+      const onPointerMove = (e) => {
+        if (!isDragging) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const dx = clientX - startMouseX;
+        const dy = clientY - startMouseY;
+        const newX = Math.max(r + 4, Math.min(rect.width - r - 4, startPosX + dx));
+        const newY = Math.max(r + 4, Math.min(rect.height - r - 4, startPosY + dy));
+        macroPosPx[n.id].x = newX;
+        macroPosPx[n.id].y = newY;
+        blob.style.left = `${newX}px`;
+        blob.style.top = `${newY}px`;
+        label.style.left = `${newX}px`;
+        label.style.top = `${newY}px`;
+        updateMacroEdgeLines();
+      };
+
+      const onPointerUp = () => {
+        if (isDragging) {
+          isDragging = false;
+          blob.style.cursor = "grab";
+        }
+      };
+
+      blob.addEventListener("mousedown", onPointerDown);
+      blob.addEventListener("touchstart", onPointerDown, { passive: true });
+      window.addEventListener("mousemove", onPointerMove);
+      window.addEventListener("touchmove", onPointerMove, { passive: true });
+      window.addEventListener("mouseup", onPointerUp);
+      window.addEventListener("touchend", onPointerUp);
+
+      blob.addEventListener("mouseenter", () => { if (!isDragging) blob.style.transform = "scale(1.1)"; });
+      blob.addEventListener("mouseleave", () => { if (!isDragging) blob.style.transform = "scale(1)"; });
+      blob.addEventListener("click", (e) => {
+        if (Math.hypot(macroPosPx[n.id].x - startPosX, macroPosPx[n.id].y - startPosY) < 4) {
+          openMacroInfo(n);
+        }
+      });
+    });
+
     const legend = document.getElementById("macroLegend");
     if (legend) {
       legend.innerHTML = "";
-      Object.values(MACRO_CATS).forEach(c => {
+      Object.values(activeCats).forEach(c => {
         const el = document.createElement("span");
         el.style.cssText = "display:flex; align-items:center; gap:5px; font-size:10.5px; color:#c3cad2;";
         el.innerHTML = `<i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c.color};box-shadow:0 0 6px ${c.color};"></i>${c.label}`;
@@ -2200,18 +2377,19 @@
       });
     }
 
-    // Botón para copiar coordenadas Macromodelos
+    // Botón para copiar coordenadas
     const copyBtn = document.getElementById("copyMacroCoordsBtn");
     const outputTxt = document.getElementById("macroCoordsOutput");
     if (copyBtn && outputTxt) {
-      copyBtn.addEventListener("click", () => {
-        const exported = MACRO_NODES.map(n => {
+      copyBtn.onclick = () => {
+        const exported = activeNodes.map(n => {
           const p = macroPosPx[n.id] || { x: n.x, y: n.y };
           const relX = Math.round((p.x / rect.width) * W * 10) / 10;
           const relY = Math.round((p.y / rect.height) * H * 10) / 10;
           return `  { id: "${n.id}", t: "${n.t}", cat: "${n.cat}", x: ${relX}, y: ${relY} },`;
         });
-        const codeStr = `const MACRO_NODES = [\n${exported.join("\n")}\n];`;
+        const varName = currentMacroMode === "papers" ? "PAPERS_NODES" : "MACRO_NODES";
+        const codeStr = `const ${varName} = [\n${exported.join("\n")}\n];`;
         outputTxt.value = codeStr;
         outputTxt.style.display = "block";
         navigator.clipboard.writeText(codeStr).then(() => {
@@ -2221,21 +2399,38 @@
         }).catch(() => {
           outputTxt.select();
         });
-      });
+      };
     }
+  }
+
+  function buildMacroNetwork() {
+    renderCurrentMacroMode();
+  }
+
+  const toggleMacroModeBtn = document.getElementById("toggleMacroModeBtn");
+  if (toggleMacroModeBtn) {
+    toggleMacroModeBtn.addEventListener("click", () => {
+      currentMacroMode = currentMacroMode === "papers" ? "macromodelos" : "papers";
+      renderCurrentMacroMode();
+    });
   }
 
   const macroInfoPanel = document.getElementById("macroInfoPanel");
   const macroInfoBody = document.getElementById("macroInfoBody");
   function openMacroInfo(n) {
-    const desde = MACRO_EDGES.filter(([a, b]) => b === n.id).map(([a]) => macroById[a]).filter(Boolean);
-    const hacia = MACRO_EDGES.filter(([a, b]) => a === n.id).map(([, b]) => macroById[b]).filter(Boolean);
-    const catObj = MACRO_CATS[n.cat] || { label: n.cat, color: "#777" };
+    const activeNodes = currentMacroMode === "papers" ? PAPERS_NODES : MACRO_NODES;
+    const activeEdges = currentMacroMode === "papers" ? PAPERS_EDGES : MACRO_EDGES;
+    const activeCats = currentMacroMode === "papers" ? PAPERS_CATS : MACRO_CATS;
+    const activeById = {}; activeNodes.forEach(x => activeById[x.id] = x);
+
+    const desde = activeEdges.filter(([a, b]) => b === n.id).map(([a]) => activeById[a]).filter(Boolean);
+    const hacia = activeEdges.filter(([a, b]) => a === n.id).map(([, b]) => activeById[b]).filter(Boolean);
+    const catObj = activeCats[n.cat] || { label: n.cat, color: "#777" };
     macroInfoBody.innerHTML = `
       <p style="font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:${catObj.color}; margin:0 0 4px; font-weight:700;">${catObj.label}</p>
       <h2 style="font-size:16px; color:#fff; margin:0 0 10px; line-height:1.3;">${n.t}</h2>
       <div style="background:rgba(36,200,189,.1); border:1px solid rgba(36,200,189,.25); border-radius:8px; padding:10px 12px; margin-bottom:14px;">
-        <p style="font-size:11px; font-weight:700; color:#24c8bd; margin:0 0 4px;">¿Qué busca este macromodelo?</p>
+        <p style="font-size:11px; font-weight:700; color:${currentMacroMode === 'papers' ? '#60a5fa' : '#24c8bd'}; margin:0 0 4px;">${currentMacroMode === 'papers' ? '¿Qué investiga este paper / modelo?' : '¿Qué busca este macromodelo?'}</p>
         <p style="font-size:12px; color:#e8ecf1; margin:0; line-height:1.45;">${n.desc}</p>
       </div>
       ${desde.length ? `<div style="margin-bottom:12px;"><b style="font-size:11px; color:#9aa3ad;">Se relaciona desde</b>${desde.map(x => `<div style="font-size:11.5px; color:#e8ecf1; background:rgba(255,255,255,.06); border-radius:8px; padding:6px 9px; margin-top:5px;">${x.t}</div>`).join("")}</div>` : ""}
@@ -2250,8 +2445,17 @@
   const macroBtn = document.getElementById("macroBtn");
   if (macroBtn && macroModal) {
     macroBtn.addEventListener("click", () => {
+      currentMacroMode = "macromodelos";
       macroModal.style.display = "flex";
-      buildMacroNetwork();
+      renderCurrentMacroMode();
+    });
+  }
+  const papersBtn = document.getElementById("papersBtn");
+  if (papersBtn && macroModal) {
+    papersBtn.addEventListener("click", () => {
+      currentMacroMode = "papers";
+      macroModal.style.display = "flex";
+      renderCurrentMacroMode();
     });
   }
   const macroModalClose = document.getElementById("macroModalClose");
