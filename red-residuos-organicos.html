@@ -672,6 +672,39 @@
     "s7_5": { x: 1217.8, y: 909.3, r: 43.8 }
   };
 
+  const SAVED_MACRO_POSITIONS = {
+    "n1": { x: 1160.9, y: 374.9, r: 52.4 },
+    "n2": { x: 167.1, y: 328.7, r: 140.4 },
+    "n3": { x: 721.8, y: 276.2, r: 176.9 },
+    "n4": { x: 511.1, y: 569.6, r: 140.4 },
+    "n5": { x: 1444.4, y: 184.7, r: 140.4 },
+    "n6": { x: 408.0, y: 175.8, r: 52.4 },
+    "n7": { x: 1248.0, y: 628.2, r: 140.4 }
+  };
+
+  function resizeIndividualNode(id, delta) {
+    if (!nodeRadiusMap[id]) return;
+    const currentR = nodeRadiusMap[id];
+    const newR = Math.max(12, currentR + delta);
+    nodeRadiusMap[id] = newR;
+    baseRadiusMap[id] = newR / globalSizeScale;
+
+    if (nodeBlobs[id]) size(nodeBlobs[id], newR);
+    if (nodeHits[id]) size(nodeHits[id], newR);
+    if (nodeLabels[id]) {
+      const l = nodeLabels[id];
+      const fontPx = Math.max(9, Math.min(12, newR * 0.32)), lineH = fontPx * 1.22;
+      let maxLines = Math.max(2, Math.floor((newR * 2 * 0.8) / lineH));
+      let halfH = (maxLines * lineH) / 2;
+      while (halfH >= newR * 0.85 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
+      const safeWidth = 2 * Math.sqrt(Math.max(0, newR * newR - halfH * halfH)) * 0.86;
+      l.style.width = safeWidth + "px";
+      l.style.fontSize = fontPx + "px";
+      l.style.lineHeight = lineH + "px";
+    }
+    renderEdges();
+  }
+
   function buildNetwork(nodes, rel, byIdMap, opts) {
     const loopType = opts.loopType || "R";
     clearNetwork();
@@ -784,7 +817,12 @@
 
   function showMacro() {
     level = "macro"; currentDetailId = null;
-    buildNetwork(MACRO, MACRO_REL, macroById, { maxR: 78, wFrac: 0.1, colorOf: (id) => macroById[id].color });
+    buildNetwork(MACRO, MACRO_REL, macroById, {
+      maxR: 78,
+      wFrac: 0.1,
+      savedPositions: SAVED_MACRO_POSITIONS,
+      colorOf: (id) => macroById[id].color
+    });
     intro.style.opacity = "0";
     levelTitle.classList.add("show");
     levelTitleText.textContent = "Los 7 grandes problemas de fondo";
@@ -928,10 +966,19 @@
         <h2>${n.full}</h2>
         ${vieneDe.length ? `<div class="block"><b>Es causado por</b>${vieneDe.map(x => `<div class="rel-chip" data-goto="${x.n.id}">${x.n.corto} <b>(${x.pol})</b>${x.loopLabel ? ` — bucle ${x.loopLabel}` : ""}</div>`).join("")}</div>` : ""}
         ${alimentaA.length ? `<div class="block"><b>Provoca o intensifica</b>${alimentaA.map(x => `<div class="rel-chip" data-goto="${x.n.id}">${x.n.corto} <b>(${x.pol})</b>${x.loopLabel ? ` — bucle ${x.loopLabel}` : ""}</div>`).join("")}</div>` : ""}
-        <button class="drill-btn" id="drillBtn">Ver variables causales internas →</button>
+        <div class="block" style="margin-top:16px;">
+          <b>Tamaño de la bola</b>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <button type="button" id="sizeDecBtn" style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-weight:700; cursor:pointer;">🔍– Disminuir</button>
+            <button type="button" id="sizeIncBtn" style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-weight:700; cursor:pointer;">🔍+ Aumentar</button>
+          </div>
+        </div>
+        <button class="drill-btn" id="drillBtn" style="margin-top:12px;">Ver variables causales internas →</button>
       `;
       body.querySelectorAll("[data-goto]").forEach(elm => elm.addEventListener("click", (e) => { e.stopPropagation(); openPanel(elm.dataset.goto); }));
       document.getElementById("drillBtn").addEventListener("click", (e) => { e.stopPropagation(); showDetail(id); });
+      document.getElementById("sizeDecBtn").addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(id, -8); });
+      document.getElementById("sizeIncBtn").addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(id, 8); });
     } else if (level === "detail") {
       const sub = SUBNETS[currentDetailId];
       const byId = {}; sub.nodes.forEach(n => byId[n.id] = n);
@@ -945,8 +992,17 @@
         ${vieneDe.length ? `<div class="block"><b>Viene de</b>${vieneDe.map(x => `<div class="rel-chip" data-goto="${x.id}">${x.t}</div>`).join("")}</div>` : ""}
         ${alimentaA.length ? `<div class="block"><b>Alimenta a</b>${alimentaA.map(x => `<div class="rel-chip" data-goto="${x.id}">${x.t}</div>`).join("")}</div>` : ""}
         ${esLoop ? `<div class="block"><b>Bucle de retroalimentación</b><p style="font-size:12.5px;color:var(--ink-dark);margin:0;font-style:italic;">${sub.loopNote}</p></div>` : ""}
+        <div class="block" style="margin-top:16px;">
+          <b>Tamaño de la bola</b>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <button type="button" id="sizeDecBtn" style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-weight:700; cursor:pointer;">🔍– Disminuir</button>
+            <button type="button" id="sizeIncBtn" style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-weight:700; cursor:pointer;">🔍+ Aumentar</button>
+          </div>
+        </div>
       `;
       body.querySelectorAll("[data-goto]").forEach(elm => elm.addEventListener("click", (e) => { e.stopPropagation(); openPanel(elm.dataset.goto); }));
+      document.getElementById("sizeDecBtn").addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(id, -6); });
+      document.getElementById("sizeIncBtn").addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(id, 6); });
     } else if (level === "full") {
       const n = allNodesById[id];
       const parentMacro = macroById[n.macroId];
@@ -958,8 +1014,17 @@
         <h2>${n.t}</h2>
         ${vieneDe.length ? `<div class="block"><b>Viene de</b>${vieneDe.map(x => `<div class="rel-chip" data-goto="${x.id}">${x.inter ? "⚡ " : ""}${x.t} <b>(${x.pol})</b></div>`).join("")}</div>` : ""}
         ${alimentaA.length ? `<div class="block"><b>Alimenta a</b>${alimentaA.map(x => `<div class="rel-chip" data-goto="${x.id}">${x.inter ? "⚡ " : ""}${x.t} <b>(${x.pol})</b></div>`).join("")}</div>` : ""}
+        <div class="block" style="margin-top:16px;">
+          <b>Tamaño de la bola</b>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <button type="button" id="sizeDecBtn" style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-weight:700; cursor:pointer;">🔍– Disminuir</button>
+            <button type="button" id="sizeIncBtn" style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-weight:700; cursor:pointer;">🔍+ Aumentar</button>
+          </div>
+        </div>
       `;
       body.querySelectorAll("[data-goto]").forEach(elm => elm.addEventListener("click", (e) => { e.stopPropagation(); openPanel(elm.dataset.goto); }));
+      document.getElementById("sizeDecBtn").addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(id, -4); });
+      document.getElementById("sizeIncBtn").addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(id, 4); });
     }
     panel.classList.add("open");
   }
