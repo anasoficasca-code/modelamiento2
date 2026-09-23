@@ -997,7 +997,7 @@
         { id:"s1_2", t:"Filas de camiones y congestión represada sobre las avenidas principales", x:8097.5, y:2265.9 },
         { id:"s1_3", t:"Deterioro continuo de la capa de rodadura ante el tránsito de carga pesada", x:7197.9, y:3738.8 },
         { id:"s1_4", t:"Conflicto y entrecruzamiento de flujos entre camiones, vehículos particulares, bicipatios y peatones", x:6876.1, y:3052.3 },
-        { id:"s1_5", t:"Ingreso vehicular en ángulo recto que obliga a frenar sobre la calzada arterial", x:6433.7, y:3748.6 },
+        { id:"s1_5", t:"Ingreso vehicular en ángulo recto que obliga a frenar sobre la calzada arterial", x:6303.1, y:3748.1 },
       ],
       rel:[
         { from:"s1_5", to:"s1_2", pol:"+" },
@@ -1009,15 +1009,15 @@
     n2: {
       nodes:[
         { id:"s2_1", t:"Vertimiento de lixiviados orgánicos al alcantarillado sin tratamiento", x:7563.4, y:3372.6 },
-        { id:"s2_2", t:"Escorrentía de residuos de alimentos", x:6223.2, y:1831.1 },
-        { id:"s2_3", t:"Eutrofización y tinción de aguas en la cuenca hídrica", x:6034.6, y:5034.6 },
-        { id:"s2_4", t:"Vertimiento de grasas y agua de lavado de bodegas hacia canales superficiales", x:5498.5, y:3250.2 },
-        { id:"s2_5", t:"Escorrentía de alimentos", x:5066.5, y:3822.5 },
-        { id:"s2_6", t:"Vertimiento de lixiviados por residuos inorgánicos", x:8889.5, y:3352.4 },
+        { id:"s2_2", t:"Escorrentía de residuos de alimentos", x:6220.1, y:1816.0 },
+        { id:"s2_3", t:"Eutrofización y tinción de aguas en la cuenca hídrica", x:5823.4, y:4944.2 },
+        { id:"s2_4", t:"Vertimiento de grasas y agua de lavado de bodegas hacia canales superficiales", x:6048.5, y:4123.4 },
+        { id:"s2_5", t:"Escorrentía de alimentos", x:4746.1, y:4233.7 },
+        { id:"s2_6", t:"Vertimiento de lixiviados por residuos inorgánicos", x:8889.5, y:3352.4, deleted:true },
         { id:"s2_7", t:"Vertimiento de agua sucia y lixiviados al alcantarillado pluvial sin tratamiento", x:8216.2, y:4012.9 },
         { id:"s2_8", t:"Arrastre de basuras desde la calle hacia los canales de agua en eventos de lluvia", x:6505.6, y:4421.9 },
         { id:"s2_9", t:"Infiltración de agua contaminada en la franja del humedal", x:6012.9, y:1933.1 },
-        { id:"s2_10", t:"Barrera física del cerramiento privado sobre la franja de protección ambiental", x:5710.4, y:1911.4 },
+        { id:"s2_10", t:"Barrera física del cerramiento privado sobre la franja de protección ambiental", x:5710.4, y:1911.4, deleted:true },
         { id:"s2_11", t:"Insuficiencia de redes sanitarias destinadas a la limpieza de bodegas", x:6779.3, y:2429.1 },
       ],
       rel:[
@@ -1035,10 +1035,10 @@
     n3: {
       nodes:[
         { id:"s3_1", t:"Entrada masiva de carga alimentaria regional en un solo predio", x:7351.1, y:2267.9 },
-        { id:"s3_2", t:"Represión de camiones en espera ante la diferencia entre horarios de llegada y venta", x:5695.7, y:2640.7 },
-        { id:"s3_3", t:"Saturación comercial intensiva en un grupo reducido de bodegas", x:6472.3, y:2197.5 },
-        { id:"s3_4", t:"Llegada masiva y continua de carga alimentaria regional a un único punto urbano", x:6276.8, y:2024.6 },
-        { id:"s3_5", t:"Represión de camiones en vía pública durante la espera de apertura de bodegas", x:6705.9, y:1990.6 },
+        { id:"s3_2", t:"Represión de camiones en espera ante la diferencia entre horarios de llegada y venta", x:5695.7, y:2640.7, deleted:true },
+        { id:"s3_3", t:"Saturación comercial intensiva en un grupo reducido de bodegas", x:6488.3, y:2252.8 },
+        { id:"s3_4", t:"Llegada masiva y continua de carga alimentaria regional a un único punto urbano", x:6252.8, y:1993.0 },
+        { id:"s3_5", t:"Represión de camiones en vía pública durante la espera de apertura de bodegas", x:6707.5, y:1990.2 },
         { id:"s3_6", t:"Mezcla física de comercialización mayorista con almacenamiento, empaque y preparación de alimentos", x:5701.5, y:2460.8 },
         { id:"s3_7", t:"Saturación comercial intensiva en una franja reducida de bodegas", x:5901.1, y:2200.8 },
         { id:"s3_8", t:"Aglomeración de compradores, carretas y vehículos en los accesos a los sectores de venta", x:6426.7, y:3000.7 },
@@ -1056,9 +1056,9 @@
     n4: {
       nodes:[
         { id:"s4_1", t:"Crecimiento de torres de apartamentos sobre infraestructuras con capacidad límite", x:7888.5, y:4383.3 },
-        { id:"s4_2", t:"Construcción de edificios que superan la altura permitida sobre vías estrechas", x:7293.7, y:1833.1 },
+        { id:"s4_2", t:"Construcción de edificios que superan la altura permitida sobre vías estrechas", x:7293.7, y:1833.1, deleted:true },
         { id:"s4_3", t:"Fricción en la convivencia directa entre conjuntos residenciales y zonas de bodegaje", x:5413.3, y:2762.6 },
-        { id:"s4_4", t:"Coincidencia temporal entre los viajes de residentes y el transporte de carga", x:7234.9, y:2613.8 },
+        { id:"s4_4", t:"Coincidencia temporal entre los viajes de residentes y el transporte de carga", x:7239.1, y:2609.5 },
         { id:"s4_5", t:"Ocupación de vías barriales con carros particulares ante estacionamientos agotados", x:6678.7, y:2917.5 },
         { id:"s4_6", t:"Construcción masiva de torres residenciales superando la capacidad de las vías barriales", x:7933.8, y:2667.8 },
         { id:"s4_7", t:"Generación concentrada de viajes cotidianos desde conjuntos verticales hacia pocos corredores", x:7932.3, y:3554.7 },
@@ -1079,7 +1079,7 @@
         { id:"s5_1", t:"Ocupación comercial de andenes estrechos con cajas, huacales y mercancía", x:6476.6, y:1793.7 },
         { id:"s5_2", t:"Instalación de puestos informales de venta de alimentos sobre la calzada vehicular", x:6928.1, y:2589.0 },
         { id:"s5_3", t:"Expulsión de peatones hacia la calle junto al tránsito de camiones pesados", x:6360.9, y:1445.0 },
-        { id:"s5_4", t:"Aglomeración peatonal sobre aceras fragmentadas e invadidas", x:7118.7, y:2735.1 },
+        { id:"s5_4", t:"Aglomeración peatonal sobre aceras fragmentadas e invadidas", x:7114.5, y:2739.4, deleted:true },
         { id:"s5_5", t:"Apropiación comercial de vías residenciales fuera del muro de cerramiento", x:6093.0, y:2745.6 },
       ],
       rel:[
@@ -1090,11 +1090,11 @@
     },
     n6: {
       nodes:[
-        { id:"s6_1", t:"Acumulación de basura orgánica superando la capacidad de los contenedores", x:6177.4, y:2180.6 },
+        { id:"s6_1", t:"Acumulación de basura orgánica superando la capacidad de los contenedores", x:6163.3, y:2183.0 },
         { id:"s6_2", t:"Estacionamiento prolongado de camiones de gran tonelaje en calles residenciales", x:5999.0, y:3425.2 },
         { id:"s6_3", t:"Derrame de lixiviados sobre el pavimento a la intemperie", x:5996.5, y:2353.4 },
         { id:"s6_4", t:"Bloqueo de puntos de recolección de basura con vehículos parqueados", x:6875.5, y:2245.9 },
-        { id:"s6_5", t:"Generación de malos olores y focos sanitarios junto a las zonas de vivienda", x:6677.8, y:2583.1 },
+        { id:"s6_5", t:"Generación de malos olores y focos sanitarios junto a las zonas de vivienda", x:6678.0, y:2583.5 },
       ],
       rel:[
         { from:"s6_1", to:"s6_4", pol:"+" },
@@ -1105,11 +1105,11 @@
     },
     n7: {
       nodes:[
-        { id:"s7_1", t:"Rigidez de los instrumentos normativos distritales frente a la autoorganización local", x:6532.5, y:2046.1 },
-        { id:"s7_2", t:"Brecha entre las determinantes del POT y las dinámicas reales de uso del suelo", x:6392.3, y:2162.7 },
-        { id:"s7_3", t:"Coexistencia de regímenes normativos entre regulación pública y administración privada", x:6594.0, y:2242.1 },
-        { id:"s7_4", t:"Consolidación de dinámicas informales al margen de controles institucionales", x:7566.6, y:1609.0 },
-        { id:"s7_5", t:"Pérdida de eficacia en los mecanismos institucionales de regulación territorial", x:6597.4, y:2422.0 },
+        { id:"s7_1", t:"Rigidez de los instrumentos normativos distritales frente a la autoorganización local", x:6534.1, y:2038.6, deleted:true },
+        { id:"s7_2", t:"Brecha entre las determinantes del POT y las dinámicas reales de uso del suelo", x:6340.3, y:2150.3, deleted:true },
+        { id:"s7_3", t:"Coexistencia de regímenes normativos entre regulación pública y administración privada", x:6668.3, y:2250.1, deleted:true },
+        { id:"s7_4", t:"Consolidación de dinámicas informales al margen de controles institucionales", x:7566.6, y:1609.0, deleted:true },
+        { id:"s7_5", t:"Pérdida de eficacia en los mecanismos institucionales de regulación territorial", x:6596.9, y:2422.9, deleted:true },
       ],
       rel:[
         { from:"s7_1", to:"s7_2", pol:"+" },
