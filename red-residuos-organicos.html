@@ -213,6 +213,7 @@
     { from:"n3", to:"n6", pol:"+", verbo:"La alta producción de desechos orgánicos y la intensidad del transporte pesado presionan directamente los bordes de la franja ambiental y del Humedal La Vaca." },
     { from:"n5", to:"n1", pol:"+", verbo:"Camiones y carretas estacionados en calzadas reducen la capacidad operativa de las vías de una sola calzada, bloqueando el tráfico local y arterial." },
     { from:"n4", to:"n2", pol:"+", verbo:"El vertiginoso aumento de habitantes en torre sobrepasa la capacidad del alcantarillado, incrementando vertimientos sin tratamiento sobre la red hídrica." },
+    { from:"n4", to:"n1", pol:"+", verbo:"La sobrecarga por densificación en altura genera una alta concentración de viajes cotidianos que se vuelcan sobre la trama vial barrial y arterial, acelerando el colapso de la red vial." },
     { from:"n6", to:"n2", pol:"+", verbo:"El vertimiento de lixiviados y la acumulación de basura en los bordes naturales contaminan los canales superficiales y el cuerpo de agua del humedal." },
     { from:"n1", to:"n3", pol:"-", loop:true, loopLabel:"B1", verbo:"A medida que la concentración comercial crece, desborda el espacio público y provoca el colapso vial total. Sin embargo, la extrema congestión y el embotellamiento en las puertas de acceso generan bloqueos de varias horas que impiden la entrada fluida de nuevos camiones, actuando como un freno o autorregulación negativa que estrangula temporalmente la misma operatividad de la central." },
     { from:"n5", to:"n7", pol:"+", loop:true, loopLabel:"R1", verbo:"La inoperancia de la norma permite la hiperconcentración, que satura el espacio público mediante actividades informales. Entre más se consolidan estas prácticas sobre la calle, la regla oficial se vuelve más obsoleta e inaplicable, profundizando y alimentando la inoperancia del ordenamiento oficial." },
@@ -686,13 +687,13 @@
   };
 
   const SAVED_MACRO_POSITIONS = {
-    "n1": { x: 1160.9, y: 374.9, r: 52.4 },
-    "n2": { x: 167.1, y: 328.7, r: 140.4 },
-    "n3": { x: 721.8, y: 276.2, r: 176.9 },
-    "n4": { x: 511.1, y: 569.6, r: 140.4 },
-    "n5": { x: 1444.4, y: 184.7, r: 140.4 },
-    "n6": { x: 408.0, y: 175.8, r: 52.4 },
-    "n7": { x: 1248.0, y: 628.2, r: 140.4 }
+    "n1": { x: 1064.9, y: 626.4, r: 147.3 },
+    "n2": { x: 427.6, y: 162.4, r: 75.3 },
+    "n3": { x: 1339.6, y: 222.0, r: 164.7 },
+    "n4": { x: 178.7, y: 369.6, r: 97.3 },
+    "n5": { x: 695.1, y: 276.2, r: 105.3 },
+    "n6": { x: 941.3, y: 127.8, r: 69.3 },
+    "n7": { x: 392.0, y: 660.2, r: 123.3 }
   };
 
   function resizeIndividualNode(id, delta) {
@@ -832,23 +833,9 @@
       labelLayer.appendChild(l); nodeLabels[n.id] = l;
       const h = el("hit"); labelLayer.appendChild(h); nodeHits[n.id] = h;
 
-      const btnMinus = el("node-size-btn btn-minus");
-      btnMinus.textContent = "–";
-      btnMinus.title = "Disminuir tamaño de esta bola";
-      btnMinus.addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(n.id, -6); });
-      labelLayer.appendChild(btnMinus); nodeMinusBtns[n.id] = btnMinus;
-
-      const btnPlus = el("node-size-btn btn-plus");
-      btnPlus.textContent = "+";
-      btnPlus.title = "Aumentar tamaño de esta bola";
-      btnPlus.addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(n.id, 6); });
-      labelLayer.appendChild(btnPlus); nodePlusBtns[n.id] = btnPlus;
-
       place(nodeBlobs[n.id], nodePos[n.id].x, nodePos[n.id].y); size(nodeBlobs[n.id], ownR);
       place(l, nodePos[n.id].x, nodePos[n.id].y);
       place(h, nodePos[n.id].x, nodePos[n.id].y); size(h, ownR);
-      place(btnMinus, nodePos[n.id].x - ownR - 10, nodePos[n.id].y);
-      place(btnPlus, nodePos[n.id].x + ownR + 10, nodePos[n.id].y);
     });
 
     renderEdges();
