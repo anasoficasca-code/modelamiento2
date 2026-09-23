@@ -1103,14 +1103,25 @@
         { from:"s6_3", to:"s6_5", pol:"+" },
       ],
     },
-    n7: { nodes:[ { id:"s7_1", t:"Pendiente de coordenadas reales" } ], rel:[] },
+    n7: {
+      nodes:[
+        { id:"s7_1", t:"Rigidez de los instrumentos normativos distritales frente a la autoorganización local", x:6420.0, y:2120.0 },
+        { id:"s7_2", t:"Brecha entre las determinantes del POT y las dinámicas reales de uso del suelo", x:6460.0, y:2180.0 },
+        { id:"s7_3", t:"Coexistencia de regímenes normativos entre regulación pública y administración privada", x:6500.0, y:2240.0 },
+        { id:"s7_4", t:"Consolidación de dinámicas informales al margen de controles institucionales", x:6540.0, y:2300.0 },
+        { id:"s7_5", t:"Pérdida de eficacia en los mecanismos institucionales de regulación territorial", x:6580.0, y:2360.0 },
+      ],
+      rel:[
+        { from:"s7_1", to:"s7_2", pol:"+" },
+        { from:"s7_2", to:"s7_3", pol:"+" },
+        { from:"s7_3", to:"s7_4", pol:"+" },
+        { from:"s7_4", to:"s7_5", pol:"+" },
+        { from:"s7_5", to:"s7_1", pol:"+" },
+      ],
+    },
   };
-  // Posicion real de cada causa: si ya trae x,y propios (coordenadas
-  // reales exactas, como en n2), se respetan tal cual. Solo las que
-  // todavia NO tienen coordenadas propias (los nodos temporales
-  // "Pendiente...") se colocan con un pequeno desplazamiento alrededor
-  // del macro-nodo, como marcador provisional.
-  // Anti-overlap pass: repulsión garantizada entre todas las bolas para que NINGUNA bola se toque entre sí
+
+  // Anti-overlap pass: repulsión garantizada entre todas las bolas para que NINGUNA bola se toque ni solape entre sí
   const allSubNodesList = [];
   Object.keys(SUBNETS).forEach(mid => {
     const m = macroById[mid];
@@ -1118,7 +1129,7 @@
     nodes.forEach((n, i) => {
       if (n.x === undefined || n.y === undefined) {
         const angle = (i / nodes.length) * Math.PI * 2;
-        const r = 55 + (i % 3) * 18;
+        const r = 60 + (i % 3) * 20;
         n.x = m.x + Math.cos(angle) * r;
         n.y = m.y + Math.sin(angle) * r;
       }
@@ -1127,8 +1138,8 @@
     });
   });
 
-  const MIN_NODE_DIST = 95.0; // Distancia mínima para que no se toquen ni se solapen las bolas
-  for (let iter = 0; iter < 180; iter++) {
+  const MIN_NODE_DIST = 115.0; // Distancia amplia mínima para que no se toquen ni se solapen las bolas
+  for (let iter = 0; iter < 250; iter++) {
     for (let i = 0; i < allSubNodesList.length; i++) {
       for (let j = i + 1; j < allSubNodesList.length; j++) {
         const a = allSubNodesList[i], b = allSubNodesList[j];
@@ -1136,8 +1147,8 @@
         let dist = Math.hypot(dx, dy);
         if (dist < MIN_NODE_DIST) {
           if (dist < 0.1) {
-            dx = (Math.random() - 0.5) * 12;
-            dy = (Math.random() - 0.5) * 12;
+            dx = (Math.random() - 0.5) * 15;
+            dy = (Math.random() - 0.5) * 15;
             dist = Math.hypot(dx, dy) || 1;
           }
           const overlap = (MIN_NODE_DIST - dist) / 2;
@@ -1251,25 +1262,55 @@
   function localToLng(x) { return (x - CAL_B) / CAL_A; }
   function localToLat(y) { return (y - CAL_D) / CAL_C; }
 
-  // Calcular el grado (numero de conexiones) de cada causa para que las bolas mas conectadas sean mas grandes
+  // Conexiones inter-redes (13 relaciones que unen sub-problemas entre diferentes categorías)
+  const INTER_NETWORK_REL = [
+    { from:"s2_3", to:"s3_2", pol:"+", verbo:"La saturación hídrica y falta de infiltración impulsa la ocupación informal de suelo para acopio agrocomercial local", inter:true },
+    { from:"s1_1", to:"s3_5", pol:"+", verbo:"La llegada constante de camiones regionales satura de manera crítica la trama barrial circundante", inter:true },
+    { from:"s4_1", to:"s3_1", pol:"+", verbo:"La alta densidad poblacional nueva exige un mayor volumen de abastecimiento de alimentos", inter:true },
+    { from:"s3_3", to:"s4_1", pol:"-", verbo:"La hipercomercialización descontrolada desincentiva la inversión en vivienda formal de calidad", inter:true },
+    { from:"s7_3", to:"s1_2", pol:"-", verbo:"La falta de regulación pública unificada impide ampliar o gestionar eficazmente la infraestructura vial perimetral", inter:true },
+    { from:"s6_5", to:"s7_2", pol:"+", verbo:"El deterioro ambiental evidencia la brecha insalvable entre el POT oficial y el uso real del suelo", inter:true },
+    { from:"s6_2", to:"s2_1", pol:"+", verbo:"La acumulación de basuras y escombros obstruye los canales provocando vertimientos sin tratamiento", inter:true },
+    { from:"s2_5", to:"s6_1", pol:"+", verbo:"La degradación de la red hídrica reduce el control sanitario aumentando la generación desordenada de residuos", inter:true },
+    { from:"s2_1", to:"s1_5", pol:"+", verbo:"El deterioro ambiental de las calzadas favorece la presencia de cargadores informales y tracción humana", inter:true },
+    { from:"s2_2", to:"s5_3", pol:"+", verbo:"El desborde de lixiviados en áreas públicas atrae ventas informales de desperdicios y acopio en vía", inter:true },
+    { from:"s5_1", to:"s4_2", pol:"+", verbo:"La falta de estacionamiento interno genera sobrecarga en las redes públicas de servicios del entorno", inter:true },
+    { from:"s5_2", to:"s1_2", pol:"+", verbo:"Las maniobras de carga y descarga en vía pública reducen drásticamente la capacidad de la red vial", inter:true },
+    { from:"s1_4", to:"s6_2", pol:"+", verbo:"El parqueo prolongado de camiones convierte las rondas y andenes en puntos clandestinos de arrojamiento de basuras", inter:true }
+  ];
+
+  // Diccionario unificado con todos los nodos por ID
+  const allNodesById = {};
+  Object.keys(SUBNETS).forEach(mId => {
+    SUBNETS[mId].nodes.forEach(n => {
+      allNodesById[n.id] = { ...n, macroId: mId };
+    });
+  });
+
+  // Calcular el grado (número total de conexiones) de cada causa para que las más conectadas sean más grandes
   const nodeDegrees = {};
   Object.keys(SUBNETS).forEach(mid => {
-    const sub = SUBNETS[mid];
-    sub.nodes.forEach(n => nodeDegrees[n.id] = 0);
-    sub.rel.forEach(r => {
+    SUBNETS[mid].nodes.forEach(n => nodeDegrees[n.id] = 0);
+  });
+  Object.keys(SUBNETS).forEach(mid => {
+    SUBNETS[mid].rel.forEach(r => {
       if (nodeDegrees[r.from] !== undefined) nodeDegrees[r.from]++;
       if (nodeDegrees[r.to] !== undefined) nodeDegrees[r.to]++;
     });
+  });
+  INTER_NETWORK_REL.forEach(r => {
+    if (nodeDegrees[r.from] !== undefined) nodeDegrees[r.from]++;
+    if (nodeDegrees[r.to] !== undefined) nodeDegrees[r.to]++;
   });
 
   const deletedNodeIds = new Set();
 
   function getSubNodeDiameter(nodeId) {
     const deg = nodeDegrees[nodeId] || 0;
-    if (deg <= 1) return 32;
-    if (deg === 2) return 40;
-    if (deg === 3) return 48;
-    return 56;
+    if (deg <= 1) return 34;
+    if (deg === 2) return 44;
+    if (deg === 3) return 54;
+    return 66; // Bolas con más conexiones quedan significativamente más grandes
   }
 
   function deleteNode(causeId) {
@@ -1376,23 +1417,6 @@
     const m = macroById[mId];
     const sub = SUBNETS[mId];
     const subEls = { blobs: {}, lines: [], labels: {} };
-    sub.rel.forEach(r => {
-      const a = sub.nodes.find(n => n.id === r.from), b = sub.nodes.find(n => n.id === r.to);
-      if (!a || !b) return;
-      const line = svgEl("line", { class: "net-line", stroke: m.color, "stroke-width": 2.2, "stroke-opacity": 0.85, "marker-end": "url(#netArrow)" });
-      netSvg.insertBefore(line, netSvg.firstChild);
-      subEls.lines.push({ el: line, from: a, to: b, fromId: r.from, toId: r.to });
-      const polText = svgEl("text", { class: "net-pol", "text-anchor": "middle", "dominant-baseline": "central", "font-size": 14, "font-weight": 800, fill: "#fff", stroke: "#0b0c0f", "stroke-width": 3, "paint-order": "stroke" });
-      polText.textContent = r.pol || "+";
-      netSvg.appendChild(polText);
-      subEls.lines.push({ el: polText, from: a, to: b, isPol: true });
-      if (r.loop) {
-        const badge = svgEl("text", { class: "net-loopbadge", "text-anchor": "middle", "font-size": 12, "font-weight": 800, fill: m.color, stroke: "#0b0c0f", "stroke-width": 3.2, "paint-order": "stroke" });
-        badge.textContent = "↻ " + (sub.loopType || "R");
-        netSvg.appendChild(badge);
-        subEls.lines.push({ el: badge, from: a, to: b, isLoopBadge: true });
-      }
-    });
     sub.nodes.forEach(n => {
       const diameter = getSubNodeDiameter(n.id);
       const blob = makeBlob(diameter, m.color);
@@ -1403,6 +1427,37 @@
     });
     allSubEls[mId] = subEls;
   });
+
+  // Renderizar TODAS las líneas de conexión (internas + inter-redes)
+  const allRelList = [];
+  Object.keys(SUBNETS).forEach(mId => {
+    SUBNETS[mId].rel.forEach(r => allRelList.push({ ...r, color: macroById[mId].color }));
+  });
+  INTER_NETWORK_REL.forEach(r => {
+    const fromNode = allNodesById[r.from];
+    const color = fromNode ? macroById[fromNode.macroId].color : "#24c8bd";
+    allRelList.push({ ...r, color });
+  });
+
+  const interLinesGroup = { lines: [] };
+  allRelList.forEach(r => {
+    const a = allNodesById[r.from], b = allNodesById[r.to];
+    if (!a || !b) return;
+    const line = svgEl("line", { class: "net-line", stroke: r.color, "stroke-width": 2.2, "stroke-opacity": 0.85, "marker-end": "url(#netArrow)" });
+    netSvg.insertBefore(line, netSvg.firstChild);
+    interLinesGroup.lines.push({ el: line, from: a, to: b, fromId: r.from, toId: r.to });
+    const polText = svgEl("text", { class: "net-pol", "text-anchor": "middle", "dominant-baseline": "central", "font-size": 14, "font-weight": 800, fill: "#fff", stroke: "#0b0c0f", "stroke-width": 3, "paint-order": "stroke" });
+    polText.textContent = r.pol || "+";
+    netSvg.appendChild(polText);
+    interLinesGroup.lines.push({ el: polText, from: a, to: b, isPol: true });
+    if (r.loop) {
+      const badge = svgEl("text", { class: "net-loopbadge", "text-anchor": "middle", "font-size": 12, "font-weight": 800, fill: r.color, stroke: "#0b0c0f", "stroke-width": 3.2, "paint-order": "stroke" });
+      badge.textContent = "↻ " + (r.loopLabel || "R");
+      netSvg.appendChild(badge);
+      interLinesGroup.lines.push({ el: badge, from: a, to: b, isLoopBadge: true });
+    }
+  });
+  allSubEls["_allLines"] = interLinesGroup;
 
   function openMacroPanel(id) {
     openMacroId = id;
