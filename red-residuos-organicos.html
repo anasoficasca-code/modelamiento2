@@ -823,6 +823,58 @@
 
   const fullNetBtn = document.getElementById("fullNetBtn");
 
+  const SAVED_DETAIL_POSITIONS = {
+    // n3 (Rojo)
+    "s3_1": { x: 260.4, y: 543.1, r: 126.9 },
+    "s3_2": { x: 681.8, y: 208.9, r: 114.9 },
+    "s3_3": { x: 1058.7, y: 264.9, r: 114.9 },
+    "s3_4": { x: 1064.0, y: 651.6, r: 172.9 },
+    "s3_5": { x: 651.6, y: 784.9, r: 79.7 },
+
+    // n5 (Verde)
+    "s5_1": { x: 272.9, y: 463.8, r: 67.7 },
+    "s5_2": { x: 450.7, y: 228.2, r: 142.9 },
+    "s5_3": { x: 973.3, y: 194.4, r: 96.9 },
+    "s5_4": { x: 1120.0, y: 524.2, r: 90.9 },
+    "s5_5": { x: 731.6, y: 573.1, r: 90.9 },
+
+    // n1 (Azul Oscuro)
+    "s1_1": { x: 244.4, y: 475.3, r: 55.7 },
+    "s1_2": { x: 402.7, y: 222.9, r: 84.9 },
+    "s1_3": { x: 864.9, y: 319.8, r: 130.9 },
+    "s1_4": { x: 1426.7, y: 234.4, r: 84.9 },
+    "s1_5": { x: 1235.6, y: 631.8, r: 84.9 },
+    "s1_6": { x: 496.0, y: 590.0, r: 84.9 },
+
+    // n7 (Verde Menta)
+    "s7_1": { x: 417.8, y: 529.6, r: 84.9 },
+    "s7_2": { x: 648.9, y: 163.3, r: 84.9 },
+    "s7_3": { x: 1237.3, y: 255.8, r: 84.9 },
+    "s7_4": { x: 775.1, y: 389.1, r: 84.9 },
+    "s7_5": { x: 1155.6, y: 676.2, r: 84.9 },
+
+    // n4 (Morado)
+    "s4_1": { x: 320.9, y: 371.3, r: 101.4 },
+    "s4_2": { x: 749.3, y: 199.8, r: 101.4 },
+    "s4_3": { x: 1091.6, y: 233.6, r: 66.8 },
+    "s4_4": { x: 1139.6, y: 566.9, r: 144.3 },
+    "s4_5": { x: 632.0, y: 641.6, r: 72.8 },
+
+    // n2 (Rosa)
+    "s2_1": { x: 327.4, y: 203.4, r: 90.9 },
+    "s2_2": { x: 1133.3, y: 388.2, r: 61.7 },
+    "s2_3": { x: 833.3, y: 227.6, r: 136.9 },
+    "s2_4": { x: 1019.6, y: 584.7, r: 90.9 },
+    "s2_5": { x: 553.8, y: 574.9, r: 90.9 },
+
+    // n6 (Amarillo)
+    "s6_1": { x: 1355.6, y: 328.7, r: 55.7 },
+    "s6_2": { x: 1042.7, y: 190.0, r: 90.9 },
+    "s6_3": { x: 468.4, y: 227.3, r: 90.9 },
+    "s6_4": { x: 940.4, y: 569.6, r: 142.9 },
+    "s6_5": { x: 308.4, y: 602.4, r: 90.9 }
+  };
+
   function showMacro() {
     level = "macro"; currentDetailId = null;
     buildNetwork(MACRO, MACRO_REL, macroById, {
@@ -844,7 +896,13 @@
     const sub = SUBNETS[macroId];
     const byId = {}; sub.nodes.forEach(n => byId[n.id] = n);
     const macroColor = macroById[macroId].color;
-    buildNetwork(sub.nodes, sub.rel, byId, { maxR: 66, wFrac: 0.09, colorOf: () => macroColor, loopType: sub.loopType });
+    buildNetwork(sub.nodes, sub.rel, byId, {
+      maxR: 66,
+      wFrac: 0.09,
+      savedPositions: SAVED_DETAIL_POSITIONS,
+      colorOf: () => macroColor,
+      loopType: sub.loopType
+    });
     levelTitleText.textContent = macroById[macroId].full;
     levelSubText.textContent = "Variables causales internas — toca una para ver más, o el bucle para ver el mecanismo reforzador";
     backBtn.textContent = "← Volver a Ver Red Completa (35 Sub-Problemas)";
