@@ -802,7 +802,7 @@
       buildRoads(data.edges);
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       const h = (data.bbox[3] - data.bbox[1]) * SCALE;
-      viewSize = 326; // fijo, calculado para cubrir el area real donde estan repartidas las 40 bolitas de las 6 problematicas (de Corabastos hasta el Humedal El Techo), con margen
+      viewSize = 190; // Acomodado más cerca a pedido del usuario (antes 326)
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
@@ -1279,8 +1279,8 @@
   arrowMarker.appendChild(arrowPath);
   arrowDefs.appendChild(arrowMarker);
 
-  const MACRO_D = 60; // mas chicas, a pedido del usuario
-  const SUB_D = 48; // mas chicas, a pedido del usuario
+  const MACRO_D = 74; // Agrandadas un poco a pedido del usuario (antes 60)
+  const SUB_D = 58;   // Agrandadas un poco a pedido del usuario (antes 48)
   // Por ahora SOLO se muestra la problematica rosada (N2, contaminacion
   // hidrica) - el usuario pidio explicitamente que no se muestren las
   // otras 6 todavia (siguen sin coordenadas reales definidas).
@@ -1356,7 +1356,50 @@
 
   function placeBlob(blob, x, y, visible) {
     blob.style.left = x + "px"; blob.style.top = y + "px";
-    blob.style.opacity = visible ? "1" : "0";
+    blob.style.opacity = visible ? "0.55" : "0"; // Opacidad al 55% a pedido de la usuaria
+  }
+
+  // Actualización en vivo del cuadro HUD flotante de zoom y coordenadas
+  function updateCamZoomHud() {
+    const hudCamZoom = document.getElementById("hudCamZoomVal");
+    const hudViewSize = document.getElementById("hudViewSizeVal");
+    const hudCenter = document.getElementById("hudCenterVal");
+    const hudLatLng = document.getElementById("hudLatLngVal");
+    if (!hudCamZoom || !hudViewSize || !hudCenter || !hudLatLng) return;
+
+    const realCenter = fromScene(controls.target.x, controls.target.z);
+    const lat = localToLat(realCenter.y);
+    const lng = localToLng(realCenter.x);
+
+    hudCamZoom.textContent = camera.zoom.toFixed(2);
+    hudViewSize.textContent = viewSize.toFixed(1);
+    hudCenter.textContent = `x:${realCenter.x.toFixed(1)}, y:${realCenter.y.toFixed(1)}`;
+    hudLatLng.textContent = `lat:${lat.toFixed(6)}, lng:${lng.toFixed(6)}`;
+  }
+
+  controls.addEventListener("change", updateCamZoomHud);
+  setTimeout(updateCamZoomHud, 500);
+
+  const copyCamBtn = document.getElementById("copyCamCoordsBtn");
+  if (copyCamBtn) {
+    copyCamBtn.addEventListener("click", async () => {
+      const realCenter = fromScene(controls.target.x, controls.target.z);
+      const lat = localToLat(realCenter.y);
+      const lng = localToLng(realCenter.x);
+      const textToCopy = `camera.zoom: ${camera.zoom.toFixed(2)}, viewSize: ${viewSize.toFixed(1)}, centerLocal: { x: ${realCenter.x.toFixed(1)}, y: ${realCenter.y.toFixed(1)} }, lat: ${lat.toFixed(6)}, lng: ${lng.toFixed(6)}, target3D: { x: ${controls.target.x.toFixed(2)}, y: ${controls.target.y.toFixed(2)}, z: ${controls.target.z.toFixed(2)} }, pos3D: { x: ${camera.position.x.toFixed(2)}, y: ${camera.position.y.toFixed(2)}, z: ${camera.position.z.toFixed(2)} }`;
+
+      const outputBox = document.getElementById("hudCoordsOutput");
+      if (outputBox) {
+        outputBox.value = textToCopy;
+        outputBox.style.display = "block";
+        outputBox.select();
+      }
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        copyCamBtn.innerHTML = `<i class="fa-solid fa-check"></i> ¡Copiado!`;
+        setTimeout(() => { copyCamBtn.innerHTML = `<i class="fa-regular fa-copy"></i> Copiar`; }, 2000);
+      } catch (e) {}
+    });
   }
   function updateNetPositions() {
     VISIBLE_MACRO.forEach((m, i) => {
