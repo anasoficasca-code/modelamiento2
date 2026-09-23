@@ -69,7 +69,7 @@
   controls.minPolarAngle = Math.PI / 4;
   controls.maxPolarAngle = Math.PI / 4;
   controls.minZoom = 0.15;
-  controls.maxZoom = 30;
+  controls.maxZoom = 350;
   controls.enablePan = true;
 
   // ---- Luces (con sombras, tipo render arquitectonico) ----
@@ -1460,6 +1460,14 @@
     updateTreeBillboards();
   });
   window.addEventListener("resize", updateNetPositions);
+  
+  // Garantizar que la red de sub-problemas aparezca de inmediato apenas se abra el módulo
+  let initTicks = 0;
+  const initTimer = setInterval(() => {
+    updateNetPositions();
+    initTicks++;
+    if (initTicks > 40) clearInterval(initTimer);
+  }, 80);
   updateNetPositions();
 })();
 
