@@ -346,18 +346,18 @@
   const CENTER_R = 108;
   let NODE_R = 62;
 
-  function forceLayout(nodeList, edgeList, centerX, centerY, spread, radiusOf, gapMult, margin, iterations = 300) {
+  function forceLayout(nodeList, edgeList, centerX, centerY, spread, radiusOf, gapMult, margin, iterations = 400) {
     const pos = {};
     const areaW = mainW() - margin * 2, areaH = mainH() - margin * 2;
     const cols = Math.ceil(Math.sqrt(nodeList.length * areaW / areaH));
     const rows = Math.ceil(nodeList.length / cols);
     nodeList.forEach((n, i) => {
       const col = i % cols, row = Math.floor(i / cols);
-      const jitter = () => (Math.random() - 0.5) * 0.3;
+      const jitter = () => (Math.random() - 0.5) * 0.35;
       pos[n.id] = { x: margin + (areaW * (col + 0.5 + jitter())) / cols, y: margin + (areaH * (row + 0.5 + jitter())) / rows };
     });
     const ids = nodeList.map(n => n.id);
-    function minDistFor(a, b) { return (radiusOf(a) + radiusOf(b)) * gapMult; }
+    function minDistFor(a, b) { return (radiusOf(a) + radiusOf(b)) * Math.max(1.35, gapMult); }
     for (let iter = 0; iter < iterations; iter++) {
       const force = {}; ids.forEach(id => force[id] = { x: 0, y: 0 });
       for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
@@ -376,22 +376,23 @@
         const a = pos[e.from], b = pos[e.to];
         const dx = b.x - a.x, dy = b.y - a.y;
         const dist = Math.hypot(dx, dy) || 0.001;
-        const target = minDistFor(e.from, e.to) * 1.3;
-        const pull = (dist - target) * 0.014;
+        const target = minDistFor(e.from, e.to) * 1.35;
+        const pull = (dist - target) * 0.012;
         force[e.from].x += dx / dist * pull; force[e.from].y += dy / dist * pull;
         force[e.to].x -= dx / dist * pull; force[e.to].y -= dy / dist * pull;
       });
       ids.forEach(id => {
         pos[id].x += force[id].x; pos[id].y += force[id].y;
-        pos[id].x += (centerX - pos[id].x) * 0.0008;
-        pos[id].y += (centerY - pos[id].y) * 0.0008;
+        pos[id].x += (centerX - pos[id].x) * 0.0006;
+        pos[id].y += (centerY - pos[id].y) * 0.0006;
         if (pos[id].x < margin) pos[id].x += (margin - pos[id].x) * 0.45;
         if (pos[id].x > mainW() - margin) pos[id].x -= (pos[id].x - (mainW() - margin)) * 0.45;
         if (pos[id].y < margin) pos[id].y += (margin - pos[id].y) * 0.45;
         if (pos[id].y > mainH() - margin) pos[id].y -= (pos[id].y - (mainH() - margin)) * 0.45;
       });
     }
-    for (let pass = 0; pass < 320; pass++) {
+    // Pasada final de separación garantizada sin superposición ni contacto
+    for (let pass = 0; pass < 400; pass++) {
       for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
         const a = pos[ids[i]], b = pos[ids[j]];
         const minDist = minDistFor(ids[i], ids[j]);
@@ -403,12 +404,12 @@
           a.x += ux * overlap; a.y += uy * overlap; b.x -= ux * overlap; b.y -= uy * overlap;
         }
       }
+      ids.forEach(id => {
+        const r = radiusOf(id);
+        pos[id].x = Math.max(margin + r + 4, Math.min(mainW() - margin - r - 4, pos[id].x));
+        pos[id].y = Math.max(margin + r + 4, Math.min(mainH() - margin - r - 4, pos[id].y));
+      });
     }
-    ids.forEach(id => {
-      const r = radiusOf(id);
-      pos[id].x = Math.max(margin + r * 0.2, Math.min(mainW() - margin - r * 0.2, pos[id].x));
-      pos[id].y = Math.max(margin + r * 0.2, Math.min(mainH() - margin - r * 0.2, pos[id].y));
-    });
     return pos;
   }
 
@@ -495,23 +496,30 @@
     const colorOf = opts.colorOf || (() => "var(--node)");
     const degree = {};
     nodes.forEach(n => degree[n.id] = 0);
-    rel.forEach(r => { degree[r.from]++; degree[r.to]++; });
+    rel.forEach(r => {
+      if (degree[r.from] !== undefined) degree[r.from]++;
+      if (degree[r.to] !== undefined) degree[r.to]++;
+    });
     const degValues = Object.values(degree);
     const degMin = Math.min(...degValues), degMax = Math.max(...degValues);
-    NODE_R = Math.max(30, Math.min(opts.maxR, mainW() * opts.wFrac));
-    const R_MIN = NODE_R * 0.85, R_MAX = NODE_R * 1.5;
+    NODE_R = Math.max(20, Math.min(opts.maxR, mainW() * opts.wFrac));
+    // Tamaño de los nodos escalado dinámicamente según sus conexiones:
+    // los de pocas conexiones quedan significativamente más pequeños (R_MIN),
+    // y los de muchas conexiones quedan mucho más grandes (R_MAX).
+    const R_MIN = Math.max(15, NODE_R * 0.48);
+    const R_MAX = NODE_R * 1.62;
     nodes.forEach(n => {
       const t = degMax === degMin ? 0.5 : (degree[n.id] - degMin) / (degMax - degMin);
       nodeRadiusMap[n.id] = R_MIN + (R_MAX - R_MIN) * Math.sqrt(t);
     });
     function radiusOf(id) { return nodeRadiusMap[id]; }
-    const margin = Math.max(50, Math.min(150, mainW() * 0.07));
+    const margin = Math.max(40, Math.min(120, mainW() * 0.06));
     const cx = mainW() / 2, cy = mainH() / 2 + 10;
     const spread = Math.min(mainW() - margin * 2, mainH() - margin * 2) * 0.55;
     const avgR = degValues.reduce((s, d) => s + (R_MIN + (R_MAX - R_MIN) * Math.sqrt(degMax === degMin ? 0.5 : (d - degMin) / (degMax - degMin))), 0) / nodes.length;
     const area = (mainW() - margin * 2) * (mainH() - margin * 2);
     const maxFeasible = 2 * Math.sqrt((area * 0.68) / (nodes.length * Math.PI));
-    const gapMult = Math.min(1.8, Math.max(1.3, maxFeasible / (avgR * 2)));
+    const gapMult = Math.min(1.8, Math.max(1.35, maxFeasible / (avgR * 2)));
 
     function segInt(p1, p2, p3, p4) {
       const d1x = p2.x - p1.x, d1y = p2.y - p1.y, d2x = p4.x - p3.x, d2y = p4.y - p3.y;
@@ -531,7 +539,7 @@
       return c;
     }
     let best = null, bestC = Infinity;
-    for (let attempt = 0; attempt < 25; attempt++) {
+    for (let attempt = 0; attempt < 30; attempt++) {
       const cand = forceLayout(nodes, rel, cx, cy, spread, radiusOf, gapMult, margin);
       const c = countCrossings(cand);
       if (c < bestC) { bestC = c; best = cand; }
@@ -544,25 +552,21 @@
       b.style.background = colorOf(n.id);
       const l = el("label child-label");
       const ownR = nodeRadiusMap[n.id];
-      const fontPx = 11.5, lineH = fontPx * 1.24;
-      // Calculo consciente de la curva del circulo: la linea mas alejada
-      // del centro (arriba/abajo del bloque de texto) tiene MENOS ancho
-      // disponible que una linea justo en el medio — se usa el ancho
-      // seguro en el punto mas angosto que realmente vaya a ocupar el
-      // texto, no un ancho fijo que ignore la curva.
+      const fontPx = Math.max(9, Math.min(12, ownR * 0.32)), lineH = fontPx * 1.22;
       let maxLines = Math.max(2, Math.floor((ownR * 2 * 0.8) / lineH));
       let halfH = (maxLines * lineH) / 2;
       while (halfH >= ownR * 0.85 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
       const safeWidth = 2 * Math.sqrt(Math.max(0, ownR * ownR - halfH * halfH)) * 0.86;
       l.style.width = safeWidth + "px";
-      const maxCharsPerLine = Math.max(5, Math.floor(safeWidth / (fontPx * 0.58)));
+      l.style.fontSize = fontPx + "px";
+      l.style.lineHeight = lineH + "px";
+      const maxCharsPerLine = Math.max(5, Math.floor(safeWidth / (fontPx * 0.56)));
       const text = byIdMap[n.id].corto || byIdMap[n.id].t;
       l.innerHTML = wrapToFit(text, maxCharsPerLine, maxLines);
       labelLayer.appendChild(l); nodeLabels[n.id] = l;
       const h = el("hit"); labelLayer.appendChild(h); nodeHits[n.id] = h;
       place(nodeBlobs[n.id], nodePos[n.id].x, nodePos[n.id].y); size(nodeBlobs[n.id], ownR);
       place(l, nodePos[n.id].x, nodePos[n.id].y);
-      size(h, ownR); place(h, nodePos[n.id].x, nodePos[n.id].y);
     });
     const BRIDGES = 45;
     rel.forEach(r => {
@@ -677,8 +681,8 @@
     level = "full"; currentDetailId = null;
     const allRelCombined = [...allInternalRel, ...INTER_NETWORK_REL];
     buildNetwork(allNodesList, allRelCombined, allNodesById, {
-      maxR: 48,
-      wFrac: 0.055,
+      maxR: 35,
+      wFrac: 0.042,
       colorOf: (id) => macroById[allNodesById[id].macroId].color
     });
     intro.style.opacity = "0";
