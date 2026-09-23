@@ -1178,7 +1178,7 @@
     const d = document.createElement("div");
     d.className = "net-blob";
     d.style.width = d.style.height = diameter + "px";
-    d.style.background = hexToRgba(colorHex, 0.55);
+    d.style.background = hexToRgba(colorHex, 0.78);
     d.style.border = `2px solid ${colorHex}`;
     netGooLayer.appendChild(d);
     return d;
