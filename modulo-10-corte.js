@@ -2096,11 +2096,22 @@
   let natWaterTime = 0;
   let natIsAssembled = false; // Estado: true si las capas bajaron y se colocaron sobre la base axo
 
+  let canonicalCamera = null;
+  function updateCanonicalCamera() {
+    if (!camera) return;
+    canonicalCamera = camera.clone();
+    canonicalCamera.matrixWorldInverse.copy(camera.matrixWorldInverse);
+    canonicalCamera.projectionMatrix.copy(camera.projectionMatrix);
+    canonicalCamera.projectionMatrixInverse.copy(camera.projectionMatrixInverse);
+  }
+
   // Matriz de proyección canónica para el viewport 16:9 de las subcapas
   function projectPointToLayer(rx, ry, elevation, w, h) {
     const sp = toScene(rx, ry);
-    const p = new THREE.Vector3(sp.x, elevation, sp.z);
-    p.project(camera);
+    const el = (typeof elevation === "number") ? elevation : 0.0;
+    const p = new THREE.Vector3(sp.x, el, sp.z);
+    const cam = canonicalCamera || camera;
+    p.project(cam);
     return {
       x: (p.x * 0.5 + 0.5) * w,
       y: (-p.y * 0.5 + 0.5) * h,
@@ -2127,6 +2138,7 @@
     camera.bottom = -viewSize;
     camera.updateProjectionMatrix();
     renderer.setSize(targetW, targetH, false);
+    updateCanonicalCamera();
 
     // Captura fotográfica de la base limpia con fondo transparente (cero carros, cero ruido, cero mirlas)
     const origRoadColor = roadMat ? roadMat.color.getHex() : null;
@@ -2159,11 +2171,15 @@
       natBaseImg.src = fotoBase;
       natBaseImg.style.objectFit = "fill";
     }
-    // ÚNICAMENTE natBaseImg tiene la foto de la base; las demás subcapas son sólo lienzos vectoriales transparentes
-    const l1 = document.getElementById("natWaterImg"); if (l1) l1.removeAttribute("src");
-    const l2 = document.getElementById("natVegImg"); if (l2) l2.removeAttribute("src");
-    const l3 = document.getElementById("natBirdImg"); if (l3) l3.removeAttribute("src");
-    const l4 = document.getElementById("natMacroImg"); if (l4) l4.removeAttribute("src");
+    // Asignar foto de contexto suave a todas las subcapas para orientación espacial 1:1
+    const setNatSubImg = (id) => {
+      const el = document.getElementById(id);
+      if (el) { el.src = fotoBase; el.style.objectFit = "fill"; el.style.opacity = "0.40"; el.style.filter = "grayscale(70%)"; }
+    };
+    setNatSubImg("natWaterImg");
+    setNatSubImg("natVegImg");
+    setNatSubImg("natBirdImg");
+    setNatSubImg("natMacroImg");
 
     natOverlay.style.display = "flex";
     void natOverlay.offsetWidth;
@@ -2411,6 +2427,7 @@
     camera.bottom = -viewSize;
     camera.updateProjectionMatrix();
     renderer.setSize(targetW, targetH, false);
+    updateCanonicalCamera();
 
     // Guardar estado original
     const origRoadColor = roadMat ? roadMat.color.getHex() : null;
@@ -3834,6 +3851,7 @@
     camera.bottom = -viewSize;
     camera.updateProjectionMatrix();
     renderer.setSize(targetW, targetH, false);
+    updateCanonicalCamera();
 
     const origRoadColor = roadMat ? roadMat.color.getHex() : null;
     const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
@@ -3864,6 +3882,14 @@
       cultBaseImg.src = fotoBase;
       cultBaseImg.style.objectFit = "fill";
     }
+    const setCultSubImg = (id) => {
+      const el = document.getElementById(id);
+      if (el) { el.src = fotoBase; el.style.objectFit = "fill"; el.style.opacity = "0.40"; el.style.filter = "grayscale(70%)"; }
+    };
+    setCultSubImg("cultLayer1Img");
+    setCultSubImg("cultLayer2Img");
+    setCultSubImg("cultLayer3Img");
+    setCultSubImg("cultLayer4Img");
 
     cultOverlay.style.display = "flex";
     void cultOverlay.offsetWidth;
