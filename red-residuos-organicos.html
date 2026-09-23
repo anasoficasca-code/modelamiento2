@@ -93,6 +93,20 @@
   }
   .back-btn.show{ opacity:1; pointer-events:auto; }
 
+  .full-net-btn{
+    position:absolute; top:20px; right:20px; z-index:10;
+    padding:10px 18px; border-radius:999px; border:1px solid rgba(36,200,189,.5);
+    background:rgba(36,200,189,.15); color:#24c8bd; font-size:12.5px; font-weight:700;
+    cursor:pointer; backdrop-filter:blur(10px); box-shadow:0 4px 16px rgba(0,0,0,.35);
+    transition:all .25s cubic-bezier(.2,1,.3,1); display:flex; align-items:center; gap:8px;
+  }
+  .full-net-btn:hover{
+    background:rgba(36,200,189,.3); border-color:#24c8bd; transform:scale(1.03); color:#fff;
+  }
+  .full-net-btn.active{
+    background:#24c8bd; color:#0b0c0f; border-color:#24c8bd; box-shadow:0 0 20px rgba(36,200,189,.5);
+  }
+
   @media (prefers-reduced-motion: reduce){ .blob, .label, .panel{ transition:none !important; } }
 </style>
 </head>
@@ -113,6 +127,8 @@
     </nav>
   </aside>
   <main class="main">
+
+<button type="button" id="fullNetBtn" class="full-net-btn"><i class="fa-solid fa-network-wired"></i> 🌐 Ver Red Interconectada Completa (13 Causalidades Inter-Redes)</button>
 
 <div class="intro" id="intro">
   <h1>Sobrecarga territorial en Kennedy: colisión entre el metabolismo agrocomercial metropolitano, la densificación residencial en altura y la capacidad de soporte urbano e hídrico</h1>
@@ -288,6 +304,36 @@
     },
   };
   const macroById = {}; MACRO.forEach(m => macroById[m.id] = m);
+
+  const allNodesById = {};
+  const allNodesList = [];
+  const allInternalRel = [];
+  Object.keys(SUBNETS).forEach(mId => {
+    SUBNETS[mId].nodes.forEach(n => {
+      const copy = { ...n, macroId: mId };
+      allNodesById[n.id] = copy;
+      allNodesList.push(copy);
+    });
+    SUBNETS[mId].rel.forEach(r => {
+      allInternalRel.push(r);
+    });
+  });
+
+  const INTER_NETWORK_REL = [
+    { from:"s2_3", to:"s3_2", pol:"+", verbo:"La saturación hídrica y falta de infiltración impulsa la ocupación informal de suelo para acopio agrocomercial local", inter:true },
+    { from:"s1_1", to:"s3_5", pol:"+", verbo:"La llegada constante de camiones regionales satura de manera crítica la trama barrial circundante", inter:true },
+    { from:"s4_1", to:"s3_1", pol:"+", verbo:"La alta densidad poblacional nueva exige un mayor volumen de abastecimiento de alimentos", inter:true },
+    { from:"s3_3", to:"s4_1", pol:"-", verbo:"La hipercomercialización descontrolada desincentiva la inversión en vivienda formal de calidad", inter:true },
+    { from:"s7_3", to:"s1_2", pol:"-", verbo:"La falta de regulación pública unificada impide ampliar o gestionar eficazmente la infraestructura vial perimetral", inter:true },
+    { from:"s6_5", to:"s7_2", pol:"+", verbo:"El deterioro ambiental evidencia la brecha insalvable entre el POT oficial y el uso real del suelo", inter:true },
+    { from:"s6_2", to:"s2_1", pol:"+", verbo:"La acumulación de basuras y escombros obstruye los canales provocando vertimientos sin tratamiento", inter:true },
+    { from:"s2_5", to:"s6_1", pol:"+", verbo:"La degradación de la red hídrica reduce el control sanitario aumentando la generación desordenada de residuos", inter:true },
+    { from:"s2_1", to:"s1_5", pol:"+", verbo:"El deterioro ambiental de las calzadas favorece la presencia de cargadores informales y tracción humana", inter:true },
+    { from:"s2_2", to:"s5_3", pol:"+", verbo:"El desborde de lixiviados en áreas públicas atrae ventas informales de desperdicios y acopio en vía", inter:true },
+    { from:"s5_1", to:"s4_2", pol:"+", verbo:"La falta de estacionamiento interno genera sobrecarga en las redes públicas de servicios del entorno", inter:true },
+    { from:"s5_2", to:"s1_2", pol:"+", verbo:"Las maniobras de carga y descarga en vía pública reducen drásticamente la capacidad de la red vial", inter:true },
+    { from:"s1_4", to:"s6_2", pol:"+", verbo:"El parqueo prolongado de camiones convierte las rondas y andenes en puntos clandestinos de arrojamiento de basuras", inter:true }
+  ];
 
   const gooLayer = document.getElementById("gooLayer");
   const labelLayer = document.getElementById("labelLayer");
@@ -601,6 +647,8 @@
     });
   }
 
+  const fullNetBtn = document.getElementById("fullNetBtn");
+
   function showMacro() {
     level = "macro"; currentDetailId = null;
     buildNetwork(MACRO, MACRO_REL, macroById, { maxR: 78, wFrac: 0.1, colorOf: (id) => macroById[id].color });
@@ -625,8 +673,30 @@
     document.getElementById("panel").classList.remove("open");
   }
 
+  function showFullNetwork() {
+    level = "full"; currentDetailId = null;
+    const allRelCombined = [...allInternalRel, ...INTER_NETWORK_REL];
+    buildNetwork(allNodesList, allRelCombined, allNodesById, {
+      maxR: 48,
+      wFrac: 0.055,
+      colorOf: (id) => macroById[allNodesById[id].macroId].color
+    });
+    intro.style.opacity = "0";
+    levelTitle.classList.add("show");
+    levelTitleText.textContent = "🌐 Red Interconectada Completa";
+    levelSubText.textContent = "Visualizando todas las causas de las 7 problemáticas y las 13 relaciones inter-red";
+    backBtn.textContent = "← Volver a los 7 problemas de fondo";
+    backBtn.classList.add("show");
+    centerBlob.style.opacity = "0"; centerLabel.style.opacity = "0"; hitCenter.style.pointerEvents = "none";
+    document.getElementById("panel").classList.remove("open");
+  }
+
+  if (fullNetBtn) {
+    fullNetBtn.addEventListener("click", showFullNetwork);
+  }
+
   function backAction() {
-    if (level === "detail") { showMacro(); return; }
+    if (level === "detail" || level === "full") { showMacro(); return; }
     level = "none"; currentDetailId = null;
     clearNetwork();
     intro.style.opacity = "1";
@@ -652,35 +722,35 @@
     if (downTarget === hitCenter) { showMacro(); return; }
     const nid = Object.keys(nodeHits).find(id => nodeHits[id] === downTarget);
     if (!nid) return;
-    // Clic directo en un nodo: si estamos en la red macro, entra directo a
-    // la red de sub-problematicas de esa problemática (sin pasar por el
-    // panel); si ya estamos en un detalle, el clic abre el panel normal
-    // con la informacion de esa causa.
     if (level === "macro") showDetail(nid);
     else openPanel(nid);
   });
 
-  // Mostrar la red de las 8 problematicas directamente al abrir la pagina,
-  // sin necesidad de tocar primero la burbuja inicial.
   showMacro();
 
   function openRelPopup(r) {
     const panel = document.getElementById("panel"), body = document.getElementById("panelBody");
-    const from = macroById[r.from], to = macroById[r.to];
+    const fromObj = macroById[r.from] || allNodesById[r.from];
+    const toObj = macroById[r.to] || allNodesById[r.to];
+    const fromTitle = fromObj ? (fromObj.corto || fromObj.t) : r.from;
+    const toTitle = toObj ? (toObj.corto || toObj.t) : r.to;
+    const toColor = (toObj && toObj.macroId) ? macroById[toObj.macroId].color : (toObj ? toObj.color || "var(--blue)" : "#24c8bd");
+    
     body.innerHTML = `
-      <p class="panel-kind">${r.loopLabel ? `Bucle de retroalimentación ${r.loopLabel}` : "Relación causal"}</p>
-      <h2>${from.corto} <span style="color:${to.color};">→</span> ${to.corto}</h2>
+      <p class="panel-kind">${r.inter ? "⚡ Conexión Inter-Problemática (Micro-Causal)" : (r.loopLabel ? `Bucle de retroalimentación ${r.loopLabel}` : "Relación causal")}</p>
+      <h2>${fromTitle} <span style="color:${toColor};">→</span> ${toTitle}</h2>
       <div class="block">
         <b>Polaridad</b>
         <p style="font-size:12.5px;color:var(--ink-dark);margin:0;">${r.pol === "-" ? "Negativa (–): si la causa aumenta, el efecto disminuye" : "Positiva (+): si la causa aumenta, el efecto también aumenta"}</p>
       </div>
       <div class="block">
-        <b>Mecanismo</b>
-        <p style="font-size:12.5px;color:var(--ink-dark);margin:0;line-height:1.55;">${r.verbo}</p>
+        <b>Mecanismo Causal</b>
+        <p style="font-size:12.5px;color:var(--ink-dark);margin:0;line-height:1.55;">${r.verbo || "Relación directa entre las causas identificadas en la matriz territorial."}</p>
       </div>
     `;
     panel.classList.add("open");
   }
+
   function openPanel(id) {
     const panel = document.getElementById("panel"), body = document.getElementById("panelBody");
     if (level === "macro") {
@@ -711,6 +781,19 @@
         ${esLoop ? `<div class="block"><b>Bucle de retroalimentación</b><p style="font-size:12.5px;color:var(--ink-dark);margin:0;font-style:italic;">${sub.loopNote}</p></div>` : ""}
       `;
       body.querySelectorAll("[data-goto]").forEach(elm => elm.addEventListener("click", (e) => { e.stopPropagation(); openPanel(elm.dataset.goto); }));
+    } else if (level === "full") {
+      const n = allNodesById[id];
+      const parentMacro = macroById[n.macroId];
+      const allRelCombined = [...allInternalRel, ...INTER_NETWORK_REL];
+      const vieneDe = allRelCombined.filter(r => r.to === id).map(r => ({ ...allNodesById[r.from], pol: r.pol, inter: r.inter }));
+      const alimentaA = allRelCombined.filter(r => r.from === id).map(r => ({ ...allNodesById[r.to], pol: r.pol, inter: r.inter }));
+      body.innerHTML = `
+        <p class="panel-kind" style="color:${parentMacro.color};">Causa de: ${parentMacro.corto}</p>
+        <h2>${n.t}</h2>
+        ${vieneDe.length ? `<div class="block"><b>Viene de</b>${vieneDe.map(x => `<div class="rel-chip" data-goto="${x.id}">${x.inter ? "⚡ " : ""}${x.t} <b>(${x.pol})</b></div>`).join("")}</div>` : ""}
+        ${alimentaA.length ? `<div class="block"><b>Alimenta a</b>${alimentaA.map(x => `<div class="rel-chip" data-goto="${x.id}">${x.inter ? "⚡ " : ""}${x.t} <b>(${x.pol})</b></div>`).join("")}</div>` : ""}
+      `;
+      body.querySelectorAll("[data-goto]").forEach(elm => elm.addEventListener("click", (e) => { e.stopPropagation(); openPanel(elm.dataset.goto); }));
     }
     panel.classList.add("open");
   }
@@ -722,6 +805,7 @@
     place(hitCenter, mainW() / 2, mainH() / 2 + 10);
     if (level === "macro") buildNetwork(MACRO, MACRO_REL, macroById, { maxR: 78, wFrac: 0.1, colorOf: (id) => macroById[id].color });
     else if (level === "detail") { const sub = SUBNETS[currentDetailId]; const byId = {}; sub.nodes.forEach(n => byId[n.id] = n); const macroColor = macroById[currentDetailId].color; buildNetwork(sub.nodes, sub.rel, byId, { maxR: 66, wFrac: 0.09, colorOf: () => macroColor, loopType: sub.loopType }); }
+    else if (level === "full") showFullNetwork();
   });
 })();
 </script>
