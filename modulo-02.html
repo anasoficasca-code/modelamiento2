@@ -7,19 +7,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="modulo-02.css?v=20260904_sidebar_sin_hammen">
+<link rel="stylesheet" href="modulo-02.css?v=degree-size-compact-v3">
   <link rel="stylesheet" href="site-theme.css?v=20260823">
-  <link rel="stylesheet" href="navigation-unified.css?v=20260920">
-  <link rel="stylesheet" href="modulo-02-red-externa.css?v=20260904_restored_v8">
+  <link rel="stylesheet" href="navigation-unified.css?v=20260824">
+  <link rel="stylesheet" href="modulo-02-red-externa.css?v=6-conclusiones">
 </head>
 <body>
 <div class="app">
 
-                              <aside class="sidebar sidebar-icons-only">
-      <a class="brand-icon" href="index.html" title="Bogotá Viva · Inicio" aria-label="Inicio"><i class="fa-solid fa-diagram-project"></i></a>
-      <nav class="icon-nav" aria-label="Módulos">
+          <aside class="sidebar sidebar-icons-only">
+    <a class="brand-icon" href="index.html" title="Bogotá Viva · Inicio" aria-label="Inicio"><i class="fa-solid fa-diagram-project"></i></a>
+    <nav class="icon-nav" aria-label="Módulos">
         <a href="index.html" class="icon-nav-item" title="Inicio"><i class="fa-solid fa-house"></i></a>
-        <a href="modulo-metropolitano.html" class="icon-nav-item" title="Escala metropolitana &middot; Bogot&aacute; completa"><i class="fa-solid fa-city"></i></a>
+        <a href="modulo-metropolitano.html" class="icon-nav-item" title="Escala metropolitana &middot; Bogotá completa"><i class="fa-solid fa-city"></i></a>
         <a href="modulo-02.html" class="icon-nav-item active" title="02 · Medir la red"><i class="fa-solid fa-chart-simple"></i></a>
         <a href="modulo-03.html" class="icon-nav-item" title="03 · Discurso vs realidad"><i class="fa-solid fa-eye"></i></a>
         <a href="modulo-04.html" class="icon-nav-item" title="04 · Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
@@ -34,7 +34,12 @@
         <a href="red-residuos-organicos.html" class="icon-nav-item" title="Red de problemáticas"><i class="fa-solid fa-diagram-project"></i></a>
         <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
       </nav>
-    </aside>
+
+    <div class="icon-nav-footer">
+      <a href="configuracion.html" class="icon-nav-item" title="Configuración"><i class="fa-solid fa-gear"></i></a>
+      <a href="demo.html" class="icon-nav-item" title="Salir"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+    </div>
+  </aside>
 
   <main class="main">
 
@@ -111,53 +116,78 @@
       </div>
 
       <div class="network-body">
+        <div class="network-controls">
+          <div class="network-zoom-controls">
+            <button class="network-zoom-btn" id="networkZoomOut" type="button" title="Alejar" aria-label="Alejar">&minus;</button>
+            <span class="network-zoom-level" id="networkZoomLevel">100%</span>
+            <button class="network-zoom-btn" id="networkZoomReset" type="button" title="Restablecer" aria-label="Restablecer zoom">⟲</button>
+            <button class="network-zoom-btn" id="networkZoomIn" type="button" title="Acercar" aria-label="Acercar">&#43;</button>
+          </div>
+        </div>
         <div class="network-canvas-col">
-          <div class="m2re-toolbar-row">
-            <div class="m2cat-toolbar-status" id="m2CategoriasStatus">Cargando base de datos…</div>
-            <div class="network-zoom-controls m2re-zoom-controls">
-              <button class="network-zoom-btn" id="m2reZoomOut" type="button" title="Alejar" aria-label="Alejar">&minus;</button>
-              <span class="network-zoom-level" id="m2reZoomLevel">100%</span>
-              <button class="network-zoom-btn" id="m2reZoomReset" type="button" title="Restablecer" aria-label="Restablecer">⟲</button>
-              <button class="network-zoom-btn" id="m2reZoomIn" type="button" title="Acercar" aria-label="Acercar">&#43;</button>
-            </div>
-          </div>
-          <div class="m2re-toolbar-row m2re-highlight-row">
-            <button class="control-btn" id="m2reBtnHubs" type="button"><i class="fa-solid fa-circle-dot"></i> Ver hubs</button>
-            <button class="control-btn" id="m2reBtnPerifericos" type="button"><i class="fa-solid fa-circle-notch"></i> Ver periféricos</button>
-            <button class="control-btn" id="m2reBtnPuentes" type="button"><i class="fa-solid fa-link"></i> Ver nodos puente</button>
-            <button class="control-btn active" id="m2reBtnSoloPot" type="button"><i class="fa-solid fa-filter"></i> Solo lo que el POT nombra</button>
-            <button class="control-btn m2re-btn-conclusiones" id="m2reBtnConclusiones" type="button"><i class="fa-solid fa-lightbulb"></i> Conclusiones de la red</button>
-            <span class="m2re-highlight-info" id="m2reHighlightInfo"></span>
-          </div>
-          <div class="m2re-toolbar-row m2re-sim-row">
-            <span class="m2re-sim-label"><i class="fa-solid fa-power-off"></i> Simulación:</span>
-            <button class="control-btn" id="m2reBtnApagarTodos" type="button">Desactivar todos</button>
-            <button class="control-btn" id="m2reBtnEncenderTodos" type="button">Activar todos</button>
-            <button class="control-btn" id="m2reBtnApagarHubs" type="button">Desactivar hubs</button>
-            <span class="m2re-highlight-info" id="m2reSimInfo">Un clic abre su ficha · doble clic deja iluminadas sus conexiones · para activar o desactivar, el botón de la ficha o los de aquí arriba.</span>
-          </div>
-          <!-- Barra de la red original: simulación de apagado + conclusiones -->
-          <div class="m2-red-toolbar">
-            <span class="m2-red-toolbar-label"><i class="fa-solid fa-power-off"></i> Simulación:</span>
-            <button class="control-btn" id="btnApagarTodos" type="button">Desactivar todos</button>
-            <button class="control-btn" id="btnEncenderTodos" type="button">Activar todos</button>
-            <button class="control-btn" id="btnApagarHubs" type="button">Desactivar hubs</button>
-            <button class="control-btn m2-btn-conclusiones" id="btnConclusionesRed" type="button"><i class="fa-solid fa-lightbulb"></i> Conclusiones de la red</button>
-            <span class="m2-red-toolbar-info" id="m2SimInfo"></span>
-          </div>
-          <div class="network-canvas">
-            <svg id="networkViz" viewBox="0 0 2500 1820" preserveAspectRatio="xMidYMid meet"></svg>
-            <!-- El zoom vive DENTRO del tablero, en su esquina, no flotando arriba -->
-            <div class="network-controls">
-              <div class="network-zoom-controls">
-                <button class="network-zoom-btn" id="networkZoomOut" type="button" title="Alejar" aria-label="Alejar">&minus;</button>
-                <span class="network-zoom-level" id="networkZoomLevel">100%</span>
-                <button class="network-zoom-btn" id="networkZoomReset" type="button" title="Restablecer" aria-label="Restablecer zoom">⟲</button>
-                <button class="network-zoom-btn" id="networkZoomIn" type="button" title="Acercar" aria-label="Acercar">&#43;</button>
+          <!-- PANEL DE CONTROL REESTRUCTURADO Y FUNCIONAL -->
+          <div class="m2re-control-deck">
+            <div class="m2re-deck-top">
+              <div class="m2re-status-indicators" id="m2reStatusIndicators">
+                <span class="m2re-live-pill" id="m2reLivePill"><i class="fa-solid fa-circle-nodes"></i> <span id="m2reLivePillText">Cargando red relacional…</span></span>
+                <span class="m2re-stat-chip" id="m2reChipNodos"><b>...</b> nodos</span>
+                <span class="m2re-stat-chip" id="m2reChipConex"><b>...</b> flujos</span>
+                <span class="m2re-stat-chip chip-hubs" id="m2reChipHubs"><b>...</b> hubs</span>
+                <span class="m2re-stat-chip chip-puentes" id="m2reChipPuentes"><b>...</b> puentes</span>
+              </div>
+              <div class="m2re-view-actions">
+                <button class="control-btn active" id="m2reBtnSoloPot" type="button" title="Alternar entre lo que nombra el POT y la base completa">
+                  <i class="fa-solid fa-filter"></i> <span id="m2reSoloPotLabel">Solo POT</span>
+                </button>
+                <div class="network-zoom-controls m2re-zoom-controls">
+                  <button class="network-zoom-btn" id="m2reZoomOut" type="button" title="Alejar" aria-label="Alejar">&minus;</button>
+                  <span class="network-zoom-level" id="m2reZoomLevel">100%</span>
+                  <button class="network-zoom-btn" id="m2reZoomReset" type="button" title="Encuadrar toda la red (ver completa)" aria-label="Encuadrar toda la red"><i class="fa-solid fa-expand"></i></button>
+                  <button class="network-zoom-btn" id="m2reZoomIn" type="button" title="Acercar" aria-label="Acercar">&#43;</button>
+                </div>
               </div>
             </div>
-            <aside class="m2-conclusiones" id="m2Conclusiones" hidden></aside>
+
+            <!-- FILTROS DE ANÁLISIS, FLUJOS Y SIMULACIÓN -->
+            <div class="m2re-deck-actions">
+              <div class="m2re-action-group">
+                <span class="m2re-group-label">Estructura:</span>
+                <button class="control-btn m2re-btn-action" id="m2reBtnHubs" type="button">
+                  <i class="fa-solid fa-circle-dot"></i> Hubs <span class="m2re-badge" id="m2reCountHubs">0</span>
+                </button>
+                <button class="control-btn m2re-btn-action" id="m2reBtnPuentes" type="button">
+                  <i class="fa-solid fa-link"></i> Nodos puente <span class="m2re-badge badge-puente" id="m2reCountPuentes">0</span>
+                </button>
+                <button class="control-btn m2re-btn-action" id="m2reBtnPerifericos" type="button">
+                  <i class="fa-solid fa-circle-notch"></i> Periféricos <span class="m2re-badge" id="m2reCountPerifericos">0</span>
+                </button>
+              </div>
+
+              <div class="m2re-action-group">
+                <span class="m2re-group-label">Flujos:</span>
+                <button class="control-btn m2re-btn-flow active" id="m2reFlowAll" type="button" title="Ver todos los flujos">Todos</button>
+                <button class="control-btn m2re-btn-flow" id="m2reFlowDirect" type="button" title="Solo relaciones directas (línea continua)"><span class="flow-dot flow-direct"></span> Directas</button>
+                <button class="control-btn m2re-btn-flow" id="m2reFlowIndirect" type="button" title="Solo relaciones indirectas (línea punteada)"><span class="flow-dot flow-indirect"></span> Indirectas</button>
+              </div>
+
+              <div class="m2re-action-group m2re-group-sim">
+                <span class="m2re-group-label"><i class="fa-solid fa-bolt"></i> Simular:</span>
+                <button class="control-btn m2re-btn-sim" id="m2reBtnApagarHubs" type="button" title="Simular desconexión de los hubs">Quitar hubs</button>
+                <button class="control-btn m2re-btn-sim" id="m2reBtnApagarPuentes" type="button" title="Simular ruptura de los nodos puente">Quitar puentes</button>
+                <button class="control-btn m2re-btn-sim" id="m2reBtnEncenderTodos" type="button" title="Restablecer todos los nodos">Restablecer</button>
+              </div>
+
+              <button class="control-btn m2re-btn-conclusiones" id="m2reBtnConclusiones" type="button">
+                <i class="fa-solid fa-lightbulb"></i> Conclusiones
+              </button>
+            </div>
+          </div>
+
+          <div class="network-canvas">
+            <svg id="networkViz" viewBox="0 0 2500 1820" preserveAspectRatio="xMidYMid meet"></svg>
             <aside class="m2re-ficha" id="m2reFicha" hidden></aside>
+            <aside class="m2re-drawer" id="m2rePuentesDrawer" hidden></aside>
+            <aside class="m2re-drawer" id="m2reHubsDrawer" hidden></aside>
             <aside class="m2re-conclusiones" id="m2reConclusiones" hidden></aside>
           </div>
         </div>
@@ -261,8 +291,8 @@
                 <input type="checkbox" checked><span class="legend-swatch swatch-directa-neutral"></span>
                 <span class="legend-text"><strong>Directa</strong><small>Respaldo explícito del POT</small></span>
               </label>
-              <label class="legend-item off" data-mode="type" data-type="indirecta">
-                <input type="checkbox"><span class="legend-swatch swatch-indirecta-neutral"></span>
+              <label class="legend-item" data-mode="type" data-type="indirecta">
+                <input type="checkbox" checked><span class="legend-swatch swatch-indirecta-neutral"></span>
                 <span class="legend-text"><strong>Indirecta</strong><small>Por cruce o intersección espacial</small></span>
               </label>
             </div>
@@ -414,8 +444,6 @@
       <div class="edge-info-page" id="nodeInfoArticulo" style="margin-bottom:8px; color:#fff !important;"></div>
       <div class="edge-info-quote" id="nodeInfoQuote" style="color:#fff !important;"></div>
       <div class="edge-info-analisis" id="nodeInfoNota" style="color:#fff !important;"></div>
-      <!-- Por qué se conecta con cada uno: una fila por relación, clicable -->
-      <div class="node-info-relaciones" id="nodeInfoRelaciones"></div>
       <button type="button" class="node-toggle-btn" id="nodeInfoToggleBtn">¿Qué pasaría si se apaga este nodo?</button>
       <div class="node-info-schematic-map" id="nodeInfoSchematicMap" style="display:none;"></div>
       <div class="node-info-mapa" id="nodeInfoMapaWrap" style="display:none;">
@@ -495,12 +523,11 @@
 
 </div>
 
-<script src="modulo-02.js?v=thinner-border-v7"></script>
-<script src="modulo-02-red-externa.js?v=thinner-border-v7"></script>
+<script src="modulo-02.js?v=gentler-layout-v5"></script>
+<script src="modulo-02-red-externa.js?v=11-conclusiones"></script>
 
 </body>
 </html>
-
 
 
 

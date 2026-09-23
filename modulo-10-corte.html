@@ -274,7 +274,7 @@
 
     <div id="explodeOverlay" style="position:absolute; inset:0; z-index:300; background:#f3f4f5; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:auto;">
       <button type="button" id="explodeClose" style="position:absolute; top:20px; right:26px; width:36px; height:36px; border-radius:50%; border:1px solid rgba(0,0,0,.15); background:#ffffff; color:#111; font-size:16px; cursor:pointer; z-index:20; pointer-events:auto; box-shadow:0 2px 8px rgba(0,0,0,.1);">✕</button>
-      <div id="explodeStack" style="display:flex; flex-direction:column; align-items:center; width:min(50vw, 560px); pointer-events:auto; margin:auto;">
+      <div id="explodeStack" style="display:flex; flex-direction:column; align-items:center; width:min(48vw, 500px); pointer-events:auto; margin:auto;">
         <!-- Arriba: Escala Tecnológica -->
         <div class="explode-layer" data-layer="3" style="position:relative; width:100%; aspect-ratio:16/9; margin-bottom:-11%; opacity:0; transform:scale(.05); transition:transform 2.2s cubic-bezier(.16,1,.3,1), opacity 1.8s ease, z-index 0s;">
           <div class="explode-clip" style="width:100%; height:100%; cursor:pointer; position:relative; overflow:visible;">
@@ -339,9 +339,10 @@
         <svg id="natGuideSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1; transition:opacity .8s ease;"></svg>
 
         <!-- Capa 1: Sistema Inerte y Límite Físico-Hidrológico -->
-        <div id="natLayerWater" class="nat-sublayer" data-exploded-top="3%" style="position:absolute; top:3%; left:50%; width:min(48vw, 530px); aspect-ratio:16/9; z-index:6; opacity:0; transform:translate(-50%, -20px); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+        <div id="natLayerWater" class="nat-sublayer" data-exploded-top="3%" style="position:absolute; top:3%; left:50%; width:min(48vw, 500px); aspect-ratio:16/9; z-index:6; opacity:0; transform:translate(-50%, -20px); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(241, 245, 249, 0.45); box-shadow:0 10px 30px rgba(15,23,42,.06); transition:background .8s ease;">
-            <canvas id="natWaterCanvas" style="width:100%; height:100%; display:block;"></canvas>
+            <img id="natWaterImg" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill;">
+            <canvas id="natWaterCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
             <svg id="natWaterSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
           <!-- Etiqueta temática lateral exterior al rombo -->
@@ -353,9 +354,10 @@
         </div>
 
         <!-- Capa 2: Cobertura Vegetal y Zonificación Florística -->
-        <div id="natLayer2" class="nat-sublayer" data-exploded-top="20%" style="position:absolute; top:20%; left:50%; width:min(48vw, 530px); aspect-ratio:16/9; z-index:5; opacity:0; transform:translate(-50%, -15px); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+        <div id="natLayer2" class="nat-sublayer" data-exploded-top="20%" style="position:absolute; top:20%; left:50%; width:min(48vw, 500px); aspect-ratio:16/9; z-index:5; opacity:0; transform:translate(-50%, -15px); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(244, 246, 243, 0.45); box-shadow:0 10px 30px rgba(15,23,42,.06); transition:background .8s ease;">
-            <canvas id="natVegCanvas" style="width:100%; height:100%; display:block;"></canvas>
+            <img id="natVegImg" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill;">
+            <canvas id="natVegCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
             <svg id="natVegSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
           <!-- Etiqueta temática lateral exterior al rombo -->
@@ -367,9 +369,10 @@
         </div>
 
         <!-- Capa 3: Agentes Faunísticos y Dinámicas Estacionales de Aves -->
-        <div id="natLayer3" class="nat-sublayer" data-exploded-top="37%" style="position:absolute; top:37%; left:50%; width:min(48vw, 530px); aspect-ratio:16/9; z-index:4; opacity:0; transform:translate(-50%, -10px); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+        <div id="natLayer3" class="nat-sublayer" data-exploded-top="37%" style="position:absolute; top:37%; left:50%; width:min(48vw, 500px); aspect-ratio:16/9; z-index:4; opacity:0; transform:translate(-50%, -10px); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(247, 246, 243, 0.45); box-shadow:0 10px 30px rgba(15,23,42,.06); transition:background .8s ease;">
-            <canvas id="natBirdCanvas" style="width:100%; height:100%; display:block;"></canvas>
+            <img id="natBirdImg" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill;">
+            <canvas id="natBirdCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
             <svg id="natBirdSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
           <!-- Etiqueta temática lateral exterior al rombo -->
@@ -381,9 +384,10 @@
         </div>
 
         <!-- Capa 4: Límite Corológico e Intercambio Genético Macro-regional -->
-        <div id="natLayer4" class="nat-sublayer" data-exploded-top="54%" style="position:absolute; top:54%; left:50%; width:min(48vw, 530px); aspect-ratio:16/9; z-index:3; opacity:0; transform:translate(-50%, 0); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+        <div id="natLayer4" class="nat-sublayer" data-exploded-top="54%" style="position:absolute; top:54%; left:50%; width:min(48vw, 500px); aspect-ratio:16/9; z-index:3; opacity:0; transform:translate(-50%, 0); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(243, 244, 248, 0.45); box-shadow:0 10px 30px rgba(15,23,42,.06); transition:background .8s ease;">
-            <canvas id="natMacroCanvas" style="width:100%; height:100%; display:block;"></canvas>
+            <img id="natMacroImg" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill;">
+            <canvas id="natMacroCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
             <svg id="natMacroSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
           </div>
           <!-- Etiqueta temática lateral exterior al rombo -->
@@ -395,7 +399,7 @@
         </div>
 
         <!-- Capa Base inferior: Contexto existente / Corte base -->
-        <div id="natLayerBase" class="nat-sublayer" data-exploded-top="71%" style="position:absolute; top:71%; left:50%; width:min(48vw, 530px); aspect-ratio:16/9; z-index:2; opacity:0; transform:translate(-50%, 15px); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+        <div id="natLayerBase" class="nat-sublayer" data-exploded-top="71%" style="position:absolute; top:71%; left:50%; width:min(48vw, 500px); aspect-ratio:16/9; z-index:2; opacity:0; transform:translate(-50%, 15px); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:0 12px 36px rgba(0,0,0,.08);"><img id="natBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; z-index:10; transition:opacity .8s ease;">
@@ -406,11 +410,44 @@
         </div>
       </div>
     </div>
+
+    <!-- Overlay interactivo para la Escala Técnica/Cultural (Ruido y Tráfico) -->
+    <div id="techExplodeOverlay" style="position:absolute; inset:0; z-index:400; background:#f3f4f5; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:auto;">
+      <button type="button" id="techExplodeBack" style="position:absolute; top:20px; left:26px; font-family:'Segoe UI',sans-serif; font-size:12px; font-weight:700; color:#1e293b; background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:8px 16px; cursor:pointer; z-index:20; pointer-events:auto; box-shadow:0 2px 8px rgba(0,0,0,.06);">← Volver a apilamiento principal</button>
+      <div id="techExplodeStack" style="position:relative; width:min(48vw, 500px); aspect-ratio:16/9; margin-top:20px;">
+        
+        <!-- Capa 1: Tráfico y Ruido -->
+        <div id="techLayer1" class="tech-sublayer" style="position:absolute; top:35%; left:50%; width:min(48vw, 500px); aspect-ratio:16/9; z-index:3; opacity:0; transform:translate(-50%, -20px); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative; background:rgba(250, 246, 246, 0.55); box-shadow:0 10px 30px rgba(15,23,42,.06);">
+            <img id="techNoiseImg" style="position:absolute; inset:0; width:100%; height:100%; object-fit:fill;">
+            <canvas id="techNoiseCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
+          </div>
+          <div class="tech-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10;">
+            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#991b1b; background:#fef2f2; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(153,27,27,.2);">Capa 01</span>
+            <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">TRÁFICO Y RUIDO URBANO</div>
+            <div style="font-size:10px; color:#64748b; font-weight:600;">Simulación de ruido vehicular (Corabastos) · Emisiones sonoras</div>
+          </div>
+        </div>
+
+        <!-- Capa Base: Contexto -->
+        <div id="techLayerBase" class="tech-sublayer" style="position:absolute; top:71%; left:50%; width:min(48vw, 500px); aspect-ratio:16/9; z-index:2; opacity:0; transform:translate(-50%, 0px); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:0 12px 36px rgba(0,0,0,.08);">
+            <img id="techBaseImg" style="width:100%; height:100%; object-fit:fill;">
+          </div>
+          <div class="tech-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; z-index:10;">
+            <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(100,116,139,.2);">Base</span>
+            <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">EXISTING FEATURES</div>
+            <div style="font-size:10px; color:#64748b; font-weight:600;">Axonometría Base Cortada · Infraestructura vial</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=93"></script>
+<script src="modulo-10-corte.js"></script>
 </body>
 </html>

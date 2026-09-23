@@ -12,79 +12,267 @@
   min-width: 0;
 }
 
-.m2re-toolbar-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  margin-bottom: 6px;
+/* ---------- PANEL DE CONTROL SUPERIOR (MISSION CONTROL DECK) ---------- */
+.m2re-control-deck {
+  background: rgba(10, 14, 22, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
 }
-.m2cat-toolbar-status {
-  font-size: 11.5px; color: var(--text-faint); padding: 2px 4px; white-space: normal; flex: 1;
+
+.m2re-deck-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
 }
-.m2re-zoom-controls { flex-shrink: 0; }
 
-.m2re-highlight-row { justify-content: flex-start; flex-wrap: wrap; }
-.m2re-highlight-info { font-size: 11.5px; color: var(--text-faint); }
+.m2re-status-indicators {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
-/* Cuál de las dos redes se ve en Módulo 02 lo decide la constante
-   RED_EXTERNA_ACTIVA de modulo-02-red-externa.js, que pone (o no) la clase
-   .m2re-activa en el <body>:
+.m2re-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(92, 214, 209, 0.15);
+  border: 1px solid rgba(92, 214, 209, 0.35);
+  color: #5cd6d1;
+}
+.m2re-live-pill i { font-size: 10px; }
 
-   - SIN la clase (estado actual, a pedido): se ve la red original de
-     modulo-02.js (ODS_NODES y las relaciones del POT escritas a mano), con
-     su propio control de zoom, y se esconde toda la interfaz de la red
-     externa (barra de estado, botones de resalte y de simulación).
-   - CON la clase: se ve la red alimentada desde Supabase y se esconde la
-     original — que se oculta por CSS, no se borra del DOM, para no romper
-     la lógica de modulo-02.js que sigue leyendo esos nodos (métricas,
-     matriz, leyenda, etc.). */
-body.m2re-activa #networkViz .ambient-mesh-layer,
-body.m2re-activa #networkViz .edges-layer,
-body.m2re-activa #networkViz .nodes-layer {
+.m2re-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #9fb0bd;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.m2re-stat-chip b { color: #f2f5f7; font-weight: 700; }
+.m2re-stat-chip.chip-hubs b { color: #5cd6d1; }
+.m2re-stat-chip.chip-puentes b { color: #ffd166; }
+
+.m2re-view-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.m2re-zoom-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.m2re-deck-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.m2re-action-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.m2re-group-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #7d8b99;
+  margin-right: 2px;
+}
+
+.m2re-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  margin-left: 4px;
+}
+.m2re-badge.badge-puente {
+  background: rgba(255, 209, 102, 0.28);
+  color: #ffd166;
+  border: 1px solid rgba(255, 209, 102, 0.45);
+}
+
+.m2re-btn-action.active {
+  border-color: #5cd6d1 !important;
+  background: rgba(92, 214, 209, 0.18) !important;
+  color: #fff !important;
+  box-shadow: 0 0 12px rgba(92, 214, 209, 0.3);
+}
+.m2re-btn-action.active#m2reBtnPuentes {
+  border-color: #ffd166 !important;
+  background: rgba(255, 209, 102, 0.2) !important;
+  color: #ffd166 !important;
+  box-shadow: 0 0 14px rgba(255, 209, 102, 0.4);
+}
+
+.flow-dot {
+  display: inline-block;
+  width: 14px;
+  height: 2.5px;
+  border-radius: 1px;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+.flow-dot.flow-direct { background: #5cd6d1; }
+.flow-dot.flow-indirect {
+  background: repeating-linear-gradient(90deg, #ef9f54, #ef9f54 3px, transparent 3px, transparent 6px);
+}
+
+.m2re-btn-flow.active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.m2re-group-sim .m2re-btn-sim {
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+/* Ocultar red y controles antiguos */
+#networkViz .ambient-mesh-layer,
+#networkViz .edges-layer,
+#networkViz .nodes-layer {
   display: none !important;
 }
-/* el control de zoom viejo (networkZoomIn/Out/Reset) controla la red
-   original: solo se esconde cuando esa red no está a la vista. */
-body.m2re-activa .network-controls {
-  display: none !important;
-}
-/* y al revés: sin red externa, su barra de herramientas no tiene qué controlar */
-body:not(.m2re-activa) .m2re-toolbar-row,
-body:not(.m2re-activa) .m2re-ficha,
-body:not(.m2re-activa) .m2re-conclusiones {
+.network-controls {
   display: none !important;
 }
 
-/* Nodos/aristas dibujados dentro de #networkViz > #m2-red-externa > #m2re-viewport.
-   Las conexiones quedan casi invisibles por defecto (795 nodos × 2198 líneas
-   se leen como una maraña si se muestran todas a la vez) y se iluminan solo
-   al pasar el mouse sobre uno de sus dos extremos. */
-/* Las conexiones SÍ se ven: finas y tenues, se leen como una malla. Antes
-   estaban al 8% y con 1.2px, así que la red parecía una nube de burbujas
-   sin una sola línea. Al señalar un nodo se encienden las suyas y el resto
-   de la red se apaga (con 2.198 líneas, resaltar sin apagar no se nota). */
-.m2re-edge { stroke: rgba(158,175,200,0.34); stroke-width: 0.75; pointer-events: none; transition: stroke .18s, stroke-width .18s, opacity .18s; }
-.m2re-edge-indirecta { stroke: rgba(158,175,200,0.2); stroke-dasharray: 4 4; }
-.m2re-edge-activa { stroke-width: 2.2 !important; opacity: 1 !important; }
-.m2re-nodes, .m2re-edges { transition: opacity .18s ease; }
+/* ---------- FLUJOS (ARISTAS DE LA RED) ---------- */
+.m2re-edge {
+  stroke: rgba(92, 214, 209, 0.55);
+  stroke-width: 2;
+  stroke-linecap: round;
+  pointer-events: none;
+  transition: stroke .2s, stroke-width .2s, opacity .2s;
+}
+.m2re-edge-indirecta {
+  stroke: rgba(239, 159, 84, 0.52);
+  stroke-width: 1.7;
+  stroke-dasharray: 6 5;
+}
+.m2re-edge-activa {
+  stroke-width: 3.6 !important;
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+.m2re-edge.edge-puente-hl {
+  stroke: #ffd166 !important;
+  stroke-width: 3.4 !important;
+  opacity: 0.95 !important;
+  filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.8));
+}
+.m2re-edge.edge-hub-hl {
+  stroke: #5cd6d1 !important;
+  stroke-width: 3.4 !important;
+  opacity: 0.95 !important;
+  filter: drop-shadow(0 0 6px rgba(92, 214, 209, 0.8));
+}
+.m2re-nodes, .m2re-edges { transition: opacity .22s ease; }
 .m2re-edge[data-filtered-out="1"] { opacity: 0 !important; }
-.m2re-node-group { cursor: pointer; }
-.m2re-node-ring { transition: stroke-width .1s, filter .15s; }
-.m2re-node-group:hover .m2re-node-ring { stroke-width: 4; }
-.m2re-node-ring.m2re-hl { stroke: #ffffff !important; animation: m2reHlPulse 1.4s ease-in-out infinite; }
-@keyframes m2reHlPulse {
-  0%, 100% { filter: drop-shadow(0 0 2px rgba(255,255,255,0.5)); }
-  50% { filter: drop-shadow(0 0 10px rgba(255,255,255,0.95)); }
+
+/* ---------- NODOS DE LA RED ---------- */
+.m2re-node-group {
+  cursor: pointer;
+  transition: transform .15s ease, opacity .2s ease;
 }
+.m2re-node-ring {
+  transition: stroke-width .12s, filter .18s, r .18s;
+}
+.m2re-node-group:hover .m2re-node-ring {
+  stroke-width: 4.5 !important;
+  filter: drop-shadow(0 0 12px currentColor) !important;
+}
+
+/* Resaltado de nodos puente */
+.m2re-node-ring.m2re-hl-puente {
+  stroke: #ffd166 !important;
+  stroke-width: 4.5 !important;
+  animation: m2rePuentePulse 1.6s ease-in-out infinite;
+}
+@keyframes m2rePuentePulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.7)); }
+  50% { filter: drop-shadow(0 0 18px rgba(255, 209, 102, 1)); }
+}
+
+/* Resaltado de hubs */
+.m2re-node-ring.m2re-hl-hub {
+  stroke: #5cd6d1 !important;
+  stroke-width: 4.8 !important;
+  animation: m2reHubPulse 1.6s ease-in-out infinite;
+}
+@keyframes m2reHubPulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(92, 214, 209, 0.7)); }
+  50% { filter: drop-shadow(0 0 18px rgba(92, 214, 209, 1)); }
+}
+
+/* Atenuación en foco o análisis */
+.m2re-node-group.m2re-dimmed {
+  opacity: 0.11 !important;
+}
+.m2re-edge.m2re-dimmed-edge {
+  opacity: 0.04 !important;
+}
+
 #networkViz.m2re-panning { cursor: grabbing; }
-#networkViz { cursor: grab; }
+#networkViz {
+  cursor: grab;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: radial-gradient(circle at 50% 50%, #0d121c 0%, #06090e 100%);
+}
 
 .m2re-tooltip {
-  position: absolute; z-index: 50; max-width: 260px;
-  background: #0b0f18; border: 1px solid var(--border); border-radius: 8px;
-  padding: 10px 12px; font-size: 12px; color: var(--text-dim);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.45); pointer-events: none;
+  position: absolute; z-index: 50; max-width: 280px;
+  background: rgba(11, 15, 24, 0.97); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 14px; font-size: 12px; color: var(--text-dim);
+  box-shadow: 0 12px 35px rgba(0,0,0,0.55); pointer-events: none;
 }
-.m2re-tooltip strong { color: var(--text); display: block; margin-bottom: 3px; font-size: 12.5px; }
-.m2re-tooltip small { color: var(--text-faint); display: block; margin-top: 4px; }
+.m2re-tooltip strong { color: var(--text); display: block; margin-bottom: 3px; font-size: 13px; }
+.m2re-tooltip small { color: var(--text-faint); display: block; margin-top: 4px; line-height: 1.35; }
 
 
 /* ---------- Ficha del nodo (panel lateral) y simulación de apagado ---------- */
@@ -196,3 +384,72 @@ body:not(.m2re-activa) .m2re-conclusiones {
   font-size: 11.5px; line-height: 1.55; color: #e6dcc4;
 }
 .m2re-concl-final b { color: #ffd166; }
+
+/* ---------- DRAWER INTERACTIVO (NODOS PUENTE Y HUBS) ---------- */
+.m2re-drawer {
+  position: absolute; top: 12px; left: 12px; z-index: 22;
+  width: 380px; max-width: calc(100% - 24px); max-height: calc(100% - 24px); overflow-y: auto;
+  padding: 16px 18px 18px; border-radius: 14px;
+  background: rgba(9, 13, 20, 0.97); border: 1px solid rgba(255, 209, 102, 0.35);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.7);
+  font-family: 'Inter', sans-serif; color: #cfd6dc;
+  animation: m2reConclIn .22s ease;
+}
+.m2re-drawer.drawer-hubs {
+  border-color: rgba(92, 214, 209, 0.35);
+}
+.m2re-drawer[hidden] { display: none; }
+.m2re-drawer-cerrar {
+  position: absolute; top: 10px; right: 10px; width: 24px; height: 24px;
+  border: 0; border-radius: 6px; background: transparent; color: #9fb0bd; cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+.m2re-drawer-cerrar:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.m2re-drawer-kicker {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: #ffd166;
+}
+.m2re-drawer.drawer-hubs .m2re-drawer-kicker { color: #5cd6d1; }
+.m2re-drawer h3 {
+  margin: 4px 26px 6px 0; font-size: 16px; line-height: 1.25; color: #f2f5f7;
+}
+.m2re-drawer-desc {
+  font-size: 11.5px; line-height: 1.5; color: #9fb0bd; margin-bottom: 12px;
+}
+.m2re-drawer-action-bar {
+  display: flex; gap: 8px; margin-bottom: 14px;
+}
+.m2re-drawer-sim-btn {
+  flex: 1; padding: 7px 10px; border-radius: 8px; font-size: 11px; font-weight: 700;
+  border: 1px solid rgba(255, 209, 102, 0.4); background: rgba(255, 209, 102, 0.14); color: #ffd166;
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.m2re-drawer-sim-btn:hover { background: rgba(255, 209, 102, 0.24); border-color: #ffd166; }
+.m2re-drawer-sim-btn.active {
+  background: rgba(120, 220, 160, 0.14); border-color: rgba(120, 220, 160, 0.5); color: #7fdca4;
+}
+.m2re-drawer-list {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.m2re-drawer-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 10px; border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer; transition: all 0.15s ease;
+}
+.m2re-drawer-item:hover {
+  background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); transform: translateX(3px);
+}
+.m2re-drawer-item-title {
+  font-size: 12px; font-weight: 600; color: #f2f5f7; line-height: 1.25;
+}
+.m2re-drawer-item-sub {
+  font-size: 10.5px; color: #8fa0b0; margin-top: 2px;
+}
+.m2re-drawer-item-badge {
+  flex-shrink: 0; padding: 3px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 700;
+  background: rgba(255, 209, 102, 0.16); color: #ffd166; border: 1px solid rgba(255, 209, 102, 0.3);
+}
+.m2re-drawer.drawer-hubs .m2re-drawer-item-badge {
+  background: rgba(92, 214, 209, 0.16); color: #5cd6d1; border-color: rgba(92, 214, 209, 0.3);
+}
+

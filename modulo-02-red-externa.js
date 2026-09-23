@@ -18,13 +18,6 @@
        clásico de Tarjan, y se pueden resaltar con un botón dedicado.
    ========================================================== */
 (function () {
-  /* ¿Se dibuja esta red (la de Supabase) o la original de modulo-02.js?
-     A pedido de la usuaria, Módulo 02 vuelve a mostrar la red de siempre:
-     con la constante en false esta capa no se construye, no se consulta la
-     base de datos y su barra de herramientas queda oculta. Poner true
-     devuelve la red externa tal como estaba, sin tocar nada más. */
-  const RED_EXTERNA_ACTIVA = false;
-
   const SUPABASE_URL = "https://mcitahjecaqsshzeamnj.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaXRhaGplY2Fxc3NoemVhbW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0NDYwNjQsImV4cCI6MjEwNDAyMjA2NH0.xx63t4EZcdqZqf4onHsU1EcIFdCQS04VigGgyDbLxHQ";
   const SVG_NS = "http://www.w3.org/2000/svg";
@@ -450,10 +443,72 @@
 
   /* -------- resaltados: hubs / periféricos / puentes -------- */
   function clearHighlight() {
-    document.querySelectorAll(".m2re-node-ring.m2re-hl").forEach((c) => c.classList.remove("m2re-hl"));
+    document.querySelectorAll(".m2re-node-ring.m2re-hl, .m2re-node-ring.m2re-hl-puente, .m2re-node-ring.m2re-hl-hub").forEach((c) => {
+      c.classList.remove("m2re-hl", "m2re-hl-puente", "m2re-hl-hub");
+    });
   }
+
+  function cerrarDrawers() {
+    const dPuentes = document.getElementById("m2rePuentesDrawer");
+    const dHubs = document.getElementById("m2reHubsDrawer");
+    if (dPuentes) { dPuentes.hidden = true; dPuentes.innerHTML = ""; }
+    if (dHubs) { dHubs.hidden = true; dHubs.innerHTML = ""; }
+  }
+
+  function abrirDrawer(tipo, ids) {
+    cerrarDrawers();
+    const isPuentes = tipo === "puentes";
+    const drawer = document.getElementById(isPuentes ? "m2rePuentesDrawer" : "m2reHubsDrawer");
+    if (!drawer) return;
+
+    const items = ids.map(id => state.byId.get(id)).filter(Boolean);
+    const title = isPuentes ? "Nodos puente (" + items.length + ")" : "Nodos hub (" + items.length + ")";
+    const kicker = isPuentes ? "Vulnerabilidad estructural" : "Concentración de flujos";
+    const desc = isPuentes
+      ? "Elementos críticos cuya remoción desconectaría la red territorial en subsistemas aislados."
+      : "Elementos con mayor centralidad de grado en la red territorial del POT.";
+
+    let listHtml = items.map((e) => {
+      const g = state.grado.get(e.id) || 0;
+      return '<div class="m2re-drawer-item" data-id="' + e.id + '">' +
+        '<div><div class="m2re-drawer-item-title">' + escapeHtml(e.nombre) + '</div>' +
+        '<div class="m2re-drawer-item-sub">' + escapeHtml(e.categoria_id) + '</div></div>' +
+        '<span class="m2re-drawer-item-badge">' + g + ' conex.</span>' +
+        '</div>';
+    }).join("");
+
+    drawer.className = "m2re-drawer" + (isPuentes ? "" : " drawer-hubs");
+    drawer.innerHTML =
+      '<button class="m2re-drawer-cerrar" type="button" aria-label="Cerrar">&times;</button>' +
+      '<div class="m2re-drawer-kicker">' + kicker + '</div>' +
+      '<h3>' + title + '</h3>' +
+      '<p class="m2re-drawer-desc">' + desc + '</p>' +
+      '<div class="m2re-drawer-list">' + listHtml + '</div>';
+
+    drawer.hidden = false;
+    drawer.querySelector(".m2re-drawer-cerrar")?.addEventListener("click", () => {
+      drawer.hidden = true;
+      applyHighlight(null);
+    });
+    drawer.querySelectorAll(".m2re-drawer-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        const id = Number(item.dataset.id);
+        const e = state.byId.get(id);
+        if (e) {
+          abrirFicha(e);
+          if (e._x != null && view) {
+            view.x = 1250 - e._x * view.scale;
+            view.y = 910 - e._y * view.scale;
+            applyView();
+          }
+        }
+      });
+    });
+  }
+
   function applyHighlight(mode) {
     clearHighlight();
+    cerrarDrawers();
     state.highlight = mode;
     const info = document.getElementById("m2reHighlightInfo");
     if (mode === null) { if (info) info.textContent = ""; updateHighlightButtons(); return; }
@@ -464,12 +519,15 @@
       const p90 = gradoVals[Math.floor(gradoVals.length * 0.1)] ?? 0;
       const umbral = Math.max(p90, 12);
       ids = state.elementos.filter((e) => (state.grado.get(e.id) || 0) >= umbral).map((e) => e.id);
+      abrirDrawer("hubs", ids);
     } else if (mode === "perifericos") {
       ids = state.elementos.filter((e) => (state.grado.get(e.id) || 0) <= 1).map((e) => e.id);
     } else if (mode === "puentes") {
       ids = [...state.puentes];
+      abrirDrawer("puentes", ids);
     }
-    ids.forEach((id) => { const e = state.byId.get(id); if (e && e._node) e._node.classList.add("m2re-hl"); });
+    const hlClass = mode === "puentes" ? "m2re-hl-puente" : mode === "hubs" ? "m2re-hl-hub" : "m2re-hl";
+    ids.forEach((id) => { const e = state.byId.get(id); if (e && e._node) e._node.classList.add(hlClass); });
 
     if (info) {
       const labels = { hubs: "nodos hub (más conectados)", perifericos: "nodos periféricos (0-1 conexiones)", puentes: "nodos puente (si se quitan, la red se parte en piezas separadas)" };
@@ -489,9 +547,23 @@
     document.getElementById("m2reBtnHubs")?.addEventListener("click", () => applyHighlight(state.highlight === "hubs" ? null : "hubs"));
     document.getElementById("m2reBtnPerifericos")?.addEventListener("click", () => applyHighlight(state.highlight === "perifericos" ? null : "perifericos"));
     document.getElementById("m2reBtnPuentes")?.addEventListener("click", () => applyHighlight(state.highlight === "puentes" ? null : "puentes"));
-    // Reusa los botones "Todas/Directas/Indirectas" de la leyenda original
-    // (que ya solo controlan la red vieja, ahora oculta) para que también
-    // filtren esta red por tipo de conexión.
+
+    document.getElementById("m2reFlowAll")?.addEventListener("click", function () {
+      document.querySelectorAll(".m2re-btn-flow").forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+      setEdgeTypeFilter(true, true);
+    });
+    document.getElementById("m2reFlowDirect")?.addEventListener("click", function () {
+      document.querySelectorAll(".m2re-btn-flow").forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+      setEdgeTypeFilter(true, false);
+    });
+    document.getElementById("m2reFlowIndirect")?.addEventListener("click", function () {
+      document.querySelectorAll(".m2re-btn-flow").forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+      setEdgeTypeFilter(false, true);
+    });
+
     document.querySelectorAll(".legend-footer-row .control-btn").forEach((btn) => {
       const txt = btn.textContent.trim();
       if (txt === "Todas") btn.addEventListener("click", () => setEdgeTypeFilter(true, true));
@@ -719,6 +791,35 @@
         const viva = estaActivo(Number(a)) && estaActivo(Number(b));
         line.style.opacity = viva ? "" : "0.04";
       });
+
+      // Actualizar contadores del panel deck superior
+      const vivos = state.elementos.filter((e) => estaActivo(e.id));
+      const vivas = state.conexiones.filter(conexionActiva);
+      const gradoVals = [...state.grado.values()].sort((a, b) => b - a);
+      const p90 = gradoVals[Math.floor(gradoVals.length * 0.1)] ?? 0;
+      const umbralHubs = Math.max(p90, 12);
+      const nHubs = vivos.filter((e) => (state.grado.get(e.id) || 0) >= umbralHubs).length;
+      const nPuentes = state.puentes ? state.puentes.size : 0;
+      const nPerif = vivos.filter((e) => (state.grado.get(e.id) || 0) <= 1).length;
+
+      const chipN = document.getElementById("m2reChipNodos");
+      if (chipN) chipN.innerHTML = "<b>" + vivos.length + "</b> nodos";
+      const chipC = document.getElementById("m2reChipConex");
+      if (chipC) chipC.innerHTML = "<b>" + vivas.length + "</b> flujos";
+      const chipH = document.getElementById("m2reChipHubs");
+      if (chipH) chipH.innerHTML = "<b>" + nHubs + "</b> hubs";
+      const chipP = document.getElementById("m2reChipPuentes");
+      if (chipP) chipP.innerHTML = "<b>" + nPuentes + "</b> puentes";
+
+      const cHubs = document.getElementById("m2reCountHubs");
+      if (cHubs) cHubs.textContent = nHubs;
+      const cPuentes = document.getElementById("m2reCountPuentes");
+      if (cPuentes) cPuentes.textContent = nPuentes;
+      const cPerif = document.getElementById("m2reCountPerifericos");
+      if (cPerif) cPerif.textContent = nPerif;
+
+      const pill = document.getElementById("m2reLivePillText");
+      if (pill) pill.textContent = "Red relacional activa (" + vivos.length + " nodos)";
     }
 
     function moverNodos() {
@@ -783,6 +884,10 @@
       const ordenados = [...state.elementos].sort((a, b) => (state.grado.get(b.id) || 0) - (state.grado.get(a.id) || 0));
       const cuantos = Math.max(1, Math.round(ordenados.length * 0.05));
       ordenados.slice(0, cuantos).forEach((e) => state.apagados.add(e.id));
+      recalcularRed(); cerrarFicha();
+    });
+    document.getElementById("m2reBtnApagarPuentes")?.addEventListener("click", () => {
+      state.puentes.forEach((id) => state.apagados.add(id));
       recalcularRed(); cerrarFicha();
     });
     pintarEstado();
@@ -1238,8 +1343,6 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    if (!RED_EXTERNA_ACTIVA) return;   // se queda la red original de modulo-02.js
-    document.body.classList.add("m2re-activa");
     init();
     document.getElementById("m2reBtnSoloPot")?.addEventListener("click", () => {
       soloPot = !soloPot;

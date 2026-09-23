@@ -1769,6 +1769,17 @@
     const origBirdsVis = birdsGroup ? birdsGroup.visible : false;
     const origVehVis = vehInstanced ? vehInstanced.visible : false;
 
+    // Forzar render a 16:9 temporalmente para alinear con exactitud el clip-path
+    const origW = wrap.clientWidth;
+    const origH = wrap.clientHeight;
+    const targetW = 1920;
+    const targetH = 1080;
+    renderer.setSize(targetW, targetH, false);
+    const aspect = targetW / targetH;
+    camera.left = -viewSize * aspect;
+    camera.right = viewSize * aspect;
+    camera.updateProjectionMatrix();
+
     // 1. Escala Natural: base arquitectónica 100% limpia, CERO carros, CERO ruido, CERO mirlas
     if (noiseMesh) noiseMesh.visible = false;
     if (birdsGroup) birdsGroup.visible = false;
@@ -1792,6 +1803,13 @@
     if (roadMat) roadMat.color.set(0x9099a3);
     renderer.render(scene, camera);
     const fotoTecno = renderer.domElement.toDataURL("image/png");
+
+    // Restaurar el tamaño original
+    renderer.setSize(origW, origH, false);
+    const origAspect = origW / origH;
+    camera.left = -viewSize * origAspect;
+    camera.right = viewSize * origAspect;
+    camera.updateProjectionMatrix();
 
     // Restaurar estado de la escena base
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
@@ -1877,7 +1895,7 @@
     // Coordenadas de distorsión ajustadas en escala compacta para caber limpiamente dentro del polígono
     textStates[layerNum] = {
       w, h, originLeft, originTop,
-      corners: [{ x: 8, y: 32 }, { x: 118, y: 4 }, { x: 116, y: 20 }, { x: 8, y: 44 }]
+      corners: [{ x: 28, y: 94 }, { x: 192, y: 5 }, { x: 190, y: 29 }, { x: 28, y: 117 }]
     };
     buildHandles(textEl, layerNum);
     applyDistort(textEl, layerNum);
@@ -2012,10 +2030,10 @@
       // Si la capa YA está en zoom y el usuario le vuelve a hacer clic:
       if (zoomedLayer === layerNum) {
         if (layerNum === 1) {
-          // Explota la sub-explosión de Escala Natural
           openNaturalExplode();
+        } else if (layerNum === 2) {
+          openTechExplode();
         } else {
-          // Para las otras escalas, des-zoomea si se vuelve a tocar
           unzoomAll();
         }
         return;
@@ -2151,17 +2169,18 @@
       natBaseImg.src = fotoBase;
       natBaseImg.style.objectFit = "fill"; // Para que calce de esquina a esquina exactamente igual al canvas
     }
+    const l1 = document.getElementById("natWaterImg"); if (l1) l1.src = fotoBase;
+    const l2 = document.getElementById("natVegImg"); if (l2) l2.src = fotoBase;
+    const l3 = document.getElementById("natBirdImg"); if (l3) l3.src = fotoBase;
+    const l4 = document.getElementById("natMacroImg"); if (l4) l4.src = fotoBase;
 
     natOverlay.style.display = "flex";
     void natOverlay.offsetWidth;
 
-    // Iniciar con las capas en la base axo y explosionar hacia arriba automáticamente con animación fluida
-    setNaturalLayersAssembled();
+    // Iniciar con las capas en la base axo (Paso 0)
+    natExplodeStep = 0;
+    updateNaturalLayersStep(false);
     renderAllNaturalSublayers();
-
-    setTimeout(() => {
-      setNaturalLayersExploded(true);
-    }, 450);
 
     // Iniciar loop continuo de agua viva fluida y oleaje
     startNatWaterAnimation();
@@ -2176,10 +2195,12 @@
     drawNaturalGuideLines();
   }
 
+  let natExplodeStep = 0; // 0: all assembled, 1: layer 1 exploded, ..., 4: all exploded
+
   // Animación para bajar las capas y ponerlas exactamente en la base axo
   function setNaturalLayersAssembled() {
-    natIsAssembled = true;
-    if (natAssembleBtnText) natAssembleBtnText.textContent = "Explotar capas suspendidas";
+    natExplodeStep = 0;
+    if (natAssembleBtnText) natAssembleBtnText.textContent = "Explotar capa 1";
     if (natAssembleBtn) {
       natAssembleBtn.style.background = "#0284c7";
       natAssembleBtn.style.borderColor = "rgba(2,132,199,.3)";
@@ -2194,7 +2215,7 @@
     const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
     sublayers.forEach((l) => {
       l.style.top = baseTop;
-      l.style.opacity = "1";
+      if (l.id !== "natLayerBase") l.style.opacity = "1";
       l.style.transform = "translate(-50%, 0)";
       const diamond = l.querySelector(".sublayer-diamond");
       if (diamond) {
@@ -2205,34 +2226,50 @@
     });
   }
 
-  // Animación para volver a explotar hacia arriba las capas suspendidas
-  function setNaturalLayersExploded(animated = true) {
-    natIsAssembled = false;
-    if (natAssembleBtnText) natAssembleBtnText.textContent = "Bajar y ensamblar en base axo";
+  // Animación para mover una o más capas a su estado explotado según natExplodeStep
+  function updateNaturalLayersStep(animated = true) {
+    if (natExplodeStep === 0) {
+      setNaturalLayersAssembled();
+      return;
+    }
+    
+    if (natAssembleBtnText) natAssembleBtnText.textContent = natExplodeStep < 4 ? `Explotar capa ${natExplodeStep + 1}` : "Ensamblar en base";
     if (natAssembleBtn) {
       natAssembleBtn.style.background = "#2a856a";
       natAssembleBtn.style.borderColor = "rgba(42,133,106,.3)";
     }
 
-    const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
-    sublayers.forEach(l => {
-      const expTop = l.dataset.explodedTop || "71%";
-      l.style.top = expTop;
-      l.style.opacity = "1";
-      l.style.transform = "translate(-50%, 0)";
+    const sublayers = [
+      document.getElementById("natLayerWater"),
+      document.getElementById("natLayer2"),
+      document.getElementById("natLayer3"),
+      document.getElementById("natLayer4")
+    ];
 
-      // Restaurar fondos arquitectónicos semitransparentes según capa
-      const diamond = l.querySelector(".sublayer-diamond");
-      if (diamond) {
-        if (l.id === "natLayerWater") {
-          diamond.style.background = "rgba(241, 245, 249, 0.45)";
-        } else if (l.id === "natLayer2") {
-          diamond.style.background = "rgba(244, 246, 243, 0.45)";
-        } else if (l.id === "natLayer3") {
-          diamond.style.background = "rgba(247, 246, 243, 0.45)";
-        } else if (l.id === "natLayer4") {
-          diamond.style.background = "rgba(243, 244, 248, 0.45)";
+    sublayers.forEach((l, index) => {
+      if (!l) return;
+      if (index < natExplodeStep) {
+        // Explotada
+        const expTop = l.dataset.explodedTop || "71%";
+        l.style.top = expTop;
+        l.style.opacity = "1";
+        l.style.transform = "translate(-50%, 0)";
+        
+        // Restaurar fondos arquitectónicos semitransparentes
+        const diamond = l.querySelector(".sublayer-diamond");
+        if (diamond) {
+          if (l.id === "natLayerWater") diamond.style.background = "rgba(241, 245, 249, 0.45)";
+          else if (l.id === "natLayer2") diamond.style.background = "rgba(244, 246, 243, 0.45)";
+          else if (l.id === "natLayer3") diamond.style.background = "rgba(247, 246, 243, 0.45)";
+          else if (l.id === "natLayer4") diamond.style.background = "rgba(243, 244, 248, 0.45)";
         }
+      } else {
+        // Abajo (Ensamblada)
+        l.style.top = "71%";
+        l.style.opacity = "1";
+        l.style.transform = "translate(-50%, 0)";
+        const diamond = l.querySelector(".sublayer-diamond");
+        if (diamond) diamond.style.background = "transparent";
       }
     });
 
@@ -2250,21 +2287,19 @@
     }
   }
 
-  function toggleNaturalAssemble() {
-    if (natIsAssembled) {
-      setNaturalLayersExploded(true);
-    } else {
-      setNaturalLayersAssembled();
-    }
+  function advanceNaturalAssemble() {
+    natExplodeStep++;
+    if (natExplodeStep > 4) natExplodeStep = 0;
+    updateNaturalLayersStep(true);
   }
 
-  if (natAssembleBtn) natAssembleBtn.addEventListener("click", toggleNaturalAssemble);
+  if (natAssembleBtn) natAssembleBtn.addEventListener("click", advanceNaturalAssemble);
 
   // Al hacer clic en la propia base axo, alterna entre bajar las capas o explotarlas
   const natBaseLayerEl = document.getElementById("natLayerBase");
   if (natBaseLayerEl) {
     natBaseLayerEl.addEventListener("click", () => {
-      toggleNaturalAssemble();
+      advanceNaturalAssemble();
     });
   }
 
@@ -2310,6 +2345,122 @@
   }
 
   if (natBackBtn) natBackBtn.addEventListener("click", closeNaturalExplode);
+
+  // ============================================================
+  // LÓGICA PARA ESCALA TÉCNICA/CULTURAL (Capa 2)
+  // ============================================================
+  const techOverlay = document.getElementById("techExplodeOverlay");
+  const techBackBtn = document.getElementById("techExplodeBack");
+  let techAnimFrame = null;
+  let techTime = 0;
+  
+  function openTechExplode() {
+    if (!techOverlay) return;
+
+    const targetW = 960, targetH = 540;
+    const origW = wrap.clientWidth, origH = wrap.clientHeight;
+    const layerAspect = targetW / targetH;
+    
+    camera.left = -viewSize * layerAspect;
+    camera.right = viewSize * layerAspect;
+    camera.top = viewSize;
+    camera.bottom = -viewSize;
+    camera.updateProjectionMatrix();
+    renderer.setSize(targetW, targetH, false);
+
+    // Guardar estado original
+    const origRoadColor = roadMat ? roadMat.color.getHex() : null;
+    const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
+    const origBirdsVis = birdsGroup ? birdsGroup.visible : false;
+    const origVehVis = vehInstanced ? vehInstanced.visible : false;
+    const origVehCount = vehInstanced ? vehInstanced.count : 0;
+
+    // 1. CAPA BASE (Sin ruido, sin carros)
+    if (noiseMesh) noiseMesh.visible = false;
+    if (birdsGroup) birdsGroup.visible = false;
+    if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
+    if (roadMat) roadMat.color.set(0x9099a3);
+
+    renderer.render(scene, camera);
+    const fotoBase = renderer.domElement.toDataURL("image/png");
+
+    // 2. CAPA RUIDO Y TRÁFICO (Con ruido, con carros)
+    if (noiseMesh) noiseMesh.visible = true;
+    if (vehInstanced) {
+      vehInstanced.visible = true;
+      vehInstanced.count = vehiclesAtTime(currentTime).length || 120;
+    }
+    if (roadMat) roadMat.color.set(0x7a838d);
+    
+    // Forzar actualización del ruido antes de renderizar
+    if (typeof computeLiveNoiseField === "function") computeLiveNoiseField(vehiclesAtTime(currentTime), performance.now() + 150);
+
+    renderer.render(scene, camera);
+    const fotoRuido = renderer.domElement.toDataURL("image/png");
+
+    // Restaurar estado
+    if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
+    if (noiseMesh) noiseMesh.visible = origNoiseVis;
+    if (birdsGroup) birdsGroup.visible = origBirdsVis;
+    if (vehInstanced) {
+      vehInstanced.visible = origVehVis;
+      vehInstanced.count = origVehCount;
+    }
+
+    const tBase = document.getElementById("techBaseImg"); if (tBase) tBase.src = fotoBase;
+    const tNoise = document.getElementById("techNoiseImg"); if (tNoise) tNoise.src = fotoRuido;
+    // Ocultar el canvas porque el ruido ya viene renderizado en fotoRuido por WebGL
+    const tNoiseCanvas = document.getElementById("techNoiseCanvas");
+    if (tNoiseCanvas) tNoiseCanvas.style.display = "none";
+
+    techOverlay.style.display = "flex";
+    void techOverlay.offsetWidth;
+
+    // Animación de separación de capas
+    const sublayers = techOverlay.querySelectorAll(".tech-sublayer");
+    sublayers.forEach((l) => {
+      l.style.opacity = "1";
+      if (l.id === "techLayer1") {
+        l.style.transform = "translate(-50%, -40px)";
+      } else {
+        l.style.transform = "translate(-50%, 0)";
+      }
+    });
+
+    startTechAnimation();
+  }
+
+  function startTechAnimation() {
+    if (techAnimFrame) cancelAnimationFrame(techAnimFrame);
+    // Ya no usamos rawNoiseData, la capa es estática por ahora
+  }
+
+  function closeTechExplode() {
+    if (!techOverlay) return;
+    if (techAnimFrame) { cancelAnimationFrame(techAnimFrame); techAnimFrame = null; }
+    
+    const sublayers = techOverlay.querySelectorAll(".tech-sublayer");
+    sublayers.forEach(l => {
+      l.style.opacity = "0";
+      l.style.transform = "translate(-50%, -20px)";
+    });
+
+    const origW = wrap.clientWidth, origH = wrap.clientHeight;
+    renderer.setSize(origW, origH, false);
+    const restoreAspect = origW / origH;
+    camera.left = -viewSize * restoreAspect;
+    camera.right = viewSize * restoreAspect;
+    camera.top = viewSize;
+    camera.bottom = -viewSize;
+    camera.updateProjectionMatrix();
+
+    setTimeout(() => {
+      techOverlay.style.display = "none";
+      unzoomAll();
+    }, 400);
+  }
+
+  if (techBackBtn) techBackBtn.addEventListener("click", closeTechExplode);
 
   // ============================================================
   // CAPA 1: Sistema Inerte y Límite Físico-Hidrológico
@@ -2410,18 +2561,15 @@
           if (centerSO.inFront) {
             ctx.beginPath();
             ctx.ellipse(centerSO.x, centerSO.y, rOffset * 1.5, rOffset * 0.8, -0.32, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(224, 242, 254, ${rAlpha})`;
-            ctx.lineWidth = 1.0;
+            ctx.strokeStyle = `rgba(186, 230, 253, ${rAlpha})`;
+            ctx.lineWidth = 1.8;
             ctx.stroke();
           }
         }
       } else {
-        const isNearbyCanal = (body.nombre || "").includes("Angeles") || (body.nombre || "").includes("Castilla") || (body.nombre || "").includes("América");
-        ctx.fillStyle = isNearbyCanal ? "rgba(71, 104, 130, 0.75)" : "rgba(100, 128, 150, 0.50)";
+        ctx.fillStyle = "rgba(71, 85, 105, 0.7)";
         ctx.fill();
         ctx.lineWidth = 1.0;
-        ctx.strokeStyle = isNearbyCanal ? "rgba(30, 58, 80, 0.8)" : "rgba(71, 104, 130, 0.6)";
-        ctx.stroke();
       }
     });
 
@@ -2787,7 +2935,7 @@
         txt.setAttribute("font-family", "'Segoe UI', sans-serif");
         txt.setAttribute("font-size", "9.5px"); txt.setAttribute("font-weight", "700");
         txt.setAttribute("fill", "#1e293b");
-        txt.textContent = isDrySeason ? "Retracción y Terrización de Typha" : "Cinturón Ripario ZMPA (12,14 ha)";
+        txt.textContent = isDrySeason ? "Avance de Especies Invasoras" : "Inundación Frena Invasión";
         g.appendChild(txt);
 
         const sub = document.createElementNS(SVGNS, "text");
@@ -2795,7 +2943,7 @@
         sub.setAttribute("font-family", "'Segoe UI', sans-serif");
         sub.setAttribute("font-size", "8px"); sub.setAttribute("font-weight", "600");
         sub.setAttribute("fill", "#64748b");
-        sub.textContent = isDrySeason ? "Biomasa de eneas avanza sobre playones" : "Alisos, Sauces, Tintos y pasto Kikuyo";
+        sub.textContent = isDrySeason ? "Najas y pasto Kikuyo ocupan el lecho seco" : "El nivel hídrico cubre temporalmente el avance";
         g.appendChild(sub);
 
         natVegSvg.appendChild(g);
@@ -2805,10 +2953,41 @@
 
   // ============================================================
   // CAPA 3: Nichos Ecológicos & Dinámicas Estacionales de Aves (Comunidades Bióticas)
-  // Explica con claridad cartográfica cómo el nivel del agua define los hábitats:
-  // - En aguas altas (invierno): Espejo abierto para Garza Real y garcitas zancudas; franja de eneas/juncos donde anidan las Tinguas de pico rojo y Mirlas en arbolado.
-  // - En estiaje (verano): Playones de limo expuestos para aves playeras y Patos zambullidores alimentándose de invertebrados bénticos.
+  // Explica con claridad cartográfica cómo el nivel del agua define los hábitats
   // ============================================================
+  
+  // Variables para sprites de aves
+  const birdSprites = {
+    duck: new Image(),
+    heron: new Image(),
+    duckReady: false,
+    heronReady: false
+  };
+
+  function processBirdImage(img, key) {
+    const c = document.createElement("canvas");
+    c.width = img.width; c.height = img.height;
+    const x = c.getContext("2d");
+    x.drawImage(img, 0, 0);
+    const idata = x.getImageData(0, 0, c.width, c.height);
+    const d = idata.data;
+    for (let i = 0; i < d.length; i += 4) {
+      // Remove white/light background
+      if (d[i] > 230 && d[i+1] > 230 && d[i+2] > 230) {
+        d[i+3] = 0; // Transparent
+      }
+    }
+    x.putImageData(idata, 0, 0);
+    birdSprites[key] = c;
+    birdSprites[key + 'Ready'] = true;
+  }
+
+  birdSprites.duck.onload = () => processBirdImage(birdSprites.duck, 'duckProcessed');
+  birdSprites.duck.src = "assets/pato.png";
+  
+  birdSprites.heron.onload = () => processBirdImage(birdSprites.heron, 'heronProcessed');
+  birdSprites.heron.src = "assets/garza.png";
+
   function renderNaturalBirdLayer(mesNum) {
     if (!natBirdCanvas || !rawWaterData) return;
     const rect = natBirdCanvas.getBoundingClientRect();
@@ -2824,8 +3003,15 @@
     ctx.clearRect(0, 0, w, h);
 
     const projectPoint = (rx, ry, el = 0.05) => projectPointToLayer(rx, ry, el, w, h);
-    const info = HUMEDAL_CICLO[(mesNum || 4) - 1] || HUMEDAL_CICLO[3];
-    const isWinter = info.profundidad_m >= 1.4;
+    const realMesNum = mesNum || 4;
+    const info = HUMEDAL_CICLO[realMesNum - 1] || HUMEDAL_CICLO[3];
+    
+    // Meses de lluvia: 3, 4, 5, 10, 11
+    const isRainy = [3, 4, 5, 10, 11].includes(realMesNum);
+    // Meses boreales: 9, 10
+    const isBoreal = [9, 10].includes(realMesNum);
+    // Meses secos: 1, 2, 3, 6, 7, 8
+    const isDry = !isRainy;
 
     const burro = rawWaterData.find(b => (b.nombre || "").includes("Burro"));
     if (!burro || !burro.pts || burro.pts.length < 4) return;
@@ -2850,14 +3036,14 @@
     ctx.setLineDash([]);
 
     // B) Espejo de agua central / Playón estacional según temporada
-    const expFactor = isWinter ? 1.15 : 0.82;
+    const expFactor = isRainy ? 1.15 : 0.82;
     const waterPts = burro.pts.map(p => [cx + (p[0] - cx) * expFactor, cy + (p[1] - cy) * expFactor]);
     const scrWater = waterPts.map(p => projectPoint(p[0], p[1]));
     ctx.beginPath();
     ctx.moveTo(scrWater[0].x, scrWater[0].y);
     for (let i = 1; i < scrWater.length; i++) ctx.lineTo(scrWater[i].x, scrWater[i].y);
     ctx.closePath();
-    if (isWinter) {
+    if (isRainy) {
       ctx.fillStyle = "rgba(64, 100, 126, 0.45)"; // Lámina profunda de agua
       ctx.fill();
       ctx.lineWidth = 1.2;
@@ -2887,112 +3073,102 @@
 
     // 2. AGENTES Y SILUETAS BIOLÓGICAS CLARAMENTE DISTINGUIBLES
     const centerSO = projectPoint(7518.49, 3137.57);
-
-    if (isWinter) {
-      // --- INVIERNO ---
-      // Garzas Reales zancudas en el centro (espejo abierto)
-      for (let g = 0; g < 7; g++) {
-        const ang = (g / 7) * Math.PI * 2 + natWaterTime * 0.12;
-        const rad = 28 + Math.sin(natWaterTime * 0.7 + g) * 14;
-        const gx = centerSO.x + Math.cos(ang) * rad * 1.4;
-        const gy = centerSO.y + Math.sin(ang) * rad * 0.75;
-
-        // Sombra suave en el agua
-        ctx.beginPath();
-        ctx.ellipse(gx + 1, gy + 8, 4, 1.5, 0, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,0.18)";
-        ctx.fill();
-
-        // Pata zancuda larga
-        ctx.beginPath();
-        ctx.moveTo(gx, gy);
-        ctx.lineTo(gx, gy + 8);
-        ctx.strokeStyle = "#334155";
-        ctx.lineWidth = 1.1;
-        ctx.stroke();
-
-        // Silueta cuerpo garza blanca estilizada
-        ctx.beginPath();
-        ctx.ellipse(gx, gy, 4.2, 2.8, -0.2, 0, Math.PI * 2);
-        ctx.fillStyle = "#ffffff";
-        ctx.fill();
-        ctx.lineWidth = 1.0;
-        ctx.strokeStyle = "#1e293b";
-        ctx.stroke();
-
-        // Cuello y cabeza
-        ctx.beginPath();
-        ctx.moveTo(gx + 3, gy - 1);
-        ctx.lineTo(gx + 5, gy - 5);
-        ctx.strokeStyle = "#1e293b";
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
+    // Función auxiliar para dibujar un sprite de pájaro
+    function drawBirdSprite(spriteKey, x, y, width, height, isFlipped = false) {
+      if (birdSprites[spriteKey + 'Ready']) {
+        ctx.save();
+        ctx.translate(x, y);
+        if (isFlipped) ctx.scale(-1, 1);
+        ctx.drawImage(birdSprites[spriteKey], -width/2, -height/2, width, height);
+        ctx.restore();
       }
+    }
 
-      // Tinguas Bogotanas y de pico rojo en la franja de juncales (litoral protector)
-      for (let t = 0; t < 12; t++) {
-        const ang = (t / 12) * Math.PI * 2 + 0.15;
-        const tx = centerSO.x + Math.cos(ang) * 98;
-        const ty = centerSO.y + Math.sin(ang) * 56;
+    if (isRainy) {
+      // --- LLUVIAS (Garzas) ---
+      // Entran volando desde el Oriente (derecha) hacia el centro
+      for (let g = 0; g < 6; g++) {
+        const flightProg = ((natWaterTime * 0.2 + g * 0.3) % 1.0);
+        const startX = w + 50 + g * 20;
+        const startY = centerSO.y - 100 + g * 15;
+        const ang = (g / 6) * Math.PI * 2;
+        const rad = 25;
+        const destX = centerSO.x + Math.cos(ang) * rad;
+        const destY = centerSO.y + Math.sin(ang) * rad * 0.5;
 
+        let bx, by;
+        if (flightProg < 0.4) {
+          const t = flightProg / 0.4;
+          bx = startX + (destX - startX) * t;
+          by = startY + (destY - startY) * t;
+          by += Math.sin(natWaterTime * 15 + g) * 5;
+        } else {
+          bx = destX + Math.cos(natWaterTime * 0.5 + g) * 5;
+          by = destY + Math.sin(natWaterTime * 0.5 + g) * 3;
+          ctx.beginPath();
+          ctx.ellipse(bx, by + 12, 6, 2, 0, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(0,0,0,0.2)";
+          ctx.fill();
+        }
+        drawBirdSprite('heronProcessed', bx, by, 35, 35, bx > centerSO.x);
+      }
+      
+      // Tinguas residentes desplazadas a la orilla (refugiadas)
+      for (let t = 0; t < 5; t++) {
+        const ang = (t / 5) * Math.PI * 2;
+        const tx = centerSO.x + Math.cos(ang) * 65;
+        const ty = centerSO.y + Math.sin(ang) * 45;
         ctx.beginPath();
-        ctx.ellipse(tx, ty, 3.8, 2.6, 0.1, 0, Math.PI * 2);
-        ctx.fillStyle = "#1e293b"; // Plumaje oscuro pizarra
-        ctx.fill();
-        ctx.lineWidth = 0.8;
-        ctx.strokeStyle = "#ffffff";
-        ctx.stroke();
-
-        // Escudo frontal y pico rojo característico de la tingua
-        ctx.beginPath();
-        ctx.arc(tx + 3.2, ty - 0.8, 1.3, 0, Math.PI * 2);
-        ctx.fillStyle = "#b91c1c";
+        ctx.arc(tx, ty, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#1e3a8a";
         ctx.fill();
       }
     } else {
-      // --- VERANO (ESTIAJE) ---
-      // Aves playeras y chaparritos de patas cortas caminando sobre el limo expuesto
-      for (let p = 0; p < 14; p++) {
-        const ang = (p / 14) * Math.PI * 2 + natWaterTime * 0.2;
-        const dist = 36 + Math.cos(natWaterTime * 0.4 + p) * 22;
-        const px = centerSO.x + Math.cos(ang) * dist * 1.35;
-        const py = centerSO.y + Math.sin(ang) * dist * 0.72;
-
-        // Huellita / sombra en playón
+      // --- SECO (Patos) ---
+      for (let p = 0; p < 8; p++) {
+        const ang = (p / 8) * Math.PI * 2 + natWaterTime * 0.05;
+        const rad = 45 + Math.sin(natWaterTime * 0.8 + p) * 15;
+        const px = centerSO.x + Math.cos(ang) * rad;
+        const py = centerSO.y + Math.sin(ang) * rad * 0.6;
         ctx.beginPath();
-        ctx.ellipse(px, py + 2, 3, 1.2, 0, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(90, 60, 30, 0.25)";
+        ctx.ellipse(px, py + 8, 5, 2, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.2)";
         ctx.fill();
-
-        // Pata corta
-        ctx.beginPath();
-        ctx.moveTo(px, py); ctx.lineTo(px, py + 3);
-        ctx.strokeStyle = "#5a3a1e"; ctx.lineWidth = 0.9;
-        ctx.stroke();
-
-        // Cuerpo ave de playón pardo
-        ctx.beginPath();
-        ctx.ellipse(px, py, 3.6, 2.4, -0.15, 0, Math.PI * 2);
-        ctx.fillStyle = "#855835";
-        ctx.fill();
-        ctx.lineWidth = 0.8;
-        ctx.strokeStyle = "#fef3c7";
-        ctx.stroke();
+        drawBirdSprite('duckProcessed', px, py, 22, 22, (Math.cos(ang) > 0));
       }
-
-      // Patos zambullidores nadando en el pozo hondo remanente
-      for (let d = 0; d < 6; d++) {
-        const ang = (d / 6) * Math.PI * 2 + natWaterTime * 0.18;
-        const dx = centerSO.x + Math.cos(ang) * 16 * 1.3;
-        const dy = centerSO.y + Math.sin(ang) * 16 * 0.7;
-
+      for (let t = 0; t < 5; t++) {
+        const ang = (t / 5) * Math.PI * 2 + natWaterTime * -0.1;
+        const tx = centerSO.x + Math.cos(ang) * 20;
+        const ty = centerSO.y + Math.sin(ang) * 15;
         ctx.beginPath();
-        ctx.ellipse(dx, dy, 4.2, 2.6, 0.1, 0, Math.PI * 2);
-        ctx.fillStyle = "#334155";
+        ctx.arc(tx, ty, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#1e3a8a";
         ctx.fill();
-        ctx.lineWidth = 0.8;
-        ctx.strokeStyle = "#94a3b8";
-        ctx.stroke();
+      }
+    }
+
+    if (isBoreal) {
+      for (let b = 0; b < 10; b++) {
+        const prog = ((natWaterTime * 0.4 + b * 0.1) % 1.0);
+        const startX = centerSO.x - 100 + b * 30;
+        const startY = -50;
+        const ang = (b / 10) * Math.PI * 2;
+        const destX = centerSO.x + Math.cos(ang) * 35;
+        const destY = centerSO.y + Math.sin(ang) * 25;
+        let bx, by;
+        if (prog < 0.3) {
+          const t = prog / 0.3;
+          bx = startX + (destX - startX) * t;
+          by = startY + (destY - startY) * t;
+          by += Math.sin(natWaterTime * 20 + b) * 8;
+        } else {
+          bx = destX + Math.cos(natWaterTime * 0.8 + b) * 10;
+          by = destY + Math.sin(natWaterTime * 0.8 + b) * 5;
+        }
+        ctx.beginPath();
+        ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#78716c";
+        ctx.fill();
       }
     }
 
@@ -3001,31 +3177,32 @@
       natBirdSvg.innerHTML = "";
       const SVGNS = "http://www.w3.org/2000/svg";
 
-      // Cuadro explicativo superior con micro-leyenda gráfica
       const legG = document.createElementNS(SVGNS, "g");
       legG.setAttribute("transform", "translate(16, 16)");
 
       const legBg = document.createElementNS(SVGNS, "rect");
       legBg.setAttribute("x", "0"); legBg.setAttribute("y", "0");
-      legBg.setAttribute("width", "255"); legBg.setAttribute("height", "58");
+      legBg.setAttribute("width", "300"); legBg.setAttribute("height", "58");
       legBg.setAttribute("rx", "4"); legBg.setAttribute("fill", "rgba(255,255,255,0.96)");
       legBg.setAttribute("stroke", "#cbd5e1"); legBg.setAttribute("stroke-width", "1");
       legG.appendChild(legBg);
 
-      // Título
       const t1 = document.createElementNS(SVGNS, "text");
       t1.setAttribute("x", "10"); t1.setAttribute("y", "15");
       t1.setAttribute("font-family", "'Segoe UI', sans-serif");
       t1.setAttribute("font-size", "10px"); t1.setAttribute("font-weight", "800");
       t1.setAttribute("fill", "#0f172a");
-      t1.textContent = isWinter ? "DINÁMICA DE AGUAS ALTAS (INVIERNO)" : "DINÁMICA DE ESTIAJE (VERANO)";
+      let title = "DINÁMICA ESTIAJE (VERANO)";
+      if (isRainy) title = "DINÁMICA AGUAS ALTAS (LLUVIAS)";
+      if (isBoreal) title = "MIGRACIÓN BOREAL (SEP - OCT)";
+      t1.textContent = title;
       legG.appendChild(t1);
 
       // Fila 1 leyenda
       const ic1 = document.createElementNS(SVGNS, "circle");
       ic1.setAttribute("cx", "16"); ic1.setAttribute("cy", "29"); ic1.setAttribute("r", "4");
-      ic1.setAttribute("fill", isWinter ? "#ffffff" : "#855835");
-      ic1.setAttribute("stroke", isWinter ? "#0f172a" : "#fef3c7");
+      ic1.setAttribute("fill", isRainy ? "#ffffff" : (isBoreal ? "#78716c" : "#855835"));
+      ic1.setAttribute("stroke", isRainy ? "#0f172a" : "#fef3c7");
       ic1.setAttribute("stroke-width", "1");
       legG.appendChild(ic1);
 
@@ -3034,14 +3211,17 @@
       tx1.setAttribute("font-family", "'Segoe UI', sans-serif");
       tx1.setAttribute("font-size", "8.5px"); tx1.setAttribute("font-weight", "600");
       tx1.setAttribute("fill", "#334155");
-      tx1.textContent = isWinter ? "Garza Real (Zancuda): forrajeo en lámina libre de agua" : "Aves playeras / chaparritos: forrajeo en playón de limo";
+      let desc1 = "Patos y Zambullidores en lodo expuesto";
+      if (isRainy) desc1 = "Garzas Reales llegan desde Llanos Orientales";
+      if (isBoreal) desc1 = "Chorlos y Reinitas migran desde el Norte";
+      tx1.textContent = desc1;
       legG.appendChild(tx1);
 
       // Fila 2 leyenda
       const ic2 = document.createElementNS(SVGNS, "circle");
       ic2.setAttribute("cx", "16"); ic2.setAttribute("cy", "46"); ic2.setAttribute("r", "4");
-      ic2.setAttribute("fill", isWinter ? "#1e293b" : "#334155");
-      ic2.setAttribute("stroke", isWinter ? "#b91c1c" : "#94a3b8");
+      ic2.setAttribute("fill", "#1e3a8a");
+      ic2.setAttribute("stroke", "#ffffff");
       ic2.setAttribute("stroke-width", "1.5");
       legG.appendChild(ic2);
 
@@ -3050,38 +3230,10 @@
       tx2.setAttribute("font-family", "'Segoe UI', sans-serif");
       tx2.setAttribute("font-size", "8.5px"); tx2.setAttribute("font-weight", "600");
       tx2.setAttribute("fill", "#334155");
-      tx2.textContent = isWinter ? "Tingua Bogotana / Pico Rojo: anidación en juncos" : "Patos zambullidores: concentrados en poza profunda";
+      tx2.textContent = isRainy ? "Tinguas desplazadas a la orilla" : "Tinguas residentes en zona hídrica";
       legG.appendChild(tx2);
 
       natBirdSvg.appendChild(legG);
-
-      // Señalizador sobre el espejo/playón
-      const calloutG = document.createElementNS(SVGNS, "g");
-      calloutG.setAttribute("transform", `translate(${centerSO.x}, ${centerSO.y - 15})`);
-
-      const pointer = document.createElementNS(SVGNS, "polyline");
-      pointer.setAttribute("points", "0,0 20,-20 110,-20");
-      pointer.setAttribute("fill", "none");
-      pointer.setAttribute("stroke", "#475569");
-      pointer.setAttribute("stroke-width", "1.2");
-      calloutG.appendChild(pointer);
-
-      const pBox = document.createElementNS(SVGNS, "rect");
-      pBox.setAttribute("x", "20"); pBox.setAttribute("y", "-32");
-      pBox.setAttribute("width", "130"); pBox.setAttribute("height", "22");
-      pBox.setAttribute("rx", "3"); pBox.setAttribute("fill", "rgba(255,255,255,0.96)");
-      pBox.setAttribute("stroke", "#94a3b8"); pBox.setAttribute("stroke-width", "1");
-      calloutG.appendChild(pBox);
-
-      const pTxt = document.createElementNS(SVGNS, "text");
-      pTxt.setAttribute("x", "25"); pTxt.setAttribute("y", "-18");
-      pTxt.setAttribute("font-family", "'Segoe UI', sans-serif");
-      pTxt.setAttribute("font-size", "8.5px"); pTxt.setAttribute("font-weight", "700");
-      pTxt.setAttribute("fill", "#0f172a");
-      pTxt.textContent = isWinter ? "Espejo Abierto de Pesca" : "Playón de Limo Expuesto";
-      calloutG.appendChild(pTxt);
-
-      natBirdSvg.appendChild(calloutG);
     }
   }
 
@@ -3378,7 +3530,7 @@
           if (m > 12) m = 1;
           natMesSlider.value = String(m);
           renderAllNaturalSublayers();
-        }, 850);
+        }, 2200);
       } else {
         stopNatPlayYear();
       }
