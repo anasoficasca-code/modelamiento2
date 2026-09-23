@@ -2031,13 +2031,13 @@
       allLayers.forEach((l) => {
         const lNum = parseInt(l.dataset.layer, 10);
         if (lNum === layerNum) {
-          // Mantener el tamaño original de la escala (min(50vw, 560px)) con escala 1 natural
-          l.style.transition = "transform 2.4s cubic-bezier(.2,.85,.25,1), opacity 1.8s ease";
+          // Agrandar la axonometría al tocarla para que se vea mucho más grande
+          l.style.transition = "transform 2.4s cubic-bezier(.2,.85,.25,1), opacity 1.8s ease, width 2.4s cubic-bezier(.2,.85,.25,1)";
           l.style.position = "fixed";
           l.style.top = "50%"; l.style.left = "50%";
-          l.style.width = "min(50vw, 560px)";
-          l.style.maxWidth = "560px";
-          l.style.transform = "translate(-50%,-50%) scale(1)";
+          l.style.width = "min(78vw, 840px)";
+          l.style.maxWidth = "840px";
+          l.style.transform = "translate(-50%,-50%) scale(1.35)";
           l.style.zIndex = "60";
           l.style.opacity = "1"; l.style.visibility = "visible";
         } else {
