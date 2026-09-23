@@ -1138,8 +1138,8 @@
     });
   });
 
-  const MIN_NODE_DIST = 115.0; // Distancia amplia mínima para que no se toquen ni se solapen las bolas
-  for (let iter = 0; iter < 250; iter++) {
+  const MIN_NODE_DIST = 180.0; // Distancia amplia mínima garantizada para que NINGUNA bola se toque ni solape entre sí
+  for (let iter = 0; iter < 400; iter++) {
     for (let i = 0; i < allSubNodesList.length; i++) {
       for (let j = i + 1; j < allSubNodesList.length; j++) {
         const a = allSubNodesList[i], b = allSubNodesList[j];
@@ -1147,9 +1147,10 @@
         let dist = Math.hypot(dx, dy);
         if (dist < MIN_NODE_DIST) {
           if (dist < 0.1) {
-            dx = (Math.random() - 0.5) * 15;
-            dy = (Math.random() - 0.5) * 15;
-            dist = Math.hypot(dx, dy) || 1;
+            const angle = (i * 1.37 + j * 2.1) + Math.random() * Math.PI;
+            dx = Math.cos(angle) * (MIN_NODE_DIST + 20);
+            dy = Math.sin(angle) * (MIN_NODE_DIST + 20);
+            dist = Math.hypot(dx, dy);
           }
           const overlap = (MIN_NODE_DIST - dist) / 2;
           const ux = dx / dist, uy = dy / dist;
@@ -1424,7 +1425,10 @@
       blob.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(mId, n.id); });
       blob.addEventListener("pointerdown", (e) => startDrag(n, 0.25, e));
       subEls.blobs[n.id] = blob;
-      subEls.labels[n.id] = makeLabel(n.t, diameter);
+      const label = makeLabel(n.t, diameter);
+      label.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(mId, n.id); });
+      label.addEventListener("pointerdown", (e) => startDrag(n, 0.25, e));
+      subEls.labels[n.id] = label;
     });
     allSubEls[mId] = subEls;
   });
