@@ -15,9 +15,15 @@
 
   const statusOverlay = document.getElementById("statusOverlay");
   function setStatus(text, show = true) {
+    if (!statusOverlay) return;
     statusOverlay.textContent = text;
     statusOverlay.classList.toggle("hide", !show);
   }
+  if (statusOverlay) {
+    statusOverlay.style.cursor = "pointer";
+    statusOverlay.addEventListener("click", () => setStatus("", false));
+  }
+  setTimeout(() => { setStatus("", false); }, 2500);
 
   // ---- Escena, camara, render ----
   const canvas = document.getElementById("sceneCanvas");
