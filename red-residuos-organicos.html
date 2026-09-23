@@ -107,6 +107,17 @@
     background:#24c8bd; color:#0b0c0f; border-color:#24c8bd; box-shadow:0 0 20px rgba(36,200,189,.5);
   }
 
+  .node-size-btn{
+    position:absolute; transform:translate(-50%,-50%); width:22px; height:22px; border-radius:50%;
+    background:rgba(11,12,15,.88); border:1.5px solid rgba(255,255,255,.45); color:#fff;
+    font-size:13px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:15; user-select:none; box-shadow:0 2px 8px rgba(0,0,0,.6);
+    transition:transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .node-size-btn:hover{ transform:translate(-50%,-50%) scale(1.3); background:#24c8bd; color:#0b0c0f; border-color:#24c8bd; box-shadow:0 0 12px rgba(36,200,189,.8); }
+  .node-size-btn.btn-plus{ border-color:rgba(36,200,189,.7); color:#24c8bd; }
+  .node-size-btn.btn-minus{ border-color:rgba(226,99,90,.7); color:#e2635a; }
+
   @media (prefers-reduced-motion: reduce){ .blob, .label, .panel{ transition:none !important; } }
 </style>
 </head>
@@ -457,7 +468,7 @@
 
   let level = "none";
   let currentDetailId = null;
-  let nodeBlobs = {}, nodeLabels = {}, nodeHits = {}, nodeRadiusMap = {};
+  let nodeBlobs = {}, nodeLabels = {}, nodeHits = {}, nodePlusBtns = {}, nodeMinusBtns = {}, nodeRadiusMap = {};
   let bridgeEls = [];
   let arrowEls = [];
   let activeNodes = [], activeRel = [], nodePos = {};
@@ -487,9 +498,11 @@
     Object.values(nodeBlobs).forEach(b => b.remove());
     Object.values(nodeLabels).forEach(l => l.remove());
     Object.values(nodeHits).forEach(h => h.remove());
+    Object.values(nodePlusBtns).forEach(p => p.remove());
+    Object.values(nodeMinusBtns).forEach(m => m.remove());
     bridgeEls.forEach(b => b.remove());
     arrowEls.forEach(a => a.remove());
-    nodeBlobs = {}; nodeLabels = {}; nodeHits = {}; bridgeEls = []; arrowEls = []; nodeRadiusMap = {};
+    nodeBlobs = {}; nodeLabels = {}; nodeHits = {}; nodePlusBtns = {}; nodeMinusBtns = {}; bridgeEls = []; arrowEls = []; nodeRadiusMap = {};
   }
 
   function hexToRgb(hex) {
@@ -702,6 +715,11 @@
       l.style.fontSize = fontPx + "px";
       l.style.lineHeight = lineH + "px";
     }
+    const p = nodePos[id];
+    if (p) {
+      if (nodeMinusBtns[id]) place(nodeMinusBtns[id], p.x - newR - 10, p.y);
+      if (nodePlusBtns[id]) place(nodePlusBtns[id], p.x + newR + 10, p.y);
+    }
     renderEdges();
   }
 
@@ -813,9 +831,24 @@
       l.innerHTML = wrapToFit(text, maxCharsPerLine, maxLines);
       labelLayer.appendChild(l); nodeLabels[n.id] = l;
       const h = el("hit"); labelLayer.appendChild(h); nodeHits[n.id] = h;
+
+      const btnMinus = el("node-size-btn btn-minus");
+      btnMinus.textContent = "–";
+      btnMinus.title = "Disminuir tamaño de esta bola";
+      btnMinus.addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(n.id, -6); });
+      labelLayer.appendChild(btnMinus); nodeMinusBtns[n.id] = btnMinus;
+
+      const btnPlus = el("node-size-btn btn-plus");
+      btnPlus.textContent = "+";
+      btnPlus.title = "Aumentar tamaño de esta bola";
+      btnPlus.addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(n.id, 6); });
+      labelLayer.appendChild(btnPlus); nodePlusBtns[n.id] = btnPlus;
+
       place(nodeBlobs[n.id], nodePos[n.id].x, nodePos[n.id].y); size(nodeBlobs[n.id], ownR);
       place(l, nodePos[n.id].x, nodePos[n.id].y);
       place(h, nodePos[n.id].x, nodePos[n.id].y); size(h, ownR);
+      place(btnMinus, nodePos[n.id].x - ownR - 10, nodePos[n.id].y);
+      place(btnPlus, nodePos[n.id].x + ownR + 10, nodePos[n.id].y);
     });
 
     renderEdges();
@@ -966,9 +999,12 @@
       const newX = Math.max(20, Math.min(mainRect.width - 20, e.clientX - mainRect.left));
       const newY = Math.max(20, Math.min(mainRect.height - 20, e.clientY - mainRect.top));
       nodePos[dragNodeId] = { x: newX, y: newY };
+      const ownR = nodeRadiusMap[dragNodeId] || 30;
       if (nodeBlobs[dragNodeId]) place(nodeBlobs[dragNodeId], newX, newY);
       if (nodeLabels[dragNodeId]) place(nodeLabels[dragNodeId], newX, newY);
       if (nodeHits[dragNodeId]) place(nodeHits[dragNodeId], newX, newY);
+      if (nodeMinusBtns[dragNodeId]) place(nodeMinusBtns[dragNodeId], newX - ownR - 10, newY);
+      if (nodePlusBtns[dragNodeId]) place(nodePlusBtns[dragNodeId], newX + ownR + 10, newY);
       renderEdges();
     }
   });
