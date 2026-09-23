@@ -184,8 +184,8 @@
   // Medimos el area de CONTENIDO (junto a la barra lateral), no toda la
   // ventana, para que la red no quede tapada ni descuadrada por el menu.
   const mainEl = document.querySelector(".main");
-  function mainW() { return mainEl.clientWidth; }
-  function mainH() { return mainEl.clientHeight; }
+  function mainW() { return Math.max(320, (mainEl && mainEl.clientWidth) ? mainEl.clientWidth : window.innerWidth); }
+  function mainH() { return Math.max(320, (mainEl && mainEl.clientHeight) ? mainEl.clientHeight : window.innerHeight); }
   const MACRO = [
     { id:"n1", corto:"Colapso de la red vial local y arterial", full:"Colapso de la red vial local y de los corredores arteriales", color:"#5b8ad6" },
     { id:"n2", corto:"Contaminación de la red hídrica", full:"Contaminación y alteración biofísica de la red hídrica y cuerpos de agua", color:"#d669a8" },
@@ -824,7 +824,11 @@
     else openPanel(nId);
   });
 
-  showFullNetwork();
+  if (document.readyState === "loading") {
+    window.addEventListener("DOMContentLoaded", () => setTimeout(showFullNetwork, 50));
+  } else {
+    setTimeout(showFullNetwork, 50);
+  }
 
   function openRelPopup(r) {
     const panel = document.getElementById("panel"), body = document.getElementById("panelBody");
