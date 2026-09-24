@@ -2553,6 +2553,27 @@
     renderer.render(scene, camera);
     const fotoBase = renderer.domElement.toDataURL("image/png");
 
+    // Captura de CONTEXTO (camara alejada), igual que en Escala natural,
+    // para que se vea el contexto de Kennedy difuminado detras del corte.
+    const techContextImg = document.getElementById("techContextImg");
+    const techLayerContext = document.getElementById("techLayerContext");
+    if (techContextImg) {
+      const contextZoomOut = 3.2;
+      camera.left = -viewSize * contextZoomOut * layerAspect;
+      camera.right = viewSize * contextZoomOut * layerAspect;
+      camera.top = viewSize * contextZoomOut;
+      camera.bottom = -viewSize * contextZoomOut;
+      camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+      techContextImg.src = renderer.domElement.toDataURL("image/png");
+      if (techLayerContext) techLayerContext.style.opacity = "1";
+      camera.left = -viewSize * layerAspect;
+      camera.right = viewSize * layerAspect;
+      camera.top = viewSize;
+      camera.bottom = -viewSize;
+      camera.updateProjectionMatrix();
+    }
+
     // 2. CAPA 1: VÍAS Y CARROS (Con carros, sin ruido)
     if (noiseMesh) noiseMesh.visible = false;
     if (vehInstanced) {
@@ -2778,6 +2799,8 @@
       l.style.opacity = "0";
       l.style.transform = "translate(-50%, -20px)";
     });
+    const techLayerContext2 = document.getElementById("techLayerContext");
+    if (techLayerContext2) techLayerContext2.style.opacity = "0";
 
     const origW = wrap.clientWidth, origH = wrap.clientHeight;
     renderer.setSize(origW, origH, false);
@@ -3980,6 +4003,26 @@
     scene.background = new THREE.Color(0xffffff);
     renderer.render(scene, camera);
     const fotoBase = renderer.domElement.toDataURL("image/png");
+
+    // Captura de CONTEXTO (camara alejada), igual que en Escala natural.
+    const culContextImg = document.getElementById("culContextImg");
+    const culLayerContext = document.getElementById("culLayerContext");
+    if (culContextImg) {
+      const contextZoomOut = 3.2;
+      camera.left = -viewSize * contextZoomOut * layerAspect;
+      camera.right = viewSize * contextZoomOut * layerAspect;
+      camera.top = viewSize * contextZoomOut;
+      camera.bottom = -viewSize * contextZoomOut;
+      camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+      culContextImg.src = renderer.domElement.toDataURL("image/png");
+      if (culLayerContext) culLayerContext.style.opacity = "1";
+      camera.left = -viewSize * layerAspect;
+      camera.right = viewSize * layerAspect;
+      camera.top = viewSize;
+      camera.bottom = -viewSize;
+      camera.updateProjectionMatrix();
+    }
     scene.background = origBg;
 
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
@@ -4022,6 +4065,8 @@
       l.style.opacity = "0";
       l.style.transform = "translate(-50%, -20px)";
     });
+    const culLayerContext2 = document.getElementById("culLayerContext");
+    if (culLayerContext2) culLayerContext2.style.opacity = "0";
 
     const origW = wrap.clientWidth, origH = wrap.clientHeight;
     renderer.setSize(origW, origH, false);
