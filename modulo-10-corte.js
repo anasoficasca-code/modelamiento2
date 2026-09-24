@@ -1479,8 +1479,7 @@
     const b = rawWaterData.find(w => (w.nombre || "").includes("Burro")); if (!b || !b.pts) return;
     const d = HUMEDAL_CICLO[mainBurroMes - 1]; if (!d) return;
     const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length, cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
-    const k = 1 + d.expansion_pct / 100 * 0.6;
-    const pts = b.pts.map(p => toScene(cx + (p[0] - cx) * k, cy + (p[1] - cy) * k));
+    const pts = offsetPoly(b.pts, d.expansion_pct * 0.9).map(p => toScene(p[0], p[1])); // offset del borde segun la epoca
     let tris = []; try { tris = THREE.ShapeUtils.triangulateShape(pts.map(p => new THREE.Vector2(p.x, p.z)), []); } catch (e) {}
     const pos = [], uv = [];
     tris.forEach(t => t.forEach(i => { pos.push(pts[i].x, 0.03, pts[i].z); uv.push(pts[i].x * 0.08, pts[i].z * 0.08); }));
@@ -2281,7 +2280,7 @@
       const g = t.createRadialGradient(0, 0, rad * 0.7, 0, 0, rad * 1.25);
       g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)");
       t.fillStyle = g; t.fillRect(-W, -H / sy, W * 2, (H / sy) * 2); t.restore();
-      c.globalAlpha = 0.3; c.drawImage(tmp, 0, 0);
+      c.globalAlpha = 0.48; c.drawImage(tmp, 0, 0);
     }
     // 2) Area de estudio nitida (con su recorte normal), fondo transparente
     Object.values(secPlanes).forEach((p, i) => (p.constant = savedConst[i]));
@@ -2304,6 +2303,27 @@
     if (axoBorderMesh) axoBorderMesh.visible = borderVis;
     if (mainBurroMesh) mainBurroMesh.visible = burroVisPrev;
     return off.toDataURL("image/png");
+  }
+
+  // ---- OFFSET real de un poligono: el borde se desplaza hacia afuera
+  // (d > 0) la MISMA distancia en todos lados, en metros. Asi el agua
+  // crece como una cota de inundacion, sin correrse ni deformarse. ----
+  function offsetPoly(pts, d) {
+    const n = pts.length; if (n < 3 || !d) return pts.map(p => [p[0], p[1]]);
+    let area = 0; for (let i = 0; i < n; i++) { const a = pts[i], b = pts[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; }
+    const sgn = area > 0 ? 1 : -1; // antihorario: la normal hacia afuera es (dy, -dx)
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n];
+      let e1x = p1[0] - p0[0], e1y = p1[1] - p0[1], e2x = p2[0] - p1[0], e2y = p2[1] - p1[1];
+      const l1 = Math.hypot(e1x, e1y) || 1, l2 = Math.hypot(e2x, e2y) || 1;
+      const n1x = sgn * e1y / l1, n1y = -sgn * e1x / l1, n2x = sgn * e2y / l2, n2y = -sgn * e2x / l2;
+      let mx = n1x + n2x, my = n1y + n2y; const ml = Math.hypot(mx, my);
+      if (ml < 1e-6) { mx = n1x; my = n1y; } else { mx /= ml; my /= ml; }
+      const cosH = Math.max(0.35, mx * n1x + my * n1y); // limita picos en esquinas agudas
+      out.push([p1[0] + mx * d / cosH, p1[1] + my * d / cosH]);
+    }
+    return out;
   }
   function openNaturalExplode() {
     if (!natOverlay) return;
@@ -2515,6 +2535,7 @@
 
     // Pasos pares (2, 4, 6, 8): Capa i asentada en el territorio simulando en el centro de la pantalla
     if (natExplodeStep % 2 === 0 && natExplodeStep <= 8) {
+      natOverlay.querySelectorAll(".sublayer-diamond").forEach(dd => { dd.style.background = "transparent"; dd.style.boxShadow = "none"; dd.style.borderColor = "transparent"; });
       const settledIdx = (natExplodeStep / 2) - 1;
       const nextNames = ["Capa 2: Vegetación", "Capa 3: Aves/Fauna", "Capa 4: Conectividad", "Ver Apilamiento Explotado Completo"];
 
@@ -2565,6 +2586,7 @@
     }
 
     if (natExplodeStep === 10) {
+      natOverlay.querySelectorAll(".sublayer-diamond").forEach(dd => { dd.style.background = "transparent"; dd.style.boxShadow = "none"; dd.style.borderColor = "transparent"; });
       // Paso 10: Integración Total (todas las 4 capas asentadas abajo simulando simultáneamente)
       if (baseEl) { baseEl.style.top = "50%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l) => {
@@ -2648,7 +2670,7 @@
   const techRoadsVehCanvas = document.getElementById("techRoadsVehCanvas");
   const techNoiseCanvas = document.getElementById("techNoiseCanvas");
   let techLiveViewSize = null; // se fija cuando se abre el panel, para poder "espejar" con el mismo encuadre 16:9 exacto
-  let techTrafficGrid = null;
+  let techTrafficGrid = null, techFloodCars = null, techSewerNet = null;
   function updateTechLiveMirror() {
     if (!techOverlay || techOverlay.style.display === "none" || techLiveViewSize == null) return;
     const targetW = 960, targetH = 540, layerAspect = targetW / targetH;
@@ -2737,6 +2759,67 @@
       renderer.setClearColor(0x000000, 1);
     }
 
+    // Capa 3: INUNDACION Y COLAPSO DE MOVILIDAD (ciclo de ~18 s)
+    if (techFloodCanvas && rawWaterData) {
+      const { ctx, w, h, P } = prepCultCanvas(techFloodCanvas);
+      const bp = burroPts();
+      if (bp) {
+        const AV_CALI = [[7640, 4090], [7337, 3821], [7040, 3552], [6859, 3412], [6560, 3180]]; // Av. Ciudad de Cali (via mayor al noroccidente del humedal)
+        const T = (performance.now() % 18000) / 18000;
+        const nivel = T < 0.6 ? T / 0.6 : T < 0.85 ? 1 : 1 - (T - 0.85) / 0.15; // sube, se mantiene, baja
+        const avance = 30 + nivel * 520; // metros de offset del borde (la ronda hidraulica es 30 m)
+        // buffer real: el humedal relleno + un trazo redondeado de 2*avance de ancho
+        // (nunca se enreda, a diferencia del offset por vertices con avances grandes)
+        const c0 = P(bp[0][0], bp[0][1]), c1 = P(bp[0][0] + 100, bp[0][1]), c2 = P(bp[0][0], bp[0][1] + 100);
+        const pxPorM = (Math.hypot(c1.x - c0.x, c1.y - c0.y) + Math.hypot(c2.x - c0.x, c2.y - c0.y)) / 200;
+        const distAlHumedal = (x, y) => { if (ptInPoly(x, y, bp)) return 0; let m = 1e9; for (let i = 0; i < bp.length; i++) { const a = bp[i], b = bp[(i + 1) % bp.length], dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / L2)); m = Math.min(m, Math.hypot(x - a[0] - t * dx, y - a[1] - t * dy)); } return m; };
+        const inund = { has: (x, y) => distAlHumedal(x, y) <= avance };
+        const cubreVia = AV_CALI.some(p => inund.has(p[0], p[1]));
+        ctx.save(); polyPath(ctx, bp, P); ctx.lineJoin = "round"; ctx.lineWidth = 2 * avance * pxPorM; ctx.strokeStyle = "rgba(59,130,246,.30)"; ctx.stroke(); ctx.fillStyle = "rgba(59,130,246,.30)"; ctx.fill(); ctx.restore();
+        polyPath(ctx, offsetPoly(bp, 30), P); ctx.setLineDash([4, 3]); ctx.strokeStyle = "#0f172a"; ctx.stroke(); ctx.setLineDash([]);
+        polyPath(ctx, bp, P); ctx.fillStyle = "rgba(30,64,120,.55)"; ctx.fill();
+        // la avenida y sus carros: rapidos si esta seca, casi quietos y en rojo si esta inundada
+        ctx.strokeStyle = "#111418"; ctx.lineWidth = 3; ctx.beginPath(); AV_CALI.forEach((p, i) => { const s = P(p[0], p[1]); i ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); }); ctx.stroke();
+        techFloodCars = techFloodCars || Array.from({ length: 26 }, (_, i) => ({ u: i / 26 }));
+        let L = 0; const seg = []; for (let i = 0; i < AV_CALI.length - 1; i++) { const d = Math.hypot(AV_CALI[i + 1][0] - AV_CALI[i][0], AV_CALI[i + 1][1] - AV_CALI[i][1]); seg.push(d); L += d; }
+        techFloodCars.forEach(c => {
+          let x, y, dd = c.u * L, i = 0; while (i < seg.length - 1 && dd > seg[i]) { dd -= seg[i]; i++; }
+          const r = Math.min(1, dd / seg[i]); x = AV_CALI[i][0] + (AV_CALI[i + 1][0] - AV_CALI[i][0]) * r; y = AV_CALI[i][1] + (AV_CALI[i + 1][1] - AV_CALI[i][1]) * r;
+          const mojado = inund.has(x, y);
+          c.u = (c.u + (mojado ? 0.00008 : 0.0016)) % 1; // < 10 km/h dentro del agua
+          const s = P(x, y, 0.2); ctx.fillStyle = mojado ? "#dc2626" : "#ffffff"; ctx.strokeStyle = "#111418"; ctx.lineWidth = 0.7;
+          ctx.beginPath(); ctx.arc(s.x, s.y, 2.2, 0, 7); ctx.fill(); ctx.stroke();
+        });
+        smallLabel(ctx, cubreVia ? "Lámina de agua sobre la Av. Ciudad de Cali · velocidad < 10 km/h · TAD +2 h" : "Lluvias: la lámina de agua crece sobre la Ronda Hidráulica (30 m)", 10, 16);
+        smallLabel(ctx, "UPZ Castilla y Calandaima afectadas", 10, 30);
+      }
+    }
+
+    // Capa 4: ALCANTARILLADO Y CONEXIONES ERRADAS (EACEH)
+    if (techSewerCanvas && rawWaterData && rawEdgesData) {
+      const { ctx, w, h, P } = prepCultCanvas(techSewerCanvas);
+      const bp = burroPts();
+      if (bp) {
+        polyPath(ctx, bp, P); ctx.fillStyle = "rgba(30,64,120,.45)"; ctx.fill();
+        // red de colectores bajo la malla vial del area (pluvial azul / sanitaria cafe)
+        if (!techSewerNet) { techSewerNet = []; rawEdgesData.forEach(([k, pts], i) => { const m = pts[Math.floor(pts.length / 2)]; if (k !== "local" && inBox(m[0], m[1])) techSewerNet.push({ pts, san: i % 2 === 0 }); }); }
+        ctx.lineWidth = 1.1;
+        techSewerNet.forEach(s => { ctx.strokeStyle = s.san ? "rgba(146,64,14,.55)" : "rgba(37,99,235,.5)"; ctx.setLineDash(s.san ? [] : [3, 2]); ctx.beginPath(); s.pts.forEach((p, j) => { const q = P(p[0], p[1], -0.2); j ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }); ctx.stroke(); });
+        ctx.setLineDash([]);
+        // canales que llegan al humedal y aguas residuales clandestinas bajando por ellos
+        const canales = rawWaterData.filter(b => /Castilla|Ángeles|Angeles/i.test(b.nombre || ""));
+        const t = performance.now() / 1000;
+        canales.forEach(cn => {
+          polyPath(ctx, cn.pts, P); ctx.fillStyle = "rgba(120,72,20,.35)"; ctx.fill();
+          const n = cn.pts.length;
+          for (let k = 0; k < 14; k++) { const f = ((t * 0.08 + k / 14) % 1), i = Math.floor(f * (n - 1)), p = cn.pts[i], q = P(p[0], p[1], 0.1); ctx.fillStyle = "#78350f"; ctx.beginPath(); ctx.arc(q.x, q.y, 1.8, 0, 7); ctx.fill(); }
+          const c0 = P(cn.pts[0][0], cn.pts[0][1]); smallLabel(ctx, cn.nombre, c0.x + 6, c0.y);
+        });
+        smallLabel(ctx, "EACEH · conexiones erradas vierten aguas residuales al humedal", 10, 16);
+        smallLabel(ctx, "Pluvial (azul punteado) · Sanitaria (café)", 10, 30);
+      }
+    }
+
     // Restaurar todo para no afectar la vista principal
     toHideCommon.forEach((o, i) => { o.visible = prevVisCommon[i]; });
     if (waterMat && waterOpacityPrev !== null) waterMat.opacity = waterOpacityPrev;
@@ -2755,6 +2838,10 @@
   const techStageEl = document.getElementById("techExplodeStage");
   const techLayer1 = document.getElementById("techLayer1");
   const techLayer2 = document.getElementById("techLayer2");
+  const techLayer3 = document.getElementById("techLayer3");
+  const techLayer4 = document.getElementById("techLayer4");
+  const techFloodCanvas = document.getElementById("techFloodCanvas");
+  const techSewerCanvas = document.getElementById("techSewerCanvas");
   const techLayerBase = document.getElementById("techLayerBase");
 
   let techExplodeStep = 0;
@@ -2846,7 +2933,7 @@
   }
 
   function updateTechLayersStep(animated = true) {
-    const sublayers = [techLayer1, techLayer2];
+    const sublayers = [techLayer1, techLayer2, techLayer3, techLayer4];
     const tags = techOverlay.querySelectorAll(".tech-layer-tag");
 
     const allDiamonds = techOverlay.querySelectorAll(".sublayer-diamond");
@@ -2872,7 +2959,7 @@
       return;
     }
 
-    if (techExplodeStep % 2 === 1 && techExplodeStep <= 3) {
+    if (techExplodeStep % 2 === 1 && techExplodeStep <= 7) {
       const activeIdx = Math.floor(techExplodeStep / 2);
       if (techLayerBase) { techLayerBase.style.top = "60%"; techLayerBase.style.opacity = "1"; techLayerBase.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l, index) => {
@@ -2898,9 +2985,10 @@
       return;
     }
 
-    if (techExplodeStep % 2 === 0 && techExplodeStep <= 4) {
+    if (techExplodeStep % 2 === 0 && techExplodeStep <= 8) {
+      techOverlay.querySelectorAll(".sublayer-diamond").forEach(dd => { dd.style.background = "transparent"; dd.style.boxShadow = "none"; dd.style.borderColor = "transparent"; });
       const settledIdx = (techExplodeStep / 2) - 1;
-      const nextNames = ["Capa 2: Simulación de Ruido", "Ver Apilamiento Explotado Completo"];
+      const nextNames = ["Capa 2: Simulación de Ruido", "Capa 3: Inundación y Movilidad", "Capa 4: Alcantarillado", "Ver Apilamiento Explotado Completo"];
 
       if (techLayerBase) { techLayerBase.style.top = "50%"; techLayerBase.style.opacity = "1"; techLayerBase.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l, index) => {
@@ -2924,7 +3012,7 @@
       return;
     }
 
-    if (techExplodeStep === 5) {
+    if (techExplodeStep === 9) {
       if (techLayerBase) { techLayerBase.style.top = "72%"; techLayerBase.style.opacity = "1"; techLayerBase.style.transform = "translate(-50%, 0)"; }
       sublayers.forEach((l) => {
         if (!l) return;
@@ -2942,7 +3030,8 @@
       return;
     }
 
-    if (techExplodeStep === 6) {
+    if (techExplodeStep === 10) {
+      techOverlay.querySelectorAll(".sublayer-diamond").forEach(dd => { dd.style.background = "transparent"; dd.style.boxShadow = "none"; dd.style.borderColor = "transparent"; });
       if (techLayerBase) { techLayerBase.style.top = "50%"; techLayerBase.style.opacity = "1"; techLayerBase.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l) => {
         if (!l) return;
@@ -2960,7 +3049,7 @@
 
   function advanceTechAssemble() {
     techExplodeStep++;
-    if (techExplodeStep > 6) techExplodeStep = 0;
+    if (techExplodeStep > 10) techExplodeStep = 0;
     updateTechLayersStep(true);
   }
 
@@ -3086,12 +3175,12 @@
     return [pts[i][0] + (pts[j][0] - pts[i][0]) * t, pts[i][1] + (pts[j][1] - pts[i][1]) * t];
   }
   function drawFlyingBird(ctx, x, y, s, color, flap) {
-    ctx.save(); ctx.translate(x, y); ctx.fillStyle = color;
+    ctx.save(); ctx.translate(x, y); ctx.fillStyle = color; ctx.strokeStyle = "rgba(15,23,42,.7)"; ctx.lineWidth = 0.8;
     const wy = flap ? -s : s * 0.55;
     ctx.beginPath(); ctx.moveTo(0, 0);
     ctx.quadraticCurveTo(-s * 0.5, wy * 0.4, -s, wy); ctx.quadraticCurveTo(-s * 0.5, s * 0.1, 0, s * 0.15);
     ctx.quadraticCurveTo(s * 0.5, s * 0.1, s, wy); ctx.quadraticCurveTo(s * 0.5, wy * 0.4, 0, 0);
-    ctx.fill(); ctx.restore();
+    ctx.fill(); ctx.stroke(); ctx.restore();
   }
   function drawSprite(ctx, img, x, y, hPx) {
     if (!img.complete || !img.naturalWidth) return;
@@ -3118,8 +3207,8 @@
         for (let i = 0; i < n; i++) {
           const tgt = randomPointIn(burro.pts, 0.95);
           const dx = from.x - tgt[0], dy = from.y - tgt[1], L = Math.hypot(dx, dy);
-          const start = [tgt[0] + dx / L * 2600, tgt[1] + dy / L * 2600]; // aparecen ya volando por el territorio, en esa direccion
-          natFlocks.push({ kind, start, tgt, t: -Math.random() * 0.6, speed: 0.0016 + Math.random() * 0.0012, ph: Math.random() * 6 });
+          const start = [tgt[0] + dx / L * 1100, tgt[1] + dy / L * 1100]; // aparecen ya volando por el territorio, en esa direccion
+          natFlocks.push({ kind, start, tgt, t: -Math.random() * 0.8, speed: 0.0009 + Math.random() * 0.0006, ph: Math.random() * 6 });
         }
       };
       if (garzasLlaneras) add(22, LLANOS_REAL, "garza");
@@ -3132,10 +3221,10 @@
       const e = b.t < 1 ? 1 - Math.pow(1 - b.t, 2) : 1;
       const x = b.start[0] + (b.tgt[0] - b.start[0]) * e, y = b.start[1] + (b.tgt[1] - b.start[1]) * e;
       const p = projectPoint(x, y, b.t < 1 ? 0.6 : 0.05);
-      if (b.kind === "tingua") { drawSprite(ctx, tinguaImg, p.x + Math.sin(b.ph * 0.2) * 1.5, p.y, 11); return; }
-      if (b.t < 1) drawFlyingBird(ctx, p.x, p.y, 4, b.kind === "garza" ? "#ffffff" : "#6b4f33", Math.sin(b.ph) > 0);
-      else if (b.kind === "garza") drawSprite(ctx, garzaImg, p.x, p.y, 13);
-      else drawFlyingBird(ctx, p.x, p.y, 3, "#6b4f33", false);
+      if (b.kind === "tingua") { drawSprite(ctx, tinguaImg, p.x + Math.sin(b.ph * 0.2) * 1.5, p.y, 17); return; }
+      if (b.t < 1) drawFlyingBird(ctx, p.x, p.y, 7, b.kind === "garza" ? "#ffffff" : "#6b4f33", Math.sin(b.ph) > 0);
+      else if (b.kind === "garza") drawSprite(ctx, garzaImg, p.x, p.y, 21);
+      else drawFlyingBird(ctx, p.x, p.y, 5, "#6b4f33", false);
     });
     const firstIn = natFlocks.find(b => b.kind !== "tingua" && b.t > 0 && b.t < 0.5);
     if (firstIn) {
@@ -3167,7 +3256,7 @@
       natGenStart = now;
       const dx = LLANOS_REAL.x - 7300, dy = LLANOS_REAL.y - 3300, L = Math.hypot(dx, dy);
       natGenAgents = {
-        garzas: Array.from({ length: 14 }, () => { const t = randomPointIn(burro.pts, 0.55); return { tgt: t, start: [t[0] + dx / L * 2400, t[1] + dy / L * 2400], d: Math.random() * 0.25, ph: Math.random() * 6 }; }),
+        garzas: Array.from({ length: 14 }, () => { const t = randomPointIn(burro.pts, 0.55); return { tgt: t, start: [t[0] + dx / L * 1100, t[1] + dy / L * 1100], d: Math.random() * 0.25, ph: Math.random() * 6 }; }),
         tinguas: Array.from({ length: 12 }, () => ({ from: randomPointIn(burro.pts, 0.4), to: edgePointOf(burro.pts), ph: Math.random() * 6 })),
         plantas: Array.from({ length: 18 }, () => ({ p: randomPointIn(burro.pts, 0.8), d: Math.random() * 0.8 })),
       };
@@ -3189,7 +3278,7 @@
       const e = phase === 0 ? 0 : phase === 1 ? ease(local) : 1;
       const x = tg.from[0] + (tg.to[0] - tg.from[0]) * e, y = tg.from[1] + (tg.to[1] - tg.from[1]) * e;
       const p = projectPoint(x, y); tg.ph += 0.1;
-      drawSprite(ctx, tinguaImg, p.x, p.y + Math.sin(tg.ph) * 0.4, 11);
+      drawSprite(ctx, tinguaImg, p.x, p.y + Math.sin(tg.ph) * 0.4, 17);
     });
     // Garzas: llegan volando (fase 1), ocupan el espejo central, se alimentan
     natGenAgents.garzas.forEach(gz => {
@@ -3198,10 +3287,10 @@
       if (e <= 0) return;
       const x = gz.start[0] + (gz.tgt[0] - gz.start[0]) * e, y = gz.start[1] + (gz.tgt[1] - gz.start[1]) * e;
       const p = projectPoint(x, y, e < 1 ? 0.6 : 0.05);
-      if (e < 1) drawFlyingBird(ctx, p.x, p.y, 4.5, "#ffffff", Math.sin(gz.ph) > 0);
+      if (e < 1) drawFlyingBird(ctx, p.x, p.y, 7, "#ffffff", Math.sin(gz.ph) > 0);
       else {
         const peck = phase >= 2 ? Math.max(0, Math.sin(gz.ph * 0.6)) * 2 : 0; // se agachan a comer
-        drawSprite(ctx, garzaImg, p.x, p.y + peck, 14);
+        drawSprite(ctx, garzaImg, p.x, p.y + peck, 22);
         if (phase === 3 && Math.sin(gz.ph * 0.3) > 0.9) { ctx.fillStyle = "#8a6a3a"; ctx.beginPath(); ctx.arc(p.x + 3, p.y + 1, 0.9, 0, 7); ctx.fill(); } // semillas
       }
     });
@@ -3254,7 +3343,7 @@
       ctx.setLineDash([]);
 
       // Ronda Hidráulica RH 30m - Trazo continuo sobrio
-      const rhPts = burro.pts.map(p => [cx + (p[0] - cx) * 1.25, cy + (p[1] - cy) * 1.25]);
+      const rhPts = offsetPoly(burro.pts, 30); // ronda hidraulica real: 30 m alrededor
       const scrRh = rhPts.map(p => projectPoint(p[0], p[1]));
       ctx.beginPath();
       ctx.moveTo(scrRh[0].x, scrRh[0].y);
@@ -3274,7 +3363,7 @@
         // La crecida del mes se dibuja aparte como halo translucido.
         const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
         const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
-        const halo = pts.map(p => projectPoint(cx + (p[0] - cx) * expansionFactor, cy + (p[1] - cy) * expansionFactor));
+        const halo = offsetPoly(pts, info.expansion_pct * 0.9).map(p => projectPoint(p[0], p[1])); // cota de inundacion por offset
         ctx.beginPath(); halo.forEach((s, i) => i ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y)); ctx.closePath();
         ctx.fillStyle = `rgba(96,150,190,${0.18 + 0.06 * Math.sin(natWaterTime * 2)})`; ctx.fill();
         ctx.setLineDash([3, 3]); ctx.strokeStyle = "rgba(30,64,96,.55)"; ctx.lineWidth = 0.9; ctx.stroke(); ctx.setLineDash([]);
@@ -3790,7 +3879,7 @@
 
     // B) Espejo de agua central / Playón estacional según temporada
     const expFactor = isRainy ? 1.15 : 0.82;
-    const waterPts = burro.pts.map(p => [cx + (p[0] - cx) * expFactor, cy + (p[1] - cy) * expFactor]);
+    const waterPts = offsetPoly(burro.pts, isRainy ? 25 : -30);
     const scrWater = waterPts.map(p => projectPoint(p[0], p[1]));
     ctx.beginPath();
     ctx.moveTo(scrWater[0].x, scrWater[0].y);
@@ -4548,6 +4637,7 @@
     }
 
     if (cultExplodeStep % 2 === 0 && cultExplodeStep <= 8) {
+      cultOverlay.querySelectorAll(".sublayer-diamond").forEach(dd => { dd.style.background = "transparent"; dd.style.boxShadow = "none"; dd.style.borderColor = "transparent"; });
       const settledIdx = (cultExplodeStep / 2) - 1;
       const nextNames = ["Capa 2: Cerramiento Borde", "Capa 3: Recorrido Pedagógico", "Capa 4: Fricción Vial SOT", "Ver Apilamiento Explotado Completo"];
 
@@ -4593,6 +4683,7 @@
     }
 
     if (cultExplodeStep === 10) {
+      cultOverlay.querySelectorAll(".sublayer-diamond").forEach(dd => { dd.style.background = "transparent"; dd.style.boxShadow = "none"; dd.style.borderColor = "transparent"; });
       if (cultLayerBase) { cultLayerBase.style.top = "50%"; cultLayerBase.style.opacity = "1"; cultLayerBase.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l) => {
         if (!l) return;
@@ -4729,10 +4820,9 @@
     const bp = burroPts(); if (!bp) return;
     const y = Math.max(1950, Math.min(2024, year || 2024));
     // extension historica: grande en 1950, actual en 2024 - acotada para que NUNCA se salga del cuadro
-    let kMax = 2.4;
-    for (; kMax > 1.05; kMax -= 0.05) { const sp = scaled(bp, kMax).map(p => P(p[0], p[1])); if (sp.every(s => s.x > 6 && s.x < w - 6 && s.y > 6 && s.y < h - 6)) break; }
-    const k = 1 + (kMax - 1) * Math.pow((2024 - y) / 74, 0.8);
-    const wet = scaled(bp, k);
+    let dMax = 420; // metros de borde perdidos desde 1950 (se reduce si no cabe, para no cortarse)
+    for (; dMax > 20; dMax -= 20) { const sp = offsetPoly(bp, dMax).map(p => P(p[0], p[1])); if (sp.every(s => s.x > 6 && s.x < w - 6 && s.y > 6 && s.y < h - 6)) break; }
+    const wet = offsetPoly(bp, dMax * Math.pow((2024 - y) / 74, 0.8)); // el borde retrocede por offset, sin correrse
     const key = y + "|" + w + "x" + h;
     if (cult1Cache.key !== key) {
       const off = document.createElement("canvas"); off.width = cultLayer1Canvas.width; off.height = cultLayer1Canvas.height;
@@ -4775,8 +4865,8 @@
     const bp = burroPts(); if (!bp) return;
     polyPath(ctx, bp, P); ctx.fillStyle = "rgba(70,120,160,.3)"; ctx.fill();
     const fence = scaled(bp, 1.12), gates = cultGates(bp), n = fence.length;
-    const isGate = i => gates.some(g => Math.min(Math.abs(i - g), n - Math.abs(i - g)) <= 1);
-    ctx.strokeStyle = "#111418"; ctx.lineWidth = 1.4;
+    const isGate = i => gates.includes(i); // solo el tramo exacto del porton (antes quitaba 3 tramos y dejaba un hueco grande)
+    ctx.strokeStyle = "#000000"; ctx.lineWidth = 2.2; ctx.lineCap = "round";
     for (let i = 0; i < n; i++) {
       if (isGate(i)) continue;
       const a = P(fence[i][0], fence[i][1]), b = P(fence[(i + 1) % n][0], fence[(i + 1) % n][1]);
@@ -4787,7 +4877,7 @@
     const names = ["Portón Biblioteca El Tintal", "Portón Alameda El Porvenir"];
     const cx = bp.reduce((s, p) => s + p[0], 0) / bp.length, cy = bp.reduce((s, p) => s + p[1], 0) / bp.length;
     gates.forEach((g, gi) => {
-      const gp = fence[g], out = [gp[0] + (gp[0] - cx) * 0.6, gp[1] + (gp[1] - cy) * 0.6];
+      const gp = [(fence[g][0] + fence[(g + 1) % n][0]) / 2, (fence[g][1] + fence[(g + 1) % n][1]) / 2], out = [gp[0] + (gp[0] - cx) * 0.6, gp[1] + (gp[1] - cy) * 0.6];
       for (let k = 0; k < 3; k++) {
         const f = (t + k / 3) % 1, x = out[0] + (gp[0] - out[0]) * f, y = out[1] + (gp[1] - out[1]) * f;
         const s = P(x, y), s2 = P(x + (gp[0] - out[0]) * 0.08, y + (gp[1] - out[1]) * 0.08);
@@ -4803,7 +4893,7 @@
   // Capa 3: sintaxis espacial - flujos de personas desde los puntos de
   // mayor actividad; pocas personas entran al borde del humedal.
   const CULT_HUBS = [[4.643381946109259, -74.15425856615684, 70], [4.641996817100511, -74.15162276093034, 22], [4.640243427808329, -74.15429866246944, 22], [4.637514552718226, -74.14914507437499, 22], [4.641823947925646, -74.14746024746466, 22]].map(([la, lo, n]) => ({ p: gpsToLocal(la, lo), n }));
-  let cultPeople = null;
+  let cultPeople = null, cultStepFrame = 0, cultVisFrame = 0;
   function renderCulturalCapa3() {
     if (!cultLayer3Canvas) return;
     const { ctx, w, h, P } = prepCultCanvas(cultLayer3Canvas);
@@ -4818,16 +4908,17 @@
           const goes = Math.random() < 0.18; // solo una minoria va hacia el humedal
           const gate = gates[Math.floor(Math.random() * gates.length)];
           const edge = edgePointOf(bp);
-          cultPeople.push({ home, gate, edge, goes, t: Math.random(), sp: 0.0015 + Math.random() * 0.002, j: Math.random() * 6 });
+          cultPeople.push({ home, gate, edge, goes, t: Math.random(), sp: 0.004 + Math.random() * 0.004, j: Math.random() * 6, tick: Math.floor(Math.random() * 14) });
         }
       });
     }
     CULT_HUBS.forEach((hub, hi) => { const s = P(hub.p[0], hub.p[1]); ctx.fillStyle = hi === 0 ? "rgba(234,88,12,.18)" : "rgba(234,88,12,.12)"; ctx.beginPath(); ctx.arc(s.x, s.y, hi === 0 ? 16 : 9, 0, 7); ctx.fill(); });
     cultPeople.forEach(p => {
-      p.j += 0.05; let x, y;
+      p.tick++; const paso = p.tick % 14 === 0; // avanzan a pasos cortos cada ~1/4 s, no se deslizan
+      if (paso) p.j += 0.35; let x, y;
       if (!p.goes) { x = p.home[0] + Math.sin(p.j) * 14; y = p.home[1] + Math.cos(p.j * 0.8) * 14; }
       else {
-        p.t = (p.t + p.sp) % 1;
+        if (paso) p.t = (p.t + p.sp) % 1;
         if (p.t < 0.6) { const f = p.t / 0.6; x = p.home[0] + (p.gate[0] - p.home[0]) * f; y = p.home[1] + (p.gate[1] - p.home[1]) * f; }
         else { const f = (p.t - 0.6) / 0.4; x = p.gate[0] + (p.edge[0] - p.gate[0]) * f; y = p.gate[1] + (p.edge[1] - p.gate[1]) * f; }
       }
@@ -4847,10 +4938,11 @@
     const bp = burroPts(); if (!bp) return;
     polyPath(ctx, bp, P); ctx.fillStyle = "rgba(70,120,160,.35)"; ctx.fill();
     const path = scaled(bp, 1.06);
-    if (!cultVisitors) cultVisitors = Array.from({ length: 34 }, () => ({ u: Math.random(), sp: (Math.random() < 0.5 ? 1 : -1) * (0.00025 + Math.random() * 0.0004), stop: Math.random() }));
+    if (!cultVisitors) cultVisitors = Array.from({ length: 34 }, () => ({ u: Math.random(), sp: (Math.random() < 0.5 ? 1 : -1) * (0.0012 + Math.random() * 0.0012), stop: Math.random(), tick: Math.floor(Math.random() * 16) }));
     const n = path.length;
+    cultVisFrame = (cultVisFrame + 1) % 10;
     cultVisitors.forEach(v => {
-      v.stop += 0.004; if (Math.sin(v.stop * 6) < 0.6) v.u = (v.u + v.sp + 1) % 1; // caminan y se detienen a contemplar
+      v.tick++; v.stop += 0.004; if (v.tick % 16 === 0 && Math.sin(v.stop * 6) < 0.6) v.u = (v.u + v.sp + 1) % 1; // caminan a pasos cortos y se detienen a contemplar
       const f = v.u * n, i = Math.floor(f) % n, j = (i + 1) % n, r = f - Math.floor(f);
       const s = P(path[i][0] + (path[j][0] - path[i][0]) * r, path[i][1] + (path[j][1] - path[i][1]) * r);
       ctx.fillStyle = "#0f766e"; ctx.beginPath(); ctx.arc(s.x, s.y, 1.6, 0, 7); ctx.fill();
