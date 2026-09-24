@@ -2119,6 +2119,42 @@
     };
   }
 
+  // Dibuja el marco rojo técnico del sector de estudio (Humedal El Burro) en la subcapa
+  function drawFocusSiteBoundingBox(ctx, projectPoint) {
+    const minX = 7050, maxX = 7950, minY = 2800, maxY = 3500;
+    const p1 = projectPoint(minX, minY, 0.0);
+    const p2 = projectPoint(maxX, minY, 0.0);
+    const p3 = projectPoint(maxX, maxY, 0.0);
+    const p4 = projectPoint(minX, maxY, 0.0);
+
+    if (!p1.inFront || !p2.inFront || !p3.inFront || !p4.inFront) return;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.lineTo(p3.x, p3.y);
+    ctx.lineTo(p4.x, p4.y);
+    ctx.closePath();
+
+    ctx.strokeStyle = "rgba(225, 29, 72, 0.95)";
+    ctx.lineWidth = 2.2;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+
+    const corners = [p1, p2, p3, p4];
+    corners.forEach(c => {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#e11d48";
+      ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
   function openNaturalExplode() {
     if (!natOverlay) return;
 
@@ -2171,10 +2207,10 @@
       natBaseImg.src = fotoBase;
       natBaseImg.style.objectFit = "fill";
     }
-    // Asignar foto de contexto suave a todas las subcapas para orientación espacial 1:1
+    // Subcapas flotantes limpias (planos diagramáticos sobre fondo blanco/transparente)
     const setNatSubImg = (id) => {
       const el = document.getElementById(id);
-      if (el) { el.src = fotoBase; el.style.objectFit = "fill"; el.style.opacity = "0.40"; el.style.filter = "grayscale(70%)"; }
+      if (el) { el.src = ""; el.style.display = "none"; }
     };
     setNatSubImg("natWaterImg");
     setNatSubImg("natVegImg");
@@ -2226,12 +2262,19 @@
     const baseEl = document.getElementById("natLayerBase");
     const tags = natOverlay.querySelectorAll(".nat-layer-tag");
 
-    // Limpiar fondos/sombras no deseados en los rombos
+    // Limpiar o aplicar planos diagramáticos sobre los rombos
     const allDiamonds = natOverlay.querySelectorAll(".sublayer-diamond");
     allDiamonds.forEach(d => {
-      d.style.background = "transparent";
-      d.style.boxShadow = "none";
-      d.style.borderColor = "transparent";
+      const isBase = d.parentElement && d.parentElement.id === "natLayerBase";
+      if (isBase) {
+        d.style.background = "transparent";
+        d.style.boxShadow = "none";
+        d.style.borderColor = "transparent";
+      } else {
+        d.style.background = "rgba(255, 255, 255, 0.92)";
+        d.style.border = "1.5px solid rgba(15, 23, 42, 0.35)";
+        d.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.08)";
+      }
     });
 
     if (natExplodeStep === 0) {
@@ -2478,8 +2521,8 @@
     }
 
     const tBase = document.getElementById("techBaseImg"); if (tBase) tBase.src = fotoBase;
-    const tRoads = document.getElementById("techRoadsVehImg"); if (tRoads) tRoads.src = fotoRoadsVeh;
-    const tNoise = document.getElementById("techNoiseImg"); if (tNoise) tNoise.src = fotoNoise;
+    const tRoads = document.getElementById("techRoadsVehImg"); if (tRoads) { tRoads.src = ""; tRoads.style.display = "none"; }
+    const tNoise = document.getElementById("techNoiseImg"); if (tNoise) { tNoise.src = ""; tNoise.style.display = "none"; }
 
     techOverlay.style.display = "flex";
     void techOverlay.offsetWidth;
@@ -2495,9 +2538,16 @@
 
     const allDiamonds = techOverlay.querySelectorAll(".sublayer-diamond");
     allDiamonds.forEach(d => {
-      d.style.background = "transparent";
-      d.style.boxShadow = "none";
-      d.style.borderColor = "transparent";
+      const isBase = d.parentElement && d.parentElement.id === "techLayerBase";
+      if (isBase) {
+        d.style.background = "transparent";
+        d.style.boxShadow = "none";
+        d.style.borderColor = "transparent";
+      } else {
+        d.style.background = "rgba(255, 255, 255, 0.92)";
+        d.style.border = "1.5px solid rgba(15, 23, 42, 0.35)";
+        d.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.08)";
+      }
     });
 
     if (techExplodeStep === 0) {
@@ -3884,7 +3934,7 @@
     }
     const setCultSubImg = (id) => {
       const el = document.getElementById(id);
-      if (el) { el.src = fotoBase; el.style.objectFit = "fill"; el.style.opacity = "0.40"; el.style.filter = "grayscale(70%)"; }
+      if (el) { el.src = ""; el.style.display = "none"; }
     };
     setCultSubImg("cultLayer1Img");
     setCultSubImg("cultLayer2Img");
@@ -3935,9 +3985,16 @@
 
     const allDiamonds = cultOverlay.querySelectorAll(".sublayer-diamond");
     allDiamonds.forEach(d => {
-      d.style.background = "transparent";
-      d.style.boxShadow = "none";
-      d.style.borderColor = "transparent";
+      const isBase = d.parentElement && d.parentElement.id === "cultLayerBase";
+      if (isBase) {
+        d.style.background = "transparent";
+        d.style.boxShadow = "none";
+        d.style.borderColor = "transparent";
+      } else {
+        d.style.background = "rgba(255, 255, 255, 0.92)";
+        d.style.border = "1.5px solid rgba(15, 23, 42, 0.35)";
+        d.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.08)";
+      }
     });
 
     panels.forEach(p => { if (p) p.style.display = "none"; });
