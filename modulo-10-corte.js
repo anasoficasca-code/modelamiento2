@@ -39,7 +39,7 @@
   scene.add(sceneRoot);
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true }); // preserveDrawingBuffer: permite capturar el canvas como foto para la animacion de explosion
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, alpha: true }); // alpha:true agregado para poder capturar fondos transparentes en las subcapas de escala tecnologica (sin afectar la vista principal, que sigue fijando su propio color de fondo opaco)
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.BasicShadowMap;
@@ -2520,22 +2520,27 @@
     const origVehCount = vehInstanced ? vehInstanced.count : 0;
     const origBg = scene.background;
     const origCamL = camera.left, origCamR = camera.right, origCamT = camera.top, origCamB = camera.bottom;
+    // Todo lo que NUNCA debe verse en ninguna de las 2 subcapas: edificios,
+    // sus bordes/esquinas, arboles y PARQUES/zonas verdes (esto ultimo era
+    // lo que se veia como "cosas verdes" - parqueMat es una malla aparte
+    // que no se estaba ocultando antes).
+    const toHideCommon = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null].filter(o => o && o.visible !== undefined);
+    const prevVisCommon = toHideCommon.map(o => o.visible);
+    toHideCommon.forEach(o => { o.visible = false; });
+    const waterOpacityPrev = waterMat ? waterMat.opacity : null;
+    if (waterMat) waterMat.opacity = 0;
+    const parqueOpacityPrev = parqueMat ? parqueMat.opacity : null;
+    if (parqueMat) parqueMat.opacity = 0;
 
     camera.left = -techLiveViewSize * layerAspect; camera.right = techLiveViewSize * layerAspect;
     camera.top = techLiveViewSize; camera.bottom = -techLiveViewSize;
     camera.updateProjectionMatrix();
-    scene.background = new THREE.Color(0xffffff);
 
-    // Capa 1 en vivo: SOLO las vias (sin base/edificios/arboles/agua),
-    // con los carros SI andando encima.
+    // Capa 1: fondo blanco, SOLO las vias, con los carros andando encima.
     if (techRoadsVehCanvas) {
-      const toHideL1 = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null].filter(o => o && o.visible !== undefined);
-      const prevVisL1 = toHideL1.map(o => o.visible);
-      toHideL1.forEach(o => { o.visible = false; });
-      const waterOpacityPrev = waterMat ? waterMat.opacity : null;
-      if (waterMat) waterMat.opacity = 0;
+      scene.background = new THREE.Color(0xffffff);
       if (noiseMesh) noiseMesh.visible = false;
-      if (vehInstanced) { vehInstanced.visible = true; vehInstanced.count = vehiclesAtTime(currentTime).length || 120; }
+      if (vehInstanced) { vehInstanced.visible = true; renderVehiclesAt(currentTime); }
       if (roadMat) roadMat.color.set(0xe11d48);
       renderer.render(scene, camera);
       const rect = techRoadsVehCanvas.getBoundingClientRect();
@@ -2543,21 +2548,17 @@
         techRoadsVehCanvas.width = Math.round(rect.width); techRoadsVehCanvas.height = Math.round(rect.height);
       }
       techRoadsVehCanvas.getContext("2d").drawImage(renderer.domElement, 0, 0, techRoadsVehCanvas.width, techRoadsVehCanvas.height);
-      toHideL1.forEach((o, i) => { o.visible = prevVisL1[i]; });
-      if (waterMat && waterOpacityPrev !== null) waterMat.opacity = waterOpacityPrev;
     }
 
-    // Capa 2 en vivo: la MISMA mancha de ruido tal cual se ve en la
-    // axonometria principal (mismo roadMat gris, mismo noiseMesh), pero
-    // tambien aislada de edificios/arboles/agua para que se lea claro.
+    // Capa 2: fondo TRANSPARENTE, sin vias visibles tampoco - solo los
+    // carros andando y la mancha de ruido (amarillo/naranja/rojo) que
+    // generan al pasar, tal como pidio el usuario.
     if (techNoiseCanvas) {
-      const toHideL2 = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null].filter(o => o && o.visible !== undefined);
-      const prevVisL2 = toHideL2.map(o => o.visible);
-      toHideL2.forEach(o => { o.visible = false; });
-      const waterOpacityPrev2 = waterMat ? waterMat.opacity : null;
-      if (waterMat) waterMat.opacity = 0;
-      if (roadMat) roadMat.color.set(0x9099a3);
-      if (vehInstanced) { vehInstanced.visible = true; vehInstanced.count = vehiclesAtTime(currentTime).length || 120; }
+      scene.background = null; // transparente
+      renderer.setClearColor(0x000000, 0);
+      const roadVisPrev = currentRoadMeshes.map(m => m ? m.visible : null);
+      currentRoadMeshes.forEach(m => { if (m) m.visible = false; });
+      if (vehInstanced) { vehInstanced.visible = true; renderVehiclesAt(currentTime); }
       if (noiseMesh) noiseMesh.visible = true;
       computeLiveNoiseField(vehiclesAtTime(currentTime), performance.now()); // se fuerza el calculo aqui (no depende de que el boton "Mostrar ruido" de la vista principal este activado)
       renderer.render(scene, camera);
@@ -2565,12 +2566,17 @@
       if (techNoiseCanvas.width !== Math.round(rect2.width) || techNoiseCanvas.height !== Math.round(rect2.height)) {
         techNoiseCanvas.width = Math.round(rect2.width); techNoiseCanvas.height = Math.round(rect2.height);
       }
-      techNoiseCanvas.getContext("2d").drawImage(renderer.domElement, 0, 0, techNoiseCanvas.width, techNoiseCanvas.height);
-      toHideL2.forEach((o, i) => { o.visible = prevVisL2[i]; });
-      if (waterMat && waterOpacityPrev2 !== null) waterMat.opacity = waterOpacityPrev2;
+      const ctx2 = techNoiseCanvas.getContext("2d");
+      ctx2.clearRect(0, 0, techNoiseCanvas.width, techNoiseCanvas.height);
+      ctx2.drawImage(renderer.domElement, 0, 0, techNoiseCanvas.width, techNoiseCanvas.height);
+      currentRoadMeshes.forEach((m, i) => { if (m) m.visible = roadVisPrev[i]; });
+      renderer.setClearColor(0x000000, 1);
     }
 
     // Restaurar todo para no afectar la vista principal
+    toHideCommon.forEach((o, i) => { o.visible = prevVisCommon[i]; });
+    if (waterMat && waterOpacityPrev !== null) waterMat.opacity = waterOpacityPrev;
+    if (parqueMat && parqueOpacityPrev !== null) parqueMat.opacity = parqueOpacityPrev;
     scene.background = origBg;
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
     if (noiseMesh) noiseMesh.visible = origNoiseVis;
