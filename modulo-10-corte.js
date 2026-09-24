@@ -2526,10 +2526,11 @@
     camera.updateProjectionMatrix();
     scene.background = new THREE.Color(0xffffff);
 
-    // Capa 1 en vivo: vias y carros moviendose en bucle (sin ruido)
+    // Capa 1 en vivo: SOLO las vias (sin carros, sin ruido) - a pedido del
+    // usuario, los carros solo deben aparecer hasta la Capa 2
     if (techRoadsVehCanvas) {
       if (noiseMesh) noiseMesh.visible = false;
-      if (vehInstanced) { vehInstanced.visible = true; vehInstanced.count = vehiclesAtTime(currentTime).length || 120; }
+      if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
       if (roadMat) roadMat.color.set(0xe11d48);
       renderer.render(scene, camera);
       const rect = techRoadsVehCanvas.getBoundingClientRect();
@@ -2539,9 +2540,11 @@
       techRoadsVehCanvas.getContext("2d").drawImage(renderer.domElement, 0, 0, techRoadsVehCanvas.width, techRoadsVehCanvas.height);
     }
 
-    // Capa 2 en vivo: mapa de ruido con colores, igual que en la axonometria principal
+    // Capa 2 en vivo: mapa de ruido CON los carros ya andando (simulacion
+    // completa), con los parches de color del ruido
     if (techNoiseCanvas) {
       if (roadMat) roadMat.color.set(0x9099a3);
+      if (vehInstanced) { vehInstanced.visible = true; vehInstanced.count = vehiclesAtTime(currentTime).length || 120; }
       if (noiseMesh) noiseMesh.visible = true;
       computeLiveNoiseField(vehiclesAtTime(currentTime), performance.now()); // se fuerza el calculo aqui (no depende de que el boton "Mostrar ruido" de la vista principal este activado)
       renderer.render(scene, camera);
