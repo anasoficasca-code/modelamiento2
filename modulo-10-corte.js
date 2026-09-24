@@ -2180,6 +2180,61 @@
     ctx.restore();
   }
 
+
+  // ============================================================
+  // Base con CONTEXTO (como el referente): toda la ciudad alrededor en
+  // 3D muy clarita + el area de estudio (caja de seccion) nitida encima +
+  // un borde leve marcando el area. Usa la MISMA camara que las subcapas,
+  // asi que todo encaja pixel por pixel. Se quita el "cubo negro" (borde
+  // extruido de la caja) en esta captura.
+  // ============================================================
+  function captureBaseWithContext(renderFocusSetup) {
+    const W = renderer.domElement.width, H = renderer.domElement.height;
+    const off = document.createElement("canvas"); off.width = W; off.height = H;
+    const c = off.getContext("2d");
+    c.fillStyle = "#ffffff"; c.fillRect(0, 0, W, H);
+    const halfW = sceneExtentW / 2 * 1.4, halfH = sceneExtentH / 2 * 1.4;
+    const bx0 = -halfW + (parseFloat(secXMin.value) / 100) * (2 * halfW);
+    const bx1 = -halfW + (parseFloat(secXMax.value) / 100) * (2 * halfW);
+    const bz0 = -halfH + (parseFloat(secZMin.value) / 100) * (2 * halfH);
+    const bz1 = -halfH + (parseFloat(secZMax.value) / 100) * (2 * halfH);
+    const cx = (bx0 + bx1) / 2, cz = (bz0 + bz1) / 2, K = 3.2;
+    const bw = (bx1 - bx0) * K / 2, bh = (bz1 - bz0) * K / 2;
+    const origBg = scene.background;
+    const borderVis = axoBorderMesh ? axoBorderMesh.visible : false;
+    if (axoBorderMesh) axoBorderMesh.visible = false;
+    if (renderFocusSetup) renderFocusSetup();
+    // 1) Contexto: sin recorte, con edificios y vias alrededor
+    const savedConst = Object.values(secPlanes).map(p => p.constant);
+    Object.values(secPlanes).forEach(p => (p.constant = 1e6));
+    const origClip = renderer.clippingPlanes; renderer.clippingPlanes = [];
+    if (rawBuildingsData) buildBuildings(rawBuildingsData, { xMin: cx - bw, xMax: cx + bw, zMin: cz - bh, zMax: cz + bh, yMin: 0, yMax: 1e6 });
+    if (rawEdgesData) buildRoads(rawEdgesData, { xMin: cx - bw, xMax: cx + bw, zMin: cz - bh, zMax: cz + bh, yMin: 0, yMax: 1e6 });
+    if (axoBorderMesh) axoBorderMesh.visible = false;
+    scene.background = new THREE.Color(0xffffff);
+    renderer.render(scene, camera);
+    c.globalAlpha = 0.28; c.drawImage(renderer.domElement, 0, 0);
+    // 2) Area de estudio nitida (con su recorte normal), fondo transparente
+    Object.values(secPlanes).forEach((p, i) => (p.constant = savedConst[i]));
+    renderer.clippingPlanes = origClip;
+    rebuildFilteredGeometry();
+    if (axoBorderMesh) axoBorderMesh.visible = false;
+    scene.background = null; renderer.setClearColor(0x000000, 0);
+    renderer.render(scene, camera);
+    c.globalAlpha = 1; c.drawImage(renderer.domElement, 0, 0);
+    renderer.setClearColor(0x000000, 1);
+    // 3) Borde leve del area de estudio
+    const v = new THREE.Vector3();
+    const pts = [[bx0, bz0], [bx1, bz0], [bx1, bz1], [bx0, bz1]].map(([x, z]) => {
+      v.set(x, 0, z); v.project(camera);
+      return [(v.x * 0.5 + 0.5) * W, (-v.y * 0.5 + 0.5) * H];
+    });
+    c.strokeStyle = "rgba(20,24,30,.55)"; c.lineWidth = Math.max(1, W / 900);
+    c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath(); c.stroke();
+    scene.background = origBg;
+    if (axoBorderMesh) axoBorderMesh.visible = borderVis;
+    return off.toDataURL("image/png");
+  }
   function openNaturalExplode() {
     if (!natOverlay) return;
 
@@ -2214,34 +2269,7 @@
     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
 
-    // Se retira el recorte de la caja de seccion para esta captura: el
-    // usuario pidio ver TODA la axonometria de Kennedy (sin cortar),
-    // no solo el sector del Humedal El Burro. Se desactivan los planos de
-    // recorte y se usa la posicion/objetivo/zoom de la vista axonometrica
-    // por defecto (toda la ciudad), en vez de la camara actual (centrada
-    // en el sector recortado).
-    const origClipPlanes = renderer.clippingPlanes;
-    renderer.clippingPlanes = [];
-    const origCamPos = camera.position.clone();
-    const origTarget = controls.target.clone();
-    const origZoom = camera.zoom;
-    camera.position.set(-389.40, 559.68, 542.58);
-    controls.target.set(218.76, -53.06, -86.62);
-    camera.zoom = 2.272;
-    camera.updateProjectionMatrix();
-
-    // Renderizar con fondo blanco puro
-    scene.background = new THREE.Color(0xffffff);
-    renderer.render(scene, camera);
-    const fotoBase = renderer.domElement.toDataURL("image/png");
-
-    // Se restaura el recorte y la camara de inmediato (esta captura sin
-    // recorte es solo para esta foto, el resto del flujo sigue igual)
-    renderer.clippingPlanes = origClipPlanes;
-    camera.position.copy(origCamPos);
-    controls.target.copy(origTarget);
-    camera.zoom = origZoom;
-    camera.updateProjectionMatrix();
+    const fotoBase = captureBaseWithContext(); // contexto clarito + area de estudio nitida + borde leve
 
     // Captura ADICIONAL de contexto: la misma vista pero con la camara
     // alejada (viewSize mas grande), mostrando mucho mas alrededor del
@@ -2320,6 +2348,9 @@
 
     // Iniciar loop continuo de agua viva fluida y oleaje
     startNatWaterAnimation();
+    // Arranca solo el ciclo del año (agua creciendo, aves llegando, epoca)
+    // apenas se abre la escala natural, sin tener que darle play.
+    setTimeout(() => { if (natPlayYearBtn && !natYearPlaying) natPlayYearBtn.click(); }, 900);
   }
 
   function renderAllNaturalSublayers() {
@@ -2372,7 +2403,7 @@
 
     if (natExplodeStep === 0) {
       // Paso 0: Únicamente la base limpia visible en el centro de la pantalla
-      if (baseEl) { baseEl.style.opacity = "1"; }
+      if (baseEl) { baseEl.style.top = "50%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach(l => { if (l) { l.style.opacity = "0"; l.style.top = "50%"; l.style.transform = "translate(-50%, -40%)"; } });
       tags.forEach(t => { t.style.opacity = "0"; });
       if (natGuideSvg) natGuideSvg.style.opacity = "0";
@@ -2384,12 +2415,12 @@
     if (natExplodeStep % 2 === 1 && natExplodeStep <= 7) {
       const activeIdx = Math.floor(natExplodeStep / 2);
 
-      if (baseEl) { baseEl.style.opacity = "1"; }
+      if (baseEl) { baseEl.style.top = "60%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l, index) => {
         if (!l) return;
         if (index === activeIdx) {
           // Capa activa flotando arriba
-          const expTop = l.dataset.explodedTop || "12%";
+          const expTop = "-4%"; // todas las capas extraidas a la misma altura, mas arriba (no interfieren con la base)
           l.style.top = expTop;
           l.style.transform = "translate(-50%, 0)";
           l.style.opacity = "1";
@@ -2397,7 +2428,7 @@
           if (tag) tag.style.opacity = "1";
         } else {
           // Ocultas sobre la base
-          l.style.top = "54%";
+          l.style.top = "60%";
           l.style.transform = "translate(-50%, -40%)";
           l.style.opacity = "0";
           const tag = l.querySelector(".nat-layer-tag");
@@ -2416,13 +2447,17 @@
       const settledIdx = (natExplodeStep / 2) - 1;
       const nextNames = ["Capa 2: Vegetación", "Capa 3: Aves/Fauna", "Capa 4: Conectividad", "Ver Apilamiento Explotado Completo"];
 
-      if (baseEl) { baseEl.style.opacity = "1"; }
+      if (baseEl) { baseEl.style.top = "50%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l, index) => {
         if (!l) return;
         if (index === settledIdx) {
           l.style.top = "50%";
           l.style.transform = "translate(-50%, -40%)";
           l.style.opacity = "1";
+          // al asentarse, el plano blanco de la capa se vuelve transparente
+          // para que la capa quede ENCIMA del territorio, encajada.
+          const dd = l.querySelector(".sublayer-diamond");
+          if (dd) { dd.style.background = "transparent"; dd.style.boxShadow = "none"; dd.style.borderColor = "transparent"; }
           const tag = l.querySelector(".nat-layer-tag");
           if (tag) tag.style.opacity = "1";
         } else {
@@ -2441,7 +2476,7 @@
 
     if (natExplodeStep === 9) {
       // Paso 9: Apilamiento explotado completo (las 4 capas flotando apiladas)
-      if (baseEl) { baseEl.style.opacity = "1"; }
+      if (baseEl) { baseEl.style.top = "70%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, 0)"; }
       sublayers.forEach((l) => {
         if (!l) return;
         const expTop = l.dataset.explodedTop || "54%";
@@ -2460,7 +2495,7 @@
 
     if (natExplodeStep === 10) {
       // Paso 10: Integración Total (todas las 4 capas asentadas abajo simulando simultáneamente)
-      if (baseEl) { baseEl.style.opacity = "1"; }
+      if (baseEl) { baseEl.style.top = "50%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l) => {
         if (!l) return;
         l.style.top = "50%";
@@ -2660,7 +2695,7 @@
     if (roadMat) roadMat.color.set(0x9099a3);
 
     renderer.render(scene, camera);
-    const fotoBase = renderer.domElement.toDataURL("image/png");
+    const fotoBase = captureBaseWithContext(); // mismo contexto clarito + area de estudio que en Natural
 
     // Captura de CONTEXTO (camara alejada), igual que en Escala natural,
     // para que se vea el contexto de Kennedy difuminado detras del corte.
@@ -2675,7 +2710,7 @@
       camera.updateProjectionMatrix();
       renderer.render(scene, camera);
       techContextImg.src = renderer.domElement.toDataURL("image/png");
-      if (techLayerContext) techLayerContext.style.opacity = "1";
+      /* techLayerContext ya no se usa: el contexto va integrado en la base */
       camera.left = -viewSize * layerAspect;
       camera.right = viewSize * layerAspect;
       camera.top = viewSize;
@@ -2921,6 +2956,162 @@
   // CAPA 1: Sistema Inerte y Límite Físico-Hidrológico
   // Fluctuación 0,2 ha a 6,69 ha, espejo hídrico realista pizarra/turquesa profundo, nodo más hondo, Ronda Hidráulica 30m, ZMPA y escorrentías
   // ============================================================
+
+  // ============================================================
+  // AVES (capa 3) y INTERCAMBIO GENETICO (capa 4) - Escala natural
+  // ============================================================
+  const LLANOS_REAL = { x: -16094, y: -2029 }; // coordenada dada por el usuario (4.5744, -74.2990)
+  const NORTE_REAL = { x: 7400, y: 20000 };    // entrada de migratorias boreales (patos) desde el norte
+  const garzaImg = new Image(); garzaImg.src = "./assets/garza.png";
+  const tinguaImg = new Image(); tinguaImg.src = "./assets/tingua.png";
+  function ptInPoly(x, y, pts) {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const xi = pts[i][0], yi = pts[i][1], xj = pts[j][0], yj = pts[j][1];
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+  function randomPointIn(pts, shrink) {
+    const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+    const sp = pts.map(p => [cx + (p[0] - cx) * shrink, cy + (p[1] - cy) * shrink]);
+    const xs = sp.map(p => p[0]), ys = sp.map(p => p[1]);
+    for (let k = 0; k < 60; k++) {
+      const x = Math.min(...xs) + Math.random() * (Math.max(...xs) - Math.min(...xs));
+      const y = Math.min(...ys) + Math.random() * (Math.max(...ys) - Math.min(...ys));
+      if (ptInPoly(x, y, sp)) return [x, y];
+    }
+    return [cx, cy];
+  }
+  function edgePointOf(pts) { // punto sobre la orilla del humedal
+    const i = Math.floor(Math.random() * pts.length), j = (i + 1) % pts.length, t = Math.random();
+    return [pts[i][0] + (pts[j][0] - pts[i][0]) * t, pts[i][1] + (pts[j][1] - pts[i][1]) * t];
+  }
+  function drawFlyingBird(ctx, x, y, s, color, flap) {
+    ctx.save(); ctx.translate(x, y); ctx.fillStyle = color;
+    const wy = flap ? -s : s * 0.55;
+    ctx.beginPath(); ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-s * 0.5, wy * 0.4, -s, wy); ctx.quadraticCurveTo(-s * 0.5, s * 0.1, 0, s * 0.15);
+    ctx.quadraticCurveTo(s * 0.5, s * 0.1, s, wy); ctx.quadraticCurveTo(s * 0.5, wy * 0.4, 0, 0);
+    ctx.fill(); ctx.restore();
+  }
+  function drawSprite(ctx, img, x, y, hPx) {
+    if (!img.complete || !img.naturalWidth) return;
+    const wPx = hPx * img.naturalWidth / img.naturalHeight;
+    ctx.drawImage(img, x - wPx / 2, y - hPx, wPx, hPx);
+  }
+  function smallLabel(ctx, text, x, y) {
+    ctx.font = "600 9px 'Segoe UI',sans-serif";
+    const tw = ctx.measureText(text).width;
+    ctx.fillStyle = "rgba(255,255,255,.88)"; ctx.fillRect(x - 3, y - 9, tw + 6, 12);
+    ctx.fillStyle = "#0f172a"; ctx.fillText(text, x, y);
+  }
+
+  // Capa 3: bandadas que entran volando desde su lugar de origen (segun
+  // la epoca) y se reparten por TODO el humedal, no a un solo punto.
+  let natFlocks = [], natFlockMonth = null;
+  function drawNatFlocks(ctx, projectPoint, burro, mes) {
+    const garzasLlaneras = [1, 2, 3, 6, 7, 8, 12].includes(mes); // temporada seca: llegan garzas desde el origen indicado
+    const borealesPatos = [9, 10, 11].includes(mes);          // migratorias boreales (patos) desde el norte
+    if (natFlockMonth !== mes) {
+      natFlockMonth = mes;
+      natFlocks = [];
+      const add = (n, from, kind) => {
+        for (let i = 0; i < n; i++) {
+          const tgt = randomPointIn(burro.pts, 0.95);
+          const dx = from.x - tgt[0], dy = from.y - tgt[1], L = Math.hypot(dx, dy);
+          const start = [tgt[0] + dx / L * 2600, tgt[1] + dy / L * 2600]; // aparecen ya volando por el territorio, en esa direccion
+          natFlocks.push({ kind, start, tgt, t: -Math.random() * 0.6, speed: 0.0016 + Math.random() * 0.0012, ph: Math.random() * 6 });
+        }
+      };
+      if (garzasLlaneras) add(22, LLANOS_REAL, "garza");
+      if (borealesPatos) add(18, NORTE_REAL, "pato");
+      for (let i = 0; i < 10; i++) { const e = edgePointOf(burro.pts); natFlocks.push({ kind: "tingua", start: e, tgt: e, t: 1, speed: 0, ph: Math.random() * 6 }); }
+    }
+    natFlocks.forEach(b => {
+      b.t = Math.min(1, b.t + b.speed); b.ph += 0.25;
+      if (b.t < 0) return;
+      const e = b.t < 1 ? 1 - Math.pow(1 - b.t, 2) : 1;
+      const x = b.start[0] + (b.tgt[0] - b.start[0]) * e, y = b.start[1] + (b.tgt[1] - b.start[1]) * e;
+      const p = projectPoint(x, y, b.t < 1 ? 0.6 : 0.05);
+      if (b.kind === "tingua") { drawSprite(ctx, tinguaImg, p.x + Math.sin(b.ph * 0.2) * 1.5, p.y, 11); return; }
+      if (b.t < 1) drawFlyingBird(ctx, p.x, p.y, 4, b.kind === "garza" ? "#ffffff" : "#6b4f33", Math.sin(b.ph) > 0);
+      else if (b.kind === "garza") drawSprite(ctx, garzaImg, p.x, p.y, 13);
+      else drawFlyingBird(ctx, p.x, p.y, 3, "#6b4f33", false);
+    });
+    const firstIn = natFlocks.find(b => b.kind !== "tingua" && b.t > 0 && b.t < 0.5);
+    if (firstIn) {
+      const p = projectPoint(firstIn.start[0] + (firstIn.tgt[0] - firstIn.start[0]) * 0.3, firstIn.start[1] + (firstIn.tgt[1] - firstIn.start[1]) * 0.3, 0.6);
+      smallLabel(ctx, garzasLlaneras ? "Garzas: llegada desde los Llanos" : "Patos migratorios boreales", p.x + 8, p.y - 6);
+    }
+  }
+
+  // Capa 4: INTERCAMBIO GENETICO, narrado en 4 fases que se repiten.
+  let natGenAgents = null, natGenStart = 0;
+  function renderNaturalMacroLayer(mesNum) {
+    if (!natMacroCanvas || !rawWaterData) return;
+    const rect = natMacroCanvas.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = rect.width || 720, h = rect.height || 405;
+    if (natMacroCanvas.width !== Math.round(w * dpr) || natMacroCanvas.height !== Math.round(h * dpr)) { natMacroCanvas.width = Math.round(w * dpr); natMacroCanvas.height = Math.round(h * dpr); }
+    const ctx = natMacroCanvas.getContext("2d");
+    ctx.resetTransform(); ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
+    const projectPoint = (rx, ry, el = 0.05) => projectPointToLayer(rx, ry, el, w, h);
+    const burro = rawWaterData.find(b => (b.nombre || "").includes("Burro"));
+    if (!burro || !burro.pts || burro.pts.length < 4) return;
+    // humedal de fondo
+    const sp = burro.pts.map(p => projectPoint(p[0], p[1]));
+    ctx.beginPath(); sp.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath();
+    ctx.fillStyle = "rgba(96,140,170,.35)"; ctx.fill(); ctx.strokeStyle = "rgba(51,65,85,.6)"; ctx.lineWidth = 1; ctx.stroke();
+
+    const now = performance.now();
+    if (!natGenAgents) {
+      natGenStart = now;
+      const dx = LLANOS_REAL.x - 7300, dy = LLANOS_REAL.y - 3300, L = Math.hypot(dx, dy);
+      natGenAgents = {
+        garzas: Array.from({ length: 14 }, () => { const t = randomPointIn(burro.pts, 0.55); return { tgt: t, start: [t[0] + dx / L * 2400, t[1] + dy / L * 2400], d: Math.random() * 0.25, ph: Math.random() * 6 }; }),
+        tinguas: Array.from({ length: 12 }, () => ({ from: randomPointIn(burro.pts, 0.4), to: edgePointOf(burro.pts), ph: Math.random() * 6 })),
+        plantas: Array.from({ length: 18 }, () => ({ p: randomPointIn(burro.pts, 0.8), d: Math.random() * 0.8 })),
+      };
+    }
+    const CYCLE = 28000, T = ((now - natGenStart) % CYCLE) / CYCLE; // 0..1
+    const phase = T < 0.25 ? 0 : T < 0.5 ? 1 : T < 0.75 ? 2 : 3;
+    const local = (T % 0.25) / 0.25;
+    const ease = x => 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3);
+
+    // Plantas nuevas (fase 4) - crecen desde las semillas que traen las garzas
+    if (phase === 3) natGenAgents.plantas.forEach(pl => {
+      const g = ease((local - pl.d * 0.6) / 0.4); if (g <= 0) return;
+      const p = projectPoint(pl.p[0], pl.p[1]);
+      ctx.fillStyle = "#3f7d3a";
+      for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.ellipse(p.x + k * 1.6 * g, p.y - 3 * g, 1.2 * g, 3.4 * g, k * 0.5, 0, Math.PI * 2); ctx.fill(); }
+    });
+    // Tinguas: en el centro al inicio, se van a las orillas (fase 2 en adelante)
+    natGenAgents.tinguas.forEach(tg => {
+      const e = phase === 0 ? 0 : phase === 1 ? ease(local) : 1;
+      const x = tg.from[0] + (tg.to[0] - tg.from[0]) * e, y = tg.from[1] + (tg.to[1] - tg.from[1]) * e;
+      const p = projectPoint(x, y); tg.ph += 0.1;
+      drawSprite(ctx, tinguaImg, p.x, p.y + Math.sin(tg.ph) * 0.4, 11);
+    });
+    // Garzas: llegan volando (fase 1), ocupan el espejo central, se alimentan
+    natGenAgents.garzas.forEach(gz => {
+      gz.ph += 0.22;
+      const e = phase === 0 ? ease((local - gz.d) / (1 - gz.d)) : 1;
+      if (e <= 0) return;
+      const x = gz.start[0] + (gz.tgt[0] - gz.start[0]) * e, y = gz.start[1] + (gz.tgt[1] - gz.start[1]) * e;
+      const p = projectPoint(x, y, e < 1 ? 0.6 : 0.05);
+      if (e < 1) drawFlyingBird(ctx, p.x, p.y, 4.5, "#ffffff", Math.sin(gz.ph) > 0);
+      else {
+        const peck = phase >= 2 ? Math.max(0, Math.sin(gz.ph * 0.6)) * 2 : 0; // se agachan a comer
+        drawSprite(ctx, garzaImg, p.x, p.y + peck, 14);
+        if (phase === 3 && Math.sin(gz.ph * 0.3) > 0.9) { ctx.fillStyle = "#8a6a3a"; ctx.beginPath(); ctx.arc(p.x + 3, p.y + 1, 0.9, 0, 7); ctx.fill(); } // semillas
+      }
+    });
+    const cxp = projectPoint(burro.pts.reduce((s, p) => s + p[0], 0) / burro.pts.length, Math.max(...burro.pts.map(p => p[1])));
+    const texts = ["Intercambio genético: llegada de garzas migratorias", "Redistribución de fauna: las tinguas se desplazan a las orillas", "Garzas alimentándose en el espejo de agua central", "Dispersión de semillas: crecen nuevas plantas en el humedal"];
+    smallLabel(ctx, texts[phase], cxp.x - 90, cxp.y - 14);
+  }
+
   function renderNaturalWaterLayer(mesNum) {
     if (!natWaterCanvas || !rawWaterData) return;
     const info = HUMEDAL_CICLO[mesNum - 1] || HUMEDAL_CICLO[3];
@@ -3092,11 +3283,13 @@
       }
 
       // 3. Escorrentía subterránea hacia Humedal La Vaca (infiltración y flujo freático)
+      // Corregido: La Vaca esta al SUROESTE del Burro (centro real 6018,1980),
+      // no al noroeste como estaba antes. Sale del borde sur del Burro.
       const subFlujoPts = [
-        [7480, 3180],
-        [7250, 3350],
-        [6980, 3550],
-        [6700, 3750] // Hacia Humedal La Vaca
+        [7080, 3020],
+        [6780, 2700],
+        [6480, 2400],
+        [6230, 2160] // Hacia Humedal La Vaca (borde noreste)
       ];
       const scrSub = subFlujoPts.map(p => projectPoint(p[0], p[1]));
       if (scrSub.length >= 3 && scrSub[0].inFront) {
@@ -3526,6 +3719,7 @@
       ctx.stroke();
     }
 
+    if (false) { // aves viejas (iban a un solo punto) reemplazadas por drawNatFlocks()
     // 2. AGENTES Y SILUETAS BIOLÓGICAS CLARAMENTE DISTINGUIBLES
     const centerSO = projectPoint(7518.49, 3137.57);
     // Función auxiliar para dibujar un sprite de pájaro
@@ -3627,6 +3821,7 @@
       }
     }
 
+    } // fin de las aves viejas desactivadas
     // 3. CARTOGRAFÍA Y LEYENDA TÉCNICA VISIBLE DIRECTAMENTE EN LA CAPA
     if (natBirdSvg) {
       natBirdSvg.innerHTML = "";
@@ -3690,6 +3885,7 @@
 
       natBirdSvg.appendChild(legG);
     }
+    drawNatFlocks(ctx, projectPoint, burro, realMesNum); // bandadas desde su origen, repartidas por todo el humedal
   }
 
   // ============================================================
@@ -3699,7 +3895,7 @@
   // - Corredor 2: Conexión con la ronda del Río Bogotá hacia el Humedal La Conejera y Sabana Norte.
   // - Corredor 3: Vínculo freático y biológico de proximidad hacia el Humedal La Vaca y Humedal El Tintal.
   // ============================================================
-  function renderNaturalMacroLayer(mesNum) {
+  function renderNaturalMacroLayerOld(mesNum) {
     if (!natMacroCanvas) return;
     const rect = natMacroCanvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -4100,7 +4296,7 @@
 
     scene.background = new THREE.Color(0xffffff);
     renderer.render(scene, camera);
-    const fotoBase = renderer.domElement.toDataURL("image/png");
+    const fotoBase = captureBaseWithContext(); // mismo contexto clarito + area de estudio que en Natural
 
     // Captura de CONTEXTO (camara alejada), igual que en Escala natural.
     const culContextImg = document.getElementById("culContextImg");
@@ -4114,7 +4310,7 @@
       camera.updateProjectionMatrix();
       renderer.render(scene, camera);
       culContextImg.src = renderer.domElement.toDataURL("image/png");
-      if (culLayerContext) culLayerContext.style.opacity = "1";
+      /* culLayerContext ya no se usa: el contexto va integrado en la base */
       camera.left = -viewSize * layerAspect;
       camera.right = viewSize * layerAspect;
       camera.top = viewSize;
