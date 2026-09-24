@@ -586,7 +586,7 @@
     const mesh = new THREE.Mesh(geo, mat);
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.set((c0.x + c1.x) / 2, 0.06, (c0.z + c1.z) / 2);
-    mesh.visible = false;
+    mesh.visible = noiseOn; // antes quedaba oculto aunque el ruido estuviera activado
     sceneRoot.add(mesh);
     noiseMesh = mesh;
   }
@@ -1359,10 +1359,8 @@
         const off = camera.position.clone().sub(controls.target);
         controls.target.set((x0 + x1) / 2, controls.target.y, (z0 + z1) / 2);
         camera.position.copy(controls.target).add(off);
-        camera.zoom = 1; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
-        const v = new THREE.Vector3(); let mx = 0, my = 0;
-        [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].forEach(([x, z]) => [0, 12].forEach(yy => { v.set(x, yy, z).project(camera); mx = Math.max(mx, Math.abs(v.x)); my = Math.max(my, Math.abs(v.y)); }));
-        camera.zoom = 0.86 / Math.max(mx, my, 1e-3);
+        camera.lookAt(controls.target);
+        camera.zoom = 2.272; // tamaño grande original (el ajuste automatico la dejaba diminuta)
         camera.updateProjectionMatrix();
       }
     } catch (e) { console.warn("No se pudo centrar la vista:", e); }
@@ -1456,6 +1454,33 @@
   });
 
   // ---- Loop de animacion ----
+
+  // ---- Crecimiento del Humedal El Burro mes a mes (igual que en la
+  // simulacion 3D), corriendo solo en la vista principal. ----
+  let mainBurroMesh = null, mainBurroMes = 0, mainBurroLast = 0;
+  const MESES_TXT = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const mainBurroLabel = document.createElement("div");
+  mainBurroLabel.style.cssText = "position:absolute; bottom:18px; right:18px; z-index:12; font:600 11px 'Segoe UI',sans-serif; color:#0f172a; background:rgba(255,255,255,.9); border:1px solid rgba(0,0,0,.1); border-radius:6px; padding:5px 9px; pointer-events:none;";
+  (document.getElementById("sceneWrap") || document.body).appendChild(mainBurroLabel);
+  function updateMainBurro(now) {
+    if (!rawWaterData || !waterMat) return;
+    if (mainBurroLast && now - mainBurroLast < 2600) return;
+    mainBurroLast = now; mainBurroMes = (mainBurroMes % 12) + 1;
+    const b = rawWaterData.find(w => (w.nombre || "").includes("Burro")); if (!b || !b.pts) return;
+    const d = HUMEDAL_CICLO[mainBurroMes - 1]; if (!d) return;
+    const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length, cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
+    const k = 1 + d.expansion_pct / 100 * 0.6;
+    const pts = b.pts.map(p => toScene(cx + (p[0] - cx) * k, cy + (p[1] - cy) * k));
+    let tris = []; try { tris = THREE.ShapeUtils.triangulateShape(pts.map(p => new THREE.Vector2(p.x, p.z)), []); } catch (e) {}
+    const pos = [], uv = [];
+    tris.forEach(t => t.forEach(i => { pos.push(pts[i].x, 0.03, pts[i].z); uv.push(pts[i].x * 0.08, pts[i].z * 0.08); }));
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); geo.computeVertexNormals();
+    if (mainBurroMesh) { sceneRoot.remove(mainBurroMesh); mainBurroMesh.geometry.dispose(); }
+    mainBurroMesh = new THREE.Mesh(geo, waterMat); sceneRoot.add(mainBurroMesh);
+    const lluvia = [3, 4, 5, 10, 11].includes(mainBurroMes);
+    mainBurroLabel.textContent = `Humedal El Burro · ${MESES_TXT[mainBurroMes - 1]} · ${lluvia ? "lluvias" : "temporada seca"} · espejo +${d.expansion_pct.toFixed(1)}%`;
+  }
   function animate(now) {
     requestAnimationFrame(animate);
     if (playing && timesteps.length) {
@@ -1471,6 +1496,7 @@
     }
     if ((noiseOn || birdOn) && timesteps.length) computeLiveNoiseField(vehiclesAtTime(currentTime), now); // fuera del "if playing": el ruido se sigue viendo aunque este en pausa
     if (birdOn) updateBirds(now);
+    updateMainBurro(now); // crecimiento del humedal, siempre corriendo
     // Lineas de borde de edificios: opacidad FIJA, no cambia con el zoom
     // (se pidio que no aparezcan/desaparezcan ni cambien de grosor al
     // acercar o alejar la camara).
