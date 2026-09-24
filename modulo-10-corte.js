@@ -1361,6 +1361,16 @@
         camera.position.copy(controls.target).add(off);
         camera.lookAt(controls.target);
         camera.zoom = 2.272; // tamaño grande original (el ajuste automatico la dejaba diminuta)
+        camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+        const v = new THREE.Vector3(); let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
+        [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].forEach(([x, z]) => [-6, 0, 8].forEach(yy => { v.set(x, yy, z).project(camera); mnx = Math.min(mnx, v.x); mxx = Math.max(mxx, v.x); mny = Math.min(mny, v.y); mxy = Math.max(mxy, v.y); }));
+        const ncx = (mnx + mxx) / 2, ncy = (mny + mxy) / 2;
+        const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0), up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+        const shift = right.multiplyScalar(ncx * (camera.right - camera.left) / 2 / camera.zoom).add(up.multiplyScalar(ncy * (camera.top - camera.bottom) / 2 / camera.zoom));
+        camera.position.add(shift); controls.target.add(shift);
+        // si aun no cabe verticalmente, se reduce apenas el zoom (sin volverla diminuta)
+        const span = Math.max((mxx - mnx) / 2, (mxy - mny) / 2);
+        if (span > 0.94) camera.zoom = 2.272 * 0.94 / span;
         camera.updateProjectionMatrix();
       }
     } catch (e) { console.warn("No se pudo centrar la vista:", e); }
@@ -2232,6 +2242,8 @@
   // extruido de la caja) en esta captura.
   // ============================================================
   function captureBaseWithContext(renderFocusSetup) {
+    const burroVisPrev = mainBurroMesh ? mainBurroMesh.visible : false;
+    if (mainBurroMesh) mainBurroMesh.visible = false; // la base usa la forma real del humedal
     const W = renderer.domElement.width, H = renderer.domElement.height;
     const off = document.createElement("canvas"); off.width = W; off.height = H;
     const c = off.getContext("2d");
@@ -2256,7 +2268,21 @@
     if (axoBorderMesh) axoBorderMesh.visible = false;
     scene.background = new THREE.Color(0xffffff);
     renderer.render(scene, camera);
-    c.globalAlpha = 0.28; c.drawImage(renderer.domElement, 0, 0);
+    { // contexto solo "un poquito" alrededor: se desvanece con la distancia al area de estudio
+      const tmp = document.createElement("canvas"); tmp.width = W; tmp.height = H; const t = tmp.getContext("2d");
+      t.drawImage(renderer.domElement, 0, 0);
+      const vv = new THREE.Vector3(); const cs = [[bx0, bz0], [bx1, bz0], [bx1, bz1], [bx0, bz1]].map(([x, z]) => { vv.set(x, 0, z).project(camera); return [(vv.x * .5 + .5) * W, (-vv.y * .5 + .5) * H]; });
+      const ccx = cs.reduce((s, p) => s + p[0], 0) / 4, ccy = cs.reduce((s, p) => s + p[1], 0) / 4;
+      const rad = Math.max(...cs.map(p => Math.hypot(p[0] - ccx, p[1] - ccy)));
+      const radY = Math.max(...cs.map(p => Math.abs(p[1] - ccy)));
+      const sy = Math.min(1, (radY * 1.25) / rad, (H / 2 - 2) / (rad * 1.25)); // elipse que se desvanece ANTES del borde del cuadro
+      t.globalCompositeOperation = "destination-in";
+      t.save(); t.translate(ccx, ccy); t.scale(1, sy);
+      const g = t.createRadialGradient(0, 0, rad * 0.7, 0, 0, rad * 1.25);
+      g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)");
+      t.fillStyle = g; t.fillRect(-W, -H / sy, W * 2, (H / sy) * 2); t.restore();
+      c.globalAlpha = 0.3; c.drawImage(tmp, 0, 0);
+    }
     // 2) Area de estudio nitida (con su recorte normal), fondo transparente
     Object.values(secPlanes).forEach((p, i) => (p.constant = savedConst[i]));
     renderer.clippingPlanes = origClip;
@@ -2276,6 +2302,7 @@
     c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath(); c.stroke();
     scene.background = origBg;
     if (axoBorderMesh) axoBorderMesh.visible = borderVis;
+    if (mainBurroMesh) mainBurroMesh.visible = burroVisPrev;
     return off.toDataURL("image/png");
   }
   function openNaturalExplode() {
@@ -3234,9 +3261,14 @@
       const isBurro = body === burro;
       let pts = body.pts;
       if (isBurro) {
+        // Forma REAL exacta (asi calza con el humedal de la base al bajar).
+        // La crecida del mes se dibuja aparte como halo translucido.
         const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
         const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
-        pts = pts.map(p => [cx + (p[0] - cx) * expansionFactor, cy + (p[1] - cy) * expansionFactor]);
+        const halo = pts.map(p => projectPoint(cx + (p[0] - cx) * expansionFactor, cy + (p[1] - cy) * expansionFactor));
+        ctx.beginPath(); halo.forEach((s, i) => i ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y)); ctx.closePath();
+        ctx.fillStyle = `rgba(96,150,190,${0.18 + 0.06 * Math.sin(natWaterTime * 2)})`; ctx.fill();
+        ctx.setLineDash([3, 3]); ctx.strokeStyle = "rgba(30,64,96,.55)"; ctx.lineWidth = 0.9; ctx.stroke(); ctx.setLineDash([]);
       }
 
       const scrPts = pts.map(p => projectPoint(p[0], p[1]));
@@ -3252,9 +3284,11 @@
         const waveX = Math.sin(natWaterTime * 0.5) * 20;
         const waveY = Math.cos(natWaterTime * 0.4) * 15;
         const grad = ctx.createLinearGradient(waveX, waveY, w * 0.8 + waveX, h * 0.8 + waveY);
-        grad.addColorStop(0, "rgba(56, 96, 126, 0.88)");
-        grad.addColorStop(0.5, "rgba(40, 78, 107, 0.92)");
-        grad.addColorStop(1, "rgba(28, 59, 83, 0.95)");
+        // Velo translucido en movimiento (oleaje) encima de la FOTO real del
+        // agua, que es el mismo render de la base: asi calza exacto al bajar.
+        grad.addColorStop(0, "rgba(56, 120, 170, 0.18)");
+        grad.addColorStop(0.5, "rgba(120, 180, 220, 0.34)");
+        grad.addColorStop(1, "rgba(40, 90, 140, 0.18)");
         ctx.fillStyle = grad;
         ctx.fill();
         ctx.lineWidth = 1.6;
@@ -5364,7 +5398,7 @@
     panel.id = "scaleLabelPanel";
     panel.style.cssText = "position:absolute; top:14px; left:14px; z-index:420; background:rgba(255,255,255,.95); border:1px solid rgba(0,0,0,.12); border-radius:8px; padding:8px 10px; font:11px 'Segoe UI',sans-serif; color:#111418; box-shadow:0 4px 14px rgba(0,0,0,.08); width:250px;";
     panel.innerHTML = '<div style="font-weight:700; margin-bottom:6px;">Etiquetas de escala</div>' +
-      '<label style="display:flex; align-items:center; gap:6px;">Tamaño <input type="range" id="scaleLabelSize" min="4" max="24" step="0.5" value="6" style="flex:1;"><span id="scaleLabelSizeVal">6px</span></label>' +
+      '<label style="display:flex; align-items:center; gap:6px;">Tamaño <input type="range" id="scaleLabelSize" min="4" max="24" step="0.5" value="7.5" style="flex:1;"><span id="scaleLabelSizeVal">7.5px</span></label>' +
       '<textarea id="scaleLabelCoords" readonly style="margin-top:6px; width:100%; height:62px; font-size:10px; border:1px solid rgba(0,0,0,.12); border-radius:5px; padding:4px; resize:none;"></textarea>';
     overlay.appendChild(panel);
     panel.addEventListener("click", e => e.stopPropagation());
