@@ -1490,6 +1490,37 @@
     const lluvia = [3, 4, 5, 10, 11].includes(mainBurroMes);
     mainBurroLabel.textContent = `Humedal El Burro · ${MESES_TXT[mainBurroMes - 1]} · ${lluvia ? "lluvias" : "temporada seca"} · espejo +${d.expansion_pct.toFixed(1)}%`;
   }
+
+  // ---- Pantalla de las 3 escalas: simulaciones corriendo en vivo y suaves
+  // (carros, ruido, mirlas y el agua del humedal) encima de cada
+  // axonometria, sin repetir edificios ni terreno. ----
+  let liveEscalasLast = 0;
+  function updateLiveEscalas(now) {
+    const ov = document.getElementById("explodeOverlay");
+    if (!ov || ov.style.display === "none" || ov.style.display === "") return;
+    const busy = ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].some(id => { const e = document.getElementById(id); return e && e.style.display && e.style.display !== "none"; });
+    if (busy || now - liveEscalasLast < 110) return;
+    liveEscalasLast = now;
+    const hide = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, manzanasMesh, terrainMesh, axoBorderMesh, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null, ...currentRoadMeshes].filter(o => o && o.visible !== undefined);
+    const prev = hide.map(o => o.visible); hide.forEach(o => { o.visible = false; });
+    const pq = parqueMat ? parqueMat.opacity : null; if (parqueMat) parqueMat.opacity = 0;
+    const bg = scene.background; scene.background = null; renderer.setClearColor(0x000000, 0);
+    if (noiseMesh) noiseMesh.visible = true; if (birdsGroup) birdsGroup.visible = true;
+    renderer.render(scene, camera);
+    const src = renderer.domElement;
+    document.querySelectorAll(".explode-clip").forEach(clip => {
+      let cv = clip.querySelector("canvas.explode-live");
+      if (!cv) { cv = document.createElement("canvas"); cv.className = "explode-live"; cv.style.cssText = "position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:4; opacity:.55;"; clip.appendChild(cv); }
+      const r = clip.getBoundingClientRect(); if (!r.width) return;
+      if (cv.width !== Math.round(r.width) || cv.height !== Math.round(r.height)) { cv.width = Math.round(r.width); cv.height = Math.round(r.height); }
+      const c = cv.getContext("2d"); c.clearRect(0, 0, cv.width, cv.height);
+      const s = Math.min(cv.width / src.width, cv.height / src.height), dw = src.width * s, dh = src.height * s; // igual que object-fit: contain de la foto
+      c.drawImage(src, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
+    });
+    hide.forEach((o, i) => { o.visible = prev[i]; }); if (parqueMat && pq !== null) parqueMat.opacity = pq;
+    scene.background = bg; renderer.setClearColor(0x000000, 1);
+    if (noiseMesh) noiseMesh.visible = noiseOn; if (birdsGroup) birdsGroup.visible = birdOn;
+  }
   function animate(now) {
     requestAnimationFrame(animate);
     if (playing && timesteps.length) {
@@ -1506,6 +1537,7 @@
     if ((noiseOn || birdOn) && timesteps.length) computeLiveNoiseField(vehiclesAtTime(currentTime), now); // fuera del "if playing": el ruido se sigue viendo aunque este en pausa
     if (birdOn) updateBirds(now);
     updateMainBurro(now); // crecimiento del humedal, siempre corriendo
+    updateLiveEscalas(now); // simulaciones suaves en la pantalla de las 3 escalas
     // Lineas de borde de edificios: opacidad FIJA, no cambia con el zoom
     // (se pidio que no aparezcan/desaparezcan ni cambien de grosor al
     // acercar o alejar la camara).
@@ -1929,7 +1961,7 @@
     textEl.style.background = "transparent";
     textEl.style.border = "none";
     textEl.style.padding = "0";
-    textEl.style.fontSize = "12px";
+    textEl.style.fontSize = "7.5px"; // tamaño pedido por la usuaria (top 60%, left 55%, 7.5px)
     const w = textEl.offsetWidth || 130;
     const h = textEl.offsetHeight || 20;
     const originLeft = textEl.offsetLeft;
@@ -1940,7 +1972,7 @@
       corners: [{ x: 28, y: 94 }, { x: 192, y: 5 }, { x: 190, y: 29 }, { x: 28, y: 117 }]
     };
     buildHandles(textEl, layerNum);
-    applyDistort(textEl, layerNum);
+    // sin distorsion: la usuaria pidio solo acomodar (arrastrar) y cambiar tamaño
   }
   function applyDistort(textEl, layerNum) {
     const st = textStates[layerNum];
