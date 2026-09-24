@@ -1537,7 +1537,6 @@
     if ((noiseOn || birdOn) && timesteps.length) computeLiveNoiseField(vehiclesAtTime(currentTime), now); // fuera del "if playing": el ruido se sigue viendo aunque este en pausa
     if (birdOn) updateBirds(now);
     updateMainBurro(now); // crecimiento del humedal, siempre corriendo
-    updateLiveEscalas(now); // simulaciones suaves en la pantalla de las 3 escalas
     // Lineas de borde de edificios: opacidad FIJA, no cambia con el zoom
     // (se pidio que no aparezcan/desaparezcan ni cambien de grosor al
     // acercar o alejar la camara).
@@ -1961,7 +1960,7 @@
     textEl.style.background = "transparent";
     textEl.style.border = "none";
     textEl.style.padding = "0";
-    textEl.style.fontSize = "7.5px"; // tamaño pedido por la usuaria (top 60%, left 55%, 7.5px)
+    textEl.style.fontSize = "12px";
     const w = textEl.offsetWidth || 130;
     const h = textEl.offsetHeight || 20;
     const originLeft = textEl.offsetLeft;
@@ -1972,7 +1971,7 @@
       corners: [{ x: 28, y: 94 }, { x: 192, y: 5 }, { x: 190, y: 29 }, { x: 28, y: 117 }]
     };
     buildHandles(textEl, layerNum);
-    // sin distorsion: la usuaria pidio solo acomodar (arrastrar) y cambiar tamaño
+    applyDistort(textEl, layerNum);
   }
   function applyDistort(textEl, layerNum) {
     const st = textStates[layerNum];
