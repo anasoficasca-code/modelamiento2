@@ -2866,18 +2866,18 @@
 
     if (techExplodeStep % 2 === 1 && techExplodeStep <= 3) {
       const activeIdx = Math.floor(techExplodeStep / 2);
-      if (techLayerBase) { techLayerBase.style.top = "54%"; techLayerBase.style.opacity = "1"; techLayerBase.style.transform = "translate(-50%, -40%)"; }
+      if (techLayerBase) { techLayerBase.style.top = "60%"; techLayerBase.style.opacity = "1"; techLayerBase.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l, index) => {
         if (!l) return;
         if (index === activeIdx) {
-          const expTop = l.dataset.explodedTop || "32%";
+          const expTop = "-4%"; // capa extraida siempre ARRIBA
           l.style.top = expTop;
           l.style.transform = "translate(-50%, 0)";
           l.style.opacity = "1";
           const tag = l.querySelector(".tech-layer-tag");
           if (tag) tag.style.opacity = "1";
         } else {
-          l.style.top = "54%";
+          l.style.top = "60%";
           l.style.transform = "translate(-50%, -40%)";
           l.style.opacity = "0";
           const tag = l.querySelector(".tech-layer-tag");
@@ -4514,18 +4514,18 @@
 
     if (cultExplodeStep % 2 === 1 && cultExplodeStep <= 7) {
       const activeIdx = Math.floor(cultExplodeStep / 2);
-      if (cultLayerBase) { cultLayerBase.style.top = "54%"; cultLayerBase.style.opacity = "1"; cultLayerBase.style.transform = "translate(-50%, -40%)"; }
+      if (cultLayerBase) { cultLayerBase.style.top = "60%"; cultLayerBase.style.opacity = "1"; cultLayerBase.style.transform = "translate(-50%, -40%)"; }
       sublayers.forEach((l, index) => {
         if (!l) return;
         if (index === activeIdx) {
-          const expTop = l.dataset.explodedTop || "12%";
+          const expTop = "-4%"; // capa extraida siempre ARRIBA
           l.style.top = expTop;
           l.style.transform = "translate(-50%, 0)";
           l.style.opacity = "1";
           const tag = l.querySelector(".cult-layer-tag");
           if (tag) tag.style.opacity = "1";
         } else {
-          l.style.top = "54%";
+          l.style.top = "60%";
           l.style.transform = "translate(-50%, -40%)";
           l.style.opacity = "0";
           const tag = l.querySelector(".cult-layer-tag");
