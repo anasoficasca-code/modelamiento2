@@ -1469,6 +1469,7 @@
     }
     controls.update();
     renderer.render(scene, camera);
+    updateTechLiveMirror(); // si el panel de escala tecnologica esta abierto, "espeja" los carros y el ruido en vivo dentro de sus 2 subcapas (en vez de una foto fija)
   }
   // ---- Caja de seccion: 6 planos de recorte (X min/max, Y min/max, Z
   // min/max) para cortar el modelo y ver el interior, como una caja de
@@ -2507,6 +2508,58 @@
   // LÓGICA PARA ESCALA TECNOLÓGICA (Vías + Carros | Mapa de Ruido)
   // ============================================================
   const techOverlay = document.getElementById("techExplodeOverlay");
+  const techRoadsVehCanvas = document.getElementById("techRoadsVehCanvas");
+  const techNoiseCanvas = document.getElementById("techNoiseCanvas");
+  let techLiveViewSize = null; // se fija cuando se abre el panel, para poder "espejar" con el mismo encuadre 16:9 exacto
+  function updateTechLiveMirror() {
+    if (!techOverlay || techOverlay.style.display === "none" || techLiveViewSize == null) return;
+    const targetW = 960, targetH = 540, layerAspect = targetW / targetH;
+    const origRoadColor = roadMat ? roadMat.color.getHex() : null;
+    const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
+    const origVehVis = vehInstanced ? vehInstanced.visible : false;
+    const origVehCount = vehInstanced ? vehInstanced.count : 0;
+    const origBg = scene.background;
+    const origCamL = camera.left, origCamR = camera.right, origCamT = camera.top, origCamB = camera.bottom;
+
+    camera.left = -techLiveViewSize * layerAspect; camera.right = techLiveViewSize * layerAspect;
+    camera.top = techLiveViewSize; camera.bottom = -techLiveViewSize;
+    camera.updateProjectionMatrix();
+    scene.background = new THREE.Color(0xffffff);
+
+    // Capa 1 en vivo: vias y carros moviendose en bucle (sin ruido)
+    if (techRoadsVehCanvas) {
+      if (noiseMesh) noiseMesh.visible = false;
+      if (vehInstanced) { vehInstanced.visible = true; vehInstanced.count = vehiclesAtTime(currentTime).length || 120; }
+      if (roadMat) roadMat.color.set(0xe11d48);
+      renderer.render(scene, camera);
+      const rect = techRoadsVehCanvas.getBoundingClientRect();
+      if (techRoadsVehCanvas.width !== Math.round(rect.width) || techRoadsVehCanvas.height !== Math.round(rect.height)) {
+        techRoadsVehCanvas.width = Math.round(rect.width); techRoadsVehCanvas.height = Math.round(rect.height);
+      }
+      techRoadsVehCanvas.getContext("2d").drawImage(renderer.domElement, 0, 0, techRoadsVehCanvas.width, techRoadsVehCanvas.height);
+    }
+
+    // Capa 2 en vivo: mapa de ruido con colores, igual que en la axonometria principal
+    if (techNoiseCanvas) {
+      if (roadMat) roadMat.color.set(0x9099a3);
+      if (noiseMesh) noiseMesh.visible = true;
+      computeLiveNoiseField(vehiclesAtTime(currentTime), performance.now()); // se fuerza el calculo aqui (no depende de que el boton "Mostrar ruido" de la vista principal este activado)
+      renderer.render(scene, camera);
+      const rect2 = techNoiseCanvas.getBoundingClientRect();
+      if (techNoiseCanvas.width !== Math.round(rect2.width) || techNoiseCanvas.height !== Math.round(rect2.height)) {
+        techNoiseCanvas.width = Math.round(rect2.width); techNoiseCanvas.height = Math.round(rect2.height);
+      }
+      techNoiseCanvas.getContext("2d").drawImage(renderer.domElement, 0, 0, techNoiseCanvas.width, techNoiseCanvas.height);
+    }
+
+    // Restaurar todo para no afectar la vista principal
+    scene.background = origBg;
+    if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
+    if (noiseMesh) noiseMesh.visible = origNoiseVis;
+    if (vehInstanced) { vehInstanced.visible = origVehVis; vehInstanced.count = origVehCount; }
+    camera.left = origCamL; camera.right = origCamR; camera.top = origCamT; camera.bottom = origCamB;
+    camera.updateProjectionMatrix();
+  }
   const techBackBtn = document.getElementById("techExplodeBack");
   const techAssembleBtn = document.getElementById("techAssembleBtn");
   const techAssembleBtnText = document.getElementById("techAssembleBtnText");
@@ -2574,24 +2627,12 @@
       camera.updateProjectionMatrix();
     }
 
-    // 2. CAPA 1: VÍAS Y CARROS (Con carros, sin ruido)
-    if (noiseMesh) noiseMesh.visible = false;
-    if (vehInstanced) {
-      vehInstanced.visible = true;
-      vehInstanced.count = vehiclesAtTime(currentTime).length || 120;
-    }
-    if (roadMat) roadMat.color.set(0xe11d48);
-
-    renderer.render(scene, camera);
-    const fotoRoadsVeh = renderer.domElement.toDataURL("image/png");
-
-    // 3. CAPA 2: SIMULACIÓN DE RUIDO (Con ruido, con carros)
-    if (noiseMesh) noiseMesh.visible = true;
-    if (roadMat) roadMat.color.set(0x7a838d);
-    if (typeof computeLiveNoiseField === "function") computeLiveNoiseField(vehiclesAtTime(currentTime), performance.now() + 150);
-
-    renderer.render(scene, camera);
-    const fotoNoise = renderer.domElement.toDataURL("image/png");
+    // 2. CAPA 1 y CAPA 2 (vias+carros, ruido): ya NO se capturan como foto
+    // fija aqui - se dejan animando EN VIVO via updateTechLiveMirror(),
+    // que corre en cada cuadro del bucle principal mientras este panel
+    // este abierto (carros en bucle real, ruido con sus colores en vivo,
+    // igual que en la axonometria principal).
+    techLiveViewSize = viewSize;
 
     // Restaurar estado original de la escena
     scene.background = origBg;
@@ -2793,7 +2834,8 @@
   function closeTechExplode() {
     if (!techOverlay) return;
     if (techAnimFrame) { cancelAnimationFrame(techAnimFrame); techAnimFrame = null; }
-    
+    techLiveViewSize = null; // apaga el espejo en vivo de carros/ruido
+
     const sublayers = techOverlay.querySelectorAll(".tech-sublayer");
     sublayers.forEach(l => {
       l.style.opacity = "0";
