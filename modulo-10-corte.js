@@ -2101,8 +2101,25 @@
     if (!camera) return;
     canonicalCamera = camera.clone();
     canonicalCamera.matrixWorldInverse.copy(camera.matrixWorldInverse);
-    canonicalCamera.projectionMatrix.copy(camera.projectionMatrix);
-    canonicalCamera.projectionMatrixInverse.copy(camera.projectionMatrixInverse);
+    // BUG REAL encontrado: la camara principal tiene la proporcion de
+    // ANCHO/ALTO de la ventana completa (.main, que no es 16:9), pero
+    // las subcapas se dibujan en un lienzo que SI es 16:9 - al copiar
+    // tal cual la matriz de proyeccion de la camara principal y usarla
+    // para proyectar puntos sobre un lienzo con OTRA proporcion, todo se
+    // estira/deforma (por eso el humedal no coincidia con su forma real).
+    // Se recalculan aqui los limites (left/right) de esta camara
+    // ortografica clonada para que su proporcion sea EXACTAMENTE 16:9,
+    // manteniendo el mismo alto (top/bottom = mismo zoom vertical) que
+    // la camara principal, para que el contenido se vea del mismo
+    // tamaño real, sin deformarse.
+    const alto = camera.top - camera.bottom;
+    const anchoDeseado = alto * (16 / 9);
+    const centroX = (camera.left + camera.right) / 2;
+    canonicalCamera.left = centroX - anchoDeseado / 2;
+    canonicalCamera.right = centroX + anchoDeseado / 2;
+    canonicalCamera.top = camera.top;
+    canonicalCamera.bottom = camera.bottom;
+    canonicalCamera.updateProjectionMatrix();
   }
 
   // Matriz de proyección canónica para el viewport 16:9 de las subcapas
