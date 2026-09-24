@@ -598,7 +598,7 @@
 
   const NOISE_VEH_RADIUS_M = 55;
   let lastNoiseCompute = 0;
-  let noiseOn = false;
+  let noiseOn = true; // ruido visible siempre, sin boton
 
   function computeLiveNoiseField(vehicles, now) {
     if (!noiseGroundW || (now - lastNoiseCompute < 140)) return;
@@ -665,7 +665,7 @@
   };
   const BIRD_VISION = 14, BIRD_ARRIVE = 1.4, BIRD_WIND = 0.8, BIRD_MAX_SPEED = 2.4; // aun mas lento (antes 1.5/4.2)
   const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 50;
-  let birds = [], birdTreesGrid = null, birdsGroup = null, birdOn = false;
+  let birds = [], birdTreesGrid = null, birdsGroup = null, birdOn = true;
   function sampleAttractorTrees(trees) {
     const porEspecie = {};
     trees.forEach(t => {
@@ -1208,7 +1208,7 @@
   const dummy = new THREE.Object3D();
 
   let timesteps = [];
-  let playing = false;
+  let playing = true; // la simulacion corre sola desde que abre el modulo
   let currentTime = 0;
   let speed = 2;
   let lastFrameAt = null;
@@ -1770,8 +1770,10 @@
     const origVehVis = vehInstanced ? vehInstanced.visible : false;
     const origBg = scene.background;
 
-    // Usar fondo blanco sólido para que NO aparezcan zonas oscuras o negras
-    scene.background = new THREE.Color(0xffffff);
+    // Fondo TRANSPARENTE fuera del rombo: solo el terreno y los edificios
+    // se ven blancos; lo que queda afuera ya no tapa el texto/fondo.
+    scene.background = null;
+    renderer.setClearColor(0x000000, 0);
 
     // 1. Escala Natural: base arquitectónica 100% limpia, CERO carros, CERO ruido, CERO mirlas
     if (noiseMesh) noiseMesh.visible = false;
@@ -1799,6 +1801,7 @@
 
     // Restaurar fondo original y estado de la escena base
     scene.background = origBg;
+    renderer.setClearColor(0x000000, 1);
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
     if (noiseMesh) noiseMesh.visible = origNoiseVis;
     if (birdsGroup) birdsGroup.visible = origBirdsVis;
@@ -4011,7 +4014,7 @@
       if (st) out += `  esquinas: ${st.corners.map(c => `(${c.x.toFixed(0)},${c.y.toFixed(0)})`).join(" ")}\n`;
     });
     textCoordsBox.value = out.trim();
-    textCoordsBox.style.display = "block";
+    textCoordsBox.style.display = "none"; // ya no se necesita (pedido del usuario)
   }
   document.querySelectorAll(".explode-text").forEach(t => {
     initTextDistort(t, t.dataset.layer);
@@ -4924,6 +4927,64 @@
       }
     }
   }
+
+  // ============================================================
+  // Etiquetas de escala (natural / cultural / tecnologica): se pueden
+  // ARRASTRAR libremente y cambiar su tamaño con un control arriba a la
+  // izquierda, que tambien muestra su posicion actual para copiarla.
+  // Ya no se distorsionan (pedido del usuario).
+  // ============================================================
+  (function setupScaleLabels() {
+    const overlay = document.getElementById("explodeOverlay");
+    if (!overlay) return;
+    const panel = document.createElement("div");
+    panel.id = "scaleLabelPanel";
+    panel.style.cssText = "position:absolute; top:14px; left:14px; z-index:420; background:rgba(255,255,255,.95); border:1px solid rgba(0,0,0,.12); border-radius:8px; padding:8px 10px; font:11px 'Segoe UI',sans-serif; color:#111418; box-shadow:0 4px 14px rgba(0,0,0,.08); width:250px;";
+    panel.innerHTML = '<div style="font-weight:700; margin-bottom:6px;">Etiquetas de escala</div>' +
+      '<label style="display:flex; align-items:center; gap:6px;">Tamaño <input type="range" id="scaleLabelSize" min="4" max="24" step="0.5" value="6" style="flex:1;"><span id="scaleLabelSizeVal">6px</span></label>' +
+      '<textarea id="scaleLabelCoords" readonly style="margin-top:6px; width:100%; height:62px; font-size:10px; border:1px solid rgba(0,0,0,.12); border-radius:5px; padding:4px; resize:none;"></textarea>';
+    overlay.appendChild(panel);
+    panel.addEventListener("click", e => e.stopPropagation());
+    const sizeInput = panel.querySelector("#scaleLabelSize");
+    const sizeVal = panel.querySelector("#scaleLabelSizeVal");
+    const coordsOut = panel.querySelector("#scaleLabelCoords");
+    const labels = Array.from(document.querySelectorAll(".explode-text"));
+    function refresh() {
+      coordsOut.value = labels.map(l => `${l.textContent.trim()}: top ${l.style.top}, left ${l.style.left}, ${l.style.fontSize}`).join("\n");
+    }
+    labels.forEach(l => {
+      l.setAttribute("contenteditable", "false");
+      l.style.cursor = "move";
+      l.style.transform = "none";
+      l.style.userSelect = "none";
+    });
+    sizeInput.addEventListener("input", () => {
+      labels.forEach(l => { l.style.fontSize = sizeInput.value + "px"; });
+      sizeVal.textContent = sizeInput.value + "px";
+      refresh();
+    });
+    let drag = null;
+    labels.forEach(l => {
+      l.addEventListener("pointerdown", e => {
+        e.stopPropagation(); e.preventDefault();
+        const parent = l.parentElement.getBoundingClientRect();
+        const r = l.getBoundingClientRect();
+        drag = { el: l, parent, dx: e.clientX - r.left, dy: e.clientY - r.top };
+      });
+      l.addEventListener("click", e => e.stopPropagation()); // que arrastrar no dispare el zoom de la capa
+    });
+    window.addEventListener("pointermove", e => {
+      if (!drag) return;
+      const p = drag.parent;
+      const x = ((e.clientX - drag.dx - p.left) / p.width) * 100;
+      const y = ((e.clientY - drag.dy - p.top) / p.height) * 100;
+      drag.el.style.left = x.toFixed(1) + "%";
+      drag.el.style.top = y.toFixed(1) + "%";
+      refresh();
+    });
+    window.addEventListener("pointerup", () => { drag = null; });
+    refresh();
+  })();
 
 })();
 
