@@ -2526,9 +2526,15 @@
     camera.updateProjectionMatrix();
     scene.background = new THREE.Color(0xffffff);
 
-    // Capa 1 en vivo: SOLO las vias (sin carros, sin ruido) - a pedido del
-    // usuario, los carros solo deben aparecer hasta la Capa 2
+    // Capa 1 en vivo: SOLO las vias, sin base/edificios/terreno debajo -
+    // se ocultan edificios, arboles y agua para dejar unicamente las
+    // lineas de la malla vial (sin carros, sin ruido).
     if (techRoadsVehCanvas) {
+      const toHideL1 = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null].filter(o => o && o.visible !== undefined);
+      const prevVisL1 = toHideL1.map(o => o.visible);
+      toHideL1.forEach(o => { o.visible = false; });
+      const waterOpacityPrev = waterMat ? waterMat.opacity : null;
+      if (waterMat) waterMat.opacity = 0;
       if (noiseMesh) noiseMesh.visible = false;
       if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
       if (roadMat) roadMat.color.set(0xe11d48);
@@ -2538,6 +2544,8 @@
         techRoadsVehCanvas.width = Math.round(rect.width); techRoadsVehCanvas.height = Math.round(rect.height);
       }
       techRoadsVehCanvas.getContext("2d").drawImage(renderer.domElement, 0, 0, techRoadsVehCanvas.width, techRoadsVehCanvas.height);
+      toHideL1.forEach((o, i) => { o.visible = prevVisL1[i]; });
+      if (waterMat && waterOpacityPrev !== null) waterMat.opacity = waterOpacityPrev;
     }
 
     // Capa 2 en vivo: mapa de ruido CON los carros ya andando (simulacion
