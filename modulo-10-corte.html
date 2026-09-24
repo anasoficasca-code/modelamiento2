@@ -408,6 +408,9 @@
         </div>
 
         <!-- Capa Base inferior: Contexto existente / Corte base -->
+        <div id="natLayerContext" style="position:absolute; top:50%; left:50%; width:min(112vw, 1220px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -40%); transition:opacity 1.2s ease;">
+          <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="natContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
+        </div>
         <div id="natLayerBase" class="nat-sublayer" data-exploded-top="70%" style="position:absolute; top:50%; left:50%; width:min(72vw, 780px); aspect-ratio:16/9; z-index:2; opacity:1; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
           <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="natBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
           <!-- Etiqueta temática lateral exterior al rombo -->

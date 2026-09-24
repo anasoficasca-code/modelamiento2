@@ -2061,6 +2061,8 @@
   const natAssembleBtn = document.getElementById("natAssembleBtn");
   const natAssembleBtnText = document.getElementById("natAssembleBtnText");
   const natBaseImg = document.getElementById("natBaseImg");
+  const natContextImg = document.getElementById("natContextImg");
+  const natLayerContext = document.getElementById("natLayerContext");
   const natWaterCanvas = document.getElementById("natWaterCanvas");
   const natWaterSvg = document.getElementById("natWaterSvg");
   const natVegCanvas = document.getElementById("natVegCanvas");
@@ -2210,6 +2212,31 @@
     scene.background = new THREE.Color(0xffffff);
     renderer.render(scene, camera);
     const fotoBase = renderer.domElement.toDataURL("image/png");
+
+    // Captura ADICIONAL de contexto: la misma vista pero con la camara
+    // alejada (viewSize mas grande), mostrando mucho mas alrededor del
+    // sector cortado - esta se muestra de fondo, mas grande y con
+    // opacidad baja, para dar sensacion de "aqui esta ubicado dentro de
+    // todo Kennedy" (igual al referente de Pinterest). Se restaura el
+    // viewSize original justo despues, para no afectar nada mas.
+    if (natContextImg) {
+      const contextZoomOut = 3.2; // cuanto se aleja la camara para el contexto
+      camera.left = -viewSize * contextZoomOut * layerAspect;
+      camera.right = viewSize * contextZoomOut * layerAspect;
+      camera.top = viewSize * contextZoomOut;
+      camera.bottom = -viewSize * contextZoomOut;
+      camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+      natContextImg.src = renderer.domElement.toDataURL("image/png");
+      if (natLayerContext) natLayerContext.style.opacity = "1";
+      // se restaura el encuadre normal (el mismo que usa fotoBase) para
+      // que el resto del flujo (subcapas, etc.) siga igual que antes
+      camera.left = -viewSize * layerAspect;
+      camera.right = viewSize * layerAspect;
+      camera.top = viewSize;
+      camera.bottom = -viewSize;
+      camera.updateProjectionMatrix();
+    }
     scene.background = origBg;
 
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
@@ -2438,6 +2465,7 @@
       l.style.opacity = "0";
       l.style.transform = "translate(-50%, -20px)";
     });
+    if (natLayerContext) natLayerContext.style.opacity = "0";
     if (natYearPlaying) stopNatPlayYear();
 
     // Restaurar inmediatamente el viewport del 3D general
