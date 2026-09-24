@@ -4845,7 +4845,8 @@
   // edificios, solo por fuera del borde que tenia el humedal ese año.
   // Las vias van apareciendo desde 1990 y estan todas en el 2000.
   let cult1Cache = { key: null, img: null };
-  function renderCulturalCapa1(year) {
+  function renderCulturalCapa1(year) { return renderCulturalCapaOld1(year); } // la usuaria pidio volver a la version anterior
+  function renderCulturalCapa1Nueva(year) {
     if (!cultLayer1Canvas) return;
     const { ctx, w, h, P } = prepCultCanvas(cultLayer1Canvas);
     const bp = burroPts(); if (!bp) return;
