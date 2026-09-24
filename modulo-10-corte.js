@@ -2526,9 +2526,8 @@
     camera.updateProjectionMatrix();
     scene.background = new THREE.Color(0xffffff);
 
-    // Capa 1 en vivo: SOLO las vias, sin base/edificios/terreno debajo -
-    // se ocultan edificios, arboles y agua para dejar unicamente las
-    // lineas de la malla vial (sin carros, sin ruido).
+    // Capa 1 en vivo: SOLO las vias (sin base/edificios/arboles/agua),
+    // con los carros SI andando encima.
     if (techRoadsVehCanvas) {
       const toHideL1 = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null].filter(o => o && o.visible !== undefined);
       const prevVisL1 = toHideL1.map(o => o.visible);
@@ -2536,7 +2535,7 @@
       const waterOpacityPrev = waterMat ? waterMat.opacity : null;
       if (waterMat) waterMat.opacity = 0;
       if (noiseMesh) noiseMesh.visible = false;
-      if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
+      if (vehInstanced) { vehInstanced.visible = true; vehInstanced.count = vehiclesAtTime(currentTime).length || 120; }
       if (roadMat) roadMat.color.set(0xe11d48);
       renderer.render(scene, camera);
       const rect = techRoadsVehCanvas.getBoundingClientRect();
@@ -2548,9 +2547,15 @@
       if (waterMat && waterOpacityPrev !== null) waterMat.opacity = waterOpacityPrev;
     }
 
-    // Capa 2 en vivo: mapa de ruido CON los carros ya andando (simulacion
-    // completa), con los parches de color del ruido
+    // Capa 2 en vivo: la MISMA mancha de ruido tal cual se ve en la
+    // axonometria principal (mismo roadMat gris, mismo noiseMesh), pero
+    // tambien aislada de edificios/arboles/agua para que se lea claro.
     if (techNoiseCanvas) {
+      const toHideL2 = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null].filter(o => o && o.visible !== undefined);
+      const prevVisL2 = toHideL2.map(o => o.visible);
+      toHideL2.forEach(o => { o.visible = false; });
+      const waterOpacityPrev2 = waterMat ? waterMat.opacity : null;
+      if (waterMat) waterMat.opacity = 0;
       if (roadMat) roadMat.color.set(0x9099a3);
       if (vehInstanced) { vehInstanced.visible = true; vehInstanced.count = vehiclesAtTime(currentTime).length || 120; }
       if (noiseMesh) noiseMesh.visible = true;
@@ -2561,6 +2566,8 @@
         techNoiseCanvas.width = Math.round(rect2.width); techNoiseCanvas.height = Math.round(rect2.height);
       }
       techNoiseCanvas.getContext("2d").drawImage(renderer.domElement, 0, 0, techNoiseCanvas.width, techNoiseCanvas.height);
+      toHideL2.forEach((o, i) => { o.visible = prevVisL2[i]; });
+      if (waterMat && waterOpacityPrev2 !== null) waterMat.opacity = waterOpacityPrev2;
     }
 
     // Restaurar todo para no afectar la vista principal
