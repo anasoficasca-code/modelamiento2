@@ -2239,6 +2239,23 @@
     }
     scene.background = origBg;
 
+    // Captura FOTOGRAFICA (no vectorial) de SOLO el agua, con la MISMA
+    // camara exacta usada para fotoBase - al ser literalmente la misma
+    // foto/camara, el humedal aqui SIEMPRE encaja pixel por pixel con la
+    // base, sin depender de que una proyeccion vectorial por separado
+    // calce bien (que es donde venian los problemas de desajuste).
+    if (natWaterImg) {
+      const toHide = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, ...currentRoadMeshes, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null].filter(o => o && o.visible !== undefined);
+      const prevVis = toHide.map(o => o.visible);
+      toHide.forEach(o => { o.visible = false; });
+      scene.background = new THREE.Color(0xffffff);
+      renderer.render(scene, camera);
+      natWaterImg.src = renderer.domElement.toDataURL("image/png");
+      natWaterImg.style.display = "block";
+      natWaterImg.style.objectFit = "fill";
+      toHide.forEach((o, i) => { o.visible = prevVis[i]; });
+      scene.background = origBg;
+    }
     if (roadMat && origRoadColor !== null) roadMat.color.set(origRoadColor);
     if (noiseMesh) noiseMesh.visible = origNoiseVis;
     if (birdsGroup) birdsGroup.visible = origBirdsVis;
