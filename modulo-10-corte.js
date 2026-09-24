@@ -978,6 +978,7 @@
   // para evitar por completo el riesgo de parpadeo (z-fighting) que si
   // tendria una superficie rellena compitiendo con vias/agua a alturas
   // parecidas. Altura propia (0.006) distinta de todo lo demas. ----
+  let manzanasMesh = null;
   function buildManzanas(manzanas) {
     const positions = [];
     manzanas.forEach(m => {
@@ -989,7 +990,8 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     const mat = new THREE.LineBasicMaterial({ color: 0x8a8f96, transparent: true, opacity: 0.5 });
-    sceneRoot.add(new THREE.LineSegments(geo, mat));
+    manzanasMesh = new THREE.LineSegments(geo, mat);
+    sceneRoot.add(manzanasMesh);
   }
 
   function loadManzanas() {
@@ -2246,7 +2248,7 @@
     // base, sin depender de que una proyeccion vectorial por separado
     // calce bien (que es donde venian los problemas de desajuste).
     if (natWaterImg) {
-      const toHide = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, ...currentRoadMeshes, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null].filter(o => o && o.visible !== undefined);
+      const toHide = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, manzanasMesh, ...currentRoadMeshes, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null].filter(o => o && o.visible !== undefined);
       const prevVis = toHide.map(o => o.visible);
       toHide.forEach(o => { o.visible = false; });
       scene.background = new THREE.Color(0xffffff);
@@ -2524,7 +2526,7 @@
     // sus bordes/esquinas, arboles y PARQUES/zonas verdes (esto ultimo era
     // lo que se veia como "cosas verdes" - parqueMat es una malla aparte
     // que no se estaba ocultando antes).
-    const toHideCommon = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null].filter(o => o && o.visible !== undefined);
+    const toHideCommon = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, manzanasMesh, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null].filter(o => o && o.visible !== undefined);
     const prevVisCommon = toHideCommon.map(o => o.visible);
     toHideCommon.forEach(o => { o.visible = false; });
     const waterOpacityPrev = waterMat ? waterMat.opacity : null;
@@ -2599,6 +2601,7 @@
   
   function openTechExplode() {
     if (!techOverlay) return;
+    if (!noiseMesh && typeof rebuildNoiseGround === "function") rebuildNoiseGround(); // se asegura que el mapa de ruido exista, por si el usuario nunca movio la caja de seccion ni toco "Mostrar ruido" antes de entrar aqui
 
     const targetW = 960, targetH = 540;
     const layerAspect = targetW / targetH;
