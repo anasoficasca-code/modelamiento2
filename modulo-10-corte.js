@@ -2679,7 +2679,8 @@
     // andando encima. Se dibuja en 2D, asi no aparece nada mas (ni verde,
     // ni edificios, ni terreno).
     if (techRoadsVehCanvas && rawEdgesData) {
-      if (!techTrafficGrid) {
+      if (techTrafficGrid && techTrafficGrid.size === 0 && timesteps.length) techTrafficGrid = null; // se habia calculado antes de cargar los vehiculos
+      if (!techTrafficGrid && timesteps.length) {
         techTrafficGrid = new Map(); let maxC = 1;
         for (let k = 0; k < timesteps.length; k += 8) timesteps[k].vehicles.forEach(v => {
           const key = Math.floor(v.x / 40) + "," + Math.floor(v.y / 40);
@@ -2688,16 +2689,23 @@
         techTrafficGrid.maxC = maxC;
       }
       const { ctx, w, h, P } = prepCultCanvas(techRoadsVehCanvas);
-      const g = techTrafficGrid, mx = Math.log(1 + g.maxC);
+      if (!techTrafficGrid) return; // aun cargando vehiculos
+      const g = techTrafficGrid;
       const colorFor = t => { // t 0..1 : amarillo (poco) -> naranja -> negro (mucho)
         const stops = [[250, 204, 21], [234, 88, 12], [120, 30, 20], [15, 15, 18]];
         const f = t * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(f)), r = f - i;
         return `rgb(${stops[i].map((c, k) => Math.round(c + (stops[i + 1][k] - c) * r)).join(",")})`;
       };
-      rawEdgesData.forEach(([kind, pts]) => {
-        const m = pts[Math.floor(pts.length / 2)]; if (!inBox(m[0], m[1])) return;
-        let c = 0; pts.forEach(p => { c = Math.max(c, g.get(Math.floor(p[0] / 40) + "," + Math.floor(p[1] / 40)) || 0); });
-        const t = Math.log(1 + c) / mx;
+      if (!techTrafficGrid.inBox) { // trafico por via, normalizado dentro del area de estudio (mas contraste)
+        const list = []; let mxBox = 1;
+        rawEdgesData.forEach(([kind, pts]) => {
+          const m = pts[Math.floor(pts.length / 2)]; if (!inBox(m[0], m[1])) return;
+          let c = 0; pts.forEach(p => { c += g.get(Math.floor(p[0] / 40) + "," + Math.floor(p[1] / 40)) || 0; });
+          c /= pts.length; list.push([pts, c]); if (c > mxBox) mxBox = c;
+        });
+        techTrafficGrid.inBox = list.map(([pts, c]) => [pts, Math.log(1 + c) / Math.log(1 + mxBox)]); // escala logaritmica: degradado real de amarillo a negro
+      }
+      techTrafficGrid.inBox.forEach(([pts, t]) => {
         ctx.strokeStyle = colorFor(t); ctx.lineWidth = 0.8 + t * 2.2; ctx.lineCap = "round";
         ctx.beginPath(); pts.forEach((p, j) => { const s = P(p[0], p[1]); j ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); }); ctx.stroke();
       });
