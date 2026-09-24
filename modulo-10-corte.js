@@ -2211,10 +2211,34 @@
     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
 
+    // Se retira el recorte de la caja de seccion para esta captura: el
+    // usuario pidio ver TODA la axonometria de Kennedy (sin cortar),
+    // no solo el sector del Humedal El Burro. Se desactivan los planos de
+    // recorte y se usa la posicion/objetivo/zoom de la vista axonometrica
+    // por defecto (toda la ciudad), en vez de la camara actual (centrada
+    // en el sector recortado).
+    const origClipPlanes = renderer.clippingPlanes;
+    renderer.clippingPlanes = [];
+    const origCamPos = camera.position.clone();
+    const origTarget = controls.target.clone();
+    const origZoom = camera.zoom;
+    camera.position.set(-389.40, 559.68, 542.58);
+    controls.target.set(218.76, -53.06, -86.62);
+    camera.zoom = 2.272;
+    camera.updateProjectionMatrix();
+
     // Renderizar con fondo blanco puro
     scene.background = new THREE.Color(0xffffff);
     renderer.render(scene, camera);
     const fotoBase = renderer.domElement.toDataURL("image/png");
+
+    // Se restaura el recorte y la camara de inmediato (esta captura sin
+    // recorte es solo para esta foto, el resto del flujo sigue igual)
+    renderer.clippingPlanes = origClipPlanes;
+    camera.position.copy(origCamPos);
+    controls.target.copy(origTarget);
+    camera.zoom = origZoom;
+    camera.updateProjectionMatrix();
 
     // Captura ADICIONAL de contexto: la misma vista pero con la camara
     // alejada (viewSize mas grande), mostrando mucho mas alrededor del
@@ -2231,7 +2255,9 @@
       camera.updateProjectionMatrix();
       renderer.render(scene, camera);
       natContextImg.src = renderer.domElement.toDataURL("image/png");
-      if (natLayerContext) natLayerContext.style.opacity = "1";
+      // natLayerContext ya no se activa: ahora la Capa Base ES la
+      // axonometria completa sin recorte, asi que mostrar OTRO contexto
+      // de fondo detras seria redundante.
       // se restaura el encuadre normal (el mismo que usa fotoBase) para
       // que el resto del flujo (subcapas, etc.) siga igual que antes
       camera.left = -viewSize * layerAspect;
@@ -2343,7 +2369,7 @@
 
     if (natExplodeStep === 0) {
       // Paso 0: Únicamente la base limpia visible en el centro de la pantalla
-      if (baseEl) { baseEl.style.top = "50%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
+      if (baseEl) { baseEl.style.opacity = "1"; }
       sublayers.forEach(l => { if (l) { l.style.opacity = "0"; l.style.top = "50%"; l.style.transform = "translate(-50%, -40%)"; } });
       tags.forEach(t => { t.style.opacity = "0"; });
       if (natGuideSvg) natGuideSvg.style.opacity = "0";
@@ -2355,7 +2381,7 @@
     if (natExplodeStep % 2 === 1 && natExplodeStep <= 7) {
       const activeIdx = Math.floor(natExplodeStep / 2);
 
-      if (baseEl) { baseEl.style.top = "54%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
+      if (baseEl) { baseEl.style.opacity = "1"; }
       sublayers.forEach((l, index) => {
         if (!l) return;
         if (index === activeIdx) {
@@ -2387,7 +2413,7 @@
       const settledIdx = (natExplodeStep / 2) - 1;
       const nextNames = ["Capa 2: Vegetación", "Capa 3: Aves/Fauna", "Capa 4: Conectividad", "Ver Apilamiento Explotado Completo"];
 
-      if (baseEl) { baseEl.style.top = "50%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
+      if (baseEl) { baseEl.style.opacity = "1"; }
       sublayers.forEach((l, index) => {
         if (!l) return;
         if (index === settledIdx) {
@@ -2412,7 +2438,7 @@
 
     if (natExplodeStep === 9) {
       // Paso 9: Apilamiento explotado completo (las 4 capas flotando apiladas)
-      if (baseEl) { baseEl.style.top = "70%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, 0)"; }
+      if (baseEl) { baseEl.style.opacity = "1"; }
       sublayers.forEach((l) => {
         if (!l) return;
         const expTop = l.dataset.explodedTop || "54%";
@@ -2431,7 +2457,7 @@
 
     if (natExplodeStep === 10) {
       // Paso 10: Integración Total (todas las 4 capas asentadas abajo simulando simultáneamente)
-      if (baseEl) { baseEl.style.top = "50%"; baseEl.style.opacity = "1"; baseEl.style.transform = "translate(-50%, -40%)"; }
+      if (baseEl) { baseEl.style.opacity = "1"; }
       sublayers.forEach((l) => {
         if (!l) return;
         l.style.top = "50%";
