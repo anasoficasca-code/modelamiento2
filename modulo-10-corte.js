@@ -1349,6 +1349,23 @@
     controls.target.set(218.76, -53.06, -86.62);
     camera.zoom = 2.272;
     camera.updateProjectionMatrix();
+    // Centrar en el area de estudio (caja de seccion) con el mismo angulo,
+    // y ajustar el zoom para que el rombo completo quepa sin cortarse.
+    try {
+      const halfW = sceneExtentW / 2 * 1.4, halfH = sceneExtentH / 2 * 1.4;
+      const x0 = -halfW + (parseFloat(secXMin.value) / 100) * (2 * halfW), x1 = -halfW + (parseFloat(secXMax.value) / 100) * (2 * halfW);
+      const z0 = -halfH + (parseFloat(secZMin.value) / 100) * (2 * halfH), z1 = -halfH + (parseFloat(secZMax.value) / 100) * (2 * halfH);
+      if (isFinite(x0) && isFinite(z0) && x1 > x0 && z1 > z0) {
+        const off = camera.position.clone().sub(controls.target);
+        controls.target.set((x0 + x1) / 2, controls.target.y, (z0 + z1) / 2);
+        camera.position.copy(controls.target).add(off);
+        camera.zoom = 1; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+        const v = new THREE.Vector3(); let mx = 0, my = 0;
+        [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].forEach(([x, z]) => [0, 12].forEach(yy => { v.set(x, yy, z).project(camera); mx = Math.max(mx, Math.abs(v.x)); my = Math.max(my, Math.abs(v.y)); }));
+        camera.zoom = 0.86 / Math.max(mx, my, 1e-3);
+        camera.updateProjectionMatrix();
+      }
+    } catch (e) { console.warn("No se pudo centrar la vista:", e); }
   }
 
   // ---- Botones de vista ----
@@ -2577,6 +2594,7 @@
   const techRoadsVehCanvas = document.getElementById("techRoadsVehCanvas");
   const techNoiseCanvas = document.getElementById("techNoiseCanvas");
   let techLiveViewSize = null; // se fija cuando se abre el panel, para poder "espejar" con el mismo encuadre 16:9 exacto
+  let techTrafficGrid = null;
   function updateTechLiveMirror() {
     if (!techOverlay || techOverlay.style.display === "none" || techLiveViewSize == null) return;
     const targetW = 960, targetH = 540, layerAspect = targetW / targetH;
@@ -2602,18 +2620,36 @@
     camera.top = techLiveViewSize; camera.bottom = -techLiveViewSize;
     camera.updateProjectionMatrix();
 
-    // Capa 1: fondo blanco, SOLO las vias, con los carros andando encima.
-    if (techRoadsVehCanvas) {
-      scene.background = new THREE.Color(0xffffff);
-      if (noiseMesh) noiseMesh.visible = false;
-      if (vehInstanced) { vehInstanced.visible = true; renderVehiclesAt(currentTime); }
-      if (roadMat) roadMat.color.set(0xe11d48);
-      renderer.render(scene, camera);
-      const rect = techRoadsVehCanvas.getBoundingClientRect();
-      if (techRoadsVehCanvas.width !== Math.round(rect.width) || techRoadsVehCanvas.height !== Math.round(rect.height)) {
-        techRoadsVehCanvas.width = Math.round(rect.width); techRoadsVehCanvas.height = Math.round(rect.height);
+    // Capa 1: SOLO las vias sobre fondo transparente, coloreadas por
+    // trafico real (negro = mas trafico -> amarillo = menos), y los carros
+    // andando encima. Se dibuja en 2D, asi no aparece nada mas (ni verde,
+    // ni edificios, ni terreno).
+    if (techRoadsVehCanvas && rawEdgesData) {
+      if (!techTrafficGrid) {
+        techTrafficGrid = new Map(); let maxC = 1;
+        for (let k = 0; k < timesteps.length; k += 8) timesteps[k].vehicles.forEach(v => {
+          const key = Math.floor(v.x / 40) + "," + Math.floor(v.y / 40);
+          const c = (techTrafficGrid.get(key) || 0) + 1; techTrafficGrid.set(key, c); if (c > maxC) maxC = c;
+        });
+        techTrafficGrid.maxC = maxC;
       }
-      techRoadsVehCanvas.getContext("2d").drawImage(renderer.domElement, 0, 0, techRoadsVehCanvas.width, techRoadsVehCanvas.height);
+      const { ctx, w, h, P } = prepCultCanvas(techRoadsVehCanvas);
+      const g = techTrafficGrid, mx = Math.log(1 + g.maxC);
+      const colorFor = t => { // t 0..1 : amarillo (poco) -> naranja -> negro (mucho)
+        const stops = [[250, 204, 21], [234, 88, 12], [120, 30, 20], [15, 15, 18]];
+        const f = t * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(f)), r = f - i;
+        return `rgb(${stops[i].map((c, k) => Math.round(c + (stops[i + 1][k] - c) * r)).join(",")})`;
+      };
+      rawEdgesData.forEach(([kind, pts]) => {
+        const m = pts[Math.floor(pts.length / 2)]; if (!inBox(m[0], m[1])) return;
+        let c = 0; pts.forEach(p => { c = Math.max(c, g.get(Math.floor(p[0] / 40) + "," + Math.floor(p[1] / 40)) || 0); });
+        const t = Math.log(1 + c) / mx;
+        ctx.strokeStyle = colorFor(t); ctx.lineWidth = 0.8 + t * 2.2; ctx.lineCap = "round";
+        ctx.beginPath(); pts.forEach((p, j) => { const s = P(p[0], p[1]); j ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); }); ctx.stroke();
+      });
+      ctx.fillStyle = "#ffffff"; ctx.strokeStyle = "#111418"; ctx.lineWidth = 0.6;
+      vehiclesAtTime(currentTime).forEach(v => { if (!inBox(v.x, v.y)) return; const s = P(v.x, v.y, 0.2); ctx.beginPath(); ctx.arc(s.x, s.y, 1.6, 0, 7); ctx.fill(); ctx.stroke(); });
+      smallLabel(ctx, "Tráfico: amarillo = bajo · negro = alto", 10, 16);
     }
 
     // Capa 2: fondo TRANSPARENTE, sin vias visibles tampoco - solo los
@@ -4347,6 +4383,12 @@
     updateCulturalLayersStep(false);
     renderAllCulturalSublayers();
     startCultAnimation();
+    // La evolucion historica arranca sola desde 1950, sin darle play.
+    cultPeople = null; cultVisitors = null; cult1Cache = { key: null, img: null };
+    setTimeout(() => {
+      if (cultYearSlider) { cultYearSlider.value = "1950"; if (cultYearLabel) cultYearLabel.textContent = "1950"; }
+      if (cultPlayHistoryBtn && !cultHistPlaying) cultPlayHistoryBtn.click();
+    }, 900);
   }
 
   function closeCulturalExplode() {
@@ -4590,6 +4632,165 @@
     });
   }
 
+
+  // ============================================================
+  // ESCALA CULTURAL reescrita (pedido del usuario)
+  // ============================================================
+  function gpsToLocal(lat, lng) { return [158502.5342667897 * lng + 11760483.425451731, 75875.89881636726 * lat - 349119.0227795534]; }
+  function prepCultCanvas(cv) {
+    const rect = cv.getBoundingClientRect(); const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = rect.width || 720, h = rect.height || 405;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    const ctx = cv.getContext("2d"); ctx.resetTransform(); ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
+    return { ctx, w, h, P: (x, y, el = 0.05) => projectPointToLayer(x, y, el, w, h) };
+  }
+  function burroPts() { const b = rawWaterData && rawWaterData.find(b => (b.nombre || "").includes("Burro")); return b && b.pts && b.pts.length > 3 ? b.pts : null; }
+  function polyPath(ctx, pts, P) { ctx.beginPath(); pts.forEach((p, i) => { const s = P(p[0], p[1]); i ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); }); ctx.closePath(); }
+  function scaled(pts, k) { const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length; return pts.map(p => [cx + (p[0] - cx) * k, cy + (p[1] - cy) * k]); }
+  function inBox(x, y) { const b = currentBoxRealBounds; return !b || (x >= b.xMin && x <= b.xMax && y >= b.yMin && y <= b.yMax); }
+
+  // Capa 1: decrecimiento historico del humedal + urbanizacion.
+  // 1950-1979: solo humedal (sin edificios ni vias). Desde 1980 aparecen
+  // edificios, solo por fuera del borde que tenia el humedal ese año.
+  // Las vias van apareciendo desde 1990 y estan todas en el 2000.
+  let cult1Cache = { key: null, img: null };
+  function renderCulturalCapa1(year) {
+    if (!cultLayer1Canvas) return;
+    const { ctx, w, h, P } = prepCultCanvas(cultLayer1Canvas);
+    const bp = burroPts(); if (!bp) return;
+    const y = Math.max(1950, Math.min(2024, year || 2024));
+    // extension historica: grande en 1950, actual en 2024 - acotada para que NUNCA se salga del cuadro
+    let kMax = 2.4;
+    for (; kMax > 1.05; kMax -= 0.05) { const sp = scaled(bp, kMax).map(p => P(p[0], p[1])); if (sp.every(s => s.x > 6 && s.x < w - 6 && s.y > 6 && s.y < h - 6)) break; }
+    const k = 1 + (kMax - 1) * Math.pow((2024 - y) / 74, 0.8);
+    const wet = scaled(bp, k);
+    const key = y + "|" + w + "x" + h;
+    if (cult1Cache.key !== key) {
+      const off = document.createElement("canvas"); off.width = cultLayer1Canvas.width; off.height = cultLayer1Canvas.height;
+      const o = off.getContext("2d"); const dpr = off.width / w; o.scale(dpr, dpr);
+      if (y >= 1980 && rawBuildingsData) {
+        const frac = Math.min(1, (y - 1980) / 40);
+        o.fillStyle = "rgba(60,66,76,.75)";
+        rawBuildingsData.forEach((b, i) => {
+          if ((i % 997) / 997 > frac) return;
+          const c = b.pts[0]; if (!inBox(c[0], c[1]) || ptInPoly(c[0], c[1], wet)) return;
+          o.beginPath(); b.pts.forEach((p, j) => { const s = P(p[0], p[1]); j ? o.lineTo(s.x, s.y) : o.moveTo(s.x, s.y); }); o.closePath(); o.fill();
+        });
+      }
+      if (y >= 1990 && rawEdgesData) {
+        const frac = Math.min(1, (y - 1990) / 10);
+        o.strokeStyle = "rgba(120,128,138,.9)"; o.lineWidth = 0.8;
+        rawEdgesData.forEach(([kind, pts], i) => {
+          if ((i % 613) / 613 > frac) return;
+          const m = pts[Math.floor(pts.length / 2)]; if (!inBox(m[0], m[1])) return;
+          o.beginPath(); pts.forEach((p, j) => { const s = P(p[0], p[1]); j ? o.lineTo(s.x, s.y) : o.moveTo(s.x, s.y); }); o.stroke();
+        });
+      }
+      cult1Cache = { key, img: off };
+    }
+    polyPath(ctx, wet, P); ctx.fillStyle = "rgba(70,120,160,.45)"; ctx.fill(); ctx.strokeStyle = "#1e3a5f"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.drawImage(cult1Cache.img, 0, 0, w, h);
+    polyPath(ctx, bp, P); ctx.strokeStyle = "rgba(15,23,42,.7)"; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
+    smallLabel(ctx, `Año ${y} · ${y < 1980 ? "sin urbanización" : y < 1990 ? "llegan los primeros barrios" : y < 2000 ? "se consolida la malla vial" : "ciudad consolidada"}`, 10, 16);
+  }
+
+  // Capa 2: reja perimetral de la ZMPA (12,14 ha) con 2 portones y flechas entrando.
+  function cultGates(bp) {
+    const targets = [gpsToLocal(4.6395, -74.1531), gpsToLocal(4.6470, -74.1545)]; // Biblioteca El Tintal / Alameda El Porvenir (aprox.)
+    const fence = scaled(bp, 1.12);
+    return targets.map(t => { let best = 0, bd = 1e18; fence.forEach((p, i) => { const d = (p[0] - t[0]) ** 2 + (p[1] - t[1]) ** 2; if (d < bd) { bd = d; best = i; } }); return best; });
+  }
+  function renderCulturalCapa2() {
+    if (!cultLayer2Canvas) return;
+    const { ctx, w, h, P } = prepCultCanvas(cultLayer2Canvas);
+    const bp = burroPts(); if (!bp) return;
+    polyPath(ctx, bp, P); ctx.fillStyle = "rgba(70,120,160,.3)"; ctx.fill();
+    const fence = scaled(bp, 1.12), gates = cultGates(bp), n = fence.length;
+    const isGate = i => gates.some(g => Math.min(Math.abs(i - g), n - Math.abs(i - g)) <= 1);
+    ctx.strokeStyle = "#111418"; ctx.lineWidth = 1.4;
+    for (let i = 0; i < n; i++) {
+      if (isGate(i)) continue;
+      const a = P(fence[i][0], fence[i][1]), b = P(fence[(i + 1) % n][0], fence[(i + 1) % n][1]);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      const up = P(fence[i][0], fence[i][1], 0.9); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(up.x, up.y); ctx.stroke(); // postes
+    }
+    const t = (performance.now() / 1400) % 1;
+    const names = ["Portón Biblioteca El Tintal", "Portón Alameda El Porvenir"];
+    const cx = bp.reduce((s, p) => s + p[0], 0) / bp.length, cy = bp.reduce((s, p) => s + p[1], 0) / bp.length;
+    gates.forEach((g, gi) => {
+      const gp = fence[g], out = [gp[0] + (gp[0] - cx) * 0.6, gp[1] + (gp[1] - cy) * 0.6];
+      for (let k = 0; k < 3; k++) {
+        const f = (t + k / 3) % 1, x = out[0] + (gp[0] - out[0]) * f, y = out[1] + (gp[1] - out[1]) * f;
+        const s = P(x, y), s2 = P(x + (gp[0] - out[0]) * 0.08, y + (gp[1] - out[1]) * 0.08);
+        const ang = Math.atan2(s2.y - s.y, s2.x - s.x);
+        ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(ang); ctx.fillStyle = `rgba(220,38,38,${1 - f * 0.4})`;
+        ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-3, -3); ctx.lineTo(-3, 3); ctx.closePath(); ctx.fill(); ctx.restore();
+      }
+      const ls = P(out[0], out[1]); smallLabel(ctx, names[gi], ls.x + 6, ls.y);
+    });
+    smallLabel(ctx, "Reja perimetral ZMPA · 12,14 ha", 10, 16);
+  }
+
+  // Capa 3: sintaxis espacial - flujos de personas desde los puntos de
+  // mayor actividad; pocas personas entran al borde del humedal.
+  const CULT_HUBS = [[4.643381946109259, -74.15425856615684, 70], [4.641996817100511, -74.15162276093034, 22], [4.640243427808329, -74.15429866246944, 22], [4.637514552718226, -74.14914507437499, 22], [4.641823947925646, -74.14746024746466, 22]].map(([la, lo, n]) => ({ p: gpsToLocal(la, lo), n }));
+  let cultPeople = null;
+  function renderCulturalCapa3() {
+    if (!cultLayer3Canvas) return;
+    const { ctx, w, h, P } = prepCultCanvas(cultLayer3Canvas);
+    const bp = burroPts(); if (!bp) return;
+    polyPath(ctx, bp, P); ctx.fillStyle = "rgba(70,120,160,.3)"; ctx.fill();
+    const fence = scaled(bp, 1.12), gates = cultGates(bp).map(i => fence[i]);
+    if (!cultPeople) {
+      cultPeople = [];
+      CULT_HUBS.forEach((hub, hi) => {
+        for (let i = 0; i < hub.n; i++) {
+          const home = [hub.p[0] + (Math.random() - 0.5) * 120, hub.p[1] + (Math.random() - 0.5) * 120];
+          const goes = Math.random() < 0.18; // solo una minoria va hacia el humedal
+          const gate = gates[Math.floor(Math.random() * gates.length)];
+          const edge = edgePointOf(bp);
+          cultPeople.push({ home, gate, edge, goes, t: Math.random(), sp: 0.0015 + Math.random() * 0.002, j: Math.random() * 6 });
+        }
+      });
+    }
+    CULT_HUBS.forEach((hub, hi) => { const s = P(hub.p[0], hub.p[1]); ctx.fillStyle = hi === 0 ? "rgba(234,88,12,.18)" : "rgba(234,88,12,.12)"; ctx.beginPath(); ctx.arc(s.x, s.y, hi === 0 ? 16 : 9, 0, 7); ctx.fill(); });
+    cultPeople.forEach(p => {
+      p.j += 0.05; let x, y;
+      if (!p.goes) { x = p.home[0] + Math.sin(p.j) * 14; y = p.home[1] + Math.cos(p.j * 0.8) * 14; }
+      else {
+        p.t = (p.t + p.sp) % 1;
+        if (p.t < 0.6) { const f = p.t / 0.6; x = p.home[0] + (p.gate[0] - p.home[0]) * f; y = p.home[1] + (p.gate[1] - p.home[1]) * f; }
+        else { const f = (p.t - 0.6) / 0.4; x = p.gate[0] + (p.edge[0] - p.gate[0]) * f; y = p.gate[1] + (p.edge[1] - p.gate[1]) * f; }
+      }
+      const s = P(x, y); ctx.fillStyle = p.goes ? "#ea580c" : "#334155"; ctx.beginPath(); ctx.arc(s.x, s.y, 1.4, 0, 7); ctx.fill();
+    });
+    const main = P(CULT_HUBS[0].p[0], CULT_HUBS[0].p[1]); smallLabel(ctx, "Punto de mayor interacción", main.x + 10, main.y - 8);
+    smallLabel(ctx, "Sintaxis espacial · pocas personas entran al borde del humedal", 10, 16);
+  }
+
+  // Capa 4: interaccion directa con el humedal - aula ambiental y
+  // visitantes de recreacion pasiva recorriendo el borde.
+  const AULA = gpsToLocal(4.650011400489513, -74.15271673450786);
+  let cultVisitors = null;
+  function renderCulturalCapa4(elevated) {
+    if (!cultLayer4Canvas) return;
+    const { ctx, w, h, P } = prepCultCanvas(cultLayer4Canvas);
+    const bp = burroPts(); if (!bp) return;
+    polyPath(ctx, bp, P); ctx.fillStyle = "rgba(70,120,160,.35)"; ctx.fill();
+    const path = scaled(bp, 1.06);
+    if (!cultVisitors) cultVisitors = Array.from({ length: 34 }, () => ({ u: Math.random(), sp: (Math.random() < 0.5 ? 1 : -1) * (0.00025 + Math.random() * 0.0004), stop: Math.random() }));
+    const n = path.length;
+    cultVisitors.forEach(v => {
+      v.stop += 0.004; if (Math.sin(v.stop * 6) < 0.6) v.u = (v.u + v.sp + 1) % 1; // caminan y se detienen a contemplar
+      const f = v.u * n, i = Math.floor(f) % n, j = (i + 1) % n, r = f - Math.floor(f);
+      const s = P(path[i][0] + (path[j][0] - path[i][0]) * r, path[i][1] + (path[j][1] - path[i][1]) * r);
+      ctx.fillStyle = "#0f766e"; ctx.beginPath(); ctx.arc(s.x, s.y, 1.6, 0, 7); ctx.fill();
+    });
+    const a = P(AULA[0], AULA[1]), a2 = P(AULA[0], AULA[1], 1.4);
+    ctx.fillStyle = "#111418"; ctx.fillRect(a.x - 4, a2.y, 8, a.y - a2.y); ctx.beginPath(); ctx.arc(a.x, a.y, 2.5, 0, 7); ctx.fill();
+    smallLabel(ctx, "Aula ambiental", a.x + 8, a2.y);
+    smallLabel(ctx, "Visitantes de recreación pasiva: caminata, avistamiento de fauna", 10, 16);
+  }
   function stopCultHistory() {
     cultHistPlaying = false;
     if (cultHistTimer) { clearInterval(cultHistTimer); cultHistTimer = null; }
@@ -4607,7 +4808,7 @@
           cultYearSlider.value = String(y);
           if (cultYearLabel) cultYearLabel.textContent = String(y);
           renderCulturalCapa1(y);
-        }, 150);
+        }, 650); // mas lento (antes 150ms por año)
       } else {
         stopCultHistory();
       }
@@ -4643,7 +4844,7 @@
   // ------------------------------------------------------------
 
   // Capa 1: Memoria Histórica (1950–2024)
-  function renderCulturalCapa1(year) {
+  function renderCulturalCapaOld1(year) {
     if (!cultLayer1Canvas) return;
     const rect = cultLayer1Canvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -4774,7 +4975,7 @@
   }
 
   // Capa 2: Cerramiento EAAB & Filtro de Borde Urbano
-  function renderCulturalCapa2() {
+  function renderCulturalCapaOld2() {
     if (!cultLayer2Canvas) return;
     const rect = cultLayer2Canvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -4883,7 +5084,7 @@
   }
 
   // Capa 3: Recorrido Pedagógico y Experiencia Sensorial
-  function renderCulturalCapa3() {
+  function renderCulturalCapaOld3() {
     if (!cultLayer3Canvas) return;
     const rect = cultLayer3Canvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -5010,7 +5211,7 @@
   }
 
   // Capa 4: Fricción Vial y Solución Adaptativa SOT
-  function renderCulturalCapa4(elevated) {
+  function renderCulturalCapaOld4(elevated) {
     if (!cultLayer4Canvas) return;
     const rect = cultLayer4Canvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -5180,6 +5381,53 @@
     });
     window.addEventListener("pointerup", () => { drag = null; });
     refresh();
+
+    // Dibujar poligono encima de las 3 axonometrias (clic = punto, doble
+    // clic = cerrar; los puntos se pueden arrastrar). Negro, relleno negro.
+    const penBtn = document.createElement("button");
+    penBtn.textContent = "Dibujar polígono";
+    penBtn.style.cssText = "margin-top:6px; width:100%; padding:5px; font-size:11px; border-radius:5px; border:1px solid rgba(0,0,0,.2); background:#fff; cursor:pointer;";
+    panel.appendChild(penBtn);
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.cssText = "position:absolute; inset:0; width:100%; height:100%; z-index:410; pointer-events:none;";
+    overlay.appendChild(svg);
+    const polys = []; let cur = null, drawing = false, dragPt = null;
+    function redraw() {
+      svg.innerHTML = "";
+      polys.concat(cur ? [cur] : []).forEach(pl => {
+        const g = document.createElementNS(svg.namespaceURI, pl.closed ? "polygon" : "polyline");
+        g.setAttribute("points", pl.pts.map(p => p.join(",")).join(" "));
+        g.setAttribute("fill", pl.closed ? "#0a0a0a" : "none"); g.setAttribute("stroke", "#0a0a0a"); g.setAttribute("stroke-width", "1.5");
+        svg.appendChild(g);
+        if (drawing) pl.pts.forEach((p, i) => {
+          const c = document.createElementNS(svg.namespaceURI, "circle");
+          c.setAttribute("cx", p[0]); c.setAttribute("cy", p[1]); c.setAttribute("r", "4"); c.setAttribute("fill", "#fff"); c.setAttribute("stroke", "#0a0a0a");
+          c.style.pointerEvents = "auto"; c.style.cursor = "move";
+          c.addEventListener("pointerdown", e => { e.stopPropagation(); e.preventDefault(); dragPt = { pl, i }; });
+          svg.appendChild(c);
+        });
+      });
+    }
+    penBtn.addEventListener("click", e => {
+      e.stopPropagation(); drawing = !drawing;
+      penBtn.textContent = drawing ? "Terminar dibujo (doble clic cierra)" : "Dibujar polígono";
+      penBtn.style.background = drawing ? "#111418" : "#fff"; penBtn.style.color = drawing ? "#fff" : "#111418";
+      if (!drawing && cur && cur.pts.length > 2) { cur.closed = true; polys.push(cur); cur = null; }
+      redraw();
+    });
+    const localPt = e => { const r = overlay.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    overlay.addEventListener("click", e => {
+      if (!drawing || panel.contains(e.target)) return;
+      e.stopPropagation(); e.preventDefault();
+      if (!cur) cur = { pts: [], closed: false };
+      cur.pts.push(localPt(e)); redraw();
+    }, true);
+    overlay.addEventListener("dblclick", e => {
+      if (!drawing || !cur) return; e.stopPropagation();
+      cur.pts.pop(); if (cur.pts.length > 2) { cur.closed = true; polys.push(cur); } cur = null; redraw();
+    }, true);
+    window.addEventListener("pointermove", e => { if (!dragPt) return; dragPt.pl.pts[dragPt.i] = localPt(e); redraw(); });
+    window.addEventListener("pointerup", () => { dragPt = null; });
   })();
 
 })();
