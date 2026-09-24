@@ -2376,6 +2376,7 @@
     // calce bien (que es donde venian los problemas de desajuste).
     if (natWaterImg) {
       const toHide = [currentBuildingMesh, currentBuildingEdgeMesh, currentBuildingCornerMesh, manzanasMesh, ...currentRoadMeshes, treeMeshes && treeMeshes[0] ? treeMeshes[0].mesh : null].filter(o => o && o.visible !== undefined);
+      if (mainBurroMesh) toHide.push(mainBurroMesh); // la foto del agua tambien con la forma REAL, sin la crecida mensual
       const prevVis = toHide.map(o => o.visible);
       toHide.forEach(o => { o.visible = false; });
       scene.background = new THREE.Color(0xffffff);
