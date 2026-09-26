@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Problemáticas de Kennedy — Corabastos</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="navigation-unified.css?v=20260920">
+<style>
+  :root{
+    --bg:#0b0c0f; --panel:rgba(255,255,255,.06); --panel-border:rgba(255,255,255,.12);
+    --ink:#e8ecf1; --ink-dim:#8b96a5; --accent:#24c8bd;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{ background:var(--bg); color:var(--ink); font-family:Inter,Arial,sans-serif; overflow:hidden; }
+  .app{ display:flex; min-height:100vh; }
+  .main{ flex:1; position:relative; min-width:0; }
+  #sceneWrap{ position:absolute; inset:0; }
+  #sceneCanvas{ position:absolute; inset:0; display:block; width:100%; height:100%; }
+
+  .hud-title{
+    position:absolute; top:18px; left:18px; z-index:5; pointer-events:none;
+  }
+  .hud-title h1{ font-size:15px; font-weight:600; margin:0 0 3px; }
+  .hud-title p{ font-size:11.5px; color:var(--ink-dim); margin:0; }
+
+  .status-overlay{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:13px; color:var(--ink-dim); background:rgba(11,12,15,.6); z-index:8; text-align:center; padding:20px;
+  }
+  .status-overlay.hide{ display:none; }
+
+  .controls-bar{
+    position:absolute; left:50%; bottom:20px; transform:translateX(-50%); z-index:6;
+    display:flex; align-items:center; gap:12px; padding:10px 16px; border-radius:14px;
+    background:rgba(17,20,24,.9); border:1px solid var(--panel-border); backdrop-filter:blur(6px);
+    max-width:92vw;
+  }
+  .controls-bar button{
+    width:34px; height:34px; border-radius:50%; border:1px solid var(--panel-border); background:var(--panel);
+    color:var(--ink); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px;
+  }
+  .controls-bar button:hover{ background:rgba(255,255,255,.12); }
+  .controls-bar input[type=range]{ width:min(38vw,340px); accent-color:var(--accent); }
+  .controls-bar .time-label{ font-size:11.5px; color:var(--ink-dim); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .controls-bar select{
+    background:var(--panel); color:var(--ink); border:1px solid var(--panel-border); border-radius:8px;
+    font-size:11.5px; padding:5px 8px;
+  }
+
+  .view-buttons{
+    position:absolute; top:18px; right:18px; z-index:6; display:flex; flex-direction:column; gap:6px;
+  }
+  .view-buttons button{
+    padding:8px 12px; border-radius:9px; border:1px solid var(--panel-border); background:rgba(17,20,24,.85);
+    color:var(--ink); font-size:11.5px; cursor:pointer; text-align:left;
+  }
+  .view-buttons button:hover{ background:rgba(255,255,255,.1); }
+
+  .legend{
+    position:absolute; bottom:78px; left:18px; z-index:5; font-size:11px; color:var(--ink-dim);
+    background:rgba(17,20,24,.8); border:1px solid var(--panel-border); border-radius:10px; padding:10px 12px;
+    display:flex; flex-direction:column; gap:5px;
+  }
+  .legend span{ display:flex; align-items:center; gap:7px; }
+  .legend i{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+
+  .rotate-panel{
+    position:absolute; top:70px; right:18px; z-index:6; width:220px;
+    background:rgba(17,20,24,.92); border:1px solid var(--panel-border); border-radius:10px; padding:12px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .rotate-row{ display:flex; flex-direction:column; gap:4px; }
+  .rotate-row label{ font-size:11px; color:var(--ink-dim); display:flex; justify-content:space-between; }
+  .rotate-row input[type=range]{ width:100%; accent-color:var(--accent); }
+  .rotate-row.rotate-buttons{ flex-direction:row; gap:8px; }
+  .rotate-row button{
+    flex:1; padding:7px 8px; border-radius:8px; border:1px solid var(--panel-border); background:var(--panel);
+    color:var(--ink); font-size:10.5px; cursor:pointer;
+  }
+  .rotate-row button:hover{ background:rgba(255,255,255,.12); }
+  #rotateOutput{
+    width:100%; resize:vertical; font-family:monospace; font-size:10.5px; padding:6px; border-radius:6px;
+    border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
+  }
+  input[type=color]{
+    width:34px; height:24px; padding:0; border:1px solid var(--panel-border); border-radius:5px;
+    background:none; cursor:pointer;
+  }
+  #colorOutput{
+    width:100%; resize:vertical; font-family:monospace; font-size:10.5px; padding:6px; border-radius:6px;
+    border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
+  }
+
+  .draw-panel{
+    position:absolute; top:70px; left:96px; z-index:110; width:230px;
+    max-height:calc(100vh - 90px); overflow-y:auto;
+    background:rgba(17,20,24,.92); border:1px solid var(--panel-border); border-radius:10px; padding:12px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .draw-panel #drawToggle.active, .draw-panel #treePlantToggle.active{ background:var(--accent); color:#0b0c0f; border-color:var(--accent); }
+  .draw-hint{ font-size:10px; color:var(--ink-dim); margin:0; line-height:1.4; }
+  #drawOutput, #treePlantOutput{
+    width:100%; resize:vertical; font-family:monospace; font-size:10px; padding:6px; border-radius:6px;
+    border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
+  }
+
+  .tree-info{
+    position:absolute; left:50%; top:70px; transform:translateX(-50%) translateY(-10px); z-index:20;
+    width:min(300px, 88vw); background:rgba(17,20,24,.97); border:1px solid var(--panel-border);
+    border-radius:12px; padding:16px 18px; box-shadow:0 10px 30px rgba(0,0,0,.5);
+    opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;
+  }
+  .tree-info.show{ opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0); }
+  .tree-info-close{
+    position:absolute; top:10px; right:10px; width:24px; height:24px; border-radius:50%;
+    border:1px solid var(--panel-border); background:var(--panel); color:var(--ink-dim);
+    cursor:pointer; font-size:12px;
+  }
+  .tree-info-kind{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-dim); margin:0 0 4px; }
+  .tree-info h3{ font-size:14px; margin:0 26px 6px 0; color:var(--ink); }
+  .tree-info p#treeInfoDetails{ font-size:12px; color:var(--ink-dim); margin:0; line-height:1.5; }
+
+  /* ---- Conectografía: red de problemáticas UBICADA sobre el mapa 3D real ---- */
+  #netGooLayer{ position:absolute; inset:0; width:100%; height:100%; z-index:11; pointer-events:none; }
+  .net-blob{
+    position:absolute; top:0; left:0; border-radius:50%; transform:translate(-50%,-50%);
+    pointer-events:auto; cursor:grab; opacity:0.78; transition:opacity .2s ease;
+    box-shadow:0 3px 12px rgba(0,0,0,.45);
+  }
+  .net-blob:active{ cursor:grabbing; }
+  .net-blob:hover{ opacity:0.85; }
+  #netSvg{ position:absolute; inset:0; width:100%; height:100%; z-index:12; pointer-events:none; overflow:visible; }
+  #netSvg .net-line{ stroke-linecap:round; fill:none; }
+  #netLabelLayer{ position:absolute; inset:0; z-index:13; pointer-events:none; }
+  .net-label{
+    position:absolute; transform:translate(-50%,-50%); font-family:'Segoe UI',sans-serif;
+    color:#ffffff; text-shadow:0 1.5px 4px rgba(0,0,0,0.95), 0 0 3px rgba(0,0,0,0.9); font-weight:700; font-size:10.5px;
+    text-align:center; line-height:1.2; pointer-events:auto; cursor:grab; user-select:none;
+  }
+  .net-label:active{ cursor:grabbing; }
+  #netPanel{
+    position:absolute; top:0; right:0; bottom:0; z-index:20; width:min(360px,90vw);
+    background:#111418; border-left:1px solid var(--panel-border); box-shadow:-14px 0 40px rgba(0,0,0,.35);
+    padding:24px 22px; overflow-y:auto; transform:translateX(100%); transition:transform .3s cubic-bezier(.2,.8,.2,1);
+  }
+  #netPanel.open{ transform:translateX(0); }
+  #netPanel .panel-close{
+    position:absolute; top:16px; right:16px; width:28px; height:28px; border-radius:50%; border:1px solid var(--panel-border);
+    background:var(--panel); color:var(--ink-dim); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px;
+  }
+  #netPanel .panel-kind{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin:0 0 8px; }
+  #netPanel h2{ font-size:15px; font-weight:600; margin:0 28px 4px 0; line-height:1.4; color:var(--ink); }
+  #netPanel .block{ margin-top:14px; padding-top:14px; border-top:1px solid var(--panel-border); }
+  #netPanel .block b{ display:block; font-size:10.5px; color:var(--ink-dim); font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em; }
+  #netPanel .rel-chip{ display:block; padding:8px 11px; margin-bottom:6px; border-radius:8px; background:rgba(36,200,189,.1); border:1px solid rgba(36,200,189,.3); font-size:11.5px; color:var(--ink); }
+  #netCloseSubBtn{
+    position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:15;
+    padding:9px 16px; border-radius:999px; border:1px solid var(--panel-border); background:var(--panel);
+    font-size:11.5px; font-weight:600; color:var(--ink); cursor:pointer; display:none;
+  }
+  #netCloseSubBtn.show{ display:block; }
+</style>
+</head>
+<body>
+<div class="app">
+                      <aside class="sidebar sidebar-icons-only">
+      <a class="brand-icon" href="index.html" title="Bogotá Viva · Inicio" aria-label="Inicio"><i class="fa-solid fa-diagram-project"></i></a>
+      <nav class="icon-nav" aria-label="Módulos">
+        <a href="index.html" class="icon-nav-item" title="Inicio"><i class="fa-solid fa-house"></i></a>
+        <a href="modulo-metropolitano.html" class="icon-nav-item" title="Escala metropolitana &middot; Bogot&aacute; completa"><i class="fa-solid fa-city"></i></a>
+        <a href="modulo-02.html" class="icon-nav-item" title="02 · Medir la red"><i class="fa-solid fa-chart-simple"></i></a>
+        <a href="modulo-03.html" class="icon-nav-item" title="03 · Discurso vs realidad"><i class="fa-solid fa-eye"></i></a>
+        <a href="modulo-04.html" class="icon-nav-item" title="04 · Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
+        <a href="modulo-05.html" class="icon-nav-item" title="05 · Navegador multiescalar"><i class="fa-solid fa-magnifying-glass-location"></i></a>
+        <a href="modulo-06.html" class="icon-nav-item" title="06 · POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
+        <a href="modulo-07.html" class="icon-nav-item" title="07 · Simulador"><i class="fa-solid fa-flask"></i></a>
+        <a href="modulo-08.html" class="icon-nav-item" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
+        <a href="modulo-08-3d.html" class="icon-nav-item" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
+        <a href="modulo-10-corte.html" class="icon-nav-item" title="10 · Corte axonométrico"><i class="fa-solid fa-scissors"></i></a>
+        <a href="modulo-conectografias.html" class="icon-nav-item" title="Conectografías"><i class="fa-solid fa-diagram-project"></i></a>
+        <a href="modulo-12-problemas.html" class="icon-nav-item active" title="12 · Problemáticas Corabastos"><i class="fa-solid fa-triangle-exclamation"></i></a>
+        <a href="red-residuos-organicos.html" class="icon-nav-item" title="Red de problemáticas"><i class="fa-solid fa-diagram-project"></i></a>
+        <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
+      </nav>
+    </aside>
+  <main class="main">
+    <div id="sceneWrap">
+      <canvas id="sceneCanvas"></canvas>
+    </div>
+
+    <div class="hud-title">
+      <h1>Problemáticas de Kennedy</h1>
+    </div>
+
+
+
+    <div class="view-buttons">
+      <button type="button" id="viewReset" style="background:rgba(10,12,14,.75); color:#fff; font-size:10.5px; padding:6px 10px; border:1px solid rgba(255,255,255,.2);">Restablecer vista axonométrica</button>
+      <button type="button" id="potBtn" style="background:rgba(10,12,14,.75); color:#fff; font-size:10.5px; padding:6px 10px; border:1px solid rgba(255,255,255,.2);">Kennedy según el POT</button>
+      <button type="button" id="macroBtn" style="background:rgba(10,12,14,.75); color:#24c8bd; font-size:10.5px; padding:6px 10px; border:1px solid rgba(36,200,189,.5); font-weight:700; cursor:pointer;"><i class="fa-solid fa-network-wired"></i> Macromodelos Ciudad Propia</button>
+      <button type="button" id="papersBtn" style="background:rgba(10,12,14,.75); color:#60a5fa; font-size:10.5px; padding:6px 10px; border:1px solid rgba(96,165,250,.5); font-weight:700; cursor:pointer;"><i class="fa-solid fa-scroll"></i> Ver papers de macromodelos</button>
+    </div>
+
+    <div class="rotate-panel" id="rotatePanel" style="display:none;">
+      <div style="display:none;">
+        <div class="rotate-row">
+          <label>Sol — acimut <span id="sunAzVal">130°</span></label>
+          <input type="range" id="sunAz" min="0" max="360" value="130" step="1">
+        </div>
+        <div class="rotate-row">
+          <label>Sol — altura <span id="sunElVal">45°</span></label>
+          <input type="range" id="sunEl" min="5" max="85" value="45" step="1">
+        </div>
+        <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border); flex-direction:row; align-items:center; justify-content:space-between;">
+          <label style="display:inline;">Color del agua</label>
+          <input type="color" id="colorAgua" value="#97a5af">
+        </div>
+        <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
+          <label style="display:inline;">Color de las vías</label>
+          <input type="color" id="colorVia" value="#b7babd">
+        </div>
+        <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
+          <label style="display:inline;">Color de lo verde</label>
+          <input type="color" id="colorVerde" value="#adaa90">
+        </div>
+        <textarea id="colorOutput" rows="3" spellcheck="false" readonly></textarea>
+      </div>
+    </div>
+
+    <div class="legend" style="display:none;">
+      <span><i style="background:#e2635a"></i> Vehículo</span>
+      <span><i style="background:#b7babd"></i> Vía</span>
+      <span><i style="background:#ffffff"></i> Edificio</span>
+      <span><i style="background:#5c8f52"></i> Árbol</span>
+      <span><i style="background:#97a5af"></i> Cuerpo de agua</span>
+      <span><i style="background:#8a8f96"></i> Manzana</span>
+      <span><i style="background:#adaa90"></i> Parque/zona verde</span>
+      <span><i style="background:#b5714a"></i> Techo a dos aguas</span>
+      <span><i style="background:#ffffff"></i> Techo plano/parapeto</span>
+    </div>
+
+    <div class="controls-bar" style="display:none;">
+      <button type="button" id="playPause" aria-label="Reproducir / pausar"><i class="fa-solid fa-play"></i></button>
+      <div id="simExpand" style="display:none; align-items:center; gap:10px;">
+        <input type="range" id="timeSlider" min="0" max="1000" value="0" step="1" disabled>
+        <span class="time-label" id="timeLabel">00:00 / 00:00</span>
+        <select id="speedSelect">
+          <option value="1">1×</option>
+          <option value="2" selected>2×</option>
+          <option value="4">4×</option>
+          <option value="8">8×</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="status-overlay" id="statusOverlay">Cargando red vial…</div>
+
+    <div class="tree-info" id="treeInfo">
+      <button type="button" class="tree-info-close" id="treeInfoClose">✕</button>
+      <p class="tree-info-kind">Árbol</p>
+      <h3 id="treeInfoName"></h3>
+      <p id="treeInfoDetails"></p>
+    </div>
+
+    <!-- Conectografia: red de problematicas ubicada sobre el mapa 3D real -->
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <filter id="netGoo">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+          <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 17 -8" result="goo" />
+          <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+        </filter>
+      </defs>
+    </svg>
+    <div id="netGooLayer"></div>
+    <svg id="netSvg"></svg>
+    <div id="netLabelLayer"></div>
+    <button type="button" id="netCloseSubBtn">✕ Cerrar causas internas</button>
+    <aside id="netPanel">
+      <button type="button" class="panel-close" id="netPanelClose">✕</button>
+      <div id="netPanelBody"></div>
+    </aside>
+  </main>
+</div>
+
+<div id="potModal" style="position:fixed; inset:0; z-index:200; background:rgba(6,7,9,.96); display:none; align-items:center; justify-content:center; flex-direction:column;">
+  <div style="position:absolute; top:22px; left:50%; transform:translateX(-50%); text-align:center; color:#fff;">
+    <h2 style="font-family:'Space Grotesk',sans-serif; font-size:20px; margin:0 0 3px;">KENNEDY SEGÚN EL POT</h2>
+    <p style="font-size:11.5px; color:#9aa3ad; margin:0;">Red de instrumentos, tratamientos y elementos del Plan de Ordenamiento Territorial en Kennedy</p>
+  </div>
+  <button type="button" id="potModalClose" style="position:absolute; top:20px; right:26px; width:36px; height:36px; border-radius:50%; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.08); color:#fff; font-size:16px; cursor:pointer;">✕</button>
+  
+  <div id="potCoordsHud" style="position:absolute; top:20px; left:20px; z-index:205; background:rgba(11,12,15,.92); border:1px solid rgba(255,255,255,.18); border-radius:12px; padding:10px 14px; backdrop-filter:blur(8px); font-family:'Segoe UI',sans-serif; color:#e8ecf1; display:flex; align-items:center; gap:10px;">
+    <span style="font-size:12px; font-weight:700; color:#24c8bd;"><i class="fa-solid fa-up-down-left-right"></i> Acomodar Bolas POT</span>
+    <button type="button" id="copyPotCoordsBtn" style="padding:4px 9px; border-radius:6px; border:1px solid rgba(36,200,189,.4); background:rgba(36,200,189,.15); color:#24c8bd; font-size:10.5px; font-weight:700; cursor:pointer;">
+      <i class="fa-regular fa-copy"></i> Copiar Coordenadas POT
+    </button>
+    <textarea id="potCoordsOutput" style="display:none; position:absolute; top:45px; left:0; width:340px; height:120px; font-family:monospace; font-size:9.5px; background:#07080a; border:1px solid rgba(255,255,255,.18); color:#38bdf8; border-radius:8px; padding:6px; z-index:215;" readonly></textarea>
+  </div>
+
+  <div id="potStage" style="position:relative; width:95vw; height:86vh;">
+    <svg id="potGoo" width="0" height="0" style="position:absolute;">
+      <defs>
+        <filter id="potGooFilter">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+          <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 16 -7" result="goo" />
+          <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+        </filter>
+      </defs>
+    </svg>
+    <div id="potGooLayer" style="position:absolute; inset:0; filter:url(#potGooFilter);"></div>
+    <svg id="potSvg" style="position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none;"></svg>
+    <div id="potLabelLayer" style="position:absolute; inset:0; pointer-events:none;"></div>
+  </div>
+  <div id="potLegend" style="display:flex; flex-wrap:wrap; gap:10px 16px; justify-content:center; max-width:80vw; margin-top:10px;"></div>
+
+  <aside id="potInfoPanel" style="position:absolute; top:0; right:0; bottom:0; z-index:210; width:min(320px,88vw); background:#0d1012; border-left:1px solid rgba(255,255,255,.12); padding:60px 20px 20px; box-sizing:border-box; transform:translateX(100%); transition:transform .3s ease; overflow-y:auto;">
+    <button type="button" id="potInfoClose" style="position:absolute; top:16px; right:16px; width:30px; height:30px; border-radius:50%; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:#fff; cursor:pointer;">✕</button>
+    <div id="potInfoBody"></div>
+  </aside>
+</div>
+
+<div id="macroModal" style="position:fixed; inset:0; z-index:200; background:rgba(6,7,9,.96); display:none; align-items:center; justify-content:center; flex-direction:column;">
+  <div style="position:absolute; top:22px; left:50%; transform:translateX(-50%); text-align:center; color:#fff;">
+    <h2 style="font-family:'Space Grotesk',sans-serif; font-size:20px; margin:0 0 3px; color:#24c8bd;">MACROMODELOS CIUDAD PROPIA</h2>
+    <p style="font-size:11.5px; color:#9aa3ad; margin:0;">Red interconectada de macromodelos para el análisis, simulación y gobernanza territorial</p>
+  </div>
+  <button type="button" id="macroModalClose" style="position:absolute; top:20px; right:26px; width:36px; height:36px; border-radius:50%; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.08); color:#fff; font-size:16px; cursor:pointer;">✕</button>
+  
+  <div id="macroCoordsHud" style="position:absolute; top:20px; left:20px; z-index:205; background:rgba(11,12,15,.92); border:1px solid rgba(255,255,255,.18); border-radius:12px; padding:10px 14px; backdrop-filter:blur(8px); font-family:'Segoe UI',sans-serif; color:#e8ecf1; display:flex; align-items:center; gap:10px;">
+    <span style="font-size:12px; font-weight:700; color:#24c8bd;"><i class="fa-solid fa-up-down-left-right"></i> Acomodar Bolas</span>
+    <button type="button" id="copyMacroCoordsBtn" style="padding:4px 9px; border-radius:6px; border:1px solid rgba(36,200,189,.4); background:rgba(36,200,189,.15); color:#24c8bd; font-size:10.5px; font-weight:700; cursor:pointer;">
+      <i class="fa-regular fa-copy"></i> Copiar Coordenadas
+    </button>
+    <button type="button" id="toggleMacroModeBtn" style="padding:4px 9px; border-radius:6px; border:1px solid rgba(96,165,250,.5); background:rgba(96,165,250,.15); color:#60a5fa; font-size:10.5px; font-weight:700; cursor:pointer;">
+      <i class="fa-solid fa-scroll"></i> Ver Papers de Macromodelos
+    </button>
+    <textarea id="macroCoordsOutput" style="display:none; position:absolute; top:45px; left:0; width:340px; height:120px; font-family:monospace; font-size:9.5px; background:#07080a; border:1px solid rgba(255,255,255,.18); color:#38bdf8; border-radius:8px; padding:6px; z-index:215;" readonly></textarea>
+  </div>
+
+  <div id="macroStage" style="position:relative; width:95vw; height:86vh;">
+    <svg id="macroGoo" width="0" height="0" style="position:absolute;">
+      <defs>
+        <filter id="macroGooFilter">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+          <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 16 -7" result="goo" />
+          <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+        </filter>
+      </defs>
+    </svg>
+    <div id="macroGooLayer" style="position:absolute; inset:0; filter:url(#macroGooFilter);"></div>
+    <svg id="macroSvg" style="position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none;"></svg>
+    <div id="macroLabelLayer" style="position:absolute; inset:0; pointer-events:none;"></div>
+  </div>
+  <div id="macroLegend" style="display:flex; flex-wrap:wrap; gap:10px 16px; justify-content:center; max-width:80vw; margin-top:10px;"></div>
+
+  <aside id="macroInfoPanel" style="position:absolute; top:0; right:0; bottom:0; z-index:210; width:min(340px,88vw); background:#0d1012; border-left:1px solid rgba(255,255,255,.12); padding:60px 20px 20px; box-sizing:border-box; transform:translateX(100%); transition:transform .3s ease; overflow-y:auto;">
+    <button type="button" id="macroInfoClose" style="position:absolute; top:16px; right:16px; width:30px; height:30px; border-radius:50%; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:#fff; cursor:pointer;">✕</button>
+    <div id="macroInfoBody"></div>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="modulo-12-problemas.js?v=36"></script>
+</body>
+</html>

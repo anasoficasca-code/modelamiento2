@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="modulo-02.css?v=degree-size-compact-v3">
   <link rel="stylesheet" href="site-theme.css?v=20260823">
   <link rel="stylesheet" href="navigation-unified.css?v=20260824">
+  <link rel="stylesheet" href="modulo-02-red-externa.css?v=6-conclusiones">
 </head>
 <body>
 <div class="app">
@@ -17,16 +18,22 @@
           <aside class="sidebar sidebar-icons-only">
     <a class="brand-icon" href="index.html" title="Bogotá Viva · Inicio" aria-label="Inicio"><i class="fa-solid fa-diagram-project"></i></a>
     <nav class="icon-nav" aria-label="Módulos">
-      <a href="index.html" class="icon-nav-item" title="Inicio"><i class="fa-solid fa-house"></i></a>
-      <a href="modulo-02.html" class="icon-nav-item active" title="02 · Medir la red"><i class="fa-solid fa-chart-simple"></i></a>
-      <a href="modulo-03.html" class="icon-nav-item" title="03 · Discurso vs realidad"><i class="fa-solid fa-eye"></i></a>
-      <a href="modulo-04.html" class="icon-nav-item" title="04 · Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
-      <a href="modulo-05.html" class="icon-nav-item" title="05 · Navegador multiescalar"><i class="fa-solid fa-magnifying-glass-location"></i></a>
-      <a href="modulo-06.html" class="icon-nav-item" title="06 · POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
-      <a href="modulo-07.html" class="icon-nav-item" title="07 · Simulador"><i class="fa-solid fa-flask"></i></a>
-      <a href="modulo-08.html" class="icon-nav-item" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
-      <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
-    </nav>
+        <a href="index.html" class="icon-nav-item" title="Inicio"><i class="fa-solid fa-house"></i></a>
+        <a href="modulo-metropolitano.html" class="icon-nav-item" title="Escala metropolitana &middot; Bogotá completa"><i class="fa-solid fa-city"></i></a>
+        <a href="modulo-02.html" class="icon-nav-item active" title="02 · Medir la red"><i class="fa-solid fa-chart-simple"></i></a>
+        <a href="modulo-03.html" class="icon-nav-item" title="03 · Discurso vs realidad"><i class="fa-solid fa-eye"></i></a>
+        <a href="modulo-04.html" class="icon-nav-item" title="04 · Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
+        <a href="modulo-05.html" class="icon-nav-item" title="05 · Navegador multiescalar"><i class="fa-solid fa-magnifying-glass-location"></i></a>
+        <a href="modulo-06.html" class="icon-nav-item" title="06 · POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
+        <a href="modulo-07.html" class="icon-nav-item" title="07 · Simulador"><i class="fa-solid fa-flask"></i></a>
+        <a href="modulo-08.html" class="icon-nav-item" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
+        <a href="modulo-08-3d.html" class="icon-nav-item" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
+        <a href="modulo-10-corte.html" class="icon-nav-item" title="10 · Corte axonométrico"><i class="fa-solid fa-scissors"></i></a>
+        <a href="modulo-conectografias.html" class="icon-nav-item" title="Conectografías"><i class="fa-solid fa-diagram-project"></i></a>
+        <a href="modulo-12-problemas.html" class="icon-nav-item" title="12 · Problemáticas Corabastos"><i class="fa-solid fa-triangle-exclamation"></i></a>
+        <a href="red-residuos-organicos.html" class="icon-nav-item" title="Red de problemáticas"><i class="fa-solid fa-diagram-project"></i></a>
+        <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
+      </nav>
 
     <div class="icon-nav-footer">
       <a href="configuracion.html" class="icon-nav-item" title="Configuración"><i class="fa-solid fa-gear"></i></a>
@@ -104,7 +111,7 @@
         </div>
         <div class="quote-card welcome-quote-card">
           <div class="quote-mark">&ldquo;</div>
-          <p id="welcomeQuoteText" class="quote-focus-in">El POT construye una Bogotá altamente <span class="pot-keyword">ordenable</span>, <span class="pot-keyword">clasificable</span>, <span class="pot-keyword">zonificable</span> y <span class="pot-keyword">conectable</span> mediante estructuras, redes, soportes y reglas, pero su legibilidad es desigual: representa con mayor precisión los elementos físicos y territoriales y con menor resolución los actores, las interacciones, los flujos y los procesos dinámicos mediante los cuales la ciudad cambia.</p>
+          <p id="welcomeQuoteText" class="quote-focus-in">Al mirar la red del POT, la gran concentración de conexiones ocurre únicamente entre las normas escritas y las obras físicas, mientras que los elementos humanos y ambientales quedan casi sueltos en los bordes. Esta desconexión visual demuestra que el modelo estructura un territorio rígido de leyes y concreto que mantiene la vida real de la gente aislada de su diseño principal.</p>
         </div>
       </div>
 
@@ -117,8 +124,72 @@
             <button class="network-zoom-btn" id="networkZoomIn" type="button" title="Acercar" aria-label="Acercar">&#43;</button>
           </div>
         </div>
-        <div class="network-canvas">
-          <svg id="networkViz" viewBox="0 0 2500 1820" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="network-canvas-col">
+          <!-- PANEL DE CONTROL REESTRUCTURADO Y FUNCIONAL -->
+          <div class="m2re-control-deck">
+            <div class="m2re-deck-top">
+              <div class="m2re-status-indicators" id="m2reStatusIndicators">
+                <span class="m2re-live-pill" id="m2reLivePill"><i class="fa-solid fa-circle-nodes"></i> <span id="m2reLivePillText">Cargando red relacional…</span></span>
+                <span class="m2re-stat-chip" id="m2reChipNodos"><b>...</b> nodos</span>
+                <span class="m2re-stat-chip" id="m2reChipConex"><b>...</b> flujos</span>
+                <span class="m2re-stat-chip chip-hubs" id="m2reChipHubs"><b>...</b> hubs</span>
+                <span class="m2re-stat-chip chip-puentes" id="m2reChipPuentes"><b>...</b> puentes</span>
+              </div>
+              <div class="m2re-view-actions">
+                <button class="control-btn active" id="m2reBtnSoloPot" type="button" title="Alternar entre lo que nombra el POT y la base completa">
+                  <i class="fa-solid fa-filter"></i> <span id="m2reSoloPotLabel">Solo POT</span>
+                </button>
+                <div class="network-zoom-controls m2re-zoom-controls">
+                  <button class="network-zoom-btn" id="m2reZoomOut" type="button" title="Alejar" aria-label="Alejar">&minus;</button>
+                  <span class="network-zoom-level" id="m2reZoomLevel">100%</span>
+                  <button class="network-zoom-btn" id="m2reZoomReset" type="button" title="Encuadrar toda la red (ver completa)" aria-label="Encuadrar toda la red"><i class="fa-solid fa-expand"></i></button>
+                  <button class="network-zoom-btn" id="m2reZoomIn" type="button" title="Acercar" aria-label="Acercar">&#43;</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- FILTROS DE ANÁLISIS, FLUJOS Y SIMULACIÓN -->
+            <div class="m2re-deck-actions">
+              <div class="m2re-action-group">
+                <span class="m2re-group-label">Estructura:</span>
+                <button class="control-btn m2re-btn-action" id="m2reBtnHubs" type="button">
+                  <i class="fa-solid fa-circle-dot"></i> Hubs <span class="m2re-badge" id="m2reCountHubs">0</span>
+                </button>
+                <button class="control-btn m2re-btn-action" id="m2reBtnPuentes" type="button">
+                  <i class="fa-solid fa-link"></i> Nodos puente <span class="m2re-badge badge-puente" id="m2reCountPuentes">0</span>
+                </button>
+                <button class="control-btn m2re-btn-action" id="m2reBtnPerifericos" type="button">
+                  <i class="fa-solid fa-circle-notch"></i> Periféricos <span class="m2re-badge" id="m2reCountPerifericos">0</span>
+                </button>
+              </div>
+
+              <div class="m2re-action-group">
+                <span class="m2re-group-label">Flujos:</span>
+                <button class="control-btn m2re-btn-flow active" id="m2reFlowAll" type="button" title="Ver todos los flujos">Todos</button>
+                <button class="control-btn m2re-btn-flow" id="m2reFlowDirect" type="button" title="Solo relaciones directas (línea continua)"><span class="flow-dot flow-direct"></span> Directas</button>
+                <button class="control-btn m2re-btn-flow" id="m2reFlowIndirect" type="button" title="Solo relaciones indirectas (línea punteada)"><span class="flow-dot flow-indirect"></span> Indirectas</button>
+              </div>
+
+              <div class="m2re-action-group m2re-group-sim">
+                <span class="m2re-group-label"><i class="fa-solid fa-bolt"></i> Simular:</span>
+                <button class="control-btn m2re-btn-sim" id="m2reBtnApagarHubs" type="button" title="Simular desconexión de los hubs">Quitar hubs</button>
+                <button class="control-btn m2re-btn-sim" id="m2reBtnApagarPuentes" type="button" title="Simular ruptura de los nodos puente">Quitar puentes</button>
+                <button class="control-btn m2re-btn-sim" id="m2reBtnEncenderTodos" type="button" title="Restablecer todos los nodos">Restablecer</button>
+              </div>
+
+              <button class="control-btn m2re-btn-conclusiones" id="m2reBtnConclusiones" type="button">
+                <i class="fa-solid fa-lightbulb"></i> Conclusiones
+              </button>
+            </div>
+          </div>
+
+          <div class="network-canvas">
+            <svg id="networkViz" viewBox="0 0 2500 1820" preserveAspectRatio="xMidYMid meet"></svg>
+            <aside class="m2re-ficha" id="m2reFicha" hidden></aside>
+            <aside class="m2re-drawer" id="m2rePuentesDrawer" hidden></aside>
+            <aside class="m2re-drawer" id="m2reHubsDrawer" hidden></aside>
+            <aside class="m2re-conclusiones" id="m2reConclusiones" hidden></aside>
+          </div>
         </div>
 
         <!-- VISTA AMPLIADA: red de Humedales. Sustituye la red principal en el mismo
@@ -222,7 +293,7 @@
               </label>
               <label class="legend-item" data-mode="type" data-type="indirecta">
                 <input type="checkbox" checked><span class="legend-swatch swatch-indirecta-neutral"></span>
-                <span class="legend-text"><strong>Indirecta</strong><small>Relación funcional intermedia</small></span>
+                <span class="legend-text"><strong>Indirecta</strong><small>Por cruce o intersección espacial</small></span>
               </label>
             </div>
 
@@ -452,10 +523,12 @@
 
 </div>
 
-<script src="modulo-02.js?v=degree-size-compact-v3"></script>
+<script src="modulo-02.js?v=gentler-layout-v5"></script>
+<script src="modulo-02-red-externa.js?v=11-conclusiones"></script>
 
 </body>
 </html>
+
 
 
 

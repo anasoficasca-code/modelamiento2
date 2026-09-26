@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sobrecarga territorial en Kennedy — Red causal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="navigation-unified.css?v=20260920">
+<style>
+  :root{
+    --bg:#0b0c0f;
+    --node:#e2635a;
+    --ink-on-node:#ffffff;
+    --panel:rgba(255,255,255,.06); --panel-border:rgba(255,255,255,.12);
+    --ink-dark:#e8ecf1; --ink-dim:#8b96a5;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  .app{ display:flex; min-height:100vh; }
+  .main{ flex:1; position:relative; min-width:0; }
+  body{ background:var(--bg); color:var(--ink-dark); font-family:'Inter',sans-serif; overflow:hidden; }
+  .intro{
+    position:absolute; top:20px; left:50%; transform:translateX(-50%); z-index:6; text-align:center;
+    pointer-events:none; max-width:640px; transition:opacity .4s ease;
+  }
+  .intro h1{ font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600; margin:0 0 4px; line-height:1.35; }
+  .intro p{ margin:0; font-size:11.5px; color:var(--ink-dim); }
+
+  .level-title{
+    position:absolute; top:20px; left:50%; transform:translateX(-50%); z-index:6; text-align:center;
+    max-width:640px; opacity:0; pointer-events:none; transition:opacity .4s ease;
+  }
+  .level-title.show{ opacity:1; }
+  .level-title h2{ font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:600; margin:0; color:var(--ink-dark); }
+  .level-title p{ margin:2px 0 0; font-size:11px; color:var(--ink-dim); }
+
+  .cld-legend{
+    position:absolute; bottom:18px; left:18px; z-index:6; font-size:11px; color:var(--ink-dim);
+    background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.08); border-radius:10px; padding:10px 13px;
+    max-width:250px; line-height:1.5; box-shadow:0 4px 16px rgba(0,0,0,.08);
+  }
+  .cld-legend b{ color:var(--ink-dark); }
+
+  .stage{ position:absolute; inset:0; width:100%; height:100%; }
+  .goo-layer{ position:absolute; inset:0; filter:url(#goo); }
+  .arrows-svg{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
+  .arrow-line{ fill:none; stroke-linecap:round; }
+  .blob{
+    position:absolute; border-radius:50%; top:0; left:0; transform:translate(-50%,-50%); background:var(--node);
+    transition: left .8s cubic-bezier(.22,1,.36,1), top .8s cubic-bezier(.22,1,.36,1),
+                width .7s cubic-bezier(.22,1,.36,1), height .7s cubic-bezier(.22,1,.36,1), opacity .4s ease;
+  }
+  .label-layer{ position:absolute; inset:0; pointer-events:none; }
+  .label{
+    position:absolute; top:0; left:0; transform:translate(-50%,-50%);
+    transition: left .8s cubic-bezier(.22,1,.36,1), top .8s cubic-bezier(.22,1,.36,1), opacity .4s ease;
+    text-align:center; font-weight:600; line-height:1.24; color:var(--ink-on-node); padding:0 8px; pointer-events:none;
+  }
+  .label.center-label{ font-family:'Space Grotesk',sans-serif; font-size:14.5px; }
+  .label.child-label{ font-size:11.5px; }
+  .hit{ position:absolute; top:0; left:0; transform:translate(-50%,-50%); border-radius:50%; cursor:pointer; z-index:5; pointer-events:auto; }
+
+  .panel{
+    position:absolute; top:0; right:0; bottom:0; z-index:10; width:min(380px,92vw);
+    background:#111418; border-left:1px solid var(--panel-border); box-shadow:-14px 0 40px rgba(0,0,0,.35);
+    padding:26px 24px; overflow-y:auto; transform:translateX(100%); transition:transform .32s cubic-bezier(.2,.8,.2,1);
+  }
+  .panel.open{ transform:translateX(0); }
+  .panel-close{
+    position:absolute; top:18px; right:18px; width:30px; height:30px; border-radius:50%; border:1px solid var(--panel-border);
+    background:var(--panel); color:var(--ink-dim); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px;
+  }
+  .panel-close:hover{ background:rgba(255,255,255,.12); }
+  .panel-kind{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin:0 0 8px; }
+  .panel h2{ font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:600; margin:0 30px 4px 0; line-height:1.4; color:var(--ink-dark); }
+  .panel .block{ margin-top:16px; padding-top:16px; border-top:1px solid var(--panel-border); }
+  .panel .block b{ display:block; font-size:11px; color:var(--ink-dim); font-weight:600; margin-bottom:7px; text-transform:uppercase; letter-spacing:.04em; }
+  .panel .rel-chip{ display:block; padding:9px 12px; margin-bottom:7px; border-radius:9px; background:rgba(226,99,90,.1); border:1px solid rgba(226,99,90,.35); font-size:12px; cursor:pointer; color:var(--ink-dark); }
+  .panel .rel-chip .rel-verbo{ display:block; font-size:10px; color:var(--ink-dim); font-style:italic; margin-top:2px; }
+  .panel .rel-chip:hover{ background:rgba(226,99,90,.2); }
+  .panel .drill-btn{
+    display:block; width:100%; margin-top:16px; padding:11px 14px; border-radius:10px; border:none;
+    background:var(--node); color:#fff; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .panel .drill-btn:hover{ opacity:.9; }
+
+  .back-btn{
+    position:absolute; bottom:22px; left:50%; transform:translateX(-50%); z-index:6;
+    padding:10px 18px; border-radius:999px; border:1px solid var(--panel-border); background:#111418;
+    font-size:12px; font-weight:600; color:var(--ink-dark); cursor:pointer; box-shadow:0 6px 16px rgba(0,0,0,.35);
+    opacity:0; pointer-events:none; transition:opacity .3s ease;
+  }
+  .back-btn.show{ opacity:1; pointer-events:auto; }
+
+  .full-net-btn{
+    position:absolute; top:20px; right:20px; z-index:10;
+    padding:10px 18px; border-radius:999px; border:1px solid rgba(36,200,189,.5);
+    background:rgba(36,200,189,.15); color:#24c8bd; font-size:12.5px; font-weight:700;
+    cursor:pointer; backdrop-filter:blur(10px); box-shadow:0 4px 16px rgba(0,0,0,.35);
+    transition:all .25s cubic-bezier(.2,1,.3,1); display:flex; align-items:center; gap:8px;
+  }
+  .full-net-btn:hover{
+    background:rgba(36,200,189,.3); border-color:#24c8bd; transform:scale(1.03); color:#fff;
+  }
+  .full-net-btn.active{
+    background:#24c8bd; color:#0b0c0f; border-color:#24c8bd; box-shadow:0 0 20px rgba(36,200,189,.5);
+  }
+
+  .node-size-btn{
+    position:absolute; transform:translate(-50%,-50%); width:22px; height:22px; border-radius:50%;
+    background:rgba(11,12,15,.88); border:1.5px solid rgba(255,255,255,.45); color:#fff;
+    font-size:13px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:15; user-select:none; box-shadow:0 2px 8px rgba(0,0,0,.6);
+    transition:transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .node-size-btn:hover{ transform:translate(-50%,-50%) scale(1.3); background:#24c8bd; color:#0b0c0f; border-color:#24c8bd; box-shadow:0 0 12px rgba(36,200,189,.8); }
+  .node-size-btn.btn-plus{ border-color:rgba(36,200,189,.7); color:#24c8bd; }
+  .node-size-btn.btn-minus{ border-color:rgba(226,99,90,.7); color:#e2635a; }
+
+  @media (prefers-reduced-motion: reduce){ .blob, .label, .panel{ transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar sidebar-icons-only">
+    <div class="brand-icon"><i class="fa-solid fa-diagram-project"></i></div>
+    <nav class="icon-nav">
+      <a href="modulo-metropolitano.html" class="icon-nav-item" title="Escala metropolitana · Bogotá completa"><i class="fa-solid fa-city"></i></a>
+      <a href="modulo-02.html" class="icon-nav-item" title="Medir la Red"><i class="fa-solid fa-chart-simple"></i></a>
+      <a href="modulo-03.html" class="icon-nav-item" title="Discurso vs Realidad"><i class="fa-solid fa-eye"></i></a>
+      <a href="modulo-04.html" class="icon-nav-item" title="Macromodelos"><i class="fa-solid fa-bullseye"></i></a>
+      <a href="modulo-05.html" class="icon-nav-item" title="Lo que no está"><i class="fa-solid fa-magnifying-glass"></i></a>
+      <a href="modulo-06.html" class="icon-nav-item" title="POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
+      <a href="modulo-07.html" class="icon-nav-item" title="Simulador"><i class="fa-solid fa-flask"></i></a>
+      <a href="modulo-08.html" class="icon-nav-item" title="Modelo Propio"><i class="fa-solid fa-city"></i></a>
+      <a href="red-residuos-organicos.html" class="icon-nav-item active" title="Problemas de Kennedy"><i class="fa-solid fa-triangle-exclamation"></i></a>
+    </nav>
+  </aside>
+  <main class="main">
+
+<button type="button" id="fullNetBtn" class="full-net-btn"><i class="fa-solid fa-network-wired"></i> 🌐 Ver Red Interconectada Completa (13 Causalidades Inter-Redes)</button>
+
+<!-- Panel de Acomodar Bolas, Ajustar Tamaño y Copiar Coordenadas -->
+<div id="netEditorPanel" style="position:absolute; top:20px; left:20px; z-index:10; background:rgba(17,20,24,.92); border:1px solid rgba(255,255,255,.18); border-radius:14px; padding:10px 14px; backdrop-filter:blur(10px); box-shadow:0 8px 30px rgba(0,0,0,.5); color:#e8ecf1; font-family:'Segoe UI',sans-serif; display:flex; align-items:center; gap:12px;">
+  <span style="font-size:12px; font-weight:700; color:#24c8bd;"><i class="fa-solid fa-up-down-left-right"></i> Acomodar Bolas</span>
+  <div style="display:flex; align-items:center; gap:6px; font-size:11.5px;">
+    <label for="nodeScaleRange" style="color:#a0aec0;">Tamaño:</label>
+    <input type="range" id="nodeScaleRange" min="0.5" max="2.2" step="0.05" value="1.0" style="width:100px; accent-color:#24c8bd;">
+  </div>
+  <button type="button" id="copyNetCoordsBtn" style="padding:5px 11px; border-radius:8px; border:1px solid rgba(36,200,189,.4); background:rgba(36,200,189,.15); color:#24c8bd; font-size:11px; font-weight:700; cursor:pointer; transition:all .15s ease;">
+    <i class="fa-regular fa-copy"></i> Copiar Coordenadas y Tamaños
+  </button>
+  <textarea id="netCoordsOutput" style="display:none; position:absolute; top:48px; left:0; width:340px; height:120px; font-family:monospace; font-size:9.5px; background:#07080a; border:1px solid rgba(255,255,255,.18); color:#38bdf8; border-radius:8px; padding:6px; z-index:105;" readonly></textarea>
+</div>
+
+<div class="intro" id="intro">
+  <h1>Colapso operativo y logístico del modelo de ocupación de Kennedy frente a la capacidad de soporte del territorio</h1>
+  <p>Toca la burbuja para revelar la red — toca una flecha o su signo (+/–) para ver el mecanismo completo</p>
+</div>
+<div class="level-title" id="levelTitle">
+  <h2 id="levelTitleText"></h2>
+  <p id="levelSubText"></p>
+</div>
+<div class="cld-legend">
+  <b>Notación del diagrama causal</b><br>
+  <b>+</b> si la causa aumenta, el efecto también aumenta &nbsp; <b>–</b> si la causa aumenta, el efecto disminuye<br>
+  <b>↻ R</b> bucle reforzador (se retroalimenta y crece) &nbsp; <b>↻ B</b> bucle balanceador (actúa como freno o límite)
+</div>
+
+<div class="stage" id="stage">
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <filter id="goo">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+        <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 17 -8" result="goo" />
+        <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+      </filter>
+    </defs>
+  </svg>
+  <div class="goo-layer" id="gooLayer"></div>
+  <svg class="arrows-svg" id="arrowsSvg"><defs></defs></svg>
+  <div class="label-layer" id="labelLayer"></div>
+</div>
+
+<button class="back-btn" id="backBtn">← Volver</button>
+
+<aside class="panel" id="panel">
+  <button class="panel-close" id="panelClose">✕</button>
+  <div id="panelBody"></div>
+</aside>
+
+<script>
+(() => {
+  // Medimos el area de CONTENIDO (junto a la barra lateral), no toda la
+  // ventana, para que la red no quede tapada ni descuadrada por el menu.
+  const mainEl = document.querySelector(".main");
+  function mainW() { return Math.max(320, (mainEl && mainEl.clientWidth) ? mainEl.clientWidth : window.innerWidth); }
+  function mainH() { return Math.max(320, (mainEl && mainEl.clientHeight) ? mainEl.clientHeight : window.innerHeight); }
+  const MACRO = [
+    { id:"n1", corto:"Colapso de la red vial local y arterial", full:"Colapso de la red vial local y de los corredores arteriales", color:"#5b8ad6" },
+    { id:"n2", corto:"Contaminación de la red hídrica", full:"Contaminación y alteración biofísica de la red hídrica y cuerpos de agua", color:"#d669a8" },
+    { id:"n3", corto:"Concentración del mercado mayorista", full:"Concentración metropolitana del mercado mayorista de alimentos en la trama barrial", color:"#e2635a" },
+    { id:"n4", corto:"Sobrecarga por densificación en altura", full:"Sobrecarga infraestructural de la densificación residencial en altura", color:"#9b7ede" },
+    { id:"n5", corto:"Interferencia en el espacio público", full:"Interferencia de actividades logísticas en la red de espacio público barrial", color:"#4caf7d" },
+    { id:"n6", corto:"Acumulación de residuos y transporte pesado", full:"Acumulación de residuos y transporte pesado sobre la red ecológica", color:"#e8a33d" },
+    { id:"n7", corto:"Inoperancia del ordenamiento oficial", full:"Inoperancia del ordenamiento oficial ante los patrones reales del territorio", color:"#45b8c4" },
+  ];
+  const MACRO_REL = [
+    { from:"n7", to:"n3", pol:"+", verbo:"Al no comprender ni regular las dinámicas reales del suelo, la norma pública permite que una función de escala regional continúe hiperconcentrándose dentro de un entorno barrial." },
+    { from:"n7", to:"n4", pol:"+", verbo:"La rigidez normativa aprueba licencias de construcción en altura sin exigir ni garantizar la expansión previa de las redes matrices de servicios públicos e infraestructura." },
+    { from:"n3", to:"n5", pol:"+", verbo:"El ingreso diario de más de 11.500 toneladas de alimentos y 12.000 vehículos (1.500 camiones pesados) supera la capacidad interna de absorción de la central, desplazando el parqueo y el cargue/descargue hacia andenes y vías barriales." },
+    { from:"n3", to:"n6", pol:"+", verbo:"La alta producción de desechos orgánicos y la intensidad del transporte pesado presionan directamente los bordes de la franja ambiental y del Humedal La Vaca." },
+    { from:"n5", to:"n1", pol:"+", verbo:"Camiones y carretas estacionados en calzadas reducen la capacidad operativa de las vías de una sola calzada, bloqueando el tráfico local y arterial." },
+    { from:"n4", to:"n2", pol:"+", verbo:"El vertiginoso aumento de habitantes en torre sobrepasa la capacidad del alcantarillado, incrementando vertimientos sin tratamiento sobre la red hídrica." },
+    { from:"n4", to:"n1", pol:"+", verbo:"La sobrecarga por densificación en altura genera una alta concentración de viajes cotidianos que se vuelcan sobre la trama vial barrial y arterial, acelerando el colapso de la red vial." },
+    { from:"n6", to:"n2", pol:"+", verbo:"El vertimiento de lixiviados y la acumulación de basura en los bordes naturales contaminan los canales superficiales y el cuerpo de agua del humedal." },
+    { from:"n1", to:"n3", pol:"-", loop:true, loopLabel:"B1", verbo:"A medida que la concentración comercial crece, desborda el espacio público y provoca el colapso vial total. Sin embargo, la extrema congestión y el embotellamiento en las puertas de acceso generan bloqueos de varias horas que impiden la entrada fluida de nuevos camiones, actuando como un freno o autorregulación negativa que estrangula temporalmente la misma operatividad de la central." },
+    { from:"n5", to:"n7", pol:"+", loop:true, loopLabel:"R1", verbo:"La inoperancia de la norma permite la hiperconcentración, que satura el espacio público mediante actividades informales. Entre más se consolidan estas prácticas sobre la calle, la regla oficial se vuelve más obsoleta e inaplicable, profundizando y alimentando la inoperancia del ordenamiento oficial." },
+    { from:"n2", to:"n4", pol:"-", loop:true, loopLabel:"B2", verbo:"La acumulación de residuos y pasivos ambientales degrada los cuerpos de agua. Este deterioro ambiental severo y la falta de salubridad actúan como un límite biótico que agota la capacidad de soporte del territorio frente a la sobrecarga residencial en altura." },
+  ];
+
+  const SUBNETS = {
+    n1: {
+      nodes: [
+        { id:"s1_1", t:"Confluencia de flujos intermunicipales de carga en corredores regionales" },
+        { id:"s1_2", t:"Restricción de capacidad en la red vial perimetral de calzada sencilla" },
+        { id:"s1_3", t:"Tiempos de espera y represamiento en la recepción de carga" },
+        { id:"s1_4", t:"Estacionamiento de carga pesada en calzadas y andenes" },
+        { id:"s1_5", t:"Coexistencia de vehículos de tracción humana y cargadores informales en vía" },
+        { id:"s1_6", t:"Reducción de la capacidad operativa en arterias principales" },
+      ],
+      rel: [
+        { from:"s1_1", to:"s1_2", pol:"+" }, { from:"s1_2", to:"s1_3", pol:"+" }, { from:"s1_3", to:"s1_4", pol:"+" },
+        { from:"s1_4", to:"s1_5", pol:"+" }, { from:"s1_5", to:"s1_6", pol:"+" }, { from:"s1_6", to:"s1_3", loop:true, pol:"+" },
+      ],
+      loopNote: "La reducción de capacidad en avenidas principales empuja el tráfico pesado hacia las calles barriales internas, aumentando el represamiento y el estacionamiento en calzadas locales.",
+      loopType: "R",
+    },
+    n2: {
+      nodes: [
+        { id:"s2_1", t:"Vertimiento de aguas residuales sin tratamiento en canales de la cuenca" },
+        { id:"s2_2", t:"Aporte de lixiviados y residuos orgánicos de la operación agrocomercial" },
+        { id:"s2_3", t:"Reducción de la capacidad de infiltración en suelos de ronda" },
+        { id:"s2_4", t:"Eutrofización y deterioro de la calidad del agua en el Humedal La Vaca" },
+        { id:"s2_5", t:"Pérdida de dinamismo ecológico en la red hídrica superficial" },
+      ],
+      rel: [
+        { from:"s2_1", to:"s2_3", pol:"+" }, { from:"s2_2", to:"s2_3", pol:"+" }, { from:"s2_3", to:"s2_4", pol:"+" },
+        { from:"s2_4", to:"s2_5", pol:"+" }, { from:"s2_5", to:"s2_1", loop:true, pol:"+" },
+      ],
+      loopNote: "La saturación de contaminantes en el agua reduce la capacidad biológica de autodepuración del humedal, acelerando la alteración biofísica ante nuevos vertimientos.",
+      loopType: "R",
+    },
+    n3: {
+      nodes: [
+        { id:"s3_1", t:"Volumen de carga agroalimentaria regional que ingresa a la central" },
+        { id:"s3_2", t:"Prevalencia de la comercialización mayorista en suelo urbano de escala local" },
+        { id:"s3_3", t:"Generación de economías de aglomeración e hipercomercialización perimetral" },
+        { id:"s3_4", t:"Atracción de viajes de abastecimiento urbano e intermunicipal" },
+        { id:"s3_5", t:"Presión operacional sobre la capacidad de soporte de la trama barrial" },
+      ],
+      rel: [
+        { from:"s3_1", to:"s3_2", pol:"+" }, { from:"s3_2", to:"s3_3", pol:"+" }, { from:"s3_3", to:"s3_4", pol:"+" },
+        { from:"s3_4", to:"s3_5", pol:"+" }, { from:"s3_4", to:"s3_1", loop:true, pol:"+" },
+      ],
+      loopNote: "La alta concentración de oferta alimentaria atrae más comerciantes y transportadores, consolidando la centralidad mayorista e incrementando el volumen de carga entrante.",
+      loopType: "R",
+    },
+    n4: {
+      nodes: [
+        { id:"s4_1", t:"Ritmo de edificación de vivienda colectiva en altura" },
+        { id:"s4_2", t:"Demanda de conexiones a las redes matrices de acueducto y alcantarillado" },
+        { id:"s4_3", t:"Saturación de equipamientos públicos y servicios comunitarios barriales" },
+        { id:"s4_4", t:"Aumento de la densidad poblacional en sectores residenciales" },
+        { id:"s4_5", t:"Fricción entre el tráfico residencial y el transporte pesado de carga" },
+      ],
+      rel: [
+        { from:"s4_1", to:"s4_4", pol:"+" }, { from:"s4_4", to:"s4_2", pol:"+" }, { from:"s4_4", to:"s4_3", pol:"+" },
+        { from:"s4_4", to:"s4_5", pol:"+" }, { from:"s4_2", to:"s4_1", loop:true, pol:"+" },
+      ],
+      loopNote: "El crecimiento continuo de viviendas en altura incrementa la densidad de habitantes, sobrepasando la capacidad instalada de las redes sanitarias y comunitarias existentes.",
+      loopType: "R",
+    },
+    n5: {
+      nodes: [
+        { id:"s5_1", t:"Saturación de la capacidad de parqueo interno en la central mayorista" },
+        { id:"s5_2", t:"Ocupación de andenes y calzadas en maniobras de transferencia de mercancías" },
+        { id:"s5_3", t:"Proliferación de ventas informales y acopio temporal en vía pública" },
+        { id:"s5_4", t:"Reducción de la franja efectiva de circulación peatonal barrial" },
+        { id:"s5_5", t:"Conflicto de uso entre itinerarios peatonales y tránsito de carga pesada" },
+      ],
+      rel: [
+        { from:"s5_1", to:"s5_2", pol:"+" }, { from:"s5_2", to:"s5_3", pol:"+" }, { from:"s5_3", to:"s5_4", pol:"+" },
+        { from:"s5_4", to:"s5_5", pol:"+" }, { from:"s5_5", to:"s5_2", loop:true, pol:"+" },
+      ],
+      loopNote: "La ocupación continua de calzadas para transferencia de mercancías valida la apropiación del espacio público, atrayendo mayor cantidad de actividades logísticas e informales sobre el espacio peatonal.",
+      loopType: "R",
+    },
+    n6: {
+      nodes: [
+        { id:"s6_1", t:"Generación masiva de residuos orgánicos e inorgánicos de la operación comercial" },
+        { id:"s6_2", t:"Disposición no controlada de basuras y escombros en bordes ambientales" },
+        { id:"s6_3", t:"Tránsito y parqueo de vehículos de gran tonelaje en la franja de amortiguación" },
+        { id:"s6_4", t:"Compactación de suelos biológicos adyacentes a cuerpos de agua" },
+        { id:"s6_5", t:"Deterioro de la cobertura vegetal y de las áreas de absorción natural" },
+      ],
+      rel: [
+        { from:"s6_1", to:"s6_2", pol:"+" }, { from:"s6_3", to:"s6_4", pol:"+" }, { from:"s6_2", to:"s6_4", pol:"+" },
+        { from:"s6_4", to:"s6_5", pol:"+" }, { from:"s6_5", to:"s6_3", loop:true, pol:"+" },
+      ],
+      loopNote: "La invasión de transporte pesado y escombros elimina la cobertura vegetal original, facilitando el avance y la consolidación de nuevas operaciones logísticas sobre la franja ambiental.",
+      loopType: "R",
+    },
+    n7: {
+      nodes: [
+        { id:"s7_1", t:"Rigidez de los instrumentos normativos distritales frente a la autoorganización local" },
+        { id:"s7_2", t:"Brecha entre las determinantes del POT y las dinámicas reales de uso del suelo" },
+        { id:"s7_3", t:"Coexistencia de regímenes normativos entre la regulación pública y la administración privada" },
+        { id:"s7_4", t:"Consolidación de dinámicas informales al margen de controles institucionales" },
+        { id:"s7_5", t:"Pérdida de eficacia en los mecanismos institucionales de regulación territorial" },
+      ],
+      rel: [
+        { from:"s7_1", to:"s7_2", pol:"+" }, { from:"s7_2", to:"s7_3", pol:"+" }, { from:"s7_3", to:"s7_4", pol:"+" },
+        { from:"s7_4", to:"s7_5", pol:"+" }, { from:"s7_5", to:"s7_1", loop:true, pol:"+" },
+      ],
+      loopNote: "A medida que la regulación oficial ignora la lógica real del suelo, las prácticas informales ganan terreno y se autoorganizan, haciendo que las normas públicas sean cada vez más inoperantes.",
+      loopType: "R",
+    },
+  };
+  const macroById = {}; MACRO.forEach(m => macroById[m.id] = m);
+
+  const allNodesById = {};
+  const allNodesList = [];
+  const allInternalRel = [];
+  Object.keys(SUBNETS).forEach(mId => {
+    SUBNETS[mId].nodes.forEach(n => {
+      const copy = { ...n, macroId: mId };
+      allNodesById[n.id] = copy;
+      allNodesList.push(copy);
+    });
+    SUBNETS[mId].rel.forEach(r => {
+      allInternalRel.push(r);
+    });
+  });
+
+  const INTER_NETWORK_REL = [
+    { from:"s2_3", to:"s3_2", pol:"+", verbo:"La saturación hídrica y falta de infiltración impulsa la ocupación informal de suelo para acopio agrocomercial local", inter:true },
+    { from:"s1_1", to:"s3_5", pol:"+", verbo:"La llegada constante de camiones regionales satura de manera crítica la trama barrial circundante", inter:true },
+    { from:"s4_1", to:"s3_1", pol:"+", verbo:"La alta densidad poblacional nueva exige un mayor volumen de abastecimiento de alimentos", inter:true },
+    { from:"s3_3", to:"s4_1", pol:"-", verbo:"La hipercomercialización descontrolada desincentiva la inversión en vivienda formal de calidad", inter:true },
+    { from:"s7_3", to:"s1_2", pol:"-", verbo:"La falta de regulación pública unificada impide ampliar o gestionar eficazmente la infraestructura vial perimetral", inter:true },
+    { from:"s6_5", to:"s7_2", pol:"+", verbo:"El deterioro ambiental evidencia la brecha insalvable entre el POT oficial y el uso real del suelo", inter:true },
+    { from:"s6_2", to:"s2_1", pol:"+", verbo:"La acumulación de basuras y escombros obstruye los canales provocando vertimientos sin tratamiento", inter:true },
+    { from:"s2_5", to:"s6_1", pol:"+", verbo:"La degradación de la red hídrica reduce el control sanitario aumentando la generación desordenada de residuos", inter:true },
+    { from:"s2_1", to:"s1_5", pol:"+", verbo:"El deterioro ambiental de las calzadas favorece la presencia de cargadores informales y tracción humana", inter:true },
+    { from:"s2_2", to:"s5_3", pol:"+", verbo:"El desborde de lixiviados en áreas públicas atrae ventas informales de desperdicios y acopio en vía", inter:true },
+    { from:"s5_1", to:"s4_2", pol:"+", verbo:"La falta de estacionamiento interno genera sobrecarga en las redes públicas de servicios del entorno", inter:true },
+    { from:"s5_2", to:"s1_2", pol:"+", verbo:"Las maniobras de carga y descarga en vía pública reducen drásticamente la capacidad de la red vial", inter:true },
+    { from:"s1_4", to:"s6_2", pol:"+", verbo:"El parqueo prolongado de camiones convierte las rondas y andenes en puntos clandestinos de arrojamiento de basuras", inter:true }
+  ];
+
+  const gooLayer = document.getElementById("gooLayer");
+  const labelLayer = document.getElementById("labelLayer");
+  const intro = document.getElementById("intro");
+  const backBtn = document.getElementById("backBtn");
+  const levelTitle = document.getElementById("levelTitle");
+  const levelTitleText = document.getElementById("levelTitleText");
+  const levelSubText = document.getElementById("levelSubText");
+
+  const CENTER_R = 108;
+  let NODE_R = 62;
+
+  function forceLayout(nodeList, edgeList, centerX, centerY, spread, radiusOf, gapMult, margin, iterations = 60) {
+    const pos = {};
+    const areaW = mainW() - margin * 2, areaH = mainH() - margin * 2;
+    const cols = Math.ceil(Math.sqrt(nodeList.length * areaW / areaH));
+    const rows = Math.ceil(nodeList.length / cols);
+    nodeList.forEach((n, i) => {
+      const col = i % cols, row = Math.floor(i / cols);
+      const jitter = () => (Math.random() - 0.5) * 0.35;
+      pos[n.id] = { x: margin + (areaW * (col + 0.5 + jitter())) / cols, y: margin + (areaH * (row + 0.5 + jitter())) / rows };
+    });
+    const ids = nodeList.map(n => n.id);
+    function minDistFor(a, b) { return (radiusOf(a) + radiusOf(b)) * Math.max(1.35, gapMult); }
+    for (let iter = 0; iter < iterations; iter++) {
+      const force = {}; ids.forEach(id => force[id] = { x: 0, y: 0 });
+      for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+        const a = pos[ids[i]], b = pos[ids[j]];
+        const minDist = minDistFor(ids[i], ids[j]);
+        let dx = a.x - b.x, dy = a.y - b.y;
+        let dist = Math.hypot(dx, dy) || 0.001;
+        if (dist < minDist) {
+          if (dist < 0.01) { dx = (Math.random() - 0.5) * 2; dy = (Math.random() - 0.5) * 2; dist = Math.hypot(dx, dy); }
+          const overlap = (minDist - dist) / 2, ux = dx / dist, uy = dy / dist;
+          force[ids[i]].x += ux * overlap; force[ids[i]].y += uy * overlap;
+          force[ids[j]].x -= ux * overlap; force[ids[j]].y -= uy * overlap;
+        }
+      }
+      edgeList.forEach(e => {
+        const a = pos[e.from], b = pos[e.to];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.hypot(dx, dy) || 0.001;
+        const target = minDistFor(e.from, e.to) * 1.35;
+        const pull = (dist - target) * 0.012;
+        force[e.from].x += dx / dist * pull; force[e.from].y += dy / dist * pull;
+        force[e.to].x -= dx / dist * pull; force[e.to].y -= dy / dist * pull;
+      });
+      ids.forEach(id => {
+        pos[id].x += force[id].x; pos[id].y += force[id].y;
+        pos[id].x += (centerX - pos[id].x) * 0.0006;
+        pos[id].y += (centerY - pos[id].y) * 0.0006;
+        if (pos[id].x < margin) pos[id].x += (margin - pos[id].x) * 0.45;
+        if (pos[id].x > mainW() - margin) pos[id].x -= (pos[id].x - (mainW() - margin)) * 0.45;
+        if (pos[id].y < margin) pos[id].y += (margin - pos[id].y) * 0.45;
+        if (pos[id].y > mainH() - margin) pos[id].y -= (pos[id].y - (mainH() - margin)) * 0.45;
+      });
+    }
+    // Pasada final de separación garantizada sin superposición ni contacto
+    for (let pass = 0; pass < 40; pass++) {
+      for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+        const a = pos[ids[i]], b = pos[ids[j]];
+        const minDist = minDistFor(ids[i], ids[j]);
+        let dx = a.x - b.x, dy = a.y - b.y;
+        let dist = Math.hypot(dx, dy) || 0.001;
+        if (dist < minDist) {
+          if (dist < 0.01) { dx = (Math.random() - 0.5) * 2; dy = (Math.random() - 0.5) * 2; dist = Math.hypot(dx, dy); }
+          const overlap = (minDist - dist) / 2, ux = dx / dist, uy = dy / dist;
+          a.x += ux * overlap; a.y += uy * overlap; b.x -= ux * overlap; b.y -= uy * overlap;
+        }
+      }
+      ids.forEach(id => {
+        const r = radiusOf(id);
+        pos[id].x = Math.max(margin + r + 4, Math.min(mainW() - margin - r - 4, pos[id].x));
+        pos[id].y = Math.max(margin + r + 4, Math.min(mainH() - margin - r - 4, pos[id].y));
+      });
+    }
+    return pos;
+  }
+
+  function el(cls) { const d = document.createElement("div"); d.className = cls; return d; }
+  function size(elm, r) { elm.style.width = elm.style.height = r * 2 + "px"; }
+  function place(elm, x, y) { elm.style.left = x + "px"; elm.style.top = y + "px"; }
+  function wrapToFit(text, maxCharsPerLine, maxLines) {
+    const words = text.split(" ");
+    const lines = []; let current = "";
+    words.forEach(w => {
+      const candidate = current ? current + " " + w : w;
+      if (candidate.length > maxCharsPerLine && current) { lines.push(current); current = w; }
+      else current = candidate;
+    });
+    if (current) lines.push(current);
+    if (lines.length > maxLines) {
+      const shown = lines.slice(0, maxLines);
+      let last = shown[maxLines - 1];
+      while (last.length > 3 && (last + "…").length > maxCharsPerLine) last = last.slice(0, -1).trim();
+      shown[maxLines - 1] = last.replace(/[.,;:]+$/, "") + "…";
+      return shown.join("<br>");
+    }
+    return lines.join("<br>");
+  }
+
+  const centerBlob = el("blob"); gooLayer.appendChild(centerBlob);
+  const centerLabel = el("label center-label");
+  centerLabel.style.width = (CENTER_R * 1.65) + "px";
+  centerLabel.textContent = "Corabastos y su entorno";
+  labelLayer.appendChild(centerLabel);
+  const hitCenter = el("hit"); labelLayer.appendChild(hitCenter);
+
+  let level = "none";
+  let currentDetailId = null;
+  let nodeBlobs = {}, nodeLabels = {}, nodeHits = {}, nodePlusBtns = {}, nodeMinusBtns = {}, nodeRadiusMap = {};
+  let bridgeEls = [];
+  let arrowEls = [];
+  let activeNodes = [], activeRel = [], nodePos = {};
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const arrowsSvg = document.getElementById("arrowsSvg");
+  const arrowDefs = arrowsSvg.querySelector("defs");
+  const arrowMarkerCache = {};
+  function ensureArrowMarker(color) {
+    const key = color.replace(/[^a-zA-Z0-9]/g, "");
+    if (arrowMarkerCache[key]) return key;
+    const marker = document.createElementNS(SVGNS, "marker");
+    marker.setAttribute("id", "arrow-" + key);
+    marker.setAttribute("viewBox", "0 0 10 10");
+    marker.setAttribute("refX", "8"); marker.setAttribute("refY", "5");
+    marker.setAttribute("markerWidth", "7"); marker.setAttribute("markerHeight", "7");
+    marker.setAttribute("orient", "auto-start-reverse");
+    const path = document.createElementNS(SVGNS, "path");
+    path.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+    path.setAttribute("fill", color);
+    marker.appendChild(path);
+    arrowDefs.appendChild(marker);
+    arrowMarkerCache[key] = true;
+    return key;
+  }
+
+  function clearNetwork() {
+    Object.values(nodeBlobs).forEach(b => b.remove());
+    Object.values(nodeLabels).forEach(l => l.remove());
+    Object.values(nodeHits).forEach(h => h.remove());
+    Object.values(nodePlusBtns).forEach(p => p.remove());
+    Object.values(nodeMinusBtns).forEach(m => m.remove());
+    bridgeEls.forEach(b => b.remove());
+    arrowEls.forEach(a => a.remove());
+    nodeBlobs = {}; nodeLabels = {}; nodeHits = {}; nodePlusBtns = {}; nodeMinusBtns = {}; bridgeEls = []; arrowEls = []; nodeRadiusMap = {};
+  }
+
+  function hexToRgb(hex) {
+    const h = hex.replace("#", "");
+    return { r: parseInt(h.substring(0, 2), 16), g: parseInt(h.substring(2, 4), 16), b: parseInt(h.substring(4, 6), 16) };
+  }
+  function lerpColor(c1, c2, t) {
+    const a = hexToRgb(c1), b = hexToRgb(c2);
+    const r = Math.round(a.r + (b.r - a.r) * t), g = Math.round(a.g + (b.g - a.g) * t), bl = Math.round(a.b + (b.b - a.b) * t);
+    return `rgb(${r},${g},${bl})`;
+  }
+  let globalSizeScale = 1.0;
+  let activeByIdMap = null;
+  let activeColorOf = () => "var(--node)";
+  let activeLoopType = "R";
+  const baseRadiusMap = {};
+
+  function renderEdges() {
+    bridgeEls.forEach(b => b.remove());
+    arrowEls.forEach(a => a.remove());
+    bridgeEls = []; arrowEls = [];
+    const BRIDGES = level === "full" ? 0 : 30;
+    activeRel.forEach(r => {
+      const a = nodePos[r.from], b = nodePos[r.to];
+      if (!a || !b) return;
+      const rFrom = nodeRadiusMap[r.from], rTo = nodeRadiusMap[r.to];
+      const colorFrom = activeColorOf(r.from), colorTo = activeColorOf(r.to);
+      if (BRIDGES > 0) {
+        for (let j = 0; j < BRIDGES; j++) {
+          const t = (j + 1) / (BRIDGES + 1);
+          const rr = ((rFrom * (1 - t) + rTo * t) * (1 - t * 0.35)) * 0.17;
+          const bridge = el("blob"); gooLayer.appendChild(bridge); bridgeEls.push(bridge);
+          if (colorFrom.startsWith("#") && colorTo.startsWith("#")) bridge.style.background = lerpColor(colorFrom, colorTo, t);
+          size(bridge, rr); place(bridge, a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+        }
+      }
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const ux = dx / dist, uy = dy / dist;
+      const startX = a.x + ux * (rFrom + 4), startY = a.y + uy * (rFrom + 4);
+      const endX = b.x - ux * (rTo + 4), endY = b.y - uy * (rTo + 4);
+      const arrowColorRaw = level === "full" ? "#ffffff" : (r.inter ? "#24c8bd" : (colorFrom.startsWith("#") ? colorFrom : "#e8ecf1"));
+      const markerKey = ensureArrowMarker(arrowColorRaw);
+      const line = document.createElementNS(SVGNS, "line");
+      line.setAttribute("class", "arrow-line");
+      line.setAttribute("x1", startX); line.setAttribute("y1", startY);
+      line.setAttribute("x2", endX); line.setAttribute("y2", endY);
+      line.setAttribute("stroke", arrowColorRaw);
+      line.setAttribute("stroke-width", level === "full" ? (r.inter ? "2.2" : "1.8") : "2.8");
+      line.setAttribute("stroke-opacity", level === "full" ? "0.85" : "0.9");
+      if (r.inter) {
+        line.setAttribute("stroke-dasharray", "5 3");
+      }
+      line.setAttribute("marker-end", `url(#arrow-${markerKey})`);
+      arrowsSvg.appendChild(line); arrowEls.push(line);
+
+      const polX = a.x + ux * dist * 0.72, polY = a.y + uy * dist * 0.72;
+      const polHit = document.createElementNS(SVGNS, "circle");
+      polHit.setAttribute("cx", polX); polHit.setAttribute("cy", polY);
+      polHit.setAttribute("r", "16");
+      polHit.setAttribute("fill", "transparent");
+      polHit.style.cursor = "pointer";
+      polHit.style.pointerEvents = "auto";
+      polHit.addEventListener("click", (e) => { e.stopPropagation(); openRelPopup(r); });
+      arrowsSvg.appendChild(polHit); arrowEls.push(polHit);
+      const polText = document.createElementNS(SVGNS, "text");
+      polText.setAttribute("x", polX); polText.setAttribute("y", polY);
+      polText.setAttribute("text-anchor", "middle");
+      polText.setAttribute("dominant-baseline", "central");
+      polText.setAttribute("font-size", "14");
+      polText.setAttribute("font-weight", "800");
+      polText.setAttribute("fill", "#ffffff");
+      polText.setAttribute("stroke", "#0b0c0f");
+      polText.setAttribute("stroke-width", "3");
+      polText.setAttribute("paint-order", "stroke");
+      polText.textContent = r.pol || "+";
+      polText.style.pointerEvents = "none";
+      arrowsSvg.appendChild(polText); arrowEls.push(polText);
+
+      if (r.loop) {
+        const midX = a.x + ux * dist * 0.42, midY = a.y + uy * dist * 0.42;
+        const badge = document.createElementNS(SVGNS, "text");
+        badge.setAttribute("x", midX); badge.setAttribute("y", midY - 14);
+        badge.setAttribute("text-anchor", "middle");
+        badge.setAttribute("font-size", "13");
+        badge.setAttribute("font-weight", "800");
+        badge.setAttribute("fill", arrowColorRaw);
+        badge.setAttribute("stroke", "#0b0c0f");
+        badge.setAttribute("stroke-width", "3.4");
+        badge.setAttribute("paint-order", "stroke");
+        badge.textContent = "↻ " + (r.loopLabel || activeLoopType || "R");
+        arrowsSvg.appendChild(badge); arrowEls.push(badge);
+      }
+    });
+  }
+
+  function updateNodeSizes() {
+    activeNodes.forEach(n => {
+      const ownR = (baseRadiusMap[n.id] || 30) * globalSizeScale;
+      nodeRadiusMap[n.id] = ownR;
+      const b = nodeBlobs[n.id], l = nodeLabels[n.id], h = nodeHits[n.id];
+      if (b) size(b, ownR);
+      if (h) size(h, ownR);
+      if (l) {
+        const fontPx = Math.max(9, Math.min(13, ownR * 0.32)), lineH = fontPx * 1.22;
+        let maxLines = Math.max(2, Math.floor((ownR * 2 * 0.8) / lineH));
+        let halfH = (maxLines * lineH) / 2;
+        while (halfH >= ownR * 0.85 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
+        const safeWidth = 2 * Math.sqrt(Math.max(0, ownR * ownR - halfH * halfH)) * 0.86;
+        l.style.width = safeWidth + "px";
+        l.style.fontSize = fontPx + "px";
+        l.style.lineHeight = lineH + "px";
+      }
+    });
+    renderEdges();
+  }
+
+  const nodeScaleRange = document.getElementById("nodeScaleRange");
+  if (nodeScaleRange) {
+    nodeScaleRange.addEventListener("input", (e) => {
+      globalSizeScale = parseFloat(e.target.value);
+      updateNodeSizes();
+    });
+  }
+
+  const copyNetCoordsBtn = document.getElementById("copyNetCoordsBtn");
+  if (copyNetCoordsBtn) {
+    copyNetCoordsBtn.addEventListener("click", async () => {
+      let out = `// === COORDENADAS Y TAMAÑOS (${level.toUpperCase()}) ===\nconst SAVED_POSITIONS = {\n`;
+      activeNodes.forEach(n => {
+        const p = nodePos[n.id] || { x: 0, y: 0 };
+        const r = nodeRadiusMap[n.id] || 30;
+        out += `  "${n.id}": { x: ${p.x.toFixed(1)}, y: ${p.y.toFixed(1)}, r: ${r.toFixed(1)}, t: "${(n.corto || n.t).replace(/"/g, '\\"')}" },\n`;
+      });
+      out += `};\n`;
+      out = out.trim();
+      const box = document.getElementById("netCoordsOutput");
+      if (box) {
+        box.value = out;
+        box.style.display = "block";
+        box.select();
+      }
+      try { await navigator.clipboard.writeText(out); } catch (err) {}
+      copyNetCoordsBtn.innerHTML = `<i class="fa-solid fa-check"></i> ¡Copiado!`;
+      setTimeout(() => { copyNetCoordsBtn.innerHTML = `<i class="fa-regular fa-copy"></i> Copiar Coordenadas y Tamaños`; }, 2000);
+    });
+  }
+
+  const SAVED_FULL_POSITIONS = {
+    "s1_1": { x: 76.4, y: 173.3, r: 43.8 },
+    "s1_2": { x: 64.0, y: 410.7, r: 62.4 },
+    "s1_3": { x: 446.2, y: 110.2, r: 54.3 },
+    "s1_4": { x: 343.1, y: 311.1, r: 54.3 },
+    "s1_5": { x: 753.8, y: 213.3, r: 54.3 },
+    "s1_6": { x: 597.3, y: 150.2, r: 43.8 },
+    "s2_1": { x: 995.6, y: 153.8, r: 62.4 },
+    "s2_2": { x: 1235.6, y: 107.6, r: 43.8 },
+    "s2_3": { x: 1458.7, y: 195.6, r: 62.4 },
+    "s2_4": { x: 1239.1, y: 404.4, r: 43.8 },
+    "s2_5": { x: 524.4, y: 700.4, r: 54.3 },
+    "s3_1": { x: 1294.2, y: 505.8, r: 54.3 },
+    "s3_2": { x: 832.0, y: 495.1, r: 54.3 },
+    "s3_3": { x: 1128.9, y: 262.2, r: 54.3 },
+    "s3_4": { x: 640.9, y: 344.0, r: 54.3 },
+    "s3_5": { x: 228.4, y: 146.7, r: 43.8 },
+    "s4_1": { x: 1560.0, y: 458.7, r: 62.4 },
+    "s4_2": { x: 1483.6, y: 858.7, r: 54.3 },
+    "s4_3": { x: 1425.8, y: 733.3, r: 34.5 },
+    "s4_4": { x: 1272.0, y: 770.7, r: 62.4 },
+    "s4_5": { x: 1309.3, y: 635.6, r: 34.5 },
+    "s5_1": { x: 1060.4, y: 845.3, r: 43.8 },
+    "s5_2": { x: 887.1, y: 787.6, r: 62.4 },
+    "s5_3": { x: 1058.7, y: 543.1, r: 54.3 },
+    "s5_4": { x: 1204.4, y: 624.0, r: 43.8 },
+    "s5_5": { x: 1137.8, y: 741.3, r: 43.8 },
+    "s6_1": { x: 656.0, y: 787.6, r: 43.8 },
+    "s6_2": { x: 215.1, y: 784.9, r: 62.4 },
+    "s6_3": { x: 48.9, y: 584.9, r: 43.8 },
+    "s6_4": { x: 94.2, y: 892.4, r: 54.3 },
+    "s6_5": { x: 531.6, y: 865.8, r: 54.3 },
+    "s7_1": { x: 989.3, y: 912.9, r: 43.8 },
+    "s7_2": { x: 824.0, y: 910.2, r: 54.3 },
+    "s7_3": { x: 525.3, y: 438.2, r: 54.3 },
+    "s7_4": { x: 836.4, y: 648.0, r: 43.8 },
+    "s7_5": { x: 1217.8, y: 909.3, r: 43.8 }
+  };
+
+  const SAVED_MACRO_POSITIONS = {
+    "n1": { x: 1105.8, y: 485.3, r: 124.4, t: "Colapso de la red vial local y arterial" },
+    "n2": { x: 136.9, y: 534.2, r: 116.4, t: "Contaminación de la red hídrica" },
+    "n3": { x: 678.2, y: 301.3, r: 176.9, t: "Concentración del mercado mayorista" },
+    "n4": { x: 467.6, y: 774.2, r: 132.4, t: "Sobrecarga por densificación en altura" },
+    "n5": { x: 1407.1, y: 264.9, r: 140.4, t: "Interferencia en el espacio público" },
+    "n6": { x: 178.7, y: 248.9, r: 108.4, t: "Acumulación de residuos y transporte pesado" },
+    "n7": { x: 1180.4, y: 789.3, r: 140.4, t: "Inoperancia del ordenamiento oficial" },
+  };
+
+  function resizeIndividualNode(id, delta) {
+    if (!nodeRadiusMap[id]) return;
+    const currentR = nodeRadiusMap[id];
+    const newR = Math.max(12, currentR + delta);
+    nodeRadiusMap[id] = newR;
+    baseRadiusMap[id] = newR / globalSizeScale;
+
+    if (nodeBlobs[id]) size(nodeBlobs[id], newR);
+    if (nodeHits[id]) size(nodeHits[id], newR);
+    if (nodeLabels[id]) {
+      const l = nodeLabels[id];
+      const fontPx = Math.max(9, Math.min(12, newR * 0.32)), lineH = fontPx * 1.22;
+      let maxLines = Math.max(2, Math.floor((newR * 2 * 0.8) / lineH));
+      let halfH = (maxLines * lineH) / 2;
+      while (halfH >= newR * 0.85 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
+      const safeWidth = 2 * Math.sqrt(Math.max(0, newR * newR - halfH * halfH)) * 0.86;
+      l.style.width = safeWidth + "px";
+      l.style.fontSize = fontPx + "px";
+      l.style.lineHeight = lineH + "px";
+    }
+    const p = nodePos[id];
+    if (p) {
+      if (nodeMinusBtns[id]) place(nodeMinusBtns[id], p.x - newR - 10, p.y);
+      if (nodePlusBtns[id]) place(nodePlusBtns[id], p.x + newR + 10, p.y);
+    }
+    renderEdges();
+  }
+
+  function buildNetwork(nodes, rel, byIdMap, opts) {
+    const loopType = opts.loopType || "R";
+    clearNetwork();
+    activeNodes = nodes; activeRel = rel;
+    activeByIdMap = byIdMap;
+    activeLoopType = loopType;
+    activeColorOf = opts.colorOf || (() => "var(--node)");
+    const degree = {};
+    nodes.forEach(n => degree[n.id] = 0);
+    rel.forEach(r => {
+      if (degree[r.from] !== undefined) degree[r.from]++;
+      if (degree[r.to] !== undefined) degree[r.to]++;
+    });
+    const degValues = Object.values(degree);
+    const degMin = Math.min(...degValues), degMax = Math.max(...degValues);
+    NODE_R = Math.max(20, Math.min(opts.maxR, mainW() * opts.wFrac));
+    const R_MIN = Math.max(15, NODE_R * 0.48);
+    const R_MAX = NODE_R * 1.62;
+    const degreeRadiusTable = {};
+    degValues.forEach(d => {
+      const t = degMax === degMin ? 0.5 : (d - degMin) / (degMax - degMin);
+      degreeRadiusTable[d] = R_MIN + (R_MAX - R_MIN) * Math.sqrt(t);
+    });
+
+    nodes.forEach(n => {
+      let baseR = degreeRadiusTable[degree[n.id]];
+      if (opts.savedPositions && opts.savedPositions[n.id] && opts.savedPositions[n.id].r) {
+        baseR = opts.savedPositions[n.id].r;
+      }
+      baseRadiusMap[n.id] = baseR;
+      nodeRadiusMap[n.id] = baseR * globalSizeScale;
+    });
+    function radiusOf(id) { return nodeRadiusMap[id]; }
+    const margin = Math.max(40, Math.min(120, mainW() * 0.06));
+    const cx = mainW() / 2, cy = mainH() / 2 + 10;
+    const spread = Math.min(mainW() - margin * 2, mainH() - margin * 2) * 0.55;
+    const avgR = degValues.reduce((s, d) => s + (R_MIN + (R_MAX - R_MIN) * Math.sqrt(degMax === degMin ? 0.5 : (d - degMin) / (degMax - degMin))), 0) / nodes.length;
+    const area = (mainW() - margin * 2) * (mainH() - margin * 2);
+    const maxFeasible = 2 * Math.sqrt((area * 0.68) / (nodes.length * Math.PI));
+    const gapMult = Math.min(1.8, Math.max(1.35, maxFeasible / (avgR * 2)));
+
+    function segInt(p1, p2, p3, p4) {
+      const d1x = p2.x - p1.x, d1y = p2.y - p1.y, d2x = p4.x - p3.x, d2y = p4.y - p3.y;
+      const denom = d1x * d2y - d1y * d2x;
+      if (Math.abs(denom) < 1e-9) return false;
+      const t = ((p3.x - p1.x) * d2y - (p3.y - p1.y) * d2x) / denom;
+      const u = ((p3.x - p1.x) * d1y - (p3.y - p1.y) * d1x) / denom;
+      return t > 0.05 && t < 0.95 && u > 0.05 && u < 0.95;
+    }
+    function countCrossings(pos) {
+      let c = 0;
+      for (let i = 0; i < rel.length; i++) for (let j = i + 1; j < rel.length; j++) {
+        const a = rel[i], b = rel[j];
+        if (a.from === b.from || a.from === b.to || a.to === b.from || a.to === b.to) continue;
+        if (segInt(pos[a.from], pos[a.to], pos[b.from], pos[b.to])) c++;
+      }
+      return c;
+    }
+    let best = null, bestC = Infinity;
+    if (opts.savedPositions) {
+      best = {};
+      nodes.forEach(n => {
+        if (opts.savedPositions[n.id]) {
+          best[n.id] = { x: opts.savedPositions[n.id].x, y: opts.savedPositions[n.id].y };
+          if (opts.savedPositions[n.id].r) {
+            baseRadiusMap[n.id] = opts.savedPositions[n.id].r;
+            nodeRadiusMap[n.id] = opts.savedPositions[n.id].r * globalSizeScale;
+          }
+        }
+      });
+    } else {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const cand = forceLayout(nodes, rel, cx, cy, spread, radiusOf, gapMult, margin);
+        const c = countCrossings(cand);
+        if (c < bestC) { bestC = c; best = cand; }
+        if (bestC === 0) break;
+      }
+    }
+    if (!best) {
+      best = {};
+      const step = (Math.PI * 2) / Math.max(1, nodes.length);
+      nodes.forEach((n, i) => {
+        best[n.id] = {
+          x: cx + spread * Math.cos(i * step),
+          y: cy + spread * Math.sin(i * step)
+        };
+      });
+    }
+    nodePos = best;
+
+    nodes.forEach(n => {
+      const b = el("blob"); gooLayer.appendChild(b); nodeBlobs[n.id] = b;
+      b.style.background = activeColorOf(n.id);
+      const l = el("label child-label");
+      const ownR = nodeRadiusMap[n.id];
+      const fontPx = Math.max(9, Math.min(12, ownR * 0.32)), lineH = fontPx * 1.22;
+      let maxLines = Math.max(2, Math.floor((ownR * 2 * 0.8) / lineH));
+      let halfH = (maxLines * lineH) / 2;
+      while (halfH >= ownR * 0.85 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
+      const safeWidth = 2 * Math.sqrt(Math.max(0, ownR * ownR - halfH * halfH)) * 0.86;
+      l.style.width = safeWidth + "px";
+      l.style.fontSize = fontPx + "px";
+      l.style.lineHeight = lineH + "px";
+      const maxCharsPerLine = Math.max(5, Math.floor(safeWidth / (fontPx * 0.56)));
+      const text = byIdMap[n.id].corto || byIdMap[n.id].t;
+      l.innerHTML = wrapToFit(text, maxCharsPerLine, maxLines);
+      labelLayer.appendChild(l); nodeLabels[n.id] = l;
+      const h = el("hit"); labelLayer.appendChild(h); nodeHits[n.id] = h;
+
+      place(nodeBlobs[n.id], nodePos[n.id].x, nodePos[n.id].y); size(nodeBlobs[n.id], ownR);
+      place(l, nodePos[n.id].x, nodePos[n.id].y);
+      place(h, nodePos[n.id].x, nodePos[n.id].y); size(h, ownR);
+    });
+
+    renderEdges();
+  }
+
+  const fullNetBtn = document.getElementById("fullNetBtn");
+
+  const SAVED_DETAIL_POSITIONS = {
+    // n3 (Rojo)
+    "s3_1": { x: 260.4, y: 543.1, r: 126.9 },
+    "s3_2": { x: 681.8, y: 208.9, r: 114.9 },
+    "s3_3": { x: 1058.7, y: 264.9, r: 114.9 },
+    "s3_4": { x: 1064.0, y: 651.6, r: 172.9 },
+    "s3_5": { x: 651.6, y: 784.9, r: 79.7 },
+
+    // n5 (Verde)
+    "s5_1": { x: 272.9, y: 463.8, r: 67.7 },
+    "s5_2": { x: 450.7, y: 228.2, r: 142.9 },
+    "s5_3": { x: 973.3, y: 194.4, r: 96.9 },
+    "s5_4": { x: 1120.0, y: 524.2, r: 90.9 },
+    "s5_5": { x: 731.6, y: 573.1, r: 90.9 },
+
+    // n1 (Azul Oscuro)
+    "s1_1": { x: 244.4, y: 475.3, r: 55.7 },
+    "s1_2": { x: 402.7, y: 222.9, r: 84.9 },
+    "s1_3": { x: 864.9, y: 319.8, r: 130.9 },
+    "s1_4": { x: 1426.7, y: 234.4, r: 84.9 },
+    "s1_5": { x: 1235.6, y: 631.8, r: 84.9 },
+    "s1_6": { x: 496.0, y: 590.0, r: 84.9 },
+
+    // n7 (Verde Menta)
+    "s7_1": { x: 417.8, y: 529.6, r: 84.9 },
+    "s7_2": { x: 648.9, y: 163.3, r: 84.9 },
+    "s7_3": { x: 1237.3, y: 255.8, r: 84.9 },
+    "s7_4": { x: 775.1, y: 389.1, r: 84.9 },
+    "s7_5": { x: 1155.6, y: 676.2, r: 84.9 },
+
+    // n4 (Morado)
+    "s4_1": { x: 320.9, y: 371.3, r: 101.4 },
+    "s4_2": { x: 749.3, y: 199.8, r: 101.4 },
+    "s4_3": { x: 1091.6, y: 233.6, r: 66.8 },
+    "s4_4": { x: 1139.6, y: 566.9, r: 144.3 },
+    "s4_5": { x: 632.0, y: 641.6, r: 72.8 },
+
+    // n2 (Rosa)
+    "s2_1": { x: 327.4, y: 203.4, r: 90.9 },
+    "s2_2": { x: 1133.3, y: 388.2, r: 61.7 },
+    "s2_3": { x: 833.3, y: 227.6, r: 136.9 },
+    "s2_4": { x: 1019.6, y: 584.7, r: 90.9 },
+    "s2_5": { x: 553.8, y: 574.9, r: 90.9 },
+
+    // n6 (Amarillo)
+    "s6_1": { x: 1355.6, y: 328.7, r: 55.7 },
+    "s6_2": { x: 1042.7, y: 190.0, r: 90.9 },
+    "s6_3": { x: 468.4, y: 227.3, r: 90.9 },
+    "s6_4": { x: 940.4, y: 569.6, r: 142.9 },
+    "s6_5": { x: 308.4, y: 602.4, r: 90.9 }
+  };
+
+  function showMacro() {
+    level = "macro"; currentDetailId = null;
+    buildNetwork(MACRO, MACRO_REL, macroById, {
+      maxR: 78,
+      wFrac: 0.1,
+      savedPositions: SAVED_MACRO_POSITIONS,
+      colorOf: (id) => macroById[id].color
+    });
+    intro.style.opacity = "0";
+    levelTitle.classList.add("show");
+    levelTitleText.textContent = "El colapso operativo y logístico del modelo de ocupación de Kennedy frente a la capacidad de soporte del territorio";
+    levelSubText.textContent = "Toca un problema para ver sus relaciones, o una flecha para ver el mecanismo causal";
+    backBtn.classList.remove("show");
+    centerBlob.style.opacity = "0"; centerLabel.style.opacity = "0"; hitCenter.style.pointerEvents = "none";
+  }
+
+  function showDetail(macroId) {
+    level = "detail"; currentDetailId = macroId;
+    const sub = SUBNETS[macroId];
+    const byId = {}; sub.nodes.forEach(n => byId[n.id] = n);
+    const macroColor = macroById[macroId].color;
+    buildNetwork(sub.nodes, sub.rel, byId, {
+      maxR: 66,
+      wFrac: 0.09,
+      savedPositions: SAVED_DETAIL_POSITIONS,
+      colorOf: () => macroColor,
+      loopType: sub.loopType
+    });
+    levelTitleText.textContent = macroById[macroId].full;
+    levelSubText.textContent = "Variables causales internas — toca una para ver más, o el bucle para ver el mecanismo reforzador";
+    backBtn.textContent = "← Volver a Ver Red Completa (35 Sub-Problemas)";
+    backBtn.classList.add("show");
+    document.getElementById("panel").classList.remove("open");
+  }
+
+  function showFullNetwork() {
+    level = "full"; currentDetailId = null;
+    const allRelCombined = [...allInternalRel, ...INTER_NETWORK_REL];
+    buildNetwork(allNodesList, allRelCombined, allNodesById, {
+      maxR: 35,
+      wFrac: 0.042,
+      savedPositions: SAVED_FULL_POSITIONS,
+      colorOf: (id) => macroById[allNodesById[id].macroId].color
+    });
+    intro.style.opacity = "0";
+    levelTitle.classList.add("show");
+    levelTitleText.textContent = "🌐 Red Interconectada de Sub-Problemas Causales";
+    levelSubText.textContent = "Visualizando los 35 sub-problemas territoriales de Kennedy y sus 13 relaciones inter-red";
+    backBtn.classList.remove("show");
+    centerBlob.style.opacity = "0"; centerLabel.style.opacity = "0"; hitCenter.style.pointerEvents = "none";
+    document.getElementById("panel").classList.remove("open");
+  }
+
+  if (fullNetBtn) {
+    fullNetBtn.addEventListener("click", showFullNetwork);
+  }
+
+  function backAction() {
+    showFullNetwork();
+  }
+  backBtn.addEventListener("click", backAction);
+
+  place(centerBlob, mainW() / 2, mainH() / 2 + 10); size(centerBlob, CENTER_R);
+  place(centerLabel, mainW() / 2, mainH() / 2 + 10);
+  place(hitCenter, mainW() / 2, mainH() / 2 + 10); size(hitCenter, CENTER_R);
+
+  const stage = document.getElementById("stage");
+  let downStart = null, downTarget = null, dragNodeId = null, isDragging = false;
+
+  stage.addEventListener("pointerdown", (e) => {
+    downStart = { x: e.clientX, y: e.clientY };
+    downTarget = e.target;
+    dragNodeId = Object.keys(nodeHits).find(id => nodeHits[id] === downTarget);
+    isDragging = false;
+    if (dragNodeId) {
+      const b = nodeBlobs[dragNodeId];
+      const l = nodeLabels[dragNodeId];
+      if (b) b.style.transition = "none";
+      if (l) l.style.transition = "none";
+    }
+  });
+
+  window.addEventListener("pointermove", (e) => {
+    if (!dragNodeId || !downStart) return;
+    const moved = Math.hypot(e.clientX - downStart.x, e.clientY - downStart.y);
+    if (moved > 4) {
+      isDragging = true;
+      const mainRect = mainEl.getBoundingClientRect();
+      const newX = Math.max(20, Math.min(mainRect.width - 20, e.clientX - mainRect.left));
+      const newY = Math.max(20, Math.min(mainRect.height - 20, e.clientY - mainRect.top));
+      nodePos[dragNodeId] = { x: newX, y: newY };
+      const ownR = nodeRadiusMap[dragNodeId] || 30;
+      if (nodeBlobs[dragNodeId]) place(nodeBlobs[dragNodeId], newX, newY);
+      if (nodeLabels[dragNodeId]) place(nodeLabels[dragNodeId], newX, newY);
+      if (nodeHits[dragNodeId]) place(nodeHits[dragNodeId], newX, newY);
+      if (nodeMinusBtns[dragNodeId]) place(nodeMinusBtns[dragNodeId], newX - ownR - 10, newY);
+      if (nodePlusBtns[dragNodeId]) place(nodePlusBtns[dragNodeId], newX + ownR + 10, newY);
+      renderEdges();
+    }
+  });
+
+  window.addEventListener("pointerup", (e) => {
+    if (dragNodeId) {
+      const b = nodeBlobs[dragNodeId];
+      const l = nodeLabels[dragNodeId];
+      if (b) b.style.transition = "";
+      if (l) l.style.transition = "";
+    }
+    if (!downStart) return;
+    const moved = Math.hypot(e.clientX - downStart.x, e.clientY - downStart.y);
+    const target = downTarget;
+    const nId = dragNodeId;
+    downStart = null; downTarget = null; dragNodeId = null;
+    if (moved >= 8 || isDragging) return;
+    if (target === hitCenter) { showMacro(); return; }
+    if (!nId) return;
+    openPanel(nId);
+  });
+
+  if (document.readyState === "loading") {
+    window.addEventListener("DOMContentLoaded", () => setTimeout(showMacro, 50));
+  } else {
+    setTimeout(showMacro, 50);
+  }
+
+  function openRelPopup(r) {
+    const panel = document.getElementById("panel"), body = document.getElementById("panelBody");
+    const fromObj = macroById[r.from] || allNodesById[r.from];
+    const toObj = macroById[r.to] || allNodesById[r.to];
+    const fromTitle = fromObj ? (fromObj.corto || fromObj.t) : r.from;
+    const toTitle = toObj ? (toObj.corto || toObj.t) : r.to;
+    const toColor = (toObj && toObj.macroId) ? macroById[toObj.macroId].color : (toObj ? toObj.color || "var(--blue)" : "#24c8bd");
+    
+    body.innerHTML = `
+      <p class="panel-kind">${r.inter ? "⚡ Conexión Inter-Problemática (Micro-Causal)" : (r.loopLabel ? `Bucle de retroalimentación ${r.loopLabel}` : "Relación causal")}</p>
+      <h2>${fromTitle} <span style="color:${toColor};">→</span> ${toTitle}</h2>
+      <div class="block">
+        <b>Polaridad</b>
+        <p style="font-size:12.5px;color:var(--ink-dark);margin:0;">${r.pol === "-" ? "Negativa (–): si la causa aumenta, el efecto disminuye" : "Positiva (+): si la causa aumenta, el efecto también aumenta"}</p>
+      </div>
+      <div class="block">
+        <b>Mecanismo Causal</b>
+        <p style="font-size:12.5px;color:var(--ink-dark);margin:0;line-height:1.55;">${r.verbo || "Relación directa entre las causas identificadas en la matriz territorial."}</p>
+      </div>
+    `;
+    panel.classList.add("open");
+  }
+
+  function openPanel(id) {
+    const panel = document.getElementById("panel"), body = document.getElementById("panelBody");
+    if (level === "macro") {
+      const n = macroById[id];
+      const vieneDe = MACRO_REL.filter(r => r.to === id).map(r => ({ n: macroById[r.from], pol: r.pol, loopLabel: r.loopLabel }));
+      const alimentaA = MACRO_REL.filter(r => r.from === id).map(r => ({ n: macroById[r.to], pol: r.pol, loopLabel: r.loopLabel }));
+      body.innerHTML = `
+        <p class="panel-kind">Problema de fondo</p>
+        <h2>${n.full}</h2>
+        ${vieneDe.length ? `<div class="block"><b>Es causado por</b>${vieneDe.map(x => `<div class="rel-chip" data-goto="${x.n.id}">${x.n.corto} <b>(${x.pol})</b>${x.loopLabel ? ` — bucle ${x.loopLabel}` : ""}</div>`).join("")}</div>` : ""}
+        ${alimentaA.length ? `<div class="block"><b>Provoca o intensifica</b>${alimentaA.map(x => `<div class="rel-chip" data-goto="${x.n.id}">${x.n.corto} <b>(${x.pol})</b>${x.loopLabel ? ` — bucle ${x.loopLabel}` : ""}</div>`).join("")}</div>` : ""}
+        <div class="block" style="margin-top:16px;">
+          <b>Tamaño de la bola</b>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <button type="button" id="sizeDecBtn" style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-weight:700; cursor:pointer;">🔍– Disminuir</button>
+            <button type="button" id="sizeIncBtn" style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-weight:700; cursor:pointer;">🔍+ Aumentar</button>
+          </div>
+        </div>
+        <button class="drill-btn" id="drillBtn" style="margin-top:12px;">Ver variables causales internas →</button>
+      `;
+      body.querySelectorAll("[data-goto]").forEach(elm => elm.addEventListener("click", (e) => { e.stopPropagation(); openPanel(elm.dataset.goto); }));
+      document.getElementById("drillBtn").addEventListener("click", (e) => { e.stopPropagation(); showDetail(id); });
+      document.getElementById("sizeDecBtn").addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(id, -8); });
+      document.getElementById("sizeIncBtn").addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(id, 8); });
+    } else if (level === "detail") {
+      const sub = SUBNETS[currentDetailId];
+      const byId = {}; sub.nodes.forEach(n => byId[n.id] = n);
+      const n = byId[id];
+      const vieneDe = sub.rel.filter(r => r.to === id).map(r => byId[r.from]);
+      const alimentaA = sub.rel.filter(r => r.from === id).map(r => byId[r.to]);
+      const esLoop = sub.rel.some(r => r.loop && (r.from === id || r.to === id));
+      body.innerHTML = `
+        <p class="panel-kind">Causa (${macroById[currentDetailId].corto})</p>
+        <h2>${n.t}</h2>
+        ${vieneDe.length ? `<div class="block"><b>Viene de</b>${vieneDe.map(x => `<div class="rel-chip" data-goto="${x.id}">${x.t}</div>`).join("")}</div>` : ""}
+        ${alimentaA.length ? `<div class="block"><b>Alimenta a</b>${alimentaA.map(x => `<div class="rel-chip" data-goto="${x.id}">${x.t}</div>`).join("")}</div>` : ""}
+        ${esLoop ? `<div class="block"><b>Bucle de retroalimentación</b><p style="font-size:12.5px;color:var(--ink-dark);margin:0;font-style:italic;">${sub.loopNote}</p></div>` : ""}
+        <div class="block" style="margin-top:16px;">
+          <b>Tamaño de la bola</b>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <button type="button" id="sizeDecBtn" style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-weight:700; cursor:pointer;">🔍– Disminuir</button>
+            <button type="button" id="sizeIncBtn" style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-weight:700; cursor:pointer;">🔍+ Aumentar</button>
+          </div>
+        </div>
+      `;
+      body.querySelectorAll("[data-goto]").forEach(elm => elm.addEventListener("click", (e) => { e.stopPropagation(); openPanel(elm.dataset.goto); }));
+      document.getElementById("sizeDecBtn").addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(id, -6); });
+      document.getElementById("sizeIncBtn").addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(id, 6); });
+    } else if (level === "full") {
+      const n = allNodesById[id];
+      const parentMacro = macroById[n.macroId];
+      const allRelCombined = [...allInternalRel, ...INTER_NETWORK_REL];
+      const vieneDe = allRelCombined.filter(r => r.to === id).map(r => ({ ...allNodesById[r.from], pol: r.pol, inter: r.inter }));
+      const alimentaA = allRelCombined.filter(r => r.from === id).map(r => ({ ...allNodesById[r.to], pol: r.pol, inter: r.inter }));
+      body.innerHTML = `
+        <p class="panel-kind" style="color:${parentMacro.color};">Causa de: ${parentMacro.corto}</p>
+        <h2>${n.t}</h2>
+        ${vieneDe.length ? `<div class="block"><b>Viene de</b>${vieneDe.map(x => `<div class="rel-chip" data-goto="${x.id}">${x.inter ? "⚡ " : ""}${x.t} <b>(${x.pol})</b></div>`).join("")}</div>` : ""}
+        ${alimentaA.length ? `<div class="block"><b>Alimenta a</b>${alimentaA.map(x => `<div class="rel-chip" data-goto="${x.id}">${x.inter ? "⚡ " : ""}${x.t} <b>(${x.pol})</b></div>`).join("")}</div>` : ""}
+        <div class="block" style="margin-top:16px;">
+          <b>Tamaño de la bola</b>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <button type="button" id="sizeDecBtn" style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-weight:700; cursor:pointer;">🔍– Disminuir</button>
+            <button type="button" id="sizeIncBtn" style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-weight:700; cursor:pointer;">🔍+ Aumentar</button>
+          </div>
+        </div>
+      `;
+      body.querySelectorAll("[data-goto]").forEach(elm => elm.addEventListener("click", (e) => { e.stopPropagation(); openPanel(elm.dataset.goto); }));
+      document.getElementById("sizeDecBtn").addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(id, -4); });
+      document.getElementById("sizeIncBtn").addEventListener("click", (e) => { e.stopPropagation(); resizeIndividualNode(id, 4); });
+    }
+    panel.classList.add("open");
+  }
+  document.getElementById("panelClose").addEventListener("click", () => document.getElementById("panel").classList.remove("open"));
+
+  window.addEventListener("resize", () => {
+    place(centerBlob, mainW() / 2, mainH() / 2 + 10);
+    place(centerLabel, mainW() / 2, mainH() / 2 + 10);
+    place(hitCenter, mainW() / 2, mainH() / 2 + 10);
+    if (level === "macro") buildNetwork(MACRO, MACRO_REL, macroById, { maxR: 78, wFrac: 0.1, colorOf: (id) => macroById[id].color });
+    else if (level === "detail") { const sub = SUBNETS[currentDetailId]; const byId = {}; sub.nodes.forEach(n => byId[n.id] = n); const macroColor = macroById[currentDetailId].color; buildNetwork(sub.nodes, sub.rel, byId, { maxR: 66, wFrac: 0.09, colorOf: () => macroColor, loopType: sub.loopType }); }
+    else if (level === "full") showFullNetwork();
+  });
+})();
+</script>
+
+  </main>
+</div>
+</body>
+</html>
