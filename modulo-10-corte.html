@@ -205,8 +205,8 @@
     </div>
 
     <div class="hud-title">
-      <h1>Corte axonométrico — Kennedy</h1>
-      <p>Proyección axonométrica a 35° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista</p>
+      <h1>Humedal El Burro</h1>
+      <p>Kennedy · reloj climático anual</p>
     </div>
 
     <button type="button" id="penToolBtn" style="position:absolute; top:50%; left:18px; transform:translateY(-50%); z-index:16; background:rgba(10,12,14,.85); color:#fff; font-size:11px; padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.2); cursor:pointer;">✏️ Dibujar polígono</button>
@@ -216,7 +216,6 @@
     <svg id="penSvgOverlay" style="position:absolute; inset:0; width:100%; height:100%; z-index:15; pointer-events:none; display:none;"></svg>
 
     <div class="view-buttons">
-      <button type="button" id="viewReset">Restablecer vista axonométrica</button>
       <button type="button" id="noiseToggleBtn">🔊 Mostrar ruido</button>
       <button type="button" id="birdToggleBtn">🐦 Mostrar mirlas</button>
     </div>
@@ -374,9 +373,21 @@
           <span id="natMesLabel" style="font-size:12.5px; font-weight:800; color:#111418; background:#eef4f1; padding:2px 8px; border-radius:6px;">Abril</span>
         </div>
         <input type="range" id="natMesSlider" min="1" max="12" value="4" step="1" style="width:100%; accent-color:#2a856a; margin:6px 0; cursor:pointer;">
-        <div id="natFloodStats" style="font-size:11px; color:#495057; line-height:1.4; margin-bottom:6px;">
-          Espejo de agua: <strong>+50.0%</strong> · Profundidad: <strong>2.00 m</strong> (Temporada alta de lluvias)
+        <div style="display:flex; gap:14px; align-items:center; margin:8px 0 4px;">
+          <div style="flex:1;">
+            <div style="display:flex; justify-content:space-between; font-size:9.5px; color:#64748b; margin-bottom:3px;">
+              <span>Espejo de agua</span><span id="natPctLabel">—</span>
+            </div>
+            <div style="height:5px; border-radius:3px; background:#e2ece7; overflow:hidden;">
+              <div id="natFloodBar" style="height:100%; width:0%; border-radius:3px; background:linear-gradient(90deg,#6fb89a,#2a856a); transition:width .3s cubic-bezier(.22,1,.36,1);"></div>
+            </div>
+          </div>
+          <div style="text-align:right; flex:none;">
+            <div id="natHa" style="font-size:15px; font-weight:800; color:#111418;">—</div>
+            <div style="font-size:8.5px; color:#64748b; margin-top:1px;">hectáreas</div>
+          </div>
         </div>
+        <div id="natFloodStats" style="font-size:10.5px; color:#495057; line-height:1.4; margin-bottom:6px;"></div>
         <div style="display:flex; gap:8px;">
           <button type="button" id="natPlayYearBtn" style="flex:1; padding:6px 10px; border-radius:8px; border:1px solid rgba(42,133,106,.3); background:#2a856a; color:#fff; font-size:11px; font-weight:700; cursor:pointer;">
             ▶ Reproducir año completo

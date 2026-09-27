@@ -1375,7 +1375,8 @@
   }
 
   // ---- Botones de vista ----
-  document.getElementById("viewReset").addEventListener("click", () => setAxonometricView(400));
+  const viewResetBtn = document.getElementById("viewReset");
+  if (viewResetBtn) viewResetBtn.addEventListener("click", () => setAxonometricView(400));
   document.getElementById("noiseToggleBtn").addEventListener("click", (e) => {
     noiseOn = !noiseOn;
     if (noiseMesh) noiseMesh.visible = noiseOn;
@@ -1464,20 +1465,53 @@
   // ---- Loop de animacion ----
 
   // ---- Crecimiento del Humedal El Burro mes a mes (igual que en la
-  // simulacion 3D), corriendo solo en la vista principal. ----
-  let mainBurroMesh = null, mainBurroMes = 0, mainBurroLast = 0;
+  // simulacion 3D), corriendo solo en la vista principal. Ahora con
+  // controles reales: reproducir/pausar y arrastrar al mes que sea. ----
+  let mainBurroMesh = null, mainBurroMes = 0, mainBurroLast = 0, mainBurroPlaying = true;
   const MESES_TXT = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  const mainBurroLabel = document.createElement("div");
-  mainBurroLabel.style.cssText = "position:absolute; bottom:18px; right:18px; z-index:12; font:600 11px 'Segoe UI',sans-serif; color:#0f172a; background:rgba(255,255,255,.9); border:1px solid rgba(0,0,0,.1); border-radius:6px; padding:5px 9px; pointer-events:none;";
-  (document.getElementById("sceneWrap") || document.body).appendChild(mainBurroLabel);
-  function updateMainBurro(now) {
+  const mainBurroPanel = document.createElement("div");
+  mainBurroPanel.style.cssText = "position:absolute; bottom:18px; right:18px; z-index:12; width:230px; font-family:'Segoe UI',sans-serif; color:#0f172a; background:rgba(255,255,255,.94); backdrop-filter:blur(8px); border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,.12);";
+  mainBurroPanel.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+      <span style="font:700 11px 'Segoe UI',sans-serif;">Humedal El Burro</span>
+      <span id="mainBurroMesLbl" style="font:600 10.5px 'Segoe UI',sans-serif; color:#64748b;">—</span>
+    </div>
+    <input type="range" id="mainBurroSlider" min="1" max="12" value="1" step="1" style="width:100%; accent-color:#0369a1; margin:2px 0 7px; cursor:pointer;">
+    <div style="display:flex; gap:10px; align-items:center;">
+      <div style="flex:1;">
+        <div style="display:flex; justify-content:space-between; font-size:9px; color:#64748b; margin-bottom:2px;">
+          <span>Espejo de agua</span><span id="mainBurroPctLbl">—</span>
+        </div>
+        <div style="height:5px; border-radius:3px; background:#e2e8f0; overflow:hidden;">
+          <div id="mainBurroBar" style="height:100%; width:0%; border-radius:3px; background:linear-gradient(90deg,#38bdf8,#0369a1); transition:width .3s cubic-bezier(.22,1,.36,1);"></div>
+        </div>
+      </div>
+      <div style="text-align:right; flex:none;">
+        <div id="mainBurroHaLbl" style="font-size:14px; font-weight:800;">—</div>
+        <div style="font-size:8px; color:#64748b;">hectáreas</div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:7px;">
+      <span id="mainBurroSeasonLbl" style="font-size:9.5px; color:#475569;">—</span>
+      <button type="button" id="mainBurroPlayBtn" style="font-size:10px; font-weight:700; color:#0369a1; background:#eaf4fb; border:1px solid rgba(3,105,161,.25); border-radius:6px; padding:3px 8px; cursor:pointer;">⏸ Pausar</button>
+    </div>
+  `;
+  (document.getElementById("sceneWrap") || document.body).appendChild(mainBurroPanel);
+  const mainBurroSlider = mainBurroPanel.querySelector("#mainBurroSlider");
+  const mainBurroPlayBtn = mainBurroPanel.querySelector("#mainBurroPlayBtn");
+  const mainBurroMesLbl = mainBurroPanel.querySelector("#mainBurroMesLbl");
+  const mainBurroSeasonLbl = mainBurroPanel.querySelector("#mainBurroSeasonLbl");
+  const mainBurroPctLbl = mainBurroPanel.querySelector("#mainBurroPctLbl");
+  const mainBurroBar = mainBurroPanel.querySelector("#mainBurroBar");
+  const mainBurroHaLbl = mainBurroPanel.querySelector("#mainBurroHaLbl");
+  function applyMainBurroMes(mes) {
     if (!rawWaterData || !waterMat) return;
-    if (mainBurroLast && now - mainBurroLast < 2600) return;
-    mainBurroLast = now; mainBurroMes = (mainBurroMes % 12) + 1;
+    mainBurroMes = mes;
     const b = rawWaterData.find(w => (w.nombre || "").includes("Burro")); if (!b || !b.pts) return;
     const d = HUMEDAL_CICLO[mainBurroMes - 1]; if (!d) return;
     const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length, cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
-    const pts = offsetPoly(b.pts, d.expansion_pct * 0.9).map(p => toScene(p[0], p[1])); // offset del borde segun la epoca
+    const realOffsetPts = offsetPoly(b.pts, d.expansion_pct * 0.9); // borde real (metros) segun la epoca
+    const pts = realOffsetPts.map(p => toScene(p[0], p[1]));
     let tris = []; try { tris = THREE.ShapeUtils.triangulateShape(pts.map(p => new THREE.Vector2(p.x, p.z)), []); } catch (e) {}
     const pos = [], uv = [];
     tris.forEach(t => t.forEach(i => { pos.push(pts[i].x, 0.03, pts[i].z); uv.push(pts[i].x * 0.08, pts[i].z * 0.08); }));
@@ -1486,7 +1520,35 @@
     if (mainBurroMesh) { sceneRoot.remove(mainBurroMesh); mainBurroMesh.geometry.dispose(); }
     mainBurroMesh = new THREE.Mesh(geo, waterMat); sceneRoot.add(mainBurroMesh);
     const lluvia = [3, 4, 5, 10, 11].includes(mainBurroMes);
-    mainBurroLabel.textContent = `Humedal El Burro · ${MESES_TXT[mainBurroMes - 1]} · ${lluvia ? "lluvias" : "temporada seca"} · espejo +${d.expansion_pct.toFixed(1)}%`;
+    // area real (hectareas) del borde ya calculado arriba, en coordenadas reales (metros)
+    let area2 = 0;
+    for (let i = 0; i < realOffsetPts.length; i++) {
+      const [x1, y1] = realOffsetPts[i], [x2, y2] = realOffsetPts[(i + 1) % realOffsetPts.length];
+      area2 += x1 * y2 - x2 * y1;
+    }
+    const areaHa = Math.abs(area2) / 2 / 10000;
+    mainBurroMesLbl.textContent = MESES_TXT[mainBurroMes - 1];
+    mainBurroSeasonLbl.textContent = lluvia ? "Temporada de lluvias" : "Temporada seca";
+    mainBurroPctLbl.textContent = `+${d.expansion_pct.toFixed(1)}%`;
+    mainBurroBar.style.width = Math.min(100, d.expansion_pct / 50 * 100) + "%";
+    mainBurroHaLbl.textContent = areaHa.toFixed(2);
+    if (mainBurroSlider.value != mainBurroMes) mainBurroSlider.value = String(mainBurroMes);
+  }
+  mainBurroSlider.addEventListener("input", () => {
+    mainBurroPlaying = false;
+    mainBurroPlayBtn.textContent = "▶ Reproducir";
+    applyMainBurroMes(parseInt(mainBurroSlider.value, 10));
+  });
+  mainBurroPlayBtn.addEventListener("click", () => {
+    mainBurroPlaying = !mainBurroPlaying;
+    mainBurroPlayBtn.textContent = mainBurroPlaying ? "⏸ Pausar" : "▶ Reproducir";
+    if (mainBurroPlaying) mainBurroLast = 0;
+  });
+  function updateMainBurro(now) {
+    if (!mainBurroPlaying) return;
+    if (mainBurroLast && now - mainBurroLast < 2600) return;
+    mainBurroLast = now;
+    applyMainBurroMes((mainBurroMes % 12) + 1);
   }
 
   // ---- Pantalla de las 3 escalas: simulaciones corriendo en vivo y suaves
@@ -3328,11 +3390,31 @@
     smallLabel(ctx, texts[phase], cxp.x - 90, cxp.y - 14);
   }
 
+  let natBurroBaseHa = null;
   function renderNaturalWaterLayer(mesNum) {
     if (!natWaterCanvas || !rawWaterData) return;
     const info = HUMEDAL_CICLO[mesNum - 1] || HUMEDAL_CICLO[3];
     natMesLabel.textContent = MESES_NAT[mesNum - 1];
-    natFloodStats.innerHTML = `Espejo hídrico: <strong style="color:#0369a1">+${info.expansion_pct.toFixed(1)}%</strong> · Nivel freático: <strong style="color:#0369a1">${info.profundidad_m.toFixed(2)} m</strong> · <span style="color:#475569;">${info.temporada}</span>`;
+    natFloodStats.innerHTML = `<span style="color:#475569;">${info.temporada}</span> · Nivel freático: <strong style="color:#0369a1">${info.profundidad_m.toFixed(2)} m</strong>`;
+    const natExpansionFactor = 1 + (info.expansion_pct / 100) * 0.55;
+    if (natBurroBaseHa === null) {
+      const burroArea = rawWaterData.find(b => (b.nombre || "").includes("Burro"));
+      if (burroArea && burroArea.pts && burroArea.pts.length > 2) {
+        let area2 = 0;
+        for (let i = 0; i < burroArea.pts.length; i++) {
+          const [x1, y1] = burroArea.pts[i];
+          const [x2, y2] = burroArea.pts[(i + 1) % burroArea.pts.length];
+          area2 += x1 * y2 - x2 * y1;
+        }
+        natBurroBaseHa = Math.abs(area2) / 2 / 10000;
+      }
+    }
+    const natPctLabelEl = document.getElementById("natPctLabel");
+    const natFloodBarEl = document.getElementById("natFloodBar");
+    const natHaEl = document.getElementById("natHa");
+    if (natPctLabelEl) natPctLabelEl.textContent = `+${info.expansion_pct.toFixed(1)}%`;
+    if (natFloodBarEl) natFloodBarEl.style.width = Math.min(100, info.expansion_pct / 50 * 100) + "%";
+    if (natHaEl) natHaEl.textContent = natBurroBaseHa != null ? (natBurroBaseHa * natExpansionFactor * natExpansionFactor).toFixed(2) : "—";
 
     const rect = natWaterCanvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
