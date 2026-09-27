@@ -16,9 +16,8 @@
   --pad:clamp(20px,4vw,64px);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
 html{background:var(--void)}
-body{font-family:var(--font);font-weight:200;background:var(--void);color:var(--dim);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
+body{font-family:var(--font);font-weight:200;background:var(--void);color:var(--dim);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 :focus-visible{outline:2px solid var(--violet);outline-offset:3px}
@@ -43,7 +42,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .hero p{margin-top:18px;max-width:60ch;font-size:17px;font-weight:200;color:var(--dim)}
 
 /* ---------- pestañas ---------- */
-.tabs{position:relative;z-index:2;flex:none;border-top:1px solid rgba(244,242,255,.1);border-bottom:1px solid rgba(244,242,255,.1)}
+.tabs{position:sticky;top:0;z-index:4;background:var(--void);flex:none;border-top:1px solid rgba(244,242,255,.1);border-bottom:1px solid rgba(244,242,255,.1)}
 .tabs-in{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
 .tabs-in::-webkit-scrollbar{display:none}
 .tab{flex:1 1 0;min-width:168px;display:flex;flex-direction:column;gap:8px;padding:18px 20px;border-bottom:2px solid transparent;transition:background .2s ease,border-color .2s ease}
@@ -54,7 +53,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .tab.active .t{color:var(--ice)}
 
 /* ---------- escenario ---------- */
-.stage-wrap{position:relative;flex:1;min-height:0}
+.stage-wrap{position:relative;height:min(76vh,760px);min-height:440px}
 .stage{position:absolute;inset:0}
 .stage iframe{width:100%;height:100%;border:0;display:block;background:var(--void)}
 #wipe{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
@@ -62,6 +61,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 #wipe.show{opacity:1}
 #wipe .label{font:500 11px/1 var(--font);letter-spacing:.16em;text-transform:uppercase;color:#050308;text-align:center}
 #wipe .label b{display:block;font-weight:500;font-size:16px;letter-spacing:-.01em;text-transform:none;margin-top:8px}
+
+/* ---------- cierre ---------- */
+.closing{padding:64px var(--pad) 88px}
+.closing .band{max-width:1400px;margin:0 auto;border-top:1px dashed rgba(244,242,255,.16);padding-top:32px;
+  display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+.closing p{max-width:52ch;font-size:14px}
+.closing a.ghost{font-size:13px;color:var(--ice);border-bottom:1px solid rgba(244,242,255,.4)}
 
 /* ---------- responsive ---------- */
 @media (max-width:860px){
@@ -106,6 +112,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   </div>
   <div id="wipe"><div class="label" id="wipeLabel"></div></div>
 </div>
+
+<section class="closing">
+  <div class="band">
+    <p>Estas cinco escenas comparten el mismo territorio real de Kennedy — lo que cambia es el corte con el que se mira. Usa las pestañas de arriba para saltar entre ellas.</p>
+    <a class="ghost" href="v2.html#modulos">Ver el resto de los módulos &rarr;</a>
+  </div>
+</section>
 
 <script>
 (function(){
