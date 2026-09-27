@@ -162,6 +162,65 @@
     font-size:11.5px; font-weight:600; color:var(--ink); cursor:pointer; display:none;
   }
   #netCloseSubBtn.show{ display:block; }
+
+  /* =====================================================================
+     Capa visual v2 — solo aplica con html.rapot-v2 (botón "Nueva versión").
+     Mismos datos, misma lógica de la red y de la escena 3D: aquí solo se
+     retoca cómo se ve (tipografía, color, brillo, transiciones).
+     ===================================================================== */
+  html.rapot-v2 body{ --v2-abyss:#012624; --v2-deep:#011d1c; --v2-kelp:#003734; --v2-mist:#edfffe; --v2-silver:#bbc7c6; --v2-phosphor:#fde9ff; --v2-font:'Geist', Inter, system-ui, sans-serif; background:var(--v2-abyss) !important; }
+
+  html.rapot-v2 .hud-title{ background:rgba(1,29,28,.82); border:1px solid rgba(255,255,255,.1); border-radius:14px; padding:12px 16px; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); animation:v2-fade-in .5s ease both; }
+  html.rapot-v2 .hud-title:before{ content:"MÓDULO 12 · KENNEDY"; display:block; font:500 10px/1 var(--v2-font); letter-spacing:.12em; color:var(--v2-silver); margin-bottom:6px; }
+  html.rapot-v2 .hud-title h1{ font-family:var(--v2-font); font-weight:500; letter-spacing:-.02em; font-size:17px; color:#fff; }
+  html.rapot-v2 .hud-title p{ font-family:var(--v2-font); color:var(--v2-silver); }
+
+  html.rapot-v2 .view-buttons{ gap:8px; }
+  html.rapot-v2 .view-buttons button{ background:rgba(1,29,28,.82) !important; border:1px solid rgba(255,255,255,.1) !important; border-radius:8px !important; font-family:var(--v2-font) !important; letter-spacing:.01em; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); transition:background .18s ease, transform .18s ease, border-color .18s ease; }
+  html.rapot-v2 .view-buttons button:hover{ background:var(--v2-kelp) !important; transform:translateX(-2px); border-color:rgba(255,255,255,.22) !important; }
+  html.rapot-v2 #macroBtn{ color:#4fdccc !important; border-color:rgba(79,220,204,.4) !important; }
+  html.rapot-v2 #papersBtn{ color:#f1b9ff !important; border-color:rgba(241,185,255,.4) !important; }
+
+  html.rapot-v2 .tree-info{ background:var(--v2-deep) !important; border:1px solid rgba(255,255,255,.1) !important; border-radius:16px !important; box-shadow:0 20px 50px rgba(0,0,0,.5) !important; backdrop-filter:blur(10px); }
+  html.rapot-v2 .tree-info-kind{ font-family:var(--v2-font); letter-spacing:.1em; color:var(--v2-silver) !important; }
+  html.rapot-v2 .tree-info h3{ font-family:var(--v2-font); font-weight:500; letter-spacing:-.01em; color:#fff !important; }
+  html.rapot-v2 .tree-info p#treeInfoDetails{ font-family:var(--v2-font); color:var(--v2-silver) !important; }
+
+  html.rapot-v2 #netCloseSubBtn{ background:var(--v2-kelp) !important; border:none !important; border-radius:999px !important; font-family:var(--v2-font); color:#fff; box-shadow:0 8px 24px rgba(0,0,0,.4); transition:transform .18s ease; }
+  html.rapot-v2 #netCloseSubBtn:hover{ transform:translateX(-50%) translateY(-2px); }
+
+  html.rapot-v2 #netPanel{ background:var(--v2-deep) !important; border-left:1px solid rgba(255,255,255,.1) !important; font-family:var(--v2-font); padding:32px 26px !important; }
+  html.rapot-v2 #netPanel .panel-close{ background:var(--v2-kelp) !important; border:none !important; color:var(--v2-mist) !important; transition:transform .18s ease; }
+  html.rapot-v2 #netPanel .panel-close:hover{ transform:rotate(90deg); }
+  html.rapot-v2 #netPanel .panel-kind{ letter-spacing:.12em !important; color:#4fdccc !important; font-weight:500 !important; }
+  html.rapot-v2 #netPanel h2{ font-weight:500 !important; letter-spacing:-.02em !important; font-size:19px !important; color:#fff !important; line-height:1.3 !important; }
+  html.rapot-v2 #netPanel .block{ border-top-color:rgba(255,255,255,.1) !important; }
+  html.rapot-v2 #netPanel .block b{ color:var(--v2-silver) !important; letter-spacing:.08em !important; }
+  html.rapot-v2 #netPanel .rel-chip{ background:var(--v2-kelp) !important; border:none !important; border-left:3px solid #4fdccc !important; border-radius:8px !important; color:var(--v2-mist) !important; transition:transform .15s ease; }
+  html.rapot-v2 #netPanel .rel-chip:hover{ transform:translateX(3px); }
+  html.rapot-v2 #deleteNodeBtn{ font-family:var(--v2-font) !important; border-radius:8px !important; }
+
+  /* burbujas y etiquetas de la red de problemáticas: mismo dato y posición,
+     solo se les da brillo, entrada suave y una tipografía más cuidada */
+  html.rapot-v2 .net-blob{ box-shadow:0 0 0 1px rgba(255,255,255,.15), 0 10px 26px rgba(0,0,0,.45), 0 0 30px -6px rgba(255,255,255,.25); animation:v2-blob-in .4s cubic-bezier(.2,.8,.2,1) both; transition:box-shadow .18s ease, filter .18s ease; }
+  html.rapot-v2 .net-blob:hover{ filter:brightness(1.18); box-shadow:0 0 0 1px rgba(255,255,255,.3), 0 10px 30px rgba(0,0,0,.5), 0 0 42px -4px rgba(255,255,255,.4); }
+  html.rapot-v2 .net-label{ font-family:var(--v2-font) !important; font-weight:500 !important; letter-spacing:.005em; }
+  html.rapot-v2 #netSvg .net-line{ filter:drop-shadow(0 0 3px rgba(255,255,255,.3)); stroke-dasharray:6 5; animation:v2-flow 2.4s linear infinite; }
+  html.rapot-v2 #netSvg .net-pol, html.rapot-v2 #netSvg .net-loopbadge{ font-family:var(--v2-font); }
+
+  /* encabezados de las redes "POT" y "Macromodelos" que se abren en pantalla completa */
+  html.rapot-v2 #potModal h2, html.rapot-v2 #macroModal h2{ font-family:var(--v2-font) !important; font-weight:500 !important; letter-spacing:-.01em !important; }
+  html.rapot-v2 #potModal p, html.rapot-v2 #macroModal p{ font-family:var(--v2-font) !important; }
+  html.rapot-v2 #potCoordsHud, html.rapot-v2 #macroCoordsHud{ background:rgba(1,29,28,.9) !important; border-color:rgba(255,255,255,.1) !important; backdrop-filter:blur(10px); }
+  html.rapot-v2 #potInfoPanel, html.rapot-v2 #macroInfoPanel{ background:var(--v2-deep) !important; font-family:var(--v2-font); }
+
+  @keyframes v2-fade-in{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:translateY(0); } }
+  @keyframes v2-blob-in{ from{ opacity:0; transform:scale(.3); } to{ opacity:1; transform:scale(1); } }
+  @keyframes v2-flow{ to{ stroke-dashoffset:-22; } }
+  @media (prefers-reduced-motion:reduce){
+    html.rapot-v2 #netSvg .net-line{ animation:none; }
+    html.rapot-v2 .net-blob{ animation:none; }
+  }
 </style>
 </head>
 <body>
