@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<script src="rapot-v2.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RAPOT · La ciudad construida por relaciones</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -9,6 +10,14 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="site-theme.css?v=20260823">
+<style>
+  /* botón hacia la versión renovada (v2.html) */
+  .navbar .logo .v2-switch{margin-left:14px;display:inline-flex;align-items:center;padding:8px 14px;border-radius:6px;
+    background:linear-gradient(90deg,#cbfffc 0%,#edfffe 26%,#fffdfa 48%,#fad1ff 89%);color:#11211f;
+    font:500 12px/1 Inter,system-ui,sans-serif;letter-spacing:.02em;text-decoration:none;white-space:nowrap;transition:filter .2s,transform .2s}
+  .navbar .logo .v2-switch:hover{filter:brightness(1.06);transform:translateY(-1px)}
+  .navbar .logo .v2-switch:focus-visible{outline:2px solid #2fd4c8;outline-offset:3px}
+</style>
 </head>
 <body>
 
@@ -58,6 +67,7 @@
       <div class="text">
         <h1>RAPOT</h1>
       </div>
+      <a class="v2-switch" href="v2.html" title="Abrir la versión renovada del sitio">Nueva versión</a>
     </div>
     <ul class="menu">
       <li class="active">INICIO</li>
