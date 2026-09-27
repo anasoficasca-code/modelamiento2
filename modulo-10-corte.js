@@ -2010,6 +2010,7 @@
     redrawPenSvg();
     updatePenOutput();
   });
+  let explodeStep = 0; // 0 = solo contexto base, 1→2→3 = capas que se van prendiendo en vivo con cada clic
   canvas.addEventListener("click", (e) => {
     // Ya no se congela la vista en 3 fotos separadas: en vez de eso, se
     // revela el panel de convenciones + el corte (quedan ocultos hasta
@@ -2021,6 +2022,25 @@
       sectionWrapEl.style.display = "block";
       resizeSectionView();
       placeSectionCutAtHumedal();
+      return; // el primer clic solo revela el panel; el contexto base ya se ve
+    }
+    if (penActive) return; // mientras se dibuja el poligono, no se dispara el paso de capas
+
+    // Cada clic siguiente prende una capa mas, EN VIVO sobre la misma
+    // axonometria (ya no fotos separadas): 1) agua y vegetacion,
+    // 2) se agregan vehiculos/dinamica urbana, 3) se agrega ruido +
+    // mirlas (lectura tecnologica completa). Al llegar a 3, el siguiente
+    // clic vuelve a 1.
+    explodeStep = (explodeStep % 3) + 1;
+    if (explodeStep === 1) {
+      if (vehInstanced) vehInstanced.visible = false;
+      if (noiseMesh) noiseMesh.visible = false;
+      if (birdsGroup) birdsGroup.visible = false;
+    } else if (explodeStep === 2) {
+      if (vehInstanced) vehInstanced.visible = true;
+    } else if (explodeStep === 3) {
+      if (noiseMesh) noiseMesh.visible = true;
+      if (birdsGroup) birdsGroup.visible = true;
     }
     return;
     if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
