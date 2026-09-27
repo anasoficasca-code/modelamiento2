@@ -1685,6 +1685,7 @@
   const secYMinVal = document.getElementById("secYMinVal"), secYMaxVal = document.getElementById("secYMaxVal");
   const secZMinVal = document.getElementById("secZMinVal"), secZMaxVal = document.getElementById("secZMaxVal");
   const sectionBoxOutput = document.getElementById("sectionBoxOutput");
+  const secRot = document.getElementById("secRot"), secRotVal = document.getElementById("secRotVal");
   function updateSectionBox() {
     const halfW = sceneExtentW / 2 * 1.4, halfH = sceneExtentH / 2 * 1.4; // mismo margen que el suelo (*1.4)
     const xMin = -halfW + (parseFloat(secXMin.value) / 100) * (2 * halfW);
@@ -1693,13 +1694,23 @@
     const zMax = -halfH + (parseFloat(secZMax.value) / 100) * (2 * halfH);
     const yMin = (parseFloat(secYMin.value) / 100) * SECTION_Y_MAX;
     const yMax = (parseFloat(secYMax.value) / 100) * SECTION_Y_MAX;
+    // Rotacion de la caja: los 4 planos horizontales giran junto con un
+    // angulo elegido, para poder alinear el corte con cualquier calle o
+    // eje diagonal (no solo horizontal/vertical). El filtro geometrico
+    // (mas abajo) se desactiva mientras haya rotacion -- el recorte por
+    // shader (esto de aqui) sigue mostrando el corte real igual.
+    const rot = secRot ? parseFloat(secRot.value) : 0;
+    const rad = rot * Math.PI / 180;
+    const ux = Math.cos(rad), uz = Math.sin(rad);
+    const vx = -Math.sin(rad), vz = Math.cos(rad);
+    if (secRotVal) secRotVal.textContent = rot + "°";
     if (sectionBoxActive) {
-      secPlanes.xMin.constant = -xMin;
-      secPlanes.xMax.constant = xMax;
+      secPlanes.xMin.normal.set(ux, 0, uz); secPlanes.xMin.constant = -xMin;
+      secPlanes.xMax.normal.set(-ux, 0, -uz); secPlanes.xMax.constant = xMax;
       secPlanes.yMin.constant = -yMin;
       secPlanes.yMax.constant = yMax;
-      secPlanes.zMin.constant = -zMin;
-      secPlanes.zMax.constant = zMax;
+      secPlanes.zMin.normal.set(vx, 0, vz); secPlanes.zMin.constant = -zMin;
+      secPlanes.zMax.normal.set(-vx, 0, -vz); secPlanes.zMax.constant = zMax;
     } else {
       // "Desactivar" no quita los planos del renderer (cambiar la
       // CANTIDAD de planos obliga a recompilar los materiales y el corte
@@ -1719,6 +1730,7 @@
       yMin: Math.min(r0[1], r1[1]), yMax: Math.max(r0[1], r1[1]),
     };
     sectionBoxOutput.value =
+      `Rotación: ${rot}°\n` +
       `X: ${secXMin.value}% a ${secXMax.value}%  (real ${Math.round(Math.min(r0[0],r1[0]))} a ${Math.round(Math.max(r0[0],r1[0]))})\n` +
       `Y (altura, m): ${(yMin / SCALE).toFixed(1)} a ${(yMax / SCALE).toFixed(1)}\n` +
       `Z: ${secZMin.value}% a ${secZMax.value}%  (real ${Math.round(Math.min(r0[1],r1[1]))} a ${Math.round(Math.max(r0[1],r1[1]))})`;
@@ -1726,7 +1738,8 @@
     rebuildBirds();
   }
   let lastRebuildAt = 0;
-  [secXMin, secXMax, secYMin, secYMax, secZMin, secZMax].forEach(el => {
+  [secXMin, secXMax, secYMin, secYMax, secZMin, secZMax, secRot].forEach(el => {
+    if (!el) return;
     el.addEventListener("input", () => {
       updateSectionBox();
       const now = performance.now();
@@ -1750,7 +1763,12 @@
     const yMin = (parseFloat(secYMin.value) / 100) * SECTION_Y_MAX;
     const yMax = (parseFloat(secYMax.value) / 100) * SECTION_Y_MAX;
     const isFullRange = secXMin.value == 0 && secXMax.value == 100 && secYMin.value == 0 && secYMax.value == 100 && secZMin.value == 0 && secZMax.value == 100;
-    const boxFilter = (sectionBoxActive && !isFullRange) ? { xMin, xMax, zMin, zMax, yMin, yMax } : null;
+    const isRotated = secRot && parseFloat(secRot.value) !== 0;
+    // Con rotacion distinta de 0, el filtro geometrico (axis-aligned) no
+    // sirve para una caja girada -- se deja toda la geometria cargada y
+    // el recorte por shader (arriba) es el que de verdad muestra el
+    // corte girado.
+    const boxFilter = (sectionBoxActive && !isFullRange && !isRotated) ? { xMin, xMax, zMin, zMax, yMin, yMax } : null;
     if (rawBuildingsData) buildBuildings(rawBuildingsData, boxFilter);
     if (rawEdgesData) buildRoads(rawEdgesData, boxFilter);
     // El borde negro sigue el area de la caja de seccion (lo que en
@@ -1768,6 +1786,7 @@
   });
   document.getElementById("sectionBoxReset").addEventListener("click", () => {
     secXMin.value = 58; secXMax.value = 67; secYMin.value = 0; secYMax.value = 100; secZMin.value = 39; secZMax.value = 54;
+    if (secRot) secRot.value = 0;
     updateSectionBox();
     rebuildFilteredGeometry();
   });
