@@ -854,7 +854,10 @@
   // los controles) y 45 grados de acimut, proyeccion en paralelo (sin
   // fuga de perspectiva). ----
   function setAxonometricView() {
-    camera.position.set(197.22, 780.06, 747.66);
+    // Angulo mas inclinado que antes (antes 45°, ahora ~65°) para que la
+    // elevacion 3D de las burbujas se note desde el primer vistazo, sin
+    // que haya que arrastrar para inclinar la camara manualmente.
+    camera.position.set(212.25, 475.68, 958.82);
     controls.target.set(144.45, 24.68, -5.88);
     camera.zoom = 1.23;
     viewSize = 190.0;
@@ -1338,7 +1341,7 @@
   // conectadas quedan mas altas (mismo eje worldY que usa projectPoint,
   // asi que al girar la camara la altura se nota de verdad, no es un
   // efecto 2D superpuesto). Techo razonable para que no se disparen.
-  const ELEV_BASE = 0.25, ELEV_STEP = 0.34, ELEV_MAX_DEG = 7;
+  const ELEV_BASE = 3, ELEV_STEP = 6, ELEV_MAX_DEG = 7;
   function getNodeElevation(nodeId) {
     const deg = nodeDegrees[nodeId] || 0;
     return ELEV_BASE + Math.min(deg, ELEV_MAX_DEG) * ELEV_STEP;
@@ -2218,7 +2221,7 @@
       const safeWidth = 2 * Math.sqrt(Math.max(0, r * r - halfH * halfH)) * 0.88;
       const maxCharsPerLine = Math.max(5, Math.floor(safeWidth / (fontPx * 0.54)));
       label.innerHTML = wrapToFit(n.t, maxCharsPerLine, maxLines);
-      label.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; transform:translate(-50%,-50%); width:${safeWidth}px; text-align:center; font-size:${fontPx}px; font-weight:700; color:#ffffff; text-shadow:0 1px 3px rgba(0,0,0,.7); line-height:${lineH}px; pointer-events:none; user-select:none;`;
+      label.style.cssText = `position:absolute; left:${p.x}px; top:${p.y}px; transform:translate(-50%,-50%); width:${safeWidth}px; height:${r*1.7}px; overflow:hidden; display:flex; align-items:center; justify-content:center; text-align:center; font-size:${fontPx}px; font-weight:700; color:#ffffff; text-shadow:0 1px 3px rgba(0,0,0,.7); line-height:${lineH}px; pointer-events:none; user-select:none;`;
       labelLayer.appendChild(label);
 
       // Soporte para arrastrar bola (Drag & Drop)

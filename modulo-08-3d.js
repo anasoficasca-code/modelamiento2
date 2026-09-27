@@ -1384,6 +1384,7 @@
   const SECTION_Y_MAX = 10;
   let sectionBoxActive = true;
   function sceneToReal(x, z) { return [x / SCALE + netCenter.x, -z / SCALE + netCenter.y]; }
+  const secRot = document.getElementById("secRot"), secRotVal = document.getElementById("secRotVal");
   const secXMin = document.getElementById("secXMin"), secXMax = document.getElementById("secXMax");
   const secYMin = document.getElementById("secYMin"), secYMax = document.getElementById("secYMax");
   const secZMin = document.getElementById("secZMin"), secZMax = document.getElementById("secZMax");
@@ -1400,10 +1401,21 @@
     const zMax = -halfH + (parseFloat(secZMax.value) / 100) * (2 * halfH);
     const yMin = (parseFloat(secYMin.value) / 100) * SECTION_Y_MAX;
     const yMax = (parseFloat(secYMax.value) / 100) * SECTION_Y_MAX;
+    // Rotacion de la caja: en vez de cortar siempre alineado a los ejes
+    // X/Z del mundo, los 4 planos horizontales giran junto con un angulo
+    // elegido, para poder alinear el corte con cualquier calle o eje
+    // diagonal (no solo horizontal/vertical).
+    const rot = secRot ? parseFloat(secRot.value) : 0;
+    const rad = rot * Math.PI / 180;
+    const ux = Math.cos(rad), uz = Math.sin(rad); // eje U (el "X" girado)
+    const vx = -Math.sin(rad), vz = Math.cos(rad); // eje V (el "Z" girado), perpendicular a U
+    if (secRotVal) secRotVal.textContent = rot + "°";
     if (sectionBoxActive) {
-      secPlanes.xMin.constant = -xMin; secPlanes.xMax.constant = xMax;
+      secPlanes.xMin.normal.set(ux, 0, uz); secPlanes.xMin.constant = -xMin;
+      secPlanes.xMax.normal.set(-ux, 0, -uz); secPlanes.xMax.constant = xMax;
       secPlanes.yMin.constant = -yMin; secPlanes.yMax.constant = yMax;
-      secPlanes.zMin.constant = -zMin; secPlanes.zMax.constant = zMax;
+      secPlanes.zMin.normal.set(vx, 0, vz); secPlanes.zMin.constant = -zMin;
+      secPlanes.zMax.normal.set(-vx, 0, -vz); secPlanes.zMax.constant = zMax;
     } else {
       Object.values(secPlanes).forEach(p => (p.constant = 1e6));
     }
@@ -1412,13 +1424,15 @@
     secZMinVal.textContent = secZMin.value + "%"; secZMaxVal.textContent = secZMax.value + "%";
     const r0 = sceneToReal(xMin, zMin), r1 = sceneToReal(xMax, zMax);
     sectionBoxOutput.value =
-      `X: ${secXMin.value}% a ${secXMax.value}%  (real ${Math.round(Math.min(r0[0], r1[0]))} a ${Math.round(Math.max(r0[0], r1[0]))})\n` +
+      `Rotación: ${rot}°\n` +
+      `U (a lo largo del giro): ${secXMin.value}% a ${secXMax.value}%\n` +
       `Y (altura, m): ${(yMin / SCALE).toFixed(1)} a ${(yMax / SCALE).toFixed(1)}\n` +
-      `Z: ${secZMin.value}% a ${secZMax.value}%  (real ${Math.round(Math.min(r0[1], r1[1]))} a ${Math.round(Math.max(r0[1], r1[1]))})`;
+      `V (perpendicular): ${secZMin.value}% a ${secZMax.value}%\n` +
+      `(referencia sin girar — real ${Math.round(Math.min(r0[0], r1[0]))} a ${Math.round(Math.max(r0[0], r1[0]))} / ${Math.round(Math.min(r0[1], r1[1]))} a ${Math.round(Math.max(r0[1], r1[1]))})`;
   }
   if (secXMin) {
-    [secXMin, secXMax, secYMin, secYMax, secZMin, secZMax].forEach(el => {
-      el.addEventListener("input", updateSectionBox);
+    [secXMin, secXMax, secYMin, secYMax, secZMin, secZMax, secRot].forEach(el => {
+      if (el) el.addEventListener("input", updateSectionBox);
     });
     const sectionBoxToggle = document.getElementById("sectionBoxToggle");
     if (sectionBoxToggle) sectionBoxToggle.addEventListener("click", () => {
@@ -1430,6 +1444,7 @@
     const sectionBoxReset = document.getElementById("sectionBoxReset");
     if (sectionBoxReset) sectionBoxReset.addEventListener("click", () => {
       secXMin.value = 0; secXMax.value = 100; secYMin.value = 0; secYMax.value = 100; secZMin.value = 0; secZMax.value = 100;
+      if (secRot) secRot.value = 0;
       updateSectionBox();
     });
     const sectionBoxCopy = document.getElementById("sectionBoxCopy");
