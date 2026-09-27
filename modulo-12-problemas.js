@@ -1333,6 +1333,16 @@
     if (nodeDegrees[r.to] !== undefined) nodeDegrees[r.to]++;
   });
 
+  // Elevacion 3D real segun el numero de conexiones: las causas mas
+  // conectadas quedan mas altas (mismo eje worldY que usa projectPoint,
+  // asi que al girar la camara la altura se nota de verdad, no es un
+  // efecto 2D superpuesto). Techo razonable para que no se disparen.
+  const ELEV_BASE = 0.25, ELEV_STEP = 0.34, ELEV_MAX_DEG = 7;
+  function getNodeElevation(nodeId) {
+    const deg = nodeDegrees[nodeId] || 0;
+    return ELEV_BASE + Math.min(deg, ELEV_MAX_DEG) * ELEV_STEP;
+  }
+
   const deletedNodeIds = new Set(["s2_6", "s3_2", "s4_2", "s5_4", "s7_4", "s7_2", "s7_1", "s7_3", "s7_5", "s2_10"]);
 
   function getSubNodeDiameter(nodeId) {
@@ -1451,11 +1461,20 @@
       const diameter = getSubNodeDiameter(n.id);
       const blob = makeBlob(diameter, m.color);
       blob.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(mId, n.id); });
-      blob.addEventListener("pointerdown", (e) => startDrag(n, 0.25, e));
+      blob.addEventListener("pointerdown", (e) => startDrag(n, getNodeElevation(n.id), e));
       subEls.blobs[n.id] = blob;
+      const stem = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      stem.setAttribute("class", "net-stem");
+      stem.setAttribute("stroke", m.color);
+      stem.setAttribute("stroke-width", "1");
+      stem.setAttribute("stroke-opacity", "0.35");
+      stem.setAttribute("stroke-dasharray", "2 3");
+      netSvg.insertBefore(stem, netSvg.firstChild);
+      subEls.stems = subEls.stems || {};
+      subEls.stems[n.id] = stem;
       const label = makeLabel(n.t, diameter, n.id, mId);
       label.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(mId, n.id); });
-      label.addEventListener("pointerdown", (e) => startDrag(n, 0.25, e));
+      label.addEventListener("pointerdown", (e) => startDrag(n, getNodeElevation(n.id), e));
       subEls.labels[n.id] = label;
     });
     allSubEls[mId] = subEls;
@@ -1589,8 +1608,19 @@
       if (!sub || !sub.nodes) return;
       sub.nodes.forEach(n => {
         const isDeleted = deletedNodeIds.has(n.id);
-        const p = projectPoint(n.x, n.y, 0.25);
+        const elev = getNodeElevation(n.id);
+        const p = projectPoint(n.x, n.y, elev);
         if (subEls.blobs && subEls.blobs[n.id]) placeBlob(subEls.blobs[n.id], p.x, p.y, p.visible && !isDeleted);
+        if (subEls.stems && subEls.stems[n.id]) {
+          const stem = subEls.stems[n.id];
+          if (!p.visible || isDeleted) { stem.style.display = "none"; }
+          else {
+            const ground = projectPoint(n.x, n.y, 0);
+            stem.style.display = "block";
+            stem.setAttribute("x1", ground.x); stem.setAttribute("y1", ground.y);
+            stem.setAttribute("x2", p.x); stem.setAttribute("y2", p.y);
+          }
+        }
         if (subEls.labels && subEls.labels[n.id]) {
           const lbl = subEls.labels[n.id];
           lbl.style.left = p.x + "px"; lbl.style.top = p.y + "px";
@@ -1608,8 +1638,8 @@
             l.el.style.display = "none";
             return;
           }
-          const pa = projectPoint(l.from.x, l.from.y, 0.25);
-          const pb = projectPoint(l.to.x, l.to.y, 0.25);
+          const pa = projectPoint(l.from.x, l.from.y, getNodeElevation(l.fromId || l.from.id));
+          const pb = projectPoint(l.to.x, l.to.y, getNodeElevation(l.toId || l.to.id));
           if (!pa.visible || !pb.visible) {
             l.el.style.display = "none";
             return;
@@ -1643,8 +1673,8 @@
           l.el.style.display = "none";
           return;
         }
-        const pa = projectPoint(l.from.x, l.from.y, 0.25);
-        const pb = projectPoint(l.to.x, l.to.y, 0.25);
+        const pa = projectPoint(l.from.x, l.from.y, getNodeElevation(l.fromId || l.from.id));
+        const pb = projectPoint(l.to.x, l.to.y, getNodeElevation(l.toId || l.to.id));
         if (!pa.visible || !pb.visible) {
           l.el.style.display = "none";
           return;
