@@ -62,6 +62,59 @@
   const sectionClipPlanesArr = [secPlanes.xMin, secPlanes.xMax, secPlanes.yMin, secPlanes.yMax, secPlanes.zMin, secPlanes.zMax];
   renderer.clippingPlanes = sectionClipPlanesArr;
 
+  // ---- Corte fijo (segunda vista, franja inferior): un renderer y una
+  // camara aparte, mirando de lado, con un solo plano de recorte fijo
+  // en la posicion real del Humedal El Burro -- no se mueve con la caja
+  // de seccion interactiva de arriba, es su propio corte permanente. ----
+  const sectionCanvas2 = document.getElementById("sectionCanvas");
+  const sectionCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 3000);
+  let sectionRenderer = null, sectionCutZ = null;
+  if (sectionCanvas2) {
+    sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas2, antialias: true, alpha: true });
+    sectionRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    sectionRenderer.localClippingEnabled = true;
+    sectionRenderer.setClearColor(0xeef2f5, 1);
+  }
+  const sectionCutPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6); // se reubica cuando se conoce la posicion real del humedal
+  let sectionCutX = 0;
+  function placeSectionCutAtHumedal() {
+    if (!rawWaterData) return;
+    const b = rawWaterData.find(w => (w.nombre || "").includes("Burro"));
+    if (!b || !b.pts || !b.pts.length) return;
+    const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length;
+    const cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
+    const sp = toScene(cx, cy);
+    sectionCutZ = sp.z; sectionCutX = sp.x;
+    sectionCutPlane.constant = -sp.z; // plano normal (0,0,1): oculta z < sp.z, revela el interior visto desde +z
+    if (sectionRenderer) {
+      sectionRenderer.clippingPlanes = [sectionCutPlane];
+      // la camara mira horizontalmente hacia -Z, ligeramente por encima
+      // del nivel del suelo, para que el corte se vea como un alzado
+      const camY = 6;
+      sectionCamera.position.set(sectionCutX, camY, sp.z + 420);
+      sectionCamera.up.set(0, 1, 0);
+      sectionCamera.lookAt(sectionCutX, camY, sp.z);
+      resizeSectionView();
+    }
+  }
+  function resizeSectionView() {
+    if (!sectionRenderer || !sectionCanvas2) return;
+    const rect = sectionCanvas2.getBoundingClientRect();
+    const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
+    sectionRenderer.setSize(w, h, false);
+    // IMPORTANTE: top/bottom deben quedar simetricos (top === -bottom).
+    // Con valores asimetricos, esta version de three.js deja de dibujar
+    // nada en absoluto (se probo y confirmo por separado). Para mostrar
+    // mas territorio por encima del nivel de camara que por debajo, se
+    // desplaza la posicion Y de la camara en vez de romper la simetria.
+    const halfH = Math.max(14, sceneExtentH * 0.035);
+    const halfW = halfH * (w / h);
+    sectionCamera.left = -halfW; sectionCamera.right = halfW;
+    sectionCamera.top = halfH; sectionCamera.bottom = -halfH;
+    sectionCamera.updateProjectionMatrix();
+  }
+  window.addEventListener("resize", resizeSectionView);
+
   // Tamano visible (mitad de la altura del encuadre, en unidades de la
   // escena) para la proyeccion ortogonal — se ajusta al cargar la red.
   let viewSize = 260;
@@ -967,7 +1020,7 @@
   function loadWaterBodies() {
     return fetch(WATER_URL)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + WATER_URL); return r.json(); })
-      .then(data => { rawWaterData = data; buildWaterBodies(data); })
+      .then(data => { rawWaterData = data; buildWaterBodies(data); placeSectionCutAtHumedal(); resizeSectionView(); })
       .catch(err => console.warn("No se pudieron cargar los cuerpos de agua:", err));
   }
 
@@ -1614,6 +1667,7 @@
     }
     controls.update();
     renderer.render(scene, camera);
+    if (sectionRenderer) sectionRenderer.render(scene, sectionCamera);
     updateTechLiveMirror(); // si el panel de escala tecnologica esta abierto, "espeja" los carros y el ruido en vivo dentro de sus 2 subcapas (en vez de una foto fija)
   }
   // ---- Caja de seccion: 6 planos de recorte (X min/max, Y min/max, Z
@@ -1735,6 +1789,7 @@
   });
 
   resize();
+  resizeSectionView();
   requestAnimationFrame(animate);
 
   // ---- Explosion en 3 fotos identicas de la base: se captura el canvas
@@ -1904,6 +1959,7 @@
     updatePenOutput();
   });
   canvas.addEventListener("click", (e) => {
+    if (true) return; // a pedido del profesor: ya no se congela la vista en 3 escalas separadas; ahora todo vive en la vista unica con panel de convenciones + corte
     if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
 
     // Guardar estado y fondo original
