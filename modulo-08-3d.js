@@ -43,6 +43,21 @@
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.BasicShadowMap;
+  renderer.localClippingEnabled = true; // para la caja de seccion (corte del modelo)
+
+  // Los planos de recorte de la caja de seccion se crean y se ACTIVAN
+  // desde ya (igual que en Corte axonometrico), antes de construir
+  // cualquier edificio/via/etc.
+  const secPlanes = {
+    xMin: new THREE.Plane(new THREE.Vector3(1, 0, 0), 1e6),
+    xMax: new THREE.Plane(new THREE.Vector3(-1, 0, 0), 1e6),
+    yMin: new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6),
+    yMax: new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6),
+    zMin: new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6),
+    zMax: new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6),
+  };
+  renderer.clippingPlanes = [secPlanes.xMin, secPlanes.xMax, secPlanes.yMin, secPlanes.yMax, secPlanes.zMin, secPlanes.zMax];
+  let sceneExtentW = 100, sceneExtentH = 100; // ancho/alto de la escena en unidades (para la caja de seccion)
 
   // Tamano visible (mitad de la altura del encuadre, en unidades de la
   // escena) para la proyeccion ortogonal — se ajusta al cargar la red.
@@ -1208,6 +1223,7 @@
       buildRoads(data.edges);
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       const h = (data.bbox[3] - data.bbox[1]) * SCALE;
+      sceneExtentW = w; sceneExtentH = h;
       viewSize = Math.max(w, h) * 0.14;
       resize();
       setAxonometricView(w);
@@ -1261,42 +1277,6 @@
   document.getElementById("viewReset").addEventListener("click", () => setAxonometricView(400));
 
   // ---- Rotacion manual del mapa completo (X/Y/Z), para que el usuario
-  // ---- Control del sol (mover las sombras) ----
-  const sunAzInput = document.getElementById("sunAz"), sunElInput = document.getElementById("sunEl");
-  const sunAzVal = document.getElementById("sunAzVal"), sunElVal = document.getElementById("sunElVal");
-  function onSunChange() {
-    sunAzimuth = parseFloat(sunAzInput.value);
-    sunElevation = parseFloat(sunElInput.value);
-    sunAzVal.textContent = sunAzimuth + "°";
-    sunElVal.textContent = sunElevation + "°";
-    updateSunPosition();
-  }
-  sunAzInput.addEventListener("input", onSunChange);
-  sunElInput.addEventListener("input", onSunChange);
-
-  // ---- Selectores de color en vivo (agua, vias, verde) ----
-  const colorAgua = document.getElementById("colorAgua");
-  const colorVia = document.getElementById("colorVia");
-  const colorVerde = document.getElementById("colorVerde");
-  const colorOutput = document.getElementById("colorOutput");
-  function updateColorOutput() {
-    colorOutput.value =
-      `Agua:  ${colorAgua.value}\nVías:  ${colorVia.value}\nVerde: ${colorVerde.value}`;
-  }
-  colorAgua.addEventListener("input", () => {
-    if (waterMat) waterMat.color.set(colorAgua.value);
-    updateColorOutput();
-  });
-  colorVia.addEventListener("input", () => {
-    if (roadMat) roadMat.color.set(colorVia.value);
-    updateColorOutput();
-  });
-  colorVerde.addEventListener("input", () => {
-    if (parqueMat) parqueMat.color.set(colorVerde.value);
-    updateColorOutput();
-  });
-  updateColorOutput();
-
   document.getElementById("noiseToggle").addEventListener("click", (e) => {
     if (!noiseMesh) return;
     noiseMesh.visible = !noiseMesh.visible;
@@ -1398,6 +1378,67 @@
   });
 
   // ---- Loop de animacion ----
+  // ---- Caja de seccion: 6 planos de recorte, igual que en Corte
+  // axonometrico. Recorte por shader (visual, en vivo); para copiar las
+  // coordenadas exactas que se estan viendo. ----
+  const SECTION_Y_MAX = 10;
+  let sectionBoxActive = true;
+  function sceneToReal(x, z) { return [x / SCALE + netCenter.x, -z / SCALE + netCenter.y]; }
+  const secXMin = document.getElementById("secXMin"), secXMax = document.getElementById("secXMax");
+  const secYMin = document.getElementById("secYMin"), secYMax = document.getElementById("secYMax");
+  const secZMin = document.getElementById("secZMin"), secZMax = document.getElementById("secZMax");
+  const secXMinVal = document.getElementById("secXMinVal"), secXMaxVal = document.getElementById("secXMaxVal");
+  const secYMinVal = document.getElementById("secYMinVal"), secYMaxVal = document.getElementById("secYMaxVal");
+  const secZMinVal = document.getElementById("secZMinVal"), secZMaxVal = document.getElementById("secZMaxVal");
+  const sectionBoxOutput = document.getElementById("sectionBoxOutput");
+  function updateSectionBox() {
+    if (!secXMin) return;
+    const halfW = sceneExtentW / 2 * 1.4, halfH = sceneExtentH / 2 * 1.4;
+    const xMin = -halfW + (parseFloat(secXMin.value) / 100) * (2 * halfW);
+    const xMax = -halfW + (parseFloat(secXMax.value) / 100) * (2 * halfW);
+    const zMin = -halfH + (parseFloat(secZMin.value) / 100) * (2 * halfH);
+    const zMax = -halfH + (parseFloat(secZMax.value) / 100) * (2 * halfH);
+    const yMin = (parseFloat(secYMin.value) / 100) * SECTION_Y_MAX;
+    const yMax = (parseFloat(secYMax.value) / 100) * SECTION_Y_MAX;
+    if (sectionBoxActive) {
+      secPlanes.xMin.constant = -xMin; secPlanes.xMax.constant = xMax;
+      secPlanes.yMin.constant = -yMin; secPlanes.yMax.constant = yMax;
+      secPlanes.zMin.constant = -zMin; secPlanes.zMax.constant = zMax;
+    } else {
+      Object.values(secPlanes).forEach(p => (p.constant = 1e6));
+    }
+    secXMinVal.textContent = secXMin.value + "%"; secXMaxVal.textContent = secXMax.value + "%";
+    secYMinVal.textContent = secYMin.value + "%"; secYMaxVal.textContent = secYMax.value + "%";
+    secZMinVal.textContent = secZMin.value + "%"; secZMaxVal.textContent = secZMax.value + "%";
+    const r0 = sceneToReal(xMin, zMin), r1 = sceneToReal(xMax, zMax);
+    sectionBoxOutput.value =
+      `X: ${secXMin.value}% a ${secXMax.value}%  (real ${Math.round(Math.min(r0[0], r1[0]))} a ${Math.round(Math.max(r0[0], r1[0]))})\n` +
+      `Y (altura, m): ${(yMin / SCALE).toFixed(1)} a ${(yMax / SCALE).toFixed(1)}\n` +
+      `Z: ${secZMin.value}% a ${secZMax.value}%  (real ${Math.round(Math.min(r0[1], r1[1]))} a ${Math.round(Math.max(r0[1], r1[1]))})`;
+  }
+  if (secXMin) {
+    [secXMin, secXMax, secYMin, secYMax, secZMin, secZMax].forEach(el => {
+      el.addEventListener("input", updateSectionBox);
+    });
+    const sectionBoxToggle = document.getElementById("sectionBoxToggle");
+    if (sectionBoxToggle) sectionBoxToggle.addEventListener("click", () => {
+      sectionBoxActive = !sectionBoxActive;
+      sectionBoxToggle.classList.toggle("active", sectionBoxActive);
+      sectionBoxToggle.textContent = sectionBoxActive ? "✂️ Desactivar caja de sección" : "✂️ Activar caja de sección";
+      updateSectionBox();
+    });
+    const sectionBoxReset = document.getElementById("sectionBoxReset");
+    if (sectionBoxReset) sectionBoxReset.addEventListener("click", () => {
+      secXMin.value = 0; secXMax.value = 100; secYMin.value = 0; secYMax.value = 100; secZMin.value = 0; secZMax.value = 100;
+      updateSectionBox();
+    });
+    const sectionBoxCopy = document.getElementById("sectionBoxCopy");
+    if (sectionBoxCopy) sectionBoxCopy.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(sectionBoxOutput.value); sectionBoxCopy.textContent = "✅ Copiado"; setTimeout(() => { sectionBoxCopy.textContent = "📋 Copiar coordenadas"; }, 1600); } catch (e) {}
+    });
+    updateSectionBox();
+  }
+
   function animate(now) {
     requestAnimationFrame(animate);
     if (playing && timesteps.length) {

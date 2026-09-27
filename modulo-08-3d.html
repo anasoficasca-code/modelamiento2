@@ -6,6 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Simulación 3D de tránsito — Kennedy</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="navigation-unified.css?v=20260920">
 <style>
   :root{
@@ -85,6 +88,7 @@
     width:100%; resize:vertical; font-family:monospace; font-size:10.5px; padding:6px; border-radius:6px;
     border:1px solid var(--panel-border); background:#0d0f12; color:var(--ink);
   }
+  #sectionBoxToggle.active{ background:var(--accent); color:#0b0c0f; border-color:var(--accent); }
   input[type=color]{
     width:34px; height:24px; padding:0; border:1px solid var(--panel-border); border-radius:5px;
     background:none; cursor:pointer;
@@ -194,54 +198,67 @@
     </div>
 
     <div class="rotate-panel" id="rotatePanel">
+      <div class="rotate-row rotate-buttons" style="padding-bottom:8px; border-bottom:1px solid var(--panel-border);">
+        <button type="button" id="sectionBoxToggle" class="active">✂️ Desactivar caja de sección</button>
+      </div>
+      <p class="draw-hint">Mueve cualquiera de los 6 límites y el modelo se corta al instante. Copia las coordenadas para darme la vista exacta que quieres.</p>
       <div class="rotate-row">
-        <label>Sol — acimut <span id="sunAzVal">130°</span></label>
-        <input type="range" id="sunAz" min="0" max="360" value="130" step="1">
+        <label>X mínimo <span id="secXMinVal">0%</span></label>
+        <input type="range" id="secXMin" min="0" max="100" value="0" step="1">
       </div>
       <div class="rotate-row">
-        <label>Sol — altura <span id="sunElVal">45°</span></label>
-        <input type="range" id="sunEl" min="5" max="85" value="45" step="1">
+        <label>X máximo <span id="secXMaxVal">100%</span></label>
+        <input type="range" id="secXMax" min="0" max="100" value="100" step="1">
       </div>
-      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border); flex-direction:row; align-items:center; justify-content:space-between;">
-        <label style="display:inline;">Color del agua</label>
-        <input type="color" id="colorAgua" value="#97a5af">
+      <div class="rotate-row">
+        <label>Y mínimo (piso) <span id="secYMinVal">0%</span></label>
+        <input type="range" id="secYMin" min="0" max="100" value="0" step="1">
       </div>
-      <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
-        <label style="display:inline;">Color de las vías</label>
-        <input type="color" id="colorVia" value="#b7babd">
+      <div class="rotate-row">
+        <label>Y máximo (altura) <span id="secYMaxVal">100%</span></label>
+        <input type="range" id="secYMax" min="0" max="100" value="100" step="1">
       </div>
-      <div class="rotate-row" style="flex-direction:row; align-items:center; justify-content:space-between;">
-        <label style="display:inline;">Color de lo verde</label>
-        <input type="color" id="colorVerde" value="#adaa90">
+      <div class="rotate-row">
+        <label>Z mínimo <span id="secZMinVal">0%</span></label>
+        <input type="range" id="secZMin" min="0" max="100" value="0" step="1">
       </div>
-      <textarea id="colorOutput" rows="3" spellcheck="false" readonly></textarea>
+      <div class="rotate-row">
+        <label>Z máximo <span id="secZMaxVal">100%</span></label>
+        <input type="range" id="secZMax" min="0" max="100" value="100" step="1">
+      </div>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="sectionBoxReset">↺ Restablecer</button>
+        <button type="button" id="sectionBoxCopy">📋 Copiar coordenadas</button>
+      </div>
+      <textarea id="sectionBoxOutput" rows="4" spellcheck="false" readonly></textarea>
       <div class="rotate-row rotate-buttons" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
         <button type="button" id="noiseToggle">🔊 Mostrar mapa de ruido</button>
       </div>
       <div class="rotate-row rotate-buttons">
         <button type="button" id="bioToggle">🐦 Mostrar mirlas</button>
       </div>
-      <div class="rotate-row" style="margin-top:6px; padding-top:8px; border-top:1px solid var(--panel-border);">
-        <label>Humedal El Burro — reloj climático anual <span id="humedalMesVal">Ene</span></label>
-        <input type="range" id="humedalMes" min="1" max="12" value="1" step="1">
-      </div>
-      <div id="humedalDiagram" style="margin:6px 0 0; display:flex; gap:14px; align-items:center;">
-        <div style="flex:1;">
-          <div style="display:flex; justify-content:space-between; font-size:9.5px; color:var(--ink-dim); margin-bottom:3px;">
-            <span>Espejo de agua</span><span id="humedalPctLabel">—</span>
+      <div style="margin-top:6px; padding:12px 12px 10px; border-top:1px solid var(--panel-border); background:#00052e; border-radius:8px; border:1px solid #1b2550;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px;">
+          <span style="font:700 10px/1 'IBM Plex Mono',monospace; letter-spacing:.09em; color:#6b7aa8; text-transform:uppercase;">Humedal El Burro</span>
+          <span id="humedalMesVal" style="font:700 11px/1 'IBM Plex Mono',monospace; letter-spacing:.06em; color:#34fcff;">ENE</span>
+        </div>
+        <input type="range" id="humedalMes" min="1" max="12" value="1" step="1" style="width:100%; accent-color:#0428cb; margin:0 0 10px; height:14px;">
+        <div id="humedalDiagram" style="display:flex; gap:14px; align-items:flex-end;">
+          <div style="flex:1;">
+            <div style="display:flex; justify-content:space-between; font:400 9px/1 'IBM Plex Mono',monospace; letter-spacing:.06em; color:#6b7aa8; margin-bottom:5px; text-transform:uppercase;">
+              <span>Espejo de agua</span><span id="humedalPctLabel" style="color:#afb4db;">—</span>
+            </div>
+            <div style="height:4px; border-radius:2px; background:#111a45; overflow:hidden;">
+              <div id="humedalBar" style="height:100%; width:0%; border-radius:2px; background:linear-gradient(90deg,#0428cb,#34fcff); box-shadow:0 0 8px 0 rgba(52,252,255,.5); transition:width .4s cubic-bezier(.22,1,.36,1);"></div>
+            </div>
           </div>
-          <div style="height:5px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden;">
-            <div id="humedalBar" style="height:100%; width:0%; border-radius:3px; background:linear-gradient(90deg,#4fb8e6,#8052ff); transition:width .3s cubic-bezier(.22,1,.36,1);"></div>
+          <div style="text-align:right; flex:none;">
+            <div id="humedalHa" style="font:700 17px/1 'IBM Plex Mono',monospace; letter-spacing:-.02em; color:#ffffff;">—</div>
+            <div style="font:400 8px/1 'IBM Plex Mono',monospace; letter-spacing:.08em; color:#6b7aa8; margin-top:3px; text-transform:uppercase;">hectáreas</div>
           </div>
         </div>
-        <div style="text-align:right; flex:none;">
-          <div id="humedalHa" style="font:600 15px/1 'Space Grotesk',sans-serif; color:var(--ink-dark);">—</div>
-          <div style="font-size:9px; color:var(--ink-dim); margin-top:2px;">hectáreas</div>
-        </div>
-      </div>
-      <p style="margin:4px 0 0; font-size:10px; color:var(--ink-dim);" id="humedalDatos"></p>
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="humedalPlay">▶ Reproducir año completo</button>
+        <p style="margin:8px 0 0; font:400 9.5px/1.4 'IBM Plex Mono',monospace; color:#6b7aa8;" id="humedalDatos"></p>
+        <button type="button" id="humedalPlay" style="width:100%; margin-top:10px; padding:7px; border-radius:6px; border:1px solid #223066; background:transparent; color:#34fcff; font:700 9.5px/1 'IBM Plex Mono',monospace; letter-spacing:.08em; text-transform:uppercase; cursor:pointer;">▶ Reproducir año completo</button>
       </div>
     </div>
 
