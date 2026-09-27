@@ -36,31 +36,38 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 /* ---------- hero ---------- */
 .hero{position:relative;z-index:2;padding:36px 0 44px;flex:none}
-.eyebrow{font-size:13px;font-weight:500;letter-spacing:.04em;color:var(--amber)}
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.04em;color:var(--amber);opacity:0;animation:pv-rise .6s cubic-bezier(.22,1,.36,1) .05s forwards}
 .hero h1{margin-top:18px;font-weight:400;color:var(--ice);letter-spacing:-.03em;line-height:1.04;
-  font-size:clamp(2rem,4.6vw,3.6rem);max-width:20ch}
-.hero p{margin-top:18px;max-width:60ch;font-size:17px;font-weight:200;color:var(--dim)}
+  font-size:clamp(2rem,4.6vw,3.6rem);max-width:20ch;opacity:0;animation:pv-rise .7s cubic-bezier(.22,1,.36,1) .14s forwards}
+.hero p{margin-top:18px;max-width:60ch;font-size:17px;font-weight:200;color:var(--dim);opacity:0;animation:pv-rise .7s cubic-bezier(.22,1,.36,1) .26s forwards}
+@keyframes pv-rise{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:translateY(0); } }
 
 /* ---------- pestañas ---------- */
 .tabs{position:sticky;top:0;z-index:4;background:var(--void);flex:none;border-top:1px solid rgba(244,242,255,.1);border-bottom:1px solid rgba(244,242,255,.1)}
-.tabs-in{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs-in{position:relative;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
 .tabs-in::-webkit-scrollbar{display:none}
-.tab{flex:1 1 0;min-width:168px;display:flex;flex-direction:column;gap:8px;padding:18px 20px;border-bottom:2px solid transparent;transition:background .2s ease,border-color .2s ease}
-.tab .n{font:500 11px/1 var(--font);letter-spacing:.1em;color:var(--c,var(--dim))}
-.tab .t{font-size:14px;color:var(--dim);font-weight:400;letter-spacing:-.005em;transition:color .2s ease}
+.tab-indicator{position:absolute;bottom:-1px;left:0;height:2px;width:0;background:var(--violet);
+  transition:transform .45s cubic-bezier(.22,1,.36,1), width .45s cubic-bezier(.22,1,.36,1), background-color .3s ease;
+  box-shadow:0 0 12px 0 currentColor}
+.tab{flex:1 1 0;min-width:168px;display:flex;flex-direction:column;gap:8px;padding:18px 20px;transition:background .2s ease}
+.tab .n{font:500 11px/1 var(--font);letter-spacing:.1em;color:var(--c,var(--dim));transition:color .2s ease}
+.tab .t{font-size:14px;color:var(--dim);font-weight:400;letter-spacing:-.005em;transition:color .2s ease,transform .2s ease}
 .tab:hover{background:rgba(244,242,255,.04)}
-.tab.active{border-color:var(--c,var(--violet));background:rgba(244,242,255,.05)}
+.tab:hover .t{transform:translateX(2px)}
+.tab.active{background:rgba(244,242,255,.05)}
 .tab.active .t{color:var(--ice)}
 
 /* ---------- escenario ---------- */
-.stage-wrap{position:relative;height:min(76vh,760px);min-height:440px}
+.stage-wrap{position:relative;height:min(76vh,760px);min-height:440px;overflow:hidden}
 .stage{position:absolute;inset:0}
 .stage iframe{width:100%;height:100%;border:0;display:block;background:var(--void)}
-#wipe{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity .38s ease}
-#wipe.show{opacity:1}
-#wipe .label{font:500 11px/1 var(--font);letter-spacing:.16em;text-transform:uppercase;color:#050308;text-align:center}
-#wipe .label b{display:block;font-weight:500;font-size:16px;letter-spacing:-.01em;text-transform:none;margin-top:8px}
+#wipeCircle{position:absolute;top:0;left:0;z-index:5;border-radius:50%;pointer-events:none;
+  transform:translate(-50%,-50%) scale(0);will-change:transform}
+#wipeLabel{position:absolute;top:0;left:0;z-index:6;pointer-events:none;transform:translate(-50%,-50%);
+  opacity:0;transition:opacity .3s ease;text-align:center;white-space:nowrap}
+#wipeLabel.show{opacity:1}
+#wipeLabel .k{font:500 11px/1 var(--font);letter-spacing:.16em;text-transform:uppercase;color:#050308}
+#wipeLabel .v{display:block;margin-top:8px;font-weight:500;font-size:16px;letter-spacing:-.01em;color:#050308}
 
 /* ---------- cierre ---------- */
 .closing{padding:64px var(--pad) 88px}
@@ -77,7 +84,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   .hero p{display:none}
 }
 @media (prefers-reduced-motion:reduce){
-  #wipe{transition:opacity .01ms}
+  #wipeCircle,#wipeLabel{transition:none}
+  .eyebrow,.hero h1,.hero p{animation:none;opacity:1}
 }
 </style>
 </head>
@@ -110,7 +118,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   <div class="stage">
     <iframe id="stageFrame" title="Escena axonométrica" loading="eager"></iframe>
   </div>
-  <div id="wipe"><div class="label" id="wipeLabel"></div></div>
+  <div id="wipeCircle"></div>
+  <div id="wipeLabel"><span class="k">Entrando</span><span class="v" id="wipeLabelText"></span></div>
 </div>
 
 <section class="closing">
@@ -131,50 +140,105 @@ var SCENES = [
   { c:'#8052ff', n:'05', t:'Colapso operativo y logístico', href:'red-residuos-organicos.html' }
 ];
 var tabs = document.getElementById('tabs');
-tabs.innerHTML = SCENES.map(function(s,i){
+tabs.innerHTML = '<span class="tab-indicator" id="tabIndicator"></span>' + SCENES.map(function(s,i){
   return '<button type="button" class="tab" style="--c:'+s.c+'" data-i="'+i+'"><span class="n">'+s.n+'</span><span class="t">'+s.t+'</span></button>';
 }).join('');
+var indicator = document.getElementById('tabIndicator');
 
-var frame = document.getElementById('stageFrame');
-var wipe = document.getElementById('wipe'), wipeLabel = document.getElementById('wipeLabel');
-var current = -1, hideTimer = null;
-
-function hideWipe(){
-  clearTimeout(hideTimer);
-  wipe.classList.remove('show');
+function moveIndicator(tabEl){
+  indicator.style.width = tabEl.offsetWidth + 'px';
+  indicator.style.transform = 'translateX(' + tabEl.offsetLeft + 'px)';
+  indicator.style.background = getComputedStyle(tabEl).getPropertyValue('--c').trim() || 'var(--violet)';
 }
 
-function go(i, instant){
+var frame = document.getElementById('stageFrame');
+var stageWrap = document.querySelector('.stage-wrap');
+var wipeCircle = document.getElementById('wipeCircle'), wipeLabel = document.getElementById('wipeLabel'), wipeLabelText = document.getElementById('wipeLabelText');
+var current = -1, hideTimer = null;
+var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var GROW_MS = 420;   /* la burbuja debe estar COMPLETAMENTE cerrada antes de */
+var SWAP_AT = 460;   /* empezar a cargar el modulo pesado (three.js bloquea el hilo) */
+var MIN_COVER = 620; /* tiempo minimo ya cubierto tras el swap, para que nunca parpadee */
+
+function placeCircle(originX, originY, d){
+  wipeCircle.style.left = originX + 'px';
+  wipeCircle.style.top = originY + 'px';
+  wipeCircle.style.width = d + 'px';
+  wipeCircle.style.height = d + 'px';
+}
+function collapseWipe(){
+  clearTimeout(hideTimer);
+  wipeLabel.classList.remove('show');
+  wipeCircle.style.transform = 'translate(-50%,-50%) scale(0)';
+}
+
+function go(i, instant, tabEl){
   if (i === current) return;
   current = i;
-  [].forEach.call(tabs.children, function(el, idx){ el.classList.toggle('active', idx === i); });
+  [].forEach.call(tabs.querySelectorAll('.tab'), function(el, idx){ el.classList.toggle('active', idx === i); });
+  if (tabEl) moveIndicator(tabEl); else {
+    var found = tabs.querySelector('.tab[data-i="' + i + '"]');
+    if (found) moveIndicator(found);
+  }
   var s = SCENES[i];
-  if (instant){
+  if (instant || reduce){
     frame.src = s.href + '?embed=1&c=' + s.c.slice(1);
     return;
   }
-  wipe.style.background = s.c;
-  wipeLabel.innerHTML = 'Entrando<b>' + s.t + '</b>';
-  wipe.classList.add('show');
-  setTimeout(function(){
-    frame.src = s.href + '?embed=1&c=' + s.c.slice(1);
-  }, 260);
-  /* tope de seguridad: si el iframe tarda en cargar sus scripts pesados
-     (three.js desde CDN), el overlay igual se retira a tiempo */
-  clearTimeout(hideTimer);
-  hideTimer = setTimeout(hideWipe, 1800);
-}
-frame.addEventListener('load', function(){
-  setTimeout(hideWipe, 320);
-});
 
-[].forEach.call(tabs.children, function(el, idx){
-  el.addEventListener('click', function(){ go(idx, false); });
+  /* revelado circular: nace del punto donde estaba la pestaña, cae
+     sobre el escenario y cubre por completo ANTES de empezar a cargar
+     el modulo (que puede bloquear el hilo mientras arranca three.js) */
+  var tRect = (tabEl || tabs.querySelector('.tab[data-i="' + i + '"]')).getBoundingClientRect();
+  var sRect = stageWrap.getBoundingClientRect();
+  var originX = Math.round(tRect.left + tRect.width / 2 - sRect.left);
+  var originY = 0;
+  var maxR = Math.ceil(Math.hypot(Math.max(originX, sRect.width - originX), sRect.height)) + 40;
+  var d = maxR * 2;
+
+  wipeCircle.style.background = s.c;
+  wipeLabelText.textContent = s.t;
+  wipeCircle.style.transform = 'translate(-50%,-50%) scale(0)';
+  placeCircle(originX, originY, d);
+  wipeLabel.style.left = originX + 'px';
+  wipeLabel.style.top = Math.min(originY + 90, sRect.height * 0.42) + 'px';
+  wipeCircle.style.transition = 'none';
+  void wipeCircle.offsetHeight; // forzar reflow para que el siguiente cambio sí anime
+  wipeCircle.style.transition = 'transform ' + GROW_MS + 'ms cubic-bezier(.22,1,.36,1)';
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      wipeCircle.style.transform = 'translate(-50%,-50%) scale(1)';
+    });
+  });
+  setTimeout(function(){ wipeLabel.classList.add('show'); }, GROW_MS - 80);
+
+  setTimeout(function(){
+    var swapTime = Date.now();
+    frame.src = s.href + '?embed=1&c=' + s.c.slice(1);
+    function readyToCollapse(){
+      var elapsed = Date.now() - swapTime;
+      var wait = Math.max(0, MIN_COVER - elapsed);
+      hideTimer = setTimeout(collapseWipe, wait);
+    }
+    frame.addEventListener('load', readyToCollapse, { once: true });
+    /* tope de seguridad: si el iframe jamas dispara 'load', el
+       revelado igual se retira a tiempo */
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(collapseWipe, 2400);
+  }, SWAP_AT);
+}
+
+[].forEach.call(tabs.querySelectorAll('.tab'), function(el, idx){
+  el.addEventListener('click', function(){ go(idx, false, el); });
 });
 
 var hash = (location.hash || '').replace('#', '');
 var startIdx = SCENES.findIndex(function(s){ return s.href === hash; });
 go(startIdx >= 0 ? startIdx : 0, true);
+window.addEventListener('resize', function(){
+  var active = tabs.querySelector('.tab.active');
+  if (active) moveIndicator(active);
+});
 
 /* ================= constelacion decorativa del hero (Dala) ================= */
 var canvas = document.getElementById('cloud'), ctx = canvas.getContext('2d');
