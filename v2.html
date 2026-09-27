@@ -289,12 +289,12 @@ var MODS = [
   {group:'Simular', intro:'La ciudad leída como sistema vivo y no como texto lineal.', items:[
     ['07','Bogotá como sistema complejo','De qué se compone el fenómeno ciudad y cómo interactúan sus componentes para que emerja Bogotá.','modulo-07.html'],
     ['08','Lectura dinámica','Un nuevo modelo de lectura: contaminación auditiva y su efecto en el desplazamiento de la fauna.','modulo-08.html'],
-    ['08','Simulación 3D de tránsito','Kennedy en proyección axonométrica con el tránsito corriendo sobre la malla vial.','modulo-08-3d.html']]},
+    ['08','Simulación 3D de tránsito','Kennedy en proyección axonométrica con el tránsito corriendo sobre la malla vial.','problemas.html#modulo-08-3d.html']]},
   {group:'Kennedy de cerca', intro:'Cortes, conexiones y problemas de una localidad concreta.', items:[
-    ['10','Corte axonométrico','Seis límites móviles que cortan el modelo de Kennedy al instante.','modulo-10-corte.html'],
-    ['C','Conectografías','Las conexiones del territorio recorridas en tres dimensiones.','modulo-conectografias.html'],
-    ['12','Problemáticas de Corabastos','Kennedy según el POT frente a los macromodelos de una ciudad propia.','modulo-12-problemas.html'],
-    ['R','Red causal de sobrecarga','El colapso operativo y logístico frente a la capacidad de soporte del territorio.','red-residuos-organicos.html']]},
+    ['10','Corte axonométrico','Seis límites móviles que cortan el modelo de Kennedy al instante.','problemas.html#modulo-10-corte.html'],
+    ['C','Conectografías','Las conexiones del territorio recorridas en tres dimensiones.','problemas.html#modulo-conectografias.html'],
+    ['12','Problemáticas de Corabastos','Kennedy según el POT frente a los macromodelos de una ciudad propia.','problemas.html#modulo-12-problemas.html'],
+    ['R','Red causal de sobrecarga','El colapso operativo y logístico frente a la capacidad de soporte del territorio.','problemas.html#red-residuos-organicos.html']]},
   {group:'Proponer', intro:'Una hipótesis propia después de desarmar la del plan.', items:[
     ['09','Modelo propio de ciudad','La ciudad como sistema de cuidado: modifica las intensidades y observa cómo cambia la arquitectura relacional.','modulo-09.html']]}
 ];
@@ -315,7 +315,8 @@ var arrowBtn = '<span class="arrow" aria-hidden="true"><svg viewBox="0 0 12 12">
 document.getElementById('mods').innerHTML = MODS.map(function(g){
   return '<div class="group"><div class="group-name"><h3>'+g.group+'</h3><p>'+g.intro+'</p></div><div class="mods">'+
     g.items.map(function(m){
-      return '<a class="mod" href="'+m[3]+'?v2=1"><span class="num">'+m[0]+'</span><div><h4>'+m[1]+'</h4><p>'+m[2]+'</p></div>'+arrowBtn+'</a>';
+      var href = m[3].indexOf('problemas.html') === 0 ? m[3] : m[3] + '?v2=1';
+      return '<a class="mod" href="'+href+'"><span class="num">'+m[0]+'</span><div><h4>'+m[1]+'</h4><p>'+m[2]+'</p></div>'+arrowBtn+'</a>';
     }).join('')+'</div></div>';
 }).join('');
 

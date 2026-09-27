@@ -151,6 +151,16 @@
    no toca ni el contenido ni la logica de este modulo. */
 (function () {
   var p = new URLSearchParams(location.search);
+  if (p.get('embed') === '1') {
+    document.documentElement.classList.add('rapot-embed');
+    var css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = 'rapot-problemas.css?v=1';
+    document.head.appendChild(css);
+    var gfonts = document.createElement('link');
+    gfonts.rel = 'stylesheet';
+    gfonts.href = 'https://fonts.googleapis.com/css2?family=Geist:wght@400;500&display=swap';
+    document.head.appendChild(gfonts);
+  }
   if (p.get('from') !== 'problemas') return;
   var c = '#' + (p.get('c') || '5b8def').replace('#', '');
   var d = document.createElement('div');
