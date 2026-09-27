@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Problemas · Kennedy, Corabastos — RAPOT</title>
+<meta name="description" content="Cinco lecturas axonométricas del colapso operativo y logístico de Kennedy frente a la capacidad de soporte del territorio.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#050506; --panel:#0d0e0f; --ice:#e7ecec; --dim:#8b9494; --line:rgba(231,236,236,.16);
+  --alert:#ff5a36; --font:'Geist',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  --pad:clamp(20px,4vw,64px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--void)}
+body{font-family:var(--font);background:var(--void);color:var(--dim);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--alert);outline-offset:3px}
+.wrap{max-width:1360px;margin:0 auto;padding:0 var(--pad)}
+.mono{font-family:var(--mono);text-transform:uppercase;letter-spacing:.16em;font-size:11px}
+
+/* ---------- fondo: retícula isométrica en reposo, escaneo lento ---------- */
+.grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+  background-image:
+    linear-gradient(30deg, var(--line) 1px, transparent 1px),
+    linear-gradient(150deg, var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size:64px 110px, 64px 110px, 64px 110px;
+  background-position:0 0;
+  mask-image:radial-gradient(ellipse 70% 60% at 50% 30%, #000 0%, transparent 78%);
+  animation:v2-scan 22s linear infinite;
+}
+@keyframes v2-scan{ to{ background-position:640px 0, -640px 0, 0 1100px; } }
+
+/* ---------- nav ---------- */
+.nav{position:relative;z-index:3;padding-top:env(safe-area-inset-top,0px)}
+.nav-in{height:76px;display:flex;align-items:center;gap:20px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--ice);font-weight:500;font-size:16px}
+.brand svg{width:26px;height:26px}
+.back{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--dim);font-size:13px;border:1px solid var(--line);border-radius:999px;padding:9px 16px;transition:border-color .2s ease,color .2s ease}
+.back:hover{color:var(--ice);border-color:rgba(231,236,236,.4)}
+
+/* ---------- hero ---------- */
+.hero{position:relative;z-index:2;padding:56px 0 88px}
+.hero .mono{color:var(--alert)}
+.hero h1{margin-top:22px;font-weight:400;color:var(--ice);letter-spacing:-.02em;line-height:1.04;
+  font-size:clamp(2.3rem,5.2vw,4.6rem);max-width:16ch}
+.hero p{margin-top:28px;max-width:56ch;font-size:18px;color:var(--dim)}
+.hero .stat-row{margin-top:48px;display:flex;flex-wrap:wrap;gap:0;border-top:1px dashed var(--line)}
+.stat{flex:1 1 160px;padding:20px 24px 0;border-right:1px dashed var(--line)}
+.stat:last-child{border-right:none}
+.stat b{display:block;font-size:clamp(1.6rem,2.6vw,2.2rem);font-weight:400;color:var(--ice);letter-spacing:-.02em}
+.stat span{display:block;margin-top:6px;font-size:12.5px;color:var(--dim)}
+
+/* ---------- tarjetas: cinco axonometrías ---------- */
+.cards{position:relative;z-index:2;padding-bottom:120px}
+.cards-head{display:flex;align-items:baseline;gap:16px;margin-bottom:36px;flex-wrap:wrap}
+.cards-head h2{font-weight:400;color:var(--ice);font-size:clamp(1.5rem,2.6vw,2rem);letter-spacing:-.01em}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.card{position:relative;background:var(--panel);padding:32px 28px 30px;min-height:280px;display:flex;flex-direction:column;
+  transition:background .25s ease}
+.card:hover{background:#111214}
+.card .frame{position:absolute;inset:14px;border:1px solid var(--c,var(--line));opacity:.5;pointer-events:none;transition:opacity .25s ease}
+.card:hover .frame{opacity:1}
+.card .frame i{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--c,var(--ice))}
+.card .frame i:nth-child(1){top:-2.5px;left:-2.5px} .card .frame i:nth-child(2){top:-2.5px;right:-2.5px}
+.card .frame i:nth-child(3){bottom:-2.5px;left:-2.5px} .card .frame i:nth-child(4){bottom:-2.5px;right:-2.5px}
+.card .icon{width:40px;height:40px}
+.card .num{margin-top:auto;padding-top:22px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--c,var(--dim))}
+.card h3{margin-top:16px;font-weight:400;color:var(--ice);font-size:22px;letter-spacing:-.01em;line-height:1.2}
+.card p{margin-top:10px;font-size:13.5px;color:var(--dim);line-height:1.5;flex:1}
+.card .go{margin-top:18px;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--c,var(--ice))}
+.card .go svg{width:12px;height:12px;transition:transform .2s ease}
+.card:hover .go svg{transform:translate(3px,-3px)}
+@media (max-width:980px){ .grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:640px){ .grid{grid-template-columns:1fr} .hero .stat-row{flex-direction:column} .stat{border-right:none;border-bottom:1px dashed var(--line);padding-bottom:16px} }
+
+/* ---------- cierre ---------- */
+.closing{position:relative;z-index:2;padding:0 0 80px}
+.closing .band{border-top:1px dashed var(--line);padding-top:36px;display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+.closing p{max-width:46ch;font-size:14px}
+.closing a.ghost{font-size:13px;color:var(--ice);border-bottom:1px solid rgba(231,236,236,.4)}
+
+/* ---------- overlay de transicion de salida ---------- */
+#wipe{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .38s ease, transform .5s cubic-bezier(.22,1,.36,1);transform:scale(1.04)}
+#wipe.show{opacity:1;pointer-events:auto;transform:scale(1)}
+#wipe .label{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#050506;text-align:center}
+#wipe .label b{display:block;font-family:var(--font);font-weight:500;font-size:15px;letter-spacing:0;text-transform:none;margin-top:8px}
+
+@media (prefers-reduced-motion:reduce){
+  .grid-bg{animation:none}
+  #wipe{transition:opacity .01ms}
+}
+</style>
+</head>
+<body>
+
+<div class="grid-bg" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="v2.html" aria-label="RAPOT">
+      <svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="16" fill="none" stroke="#ff5a36" stroke-opacity=".5" stroke-width="1.2"/><circle cx="17" cy="9" r="3" fill="#e7ecec"/><circle cx="10" cy="21" r="3" fill="#e7ecec"/><circle cx="24" cy="21" r="3" fill="#e7ecec"/></svg>
+      RAPOT
+    </a>
+    <a class="back" href="v2.html">&larr; Volver</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <p class="mono">Kennedy · Corabastos</p>
+    <h1>Un territorio que ya no alcanza a sostener su propio modelo de ocupación.</h1>
+    <p>Cinco lecturas del mismo lugar, cada una desde su propio corte axonométrico: el tránsito que lo satura, el suelo que lo sostiene, las conexiones que lo atraviesan, las causas que lo explican y la red que amplifica el colapso.</p>
+    <div class="stat-row">
+      <div class="stat"><b>5</b><span>Cortes axonométricos</span></div>
+      <div class="stat"><b>1</b><span>Territorio: Kennedy</span></div>
+      <div class="stat"><b>3D</b><span>Todas en escena real, no ilustración</span></div>
+    </div>
+  </section>
+
+  <section class="cards wrap">
+    <div class="cards-head">
+      <h2>Las cinco axonometrías</h2>
+      <span class="mono" style="color:var(--dim)">Elige una escena</span>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="closing wrap">
+    <div class="band">
+      <p>Estas escenas comparten el mismo territorio real de Kennedy — lo que cambia es el corte con el que se mira.</p>
+      <a class="ghost" href="v2.html#modulos">Ver el resto de los módulos &rarr;</a>
+    </div>
+  </section>
+</main>
+
+<div id="wipe"><div class="label" id="wipeLabel"></div></div>
+
+<script>
+(function(){
+'use strict';
+var CARDS = [
+  { c:'#5b8def', n:'01', t:'Simulación 3D de tránsito', d:'Proyección axonométrica a 45°: el flujo vehicular corriendo en vivo sobre la malla vial de Kennedy.', href:'modulo-08-3d.html',
+    icon:'<path d="M20 4 34 12v16L20 36 6 28V12z" fill="none" stroke="var(--c)" stroke-width="1.4"/><path d="M6 12 20 20 34 12M20 20v16" fill="none" stroke="var(--c)" stroke-width="1.4"/>' },
+  { c:'#93a35c', n:'02', t:'Corte axonométrico', d:'Seis límites móviles: mueve cualquiera y el modelo del territorio se corta al instante para revelar lo que hay debajo.', href:'modulo-10-corte.html',
+    icon:'<path d="M6 20 20 8 34 20 20 32Z" fill="none" stroke="var(--c)" stroke-width="1.4"/><path d="M6 20v10M34 20v10M20 32v6" stroke="var(--c)" stroke-width="1.4"/>' },
+  { c:'#a276f2', n:'03', t:'Conectografías', d:'Recorre el territorio en tres dimensiones y sigue las conexiones que atraviesan Kennedy de un extremo a otro.', href:'modulo-conectografias.html',
+    icon:'<circle cx="12" cy="12" r="4" fill="none" stroke="var(--c)" stroke-width="1.4"/><circle cx="28" cy="14" r="4" fill="none" stroke="var(--c)" stroke-width="1.4"/><circle cx="18" cy="30" r="4" fill="none" stroke="var(--c)" stroke-width="1.4"/><path d="M15 14 25 14M14 16 17 27M25 17 20 27" stroke="var(--c)" stroke-width="1.2"/>' },
+  { c:'#ff5a36', n:'04', t:'Problemáticas de Kennedy', d:'La red causal completa sobre el mapa 3D real: cada burbuja es una causa, cada flecha una relación del POT en Corabastos.', href:'modulo-12-problemas.html',
+    icon:'<circle cx="14" cy="14" r="6" fill="none" stroke="var(--c)" stroke-width="1.4"/><circle cx="27" cy="24" r="8" fill="none" stroke="var(--c)" stroke-width="1.4"/><path d="M18 17 22 20" stroke="var(--c)" stroke-width="1.4"/>' },
+  { c:'#e0a63c', n:'05', t:'Colapso operativo y logístico', d:'El modelo de ocupación de Kennedy frente a la capacidad real de soporte del territorio: toca una burbuja para revelar la red.', href:'red-residuos-organicos.html',
+    icon:'<path d="M8 30 16 14 24 24 32 10" fill="none" stroke="var(--c)" stroke-width="1.4"/><circle cx="16" cy="14" r="2.4" fill="var(--c)"/><circle cx="24" cy="24" r="2.4" fill="var(--c)"/><circle cx="32" cy="10" r="2.4" fill="var(--c)"/>' }
+];
+var grid = document.getElementById('grid');
+grid.innerHTML = CARDS.map(function(k){
+  return '<a class="card" style="--c:'+k.c+'" href="'+k.href+'" data-href="'+k.href+'" data-c="'+k.c+'" data-t="'+k.t+'">'+
+    '<div class="frame"><i></i><i></i><i></i><i></i></div>'+
+    '<svg class="icon" viewBox="0 0 40 40" aria-hidden="true">'+k.icon+'</svg>'+
+    '<h3>'+k.t+'</h3><p>'+k.d+'</p>'+
+    '<span class="num">'+k.n+' / 05</span>'+
+    '<span class="go">Entrar <svg viewBox="0 0 12 12"><path d="M2 10L10 2M4 2h6v6" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>'+
+  '</a>';
+}).join('');
+
+var wipe = document.getElementById('wipe'), wipeLabel = document.getElementById('wipeLabel');
+var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+grid.querySelectorAll('.card').forEach(function(card){
+  card.addEventListener('click', function(e){
+    e.preventDefault();
+    var href = card.dataset.href, c = card.dataset.c, t = card.dataset.t;
+    if (reduce){ location.href = href + '?from=problemas&c=' + c.slice(1); return; }
+    wipe.style.background = c;
+    wipeLabel.innerHTML = 'Entrando<b>'+t+'</b>';
+    wipe.classList.add('show');
+    setTimeout(function(){ location.href = href + '?from=problemas&c=' + c.slice(1); }, 480);
+  });
+});
+})();
+</script>
+</body>
+</html>

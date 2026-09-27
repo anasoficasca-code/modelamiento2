@@ -123,6 +123,29 @@
 </style>
 </head>
 <body>
+<script>
+/* Transicion de llegada desde el hub "Problemas" (problemas.html).
+   Sin parametros ?from=problemas en la URL, este bloque no hace nada:
+   no toca ni el contenido ni la logica de este modulo. */
+(function () {
+  var p = new URLSearchParams(location.search);
+  if (p.get('from') !== 'problemas') return;
+  var c = '#' + (p.get('c') || '5b8def').replace('#', '');
+  var d = document.createElement('div');
+  d.id = 'rapotEnter';
+  d.style.cssText = 'position:fixed;inset:0;z-index:99999;background:' + c +
+    ';display:flex;align-items:center;justify-content:center;transition:opacity .5s ease, transform .6s cubic-bezier(.22,1,.36,1);';
+  d.innerHTML = '<div style="font:500 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.16em;color:#050506;text-transform:uppercase;">Cargando axonometr\u00eda\u2026</div>';
+  document.body.appendChild(d);
+  /* se retira en un tiempo fijo corto: no espera a que carguen los CDN
+     pesados (three.js, etc.), para no dejar la pantalla de color colgada */
+  setTimeout(function () {
+    d.style.opacity = '0';
+    d.style.transform = 'scale(1.06)';
+    setTimeout(function () { d.remove(); }, 600);
+  }, 550);
+})();
+</script>
 <div class="app">
   <aside class="sidebar sidebar-icons-only">
     <div class="brand-icon"><i class="fa-solid fa-diagram-project"></i></div>
