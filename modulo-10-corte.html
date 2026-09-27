@@ -29,6 +29,7 @@
   .status-overlay{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     font-size:13px; color:#111418; background:rgba(255,255,255,.85); z-index:8; text-align:center; padding:20px;
+    pointer-events:none;
   }
   .status-overlay.hide{ display:none; }
 
@@ -205,7 +206,7 @@
     </div>
 
     <!-- Panel de convenciones (reemplaza la antigua etiqueta de escala) -->
-    <aside id="legendPanel" style="position:absolute; top:0; left:0; bottom:0; width:200px; z-index:200; background:rgba(255,255,255,.96); backdrop-filter:blur(10px); border-right:1px solid rgba(0,0,0,.08); padding:70px 16px 16px; overflow-y:auto; font-family:'Segoe UI',sans-serif;">
+    <aside id="legendPanel" style="display:none; position:absolute; top:0; left:0; bottom:0; width:200px; z-index:200; background:rgba(255,255,255,.96); backdrop-filter:blur(10px); border-right:1px solid rgba(0,0,0,.08); padding:70px 16px 16px; overflow-y:auto; font-family:'Segoe UI',sans-serif;">
       <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:12px;">Convenciones</div>
       <div style="display:flex; flex-direction:column; gap:10px; font-size:11.5px; color:#1e293b;">
         <div style="display:flex; align-items:center; gap:8px;"><i style="width:12px; height:12px; border-radius:3px; background:#7a838d; flex:none;"></i> Vías y malla vial</div>
@@ -221,7 +222,7 @@
     </aside>
 
     <!-- Corte: vista en seccion del mismo territorio, cortando por el humedal -->
-    <div id="sectionWrap" style="position:absolute; left:200px; right:0; bottom:0; height:20%; min-height:120px; z-index:150; border-top:1px solid rgba(0,0,0,.12); background:#eef2f5;">
+    <div id="sectionWrap" style="display:none; position:absolute; left:200px; right:0; bottom:0; height:20%; min-height:120px; z-index:150; border-top:1px solid rgba(0,0,0,.12); background:#eef2f5;">
       <canvas id="sectionCanvas" style="width:100%; height:100%; display:block;"></canvas>
       <span style="position:absolute; top:8px; left:14px; font:700 10.5px 'Segoe UI',sans-serif; color:#475569; letter-spacing:.04em; text-transform:uppercase; pointer-events:none;">Corte — Humedal El Burro</span>
     </div>

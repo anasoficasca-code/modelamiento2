@@ -1626,7 +1626,7 @@
           const lbl = subEls.labels[n.id];
           lbl.style.left = p.x + "px"; lbl.style.top = p.y + "px";
           lbl.style.display = (p.visible && !isDeleted) ? "block" : "none";
-          const targetHtml = isZoomedOut ? (lbl.dataset.shortHtml || lbl.dataset.fullHtml) : lbl.dataset.fullHtml;
+          const targetHtml = lbl.dataset.shortHtml || lbl.dataset.fullHtml; // el icono siempre va dentro de la bola, sin importar el zoom
           if (lbl.innerHTML !== targetHtml) {
             lbl.innerHTML = targetHtml;
           }

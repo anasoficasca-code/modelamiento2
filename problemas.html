@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Problemas · Kennedy — RAPOT</title>
-<meta name="description" content="Cinco lecturas axonométricas del colapso operativo y logístico de Kennedy frente a la capacidad de soporte del territorio, en una sola pantalla.">
+<meta name="description" content="Cuatro lecturas axonométricas del colapso operativo y logístico de Kennedy frente a la capacidad de soporte del territorio, en una sola pantalla.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@200;400;500&display=swap" rel="stylesheet">
@@ -116,8 +116,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   <div class="wrap" style="position:relative">
     <p class="eyebrow">KENNEDY</p>
     <h1>Un territorio que ya no alcanza a sostener su propio modelo de ocupación.</h1>
-    <p>Cinco lecturas del mismo lugar, cada una desde su propio corte axonométrico. Baja para recorrerlas, una por una, a pantalla completa.</p>
-    <div class="scroll-hint"><i aria-hidden="true"></i>Baja para recorrer las cinco escenas</div>
+    <p>Cuatro lecturas del mismo lugar, cada una desde su propio corte axonométrico. Baja para recorrerlas, una por una, a pantalla completa.</p>
+    <div class="scroll-hint"><i aria-hidden="true"></i>Baja para recorrer las cuatro escenas</div>
   </div>
 </section>
 
@@ -130,7 +130,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 <section class="closing">
   <div class="band">
-    <p>Estas cinco escenas comparten el mismo territorio real de Kennedy — lo que cambia es el corte con el que se mira.</p>
+    <p>Estas cuatro escenas comparten el mismo territorio real de Kennedy — lo que cambia es el corte con el que se mira.</p>
     <a class="ghost" href="v2.html#modulos">Ver el resto de los módulos &rarr;</a>
   </div>
 </section>
@@ -143,11 +143,9 @@ var SCENES = [
     d:'El flujo vehicular corriendo en vivo sobre la malla vial real de Kennedy — arrastra para girar, rueda para zoom.' },
   { c:'#ffb829', n:'02', t:'Corte axonométrico', href:'modulo-10-corte.html',
     d:'Seis límites móviles: mueve cualquiera y el modelo del territorio se corta al instante para revelar lo que hay debajo.' },
-  { c:'#8052ff', n:'03', t:'Conectografías', href:'modulo-conectografias.html',
-    d:'Recorre el territorio en tres dimensiones y sigue las conexiones que atraviesan Kennedy de un extremo a otro.' },
-  { c:'#ffb829', n:'04', t:'Problemáticas de Kennedy', href:'modulo-12-problemas.html',
+  { c:'#ffb829', n:'03', t:'Problemáticas de Kennedy', href:'modulo-12-problemas.html',
     d:'La red causal completa sobre el mapa 3D real: cada burbuja es una causa, cada flecha una relación del POT en Kennedy.' },
-  { c:'#8052ff', n:'05', t:'Colapso operativo y logístico', href:'red-residuos-organicos.html',
+  { c:'#8052ff', n:'04', t:'Colapso operativo y logístico', href:'red-residuos-organicos.html',
     d:'El modelo de ocupación de Kennedy frente a la capacidad real de soporte del territorio: toca una burbuja para revelar la red.' }
 ];
 
@@ -156,7 +154,7 @@ var scenesEl = document.getElementById('scenes');
 scenesEl.innerHTML = SCENES.map(function(s, i){
   return '<section class="scene-section" id="scene-' + i + '" style="--c:' + s.c + '">' +
     '<div class="scene-head"><div class="scene-head-in">' +
-      '<span class="n">' + s.n + ' / 05</span><h2>' + s.t + '</h2><p>' + s.d + '</p>' +
+      '<span class="n">' + s.n + ' / 04</span><h2>' + s.t + '</h2><p>' + s.d + '</p>' +
     '</div></div>' +
     '<div class="scene-stage" data-href="' + s.href + '" data-c="' + s.c.slice(1) + '">' +
       '<div class="poster">Cargando…</div>' +
