@@ -69,11 +69,11 @@
   canvas.addEventListener("contextmenu", (e) => e.preventDefault()); // sin esto, el navegador abre su menu contextual con el clic derecho en vez de dejarlo mover (panear) la vista
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  // Proyeccion paralela (axonometrica): se bloquea el angulo de la camara
-  // en 45 grados fijo, y solo se permite girar alrededor (orbitar en el
-  // plano horizontal) y hacer zoom — no inclinar mas ni menos.
-  controls.minPolarAngle = Math.PI / 4;
-  controls.maxPolarAngle = Math.PI / 4;
+  // Antes el angulo de camara quedaba fijo en 45 grados (solo se podia
+  // orbitar en horizontal). Ahora se puede inclinar la vista, para que
+  // se note la elevacion 3D real de las burbujas segun sus conexiones.
+  controls.minPolarAngle = Math.PI / 12;   // casi cenital
+  controls.maxPolarAngle = Math.PI / 2.15; // casi al ras del horizonte
   controls.minZoom = 0.15;
   controls.maxZoom = 350;
   controls.enablePan = true;

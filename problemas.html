@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Problemas · Kennedy, Corabastos — RAPOT</title>
+<title>Problemas · Kennedy — RAPOT</title>
 <meta name="description" content="Cinco lecturas axonométricas del colapso operativo y logístico de Kennedy frente a la capacidad de soporte del territorio, en una sola pantalla.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,13 +40,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .hero h1{margin-top:18px;font-weight:400;color:var(--ice);letter-spacing:-.03em;line-height:1.04;
   font-size:clamp(2rem,4.6vw,3.6rem);max-width:20ch;opacity:0;animation:pv-rise .7s cubic-bezier(.22,1,.36,1) .14s forwards}
 .hero p{margin-top:18px;max-width:60ch;font-size:17px;font-weight:200;color:var(--dim);opacity:0;animation:pv-rise .7s cubic-bezier(.22,1,.36,1) .26s forwards}
-.stat-row{margin-top:36px;display:flex;flex-wrap:wrap;border-top:1px dashed rgba(244,242,255,.16);
+.scroll-hint{margin-top:36px;display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--dim);
   opacity:0;animation:pv-rise .7s cubic-bezier(.22,1,.36,1) .36s forwards}
-.stat{flex:1 1 140px;padding:18px 22px 0 0}
-.stat b{display:block;font-size:clamp(1.4rem,2.2vw,1.9rem);font-weight:400;color:var(--ice);letter-spacing:-.02em}
-.stat span{display:block;margin-top:4px;font-size:12px;color:var(--dim)}
-.scroll-hint{margin-top:44px;display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--dim);
-  opacity:0;animation:pv-rise .7s cubic-bezier(.22,1,.36,1) .46s forwards}
 .scroll-hint i{display:block;width:1px;height:38px;background:linear-gradient(var(--amber),transparent);animation:pv-drip 2.2s ease-in-out infinite}
 @keyframes pv-rise{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:translateY(0); } }
 @keyframes pv-drip{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
@@ -74,16 +69,18 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .scene-head .n{font:500 12px/1 var(--font);letter-spacing:.14em;color:var(--c,var(--amber))}
 .scene-head h2{font-weight:400;font-size:clamp(1.5rem,3vw,2.3rem);letter-spacing:-.02em;color:var(--ice)}
 .scene-head p{flex:1 1 320px;font-size:14.5px;color:var(--dim);max-width:70ch}
-.scene-stage{position:relative;height:min(88vh,920px);min-height:480px;margin:0 var(--pad);border-radius:16px;overflow:hidden;
+.scene-stage{position:relative;height:min(94vh,1040px);min-height:480px;margin:0 12px;border-radius:16px;overflow:hidden;
   border:1px solid rgba(244,242,255,.1);box-shadow:0 40px 90px -30px rgba(0,0,0,.7);
-  opacity:0;transform:translateY(28px) scale(.98);transition:opacity .7s cubic-bezier(.22,1,.36,1) .05s, transform .7s cubic-bezier(.22,1,.36,1) .05s}
-.scene-section.in-view .scene-stage{opacity:1;transform:translateY(0) scale(1)}
+  opacity:0;transform:translateY(28px) scale(.98);
+  transition:opacity .7s cubic-bezier(.22,1,.36,1) .05s, transform .7s cubic-bezier(.22,1,.36,1) .05s, box-shadow .9s ease .1s}
+.scene-section.in-view .scene-stage{opacity:1;transform:translateY(0) scale(1);
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.7), 0 0 0 1px var(--c,var(--violet)), 0 0 70px -12px var(--c,var(--violet))}
 .scene-stage iframe{width:100%;height:100%;border:0;display:block;background:var(--panel)}
 .scene-stage .poster{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--panel);
   font:500 12px/1 var(--font);letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
 @media (max-width:860px){
   .scene-section{padding-top:36px}
-  .scene-stage{margin:0 16px;height:min(72vh,640px)}
+  .scene-stage{margin:0 10px;height:min(80vh,700px)}
   .scene-head{padding:0 16px 16px}
 }
 
@@ -96,7 +93,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .eyebrow,.hero h1,.hero p,.stat-row,.scroll-hint{animation:none;opacity:1}
+  .eyebrow,.hero h1,.hero p,.scroll-hint{animation:none;opacity:1}
   .scroll-hint i{animation:none}
   .scene-head,.scene-stage{transition:none;opacity:1;transform:none}
 }
@@ -117,15 +114,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <section class="hero">
   <canvas id="cloud" aria-hidden="true"></canvas>
   <div class="wrap" style="position:relative">
-    <p class="eyebrow">KENNEDY · CORABASTOS</p>
+    <p class="eyebrow">KENNEDY</p>
     <h1>Un territorio que ya no alcanza a sostener su propio modelo de ocupación.</h1>
     <p>Cinco lecturas del mismo lugar, cada una desde su propio corte axonométrico. Baja para recorrerlas, una por una, a pantalla completa.</p>
-    <div class="stat-row">
-      <div class="stat"><b>5</b><span>Cortes axonométricos</span></div>
-      <div class="stat"><b>1</b><span>Territorio: Kennedy</span></div>
-      <div class="stat"><b>3D</b><span>Todas en escena real, no ilustración</span></div>
-      <div class="stat"><b>13</b><span>Causalidades inter-redes registradas</span></div>
-    </div>
     <div class="scroll-hint"><i aria-hidden="true"></i>Baja para recorrer las cinco escenas</div>
   </div>
 </section>
@@ -155,7 +146,7 @@ var SCENES = [
   { c:'#8052ff', n:'03', t:'Conectografías', href:'modulo-conectografias.html',
     d:'Recorre el territorio en tres dimensiones y sigue las conexiones que atraviesan Kennedy de un extremo a otro.' },
   { c:'#ffb829', n:'04', t:'Problemáticas de Kennedy', href:'modulo-12-problemas.html',
-    d:'La red causal completa sobre el mapa 3D real: cada burbuja es una causa, cada flecha una relación del POT en Corabastos.' },
+    d:'La red causal completa sobre el mapa 3D real: cada burbuja es una causa, cada flecha una relación del POT en Kennedy.' },
   { c:'#8052ff', n:'05', t:'Colapso operativo y logístico', href:'red-residuos-organicos.html',
     d:'El modelo de ocupación de Kennedy frente a la capacidad real de soporte del territorio: toca una burbuja para revelar la red.' }
 ];

@@ -853,6 +853,18 @@
     }
     nodePos = best;
 
+    // Fijacion final de limites: el layout (fuerzas + minimizacion de
+    // cruces) puede dejar algun nodo fuera del area visible en ciertos
+    // tamaños de pantalla; esto garantiza que TODA la red quede dentro
+    // del contenedor, sin mover la logica de relaciones ni el resto.
+    nodes.forEach(n => {
+      const r = nodeRadiusMap[n.id] || NODE_R;
+      const p = nodePos[n.id];
+      if (!p) return;
+      p.x = Math.max(margin + r, Math.min(mainW() - margin - r, p.x));
+      p.y = Math.max(margin + r, Math.min(mainH() - margin - r, p.y));
+    });
+
     nodes.forEach(n => {
       const b = el("blob"); gooLayer.appendChild(b); nodeBlobs[n.id] = b;
       b.style.background = activeColorOf(n.id);
