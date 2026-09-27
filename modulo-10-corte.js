@@ -85,15 +85,34 @@
     const cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
     const sp = toScene(cx, cy);
     sectionCutZ = sp.z; sectionCutX = sp.x;
-    sectionCutPlane.constant = -sp.z; // plano normal (0,0,1): oculta z < sp.z, revela el interior visto desde +z
+    // El corte se orienta transversal (perpendicular) a la calle real mas
+    // cercana al humedal -- se busca el segmento de via mas cercano y se
+    // usa su misma direccion para poner el plano de corte, en vez de
+    // cortar siempre de este a oeste sin relacion con el territorio real.
+    let roadAngleReal = 0, bestDist = Infinity;
+    if (rawEdgesData) {
+      rawEdgesData.forEach(([kind, pts]) => {
+        for (let i = 0; i < pts.length - 1; i++) {
+          const [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
+          const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+          const d = Math.hypot(mx - cx, my - cy);
+          if (d < bestDist) { bestDist = d; roadAngleReal = Math.atan2(y2 - y1, x2 - x1); }
+        }
+      });
+    }
+    const roadAngleScene = -roadAngleReal; // toScene invierte el eje norte-sur
+    const nx = Math.cos(roadAngleScene), nz = Math.sin(roadAngleScene);
+    sectionCutPlane.normal.set(nx, 0, nz); // normal = misma direccion de la calle -> el corte queda transversal a ella
+    sectionCutPlane.constant = -(nx * sp.x + nz * sp.z);
     if (sectionRenderer) {
       sectionRenderer.clippingPlanes = [sectionCutPlane];
-      // la camara mira horizontalmente hacia -Z, ligeramente por encima
-      // del nivel del suelo, para que el corte se vea como un alzado
-      const camY = 6;
-      sectionCamera.position.set(sectionCutX, camY, sp.z + 420);
+      // la camara mira horizontalmente hacia el humedal, desde el lado
+      // perpendicular a la calle, ligeramente por encima del nivel del
+      // suelo, para que el corte se vea como un alzado
+      const camY = 6, camDist = 420;
+      sectionCamera.position.set(sp.x + nx * camDist, camY, sp.z + nz * camDist);
       sectionCamera.up.set(0, 1, 0);
-      sectionCamera.lookAt(sectionCutX, camY, sp.z);
+      sectionCamera.lookAt(sp.x, camY, sp.z);
       resizeSectionView();
     }
   }
@@ -1356,7 +1375,7 @@
       sceneExtentW = w; sceneExtentH = h;
       if (typeof updateSectionBox === "function") updateSectionBox();
       rebuildFilteredGeometry();
-      viewSize = Math.max(w, h) * 0.14;
+      viewSize = Math.max(w, h) * 0.155; // un poco mas chico que antes (0.14), para que la axonometria no se corte en los bordes de la pantalla
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");

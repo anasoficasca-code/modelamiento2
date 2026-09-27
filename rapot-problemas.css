@@ -16,7 +16,6 @@ html.rapot-embed body{
 /* la barra lateral de iconos queda oculta: la navegación entre las
    cinco escenas la da el panel de pestañas del shell, no esta barra */
 html.rapot-embed .sidebar{ display:none !important; }
-html.rapot-embed #explodeHint{ display:none !important; }
 
 html.rapot-embed .hud-title{
   background:rgba(12,10,20,.82); border:1px solid rgba(244,242,255,.12); border-radius:14px;
