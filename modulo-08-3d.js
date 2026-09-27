@@ -1335,6 +1335,16 @@
     lastTreeBillboardUpdate = now;
     updateTreeBillboards();
   });
+  // La camara (posicion, hacia donde mira, zoom) tambien se refleja en el
+  // cuadro de coordenadas, para poder acomodar el angulo y el zoom que se
+  // quiera y copiar la vista completa (corte + camara), no solo el corte.
+  let lastCamOutputUpdate = 0;
+  controls.addEventListener("change", () => {
+    const now = performance.now();
+    if (now - lastCamOutputUpdate < 100) return;
+    lastCamOutputUpdate = now;
+    if (typeof updateSectionBox === "function") updateSectionBox();
+  });
 
   // ---- Herramienta de dibujo: clic para ir marcando puntos sobre el
   // mapa (como la pluma de Photoshop), y mostrar las coordenadas REALES
@@ -1428,7 +1438,11 @@
       `U (a lo largo del giro): ${secXMin.value}% a ${secXMax.value}%\n` +
       `Y (altura, m): ${(yMin / SCALE).toFixed(1)} a ${(yMax / SCALE).toFixed(1)}\n` +
       `V (perpendicular): ${secZMin.value}% a ${secZMax.value}%\n` +
-      `(referencia sin girar — real ${Math.round(Math.min(r0[0], r1[0]))} a ${Math.round(Math.max(r0[0], r1[0]))} / ${Math.round(Math.min(r0[1], r1[1]))} a ${Math.round(Math.max(r0[1], r1[1]))})`;
+      `(referencia sin girar — real ${Math.round(Math.min(r0[0], r1[0]))} a ${Math.round(Math.max(r0[0], r1[0]))} / ${Math.round(Math.min(r0[1], r1[1]))} a ${Math.round(Math.max(r0[1], r1[1]))})\n` +
+      `--- Cámara ---\n` +
+      `Posición: ${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)}\n` +
+      `Mira hacia: ${controls.target.x.toFixed(1)}, ${controls.target.y.toFixed(1)}, ${controls.target.z.toFixed(1)}\n` +
+      `Zoom: ${camera.zoom.toFixed(2)}`;
   }
   if (secXMin) {
     [secXMin, secXMax, secYMin, secYMax, secZMin, secZMax, secRot].forEach(el => {

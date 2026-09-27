@@ -1733,7 +1733,11 @@
       `Rotación: ${rot}°\n` +
       `X: ${secXMin.value}% a ${secXMax.value}%  (real ${Math.round(Math.min(r0[0],r1[0]))} a ${Math.round(Math.max(r0[0],r1[0]))})\n` +
       `Y (altura, m): ${(yMin / SCALE).toFixed(1)} a ${(yMax / SCALE).toFixed(1)}\n` +
-      `Z: ${secZMin.value}% a ${secZMax.value}%  (real ${Math.round(Math.min(r0[1],r1[1]))} a ${Math.round(Math.max(r0[1],r1[1]))})`;
+      `Z: ${secZMin.value}% a ${secZMax.value}%  (real ${Math.round(Math.min(r0[1],r1[1]))} a ${Math.round(Math.max(r0[1],r1[1]))})\n` +
+      `--- Cámara ---\n` +
+      `Posición: ${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)}\n` +
+      `Mira hacia: ${controls.target.x.toFixed(1)}, ${controls.target.y.toFixed(1)}, ${controls.target.z.toFixed(1)}\n` +
+      `Zoom: ${camera.zoom.toFixed(2)}`;
     rebuildNoiseGround();
     rebuildBirds();
   }
@@ -1805,6 +1809,16 @@
     if (now - lastTreeBillboardUpdate < 120) return;
     lastTreeBillboardUpdate = now;
     updateTreeBillboards();
+  });
+  // La camara (posicion, hacia donde mira, zoom) tambien se refleja en el
+  // cuadro de coordenadas, para poder acomodar el angulo y el zoom que se
+  // quiera y copiar la vista completa (corte + camara).
+  let lastCamOutputUpdate = 0;
+  controls.addEventListener("change", () => {
+    const now = performance.now();
+    if (now - lastCamOutputUpdate < 100) return;
+    lastCamOutputUpdate = now;
+    updateSectionBox();
   });
 
   resize();
