@@ -1235,6 +1235,7 @@
     d.dataset.fullHtml = wrapToFit(text, maxCharsPerLine, maxLines);
     d.dataset.shortHtml = MACRO_CATEGORY_ICONS[macroId] || `<span style="font-weight:800; font-size:11px; letter-spacing:0.5px; opacity:0.9;">${nodeId ? nodeId.toUpperCase() : ''}</span>`;
     d.style.width = safeWidth + "px";
+    d.style.height = (diameter * 0.86) + "px";
     d.style.fontSize = fontPx + "px";
     d.style.lineHeight = lineH + "px";
     d.innerHTML = d.dataset.shortHtml;
