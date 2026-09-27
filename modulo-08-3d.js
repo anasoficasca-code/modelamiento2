@@ -732,7 +732,7 @@
   // ---- Cuerpos de agua: poligonos planos (fan de triangulos) apenas
   // levantados del suelo, con un material azul semi-transparente. ----
   const EL_BURRO_NOMBRE = "Humedal El Burro";
-  let elBurroPts = null, elBurroCentro = null, elBurroMesh = null;
+  let elBurroPts = null, elBurroCentro = null, elBurroMesh = null, elBurroBaseAreaHa = null;
   function buildWaterBodies(bodies) {
     const positions = [];
     const uvs = [];
@@ -748,6 +748,17 @@
           x: w.pts.reduce((s, p) => s + p[0], 0) / w.pts.length,
           y: w.pts.reduce((s, p) => s + p[1], 0) / w.pts.length,
         };
+        // area real del poligono base (formula del zapatero / shoelace),
+        // a partir de las mismas coordenadas reales que ya se usan para
+        // dibujar el humedal -- no es un dato inventado, es el area real
+        // del poligono cargado desde el geojson.
+        let area2 = 0;
+        for (let i = 0; i < w.pts.length; i++) {
+          const [x1, y1] = w.pts[i];
+          const [x2, y2] = w.pts[(i + 1) % w.pts.length];
+          area2 += x1 * y2 - x2 * y1;
+        }
+        elBurroBaseAreaHa = Math.abs(area2) / 2 / 10000;
         return;
       }
       const pts = w.pts.map(p => toScene(p[0], p[1]));
@@ -857,13 +868,17 @@
     const d = HUMEDAL_CICLO[mes - 1];
     if (!d) return;
     rebuildElBurro(d.expansion_pct);
+    if (elBurroBaseAreaHa) {
+      const scale = 1 + d.expansion_pct / 100 * 0.6;
+      d.area_ha = elBurroBaseAreaHa * scale * scale;
+    }
     return d;
   }
 
   function loadWaterBodies() {
     return fetch(WATER_URL)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + WATER_URL); return r.json(); })
-      .then(data => { buildWaterBodies(data); })
+      .then(data => { buildWaterBodies(data); if (typeof applyHumedalMes === "function") applyHumedalMes(parseInt(humedalMesSlider.value, 10)); })
       .catch(err => console.warn("No se pudieron cargar los cuerpos de agua:", err));
   }
 
@@ -1300,10 +1315,18 @@
   const humedalMesSlider = document.getElementById("humedalMes");
   const humedalMesVal = document.getElementById("humedalMesVal");
   const humedalDatos = document.getElementById("humedalDatos");
+  const humedalBar = document.getElementById("humedalBar");
+  const humedalPctLabel = document.getElementById("humedalPctLabel");
+  const humedalHa = document.getElementById("humedalHa");
   function applyHumedalMes(mes) {
     const d = setHumedalMes(mes);
     humedalMesVal.textContent = MESES_NOMBRE[mes - 1];
-    if (d) humedalDatos.textContent = `Espejo de agua: +${d.expansion_pct.toFixed(1)}% · Profundidad: ${d.profundidad_m.toFixed(2)} m`;
+    if (d) {
+      humedalDatos.textContent = `Profundidad: ${d.profundidad_m.toFixed(2)} m`;
+      humedalPctLabel.textContent = `+${d.expansion_pct.toFixed(1)}%`;
+      humedalBar.style.width = Math.min(100, d.expansion_pct / 50 * 100) + "%";
+      humedalHa.textContent = d.area_ha != null ? d.area_ha.toFixed(2) : "—";
+    }
   }
   humedalMesSlider.addEventListener("input", () => applyHumedalMes(parseInt(humedalMesSlider.value, 10)));
   let humedalPlaying = false, humedalPlayTimer = null;

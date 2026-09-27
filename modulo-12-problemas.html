@@ -202,8 +202,8 @@
 
   /* burbujas y etiquetas de la red de problemáticas: mismo dato y posición,
      solo se les da brillo, entrada suave y una tipografía más cuidada */
-  html.rapot-v2 .net-blob{ box-shadow:0 0 0 1px rgba(255,255,255,.15), 0 10px 26px rgba(0,0,0,.45), 0 0 30px -6px rgba(255,255,255,.25); animation:v2-blob-in .4s cubic-bezier(.2,.8,.2,1) both; transition:box-shadow .18s ease, filter .18s ease; }
-  html.rapot-v2 .net-blob:hover{ filter:brightness(1.18); box-shadow:0 0 0 1px rgba(255,255,255,.3), 0 10px 30px rgba(0,0,0,.5), 0 0 42px -4px rgba(255,255,255,.4); }
+  html.rapot-v2 .net-blob{ animation:v2-blob-in .4s cubic-bezier(.2,.8,.2,1) both; transition:filter .18s ease; }
+  html.rapot-v2 .net-blob:hover{ filter:brightness(1.18); }
   html.rapot-v2 .net-label{ font-family:var(--v2-font) !important; font-weight:500 !important; letter-spacing:.005em; }
   html.rapot-v2 #netSvg .net-line{ filter:drop-shadow(0 0 3px rgba(255,255,255,.3)); stroke-dasharray:6 5; animation:v2-flow 2.4s linear infinite; }
   html.rapot-v2 #netSvg .net-pol, html.rapot-v2 #netSvg .net-loopbadge{ font-family:var(--v2-font); }

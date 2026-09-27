@@ -225,7 +225,21 @@
         <label>Humedal El Burro — reloj climático anual <span id="humedalMesVal">Ene</span></label>
         <input type="range" id="humedalMes" min="1" max="12" value="1" step="1">
       </div>
-      <p style="margin:2px 0 0; font-size:10.5px; color:var(--ink-dim);" id="humedalDatos"></p>
+      <div id="humedalDiagram" style="margin:6px 0 0; display:flex; gap:14px; align-items:center;">
+        <div style="flex:1;">
+          <div style="display:flex; justify-content:space-between; font-size:9.5px; color:var(--ink-dim); margin-bottom:3px;">
+            <span>Espejo de agua</span><span id="humedalPctLabel">—</span>
+          </div>
+          <div style="height:5px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden;">
+            <div id="humedalBar" style="height:100%; width:0%; border-radius:3px; background:linear-gradient(90deg,#4fb8e6,#8052ff); transition:width .3s cubic-bezier(.22,1,.36,1);"></div>
+          </div>
+        </div>
+        <div style="text-align:right; flex:none;">
+          <div id="humedalHa" style="font:600 15px/1 'Space Grotesk',sans-serif; color:var(--ink-dark);">—</div>
+          <div style="font-size:9px; color:var(--ink-dim); margin-top:2px;">hectáreas</div>
+        </div>
+      </div>
+      <p style="margin:4px 0 0; font-size:10px; color:var(--ink-dim);" id="humedalDatos"></p>
       <div class="rotate-row rotate-buttons">
         <button type="button" id="humedalPlay">▶ Reproducir año completo</button>
       </div>
