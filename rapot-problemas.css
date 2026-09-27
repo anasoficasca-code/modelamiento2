@@ -102,6 +102,23 @@ html.rapot-embed .net-blob{
 html.rapot-embed .net-label{ font-family:var(--pv-font) !important; font-weight:500 !important; }
 html.rapot-embed #netSvg .net-line{ filter:drop-shadow(0 0 3px rgba(255,184,41,.4)); stroke-dasharray:6 5; animation:pv-flow 2.4s linear infinite; }
 
+/* red-residuos-organicos.html (pestaña 05): burbujas con brillo luminoso
+   y halo pulsante -- misma posicion, mismo dato, mismo clic; solo se ven
+   como nodos de una constelación viva en vez de circulos planos */
+html.rapot-embed .blob{
+  box-shadow:0 0 0 1px rgba(244,242,255,.22), 0 0 30px -3px rgba(255,255,255,.45), 0 10px 24px rgba(0,0,0,.4) !important;
+  filter:saturate(1.18) brightness(1.05);
+}
+html.rapot-embed .blob::after{
+  content:"";position:absolute;inset:-30%;border-radius:50%;border:1px solid rgba(244,242,255,.18);
+  animation:pv-halo 3.2s ease-in-out infinite;pointer-events:none;
+}
+html.rapot-embed .arrow-line{ filter:drop-shadow(0 0 3px rgba(255,184,41,.35)); }
+html.rapot-embed .label{ font-family:var(--pv-font) !important; }
+html.rapot-embed .cld-legend b{ color:#fff !important; }
+@keyframes pv-halo{ 0%,100%{ transform:scale(.92); opacity:.55; } 50%{ transform:scale(1.14); opacity:0; } }
+@media (prefers-reduced-motion:reduce){ html.rapot-embed .blob::after{ animation:none; display:none; } }
+
 @keyframes pv-fade-in{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:translateY(0); } }
 @keyframes pv-blob-in{ from{ opacity:0; transform:scale(.3); } to{ opacity:1; transform:scale(1); } }
 @keyframes pv-flow{ to{ stroke-dashoffset:-22; } }
