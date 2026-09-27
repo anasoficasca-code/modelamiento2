@@ -81,12 +81,10 @@
   canvas.addEventListener("contextmenu", (e) => e.preventDefault()); // sin esto, el navegador abre su menu contextual con el clic derecho en vez de dejarlo mover (panear) la vista
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  // Proyeccion paralela (axonometrica): se bloquea el angulo de la camara
-  // en 35 grados fijo (55 grados de polarAngle, medido desde arriba), y
-  // solo se permite girar alrededor (orbitar en el plano horizontal) y
-  // hacer zoom — no inclinar mas ni menos.
-  controls.minPolarAngle = Math.PI * 55 / 180;
-  controls.maxPolarAngle = Math.PI * 55 / 180;
+  // Antes el angulo quedaba fijo en 35 grados. Ahora se puede inclinar
+  // la vista libremente (solo girar alrededor y hacer zoom quedaba antes).
+  controls.minPolarAngle = Math.PI / 12;
+  controls.maxPolarAngle = Math.PI / 2.15;
   controls.minZoom = 0.15;
   controls.maxZoom = 30;
   controls.enablePan = true;
