@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <script src="rapot-v2.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulación 3D de tránsito — Kennedy</title>
+<title>Simulación 3D — Corte — Kennedy</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -176,8 +176,8 @@
         <a href="modulo-06.html" class="icon-nav-item" title="06 · POT ↔ ODS"><i class="fa-solid fa-earth-americas"></i></a>
         <a href="modulo-07.html" class="icon-nav-item" title="07 · Simulador"><i class="fa-solid fa-flask"></i></a>
         <a href="modulo-08.html" class="icon-nav-item" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
-        <a href="modulo-08-3d.html" class="icon-nav-item active" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
-        <a href="modulo-08-corte.html" class="icon-nav-item" title="08b · Simulación 3D — Corte"><i class="fa-solid fa-layer-group"></i></a>
+        <a href="modulo-08-3d.html" class="icon-nav-item" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
+        <a href="modulo-08-corte.html" class="icon-nav-item active" title="08b · Simulación 3D — Corte"><i class="fa-solid fa-layer-group"></i></a>
         <a href="modulo-10-corte.html" class="icon-nav-item" title="10 · Corte axonométrico"><i class="fa-solid fa-scissors"></i></a>
         <a href="modulo-conectografias.html" class="icon-nav-item" title="Conectografías"><i class="fa-solid fa-diagram-project"></i></a>
         <a href="modulo-12-problemas.html" class="icon-nav-item" title="12 · Problemáticas Corabastos"><i class="fa-solid fa-triangle-exclamation"></i></a>
@@ -191,8 +191,8 @@
     </div>
 
     <div class="hud-title">
-      <h1>Simulación 3D de tránsito — Kennedy</h1>
-      <p>Proyección axonométrica a 45° · arrastra para girar alrededor · rueda para zoom · clic derecho para mover la vista</p>
+      <h1>Simulación 3D — Corte</h1>
+      <p>Vista inicial ya cortada — mueve los límites o gira la caja para explorar otro ángulo</p>
     </div>
 
     <div class="view-buttons">
@@ -206,16 +206,16 @@
       </div>
       <p class="draw-hint">Mueve cualquiera de los 6 límites y gira la caja al ángulo que quieras. Copia las coordenadas para darme la vista exacta que quieres.</p>
       <div class="rotate-row">
-        <label>Rotación de la caja <span id="secRotVal">0°</span></label>
-        <input type="range" id="secRot" min="0" max="179" value="0" step="1">
+        <label>Rotación de la caja <span id="secRotVal">58°</span></label>
+        <input type="range" id="secRot" min="0" max="179" value="58" step="1">
       </div>
       <div class="rotate-row">
         <label>X mínimo <span id="secXMinVal">0%</span></label>
         <input type="range" id="secXMin" min="0" max="100" value="0" step="1">
       </div>
       <div class="rotate-row">
-        <label>X máximo <span id="secXMaxVal">100%</span></label>
-        <input type="range" id="secXMax" min="0" max="100" value="100" step="1">
+        <label>X máximo <span id="secXMaxVal">90%</span></label>
+        <input type="range" id="secXMax" min="0" max="100" value="90" step="1">
       </div>
       <div class="rotate-row">
         <label>Y mínimo (piso) <span id="secYMinVal">0%</span></label>
@@ -230,8 +230,8 @@
         <input type="range" id="secZMin" min="0" max="100" value="0" step="1">
       </div>
       <div class="rotate-row">
-        <label>Z máximo <span id="secZMaxVal">100%</span></label>
-        <input type="range" id="secZMax" min="0" max="100" value="100" step="1">
+        <label>Z máximo <span id="secZMaxVal">29%</span></label>
+        <input type="range" id="secZMax" min="0" max="100" value="29" step="1">
       </div>
       <div class="rotate-row rotate-buttons">
         <button type="button" id="sectionBoxReset">↺ Restablecer</button>
@@ -308,6 +308,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-08-3d.js?v=73"></script>
+<script src="modulo-08-corte.js?v=73"></script>
 </body>
 </html>
