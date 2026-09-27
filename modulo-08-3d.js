@@ -38,7 +38,9 @@
   // pura dentro de toScene() (ver abajo), sin tocar la altura de nada.
   scene.add(sceneRoot);
 
-  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
+  let camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
+  const orthoCameraRef = camera; // referencia estable a la ortografica, para poder volver a ella
+  const perspCamera = new THREE.PerspectiveCamera(55, 1, 1, 5000);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
@@ -66,10 +68,14 @@
     const w = wrap.clientWidth, h = wrap.clientHeight;
     renderer.setSize(w, h, false);
     const aspect = w / h;
-    camera.left = -viewSize * aspect;
-    camera.right = viewSize * aspect;
-    camera.top = viewSize;
-    camera.bottom = -viewSize;
+    if (camera.isOrthographicCamera) {
+      camera.left = -viewSize * aspect;
+      camera.right = viewSize * aspect;
+      camera.top = viewSize;
+      camera.bottom = -viewSize;
+    } else {
+      camera.aspect = aspect;
+    }
     camera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resize);
@@ -87,6 +93,31 @@
   controls.minZoom = 0.15;
   controls.maxZoom = 30;
   controls.enablePan = true;
+
+  // ---- Cambiar entre proyeccion ortografica (axonometrica, la de
+  // siempre) y perspectiva (con fuga real, como ve un ojo humano). Al
+  // cambiar, se copia la posicion y el punto al que mira, para no perder
+  // el encuadre que ya se tenia armado. ----
+  const perspToggleBtn = document.getElementById("perspToggle");
+  let usingPersp = false;
+  if (perspToggleBtn) perspToggleBtn.addEventListener("click", () => {
+    const target = controls.target.clone();
+    const pos = camera.position.clone();
+    usingPersp = !usingPersp;
+    if (usingPersp) {
+      perspCamera.position.copy(pos);
+      camera = perspCamera;
+    } else {
+      camera = orthoCameraRef;
+      camera.position.copy(pos);
+    }
+    controls.object = camera;
+    controls.target.copy(target);
+    controls.update();
+    resize();
+    camera.updateProjectionMatrix();
+    perspToggleBtn.textContent = usingPersp ? "📏 Ver en axonométrica" : "📐 Ver en perspectiva";
+  });
 
   // ---- Luces (con sombras, tipo render arquitectonico) ----
   const ambient = new THREE.AmbientLight(0xffffff, 0.95);
