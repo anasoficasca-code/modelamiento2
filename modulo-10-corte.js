@@ -67,7 +67,7 @@
   // en la posicion real del Humedal El Burro -- no se mueve con la caja
   // de seccion interactiva de arriba, es su propio corte permanente. ----
   const sectionCanvas2 = document.getElementById("sectionCanvas");
-  const sectionCamera = new THREE.PerspectiveCamera(50, 1, 0.5, 5000);
+  const sectionCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 3000);
   let sectionRenderer = null, sectionCutZ = null;
   if (sectionCanvas2) {
     sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas2, antialias: true, alpha: true });
@@ -106,12 +106,13 @@
     sectionCutPlane.constant = -(nx * sp.x + nz * sp.z);
     if (sectionRenderer) {
       sectionRenderer.clippingPlanes = [sectionCutPlane];
-      // Camara en perspectiva con las coordenadas que dejo el usuario en el modulo 8
-      sectionCamera.position.set(132.2, 6.9, 9.4);
+      // la camara mira horizontalmente hacia el humedal, desde el lado
+      // perpendicular a la calle, ligeramente por encima del nivel del
+      // suelo, para que el corte se vea como un alzado
+      const camY = 6, camDist = 420;
+      sectionCamera.position.set(sp.x + nx * camDist, camY, sp.z + nz * camDist);
       sectionCamera.up.set(0, 1, 0);
-      sectionCamera.lookAt(223.8, 2.4, -64.3);
-      sectionCamera.fov = 50;
-      sectionCamera.updateProjectionMatrix();
+      sectionCamera.lookAt(sp.x, camY, sp.z);
       resizeSectionView();
     }
   }
@@ -120,7 +121,15 @@
     const rect = sectionCanvas2.getBoundingClientRect();
     const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
     sectionRenderer.setSize(w, h, false);
-    sectionCamera.aspect = w / h;
+    // IMPORTANTE: top/bottom deben quedar simetricos (top === -bottom).
+    // Con valores asimetricos, esta version de three.js deja de dibujar
+    // nada en absoluto (se probo y confirmo por separado). Para mostrar
+    // mas territorio por encima del nivel de camara que por debajo, se
+    // desplaza la posicion Y de la camara en vez de romper la simetria.
+    const halfH = Math.max(14, sceneExtentH * 0.035);
+    const halfW = halfH * (w / h);
+    sectionCamera.left = -halfW; sectionCamera.right = halfW;
+    sectionCamera.top = halfH; sectionCamera.bottom = -halfH;
     sectionCamera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resizeSectionView);
@@ -2012,13 +2021,9 @@
       sectionWrapEl.style.display = "block";
       resizeSectionView();
       placeSectionCutAtHumedal();
-      return; // el primer clic solo revela el panel; el contexto base ya se ve
     }
+    return;
     if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
-
-    // A partir de aqui: el mecanismo ORIGINAL de las 3 escalas (burbujas
-    // apiladas con animacion de subir/asentarse), restaurado tal cual a
-    // pedido de la usuaria -- ya no el paso a paso de 12 capas.
 
     // Guardar estado y fondo original
     const origRoadColor = roadMat ? roadMat.color.getHex() : null;
