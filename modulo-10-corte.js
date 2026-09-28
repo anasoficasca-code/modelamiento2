@@ -60,6 +60,16 @@
     zMax: new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6),
   };
   const sectionClipPlanesArr = [secPlanes.xMin, secPlanes.xMax, secPlanes.yMin, secPlanes.yMax, secPlanes.zMin, secPlanes.zMax];
+  const botPlanes = {
+    xMin: new THREE.Plane(new THREE.Vector3(1, 0, 0), 1e6),
+    xMax: new THREE.Plane(new THREE.Vector3(-1, 0, 0), 1e6),
+    yMin: new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6),
+    yMax: new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6),
+    zMin: new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6),
+    zMax: new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6)
+  };
+  const botClipPlanesArr = [botPlanes.xMin, botPlanes.xMax, botPlanes.yMin, botPlanes.yMax, botPlanes.zMin, botPlanes.zMax];
+
   renderer.clippingPlanes = sectionClipPlanesArr;
 
   // ---- Corte fijo (segunda vista, franja inferior): un renderer y una
@@ -68,7 +78,7 @@
   // de seccion interactiva de arriba, es su propio corte permanente. ----
   const sectionCanvas2 = document.getElementById("sectionCanvas");
   const sectionCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 3000);
-  let sectionRenderer = null, sectionCutZ = null;
+  let sectionRenderer = null, sectionCutZ = null, sectionControls = null;
   if (sectionCanvas2) {
     sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas2, antialias: true, alpha: true });
     sectionRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -78,42 +88,32 @@
   const sectionCutPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6); // se reubica cuando se conoce la posicion real del humedal
   let sectionCutX = 0;
   function placeSectionCutAtHumedal() {
-    if (!rawWaterData) return;
-    const b = rawWaterData.find(w => (w.nombre || "").includes("Burro"));
-    if (!b || !b.pts || !b.pts.length) return;
-    const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length;
-    const cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
-    const sp = toScene(cx, cy);
-    sectionCutZ = sp.z; sectionCutX = sp.x;
-    // El corte se orienta transversal (perpendicular) a la calle real mas
-    // cercana al humedal -- se busca el segmento de via mas cercano y se
-    // usa su misma direccion para poner el plano de corte, en vez de
-    // cortar siempre de este a oeste sin relacion con el territorio real.
-    let roadAngleReal = 0, bestDist = Infinity;
-    if (rawEdgesData) {
-      rawEdgesData.forEach(([kind, pts]) => {
-        for (let i = 0; i < pts.length - 1; i++) {
-          const [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
-          const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-          const d = Math.hypot(mx - cx, my - cy);
-          if (d < bestDist) { bestDist = d; roadAngleReal = Math.atan2(y2 - y1, x2 - x1); }
-        }
-      });
-    }
-    const roadAngleScene = -roadAngleReal; // toScene invierte el eje norte-sur
-    const nx = Math.cos(roadAngleScene), nz = Math.sin(roadAngleScene);
-    sectionCutPlane.normal.set(nx, 0, nz); // normal = misma direccion de la calle -> el corte queda transversal a ella
-    sectionCutPlane.constant = -(nx * sp.x + nz * sp.z);
+    // User requested explicitly hardcoded coordinates and values for the section cut
+    sectionCutX = 177.0;
+    sectionCutZ = -25.6;
+    sectionRotAngle = 58;
+
+
+    const nx = Math.cos(sectionRotAngle * Math.PI / 180), nz = Math.sin(sectionRotAngle * Math.PI / 180);
+    sectionCutPlane.normal.set(nx, 0, nz);
+    sectionCutPlane.constant = -(nx * sectionCutX + nz * sectionCutZ);
     if (sectionRenderer) {
-      sectionRenderer.clippingPlanes = [sectionCutPlane];
-      // la camara mira horizontalmente hacia el humedal, desde el lado
-      // perpendicular a la calle, ligeramente por encima del nivel del
-      // suelo, para que el corte se vea como un alzado
-      const camY = 6, camDist = 420;
-      sectionCamera.position.set(sp.x + nx * camDist, camY, sp.z + nz * camDist);
+      if (typeof updateBotBox === 'function') updateBotBox();
+      sectionRenderer.localClippingEnabled = true;
+      sectionRenderer.clippingPlanes = botClipPlanesArr;
+      sectionCamera.position.set(-610.7, 70.0, 693.2);
+      if (!sectionControls) {
+        sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
+        sectionControls.enableDamping = true;
+        sectionControls.dampingFactor = 0.15;
+      }
       sectionCamera.up.set(0, 1, 0);
-      sectionCamera.lookAt(sp.x, camY, sp.z);
+      sectionCamera.lookAt(177.0, 5.5, -25.6);
+      if (sectionControls) sectionControls.target.set(177.0, 5.5, -25.6);
+      sectionCamera.zoom = 3.42;
       resizeSectionView();
+      sectionCamera.zoom = 3.42;
+      sectionCamera.updateProjectionMatrix();
     }
   }
   function resizeSectionView() {
@@ -1019,6 +1019,7 @@
     const uvs = [];
     const UV_SCALE = 0.08; // repite la textura cada ~12.5 unidades de escena
     bodies.forEach(w => {
+      if (!(w.nombre || "").includes("Burro")) return; // USER REQUEST: Remove dark blue patches (other water bodies)
       const pts = w.pts.map(p => toScene(p[0], p[1]));
       if (pts.length < 3) return;
       // Triangulacion real de poligono (ear-clipping), no un abanico
@@ -1452,7 +1453,7 @@
     // elevacion, que es el angulo que pidio para este modulo).
     camera.position.set(-389.40, 559.68, 542.58);
     controls.target.set(218.76, -53.06, -86.62);
-    camera.zoom = 2.272;
+    camera.zoom = 1.65;
     camera.updateProjectionMatrix();
     // Centrar en el area de estudio (caja de seccion) con el mismo angulo,
     // y ajustar el zoom para que el rombo completo quepa sin cortarse.
@@ -1465,7 +1466,7 @@
         controls.target.set((x0 + x1) / 2, controls.target.y, (z0 + z1) / 2);
         camera.position.copy(controls.target).add(off);
         camera.lookAt(controls.target);
-        camera.zoom = 2.272; // tamaño grande original (el ajuste automatico la dejaba diminuta)
+        camera.zoom = 1.65; // tamaño grande original (el ajuste automatico la dejaba diminuta)
         camera.updateProjectionMatrix(); camera.updateMatrixWorld();
         const v = new THREE.Vector3(); let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
         [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].forEach(([x, z]) => [-6, 0, 8].forEach(yy => { v.set(x, yy, z).project(camera); mnx = Math.min(mnx, v.x); mxx = Math.max(mxx, v.x); mny = Math.min(mny, v.y); mxy = Math.max(mxy, v.y); }));
@@ -1720,6 +1721,7 @@
       waterBumpRef.offset.y = (now * 0.000021) % 1;
     }
     controls.update();
+    if (sectionControls) sectionControls.update();
     renderer.render(scene, camera);
     if (sectionRenderer) sectionRenderer.render(scene, sectionCamera);
     updateTechLiveMirror(); // si el panel de escala tecnologica esta abierto, "espeja" los carros y el ruido en vivo dentro de sus 2 subcapas (en vez de una foto fija)
@@ -1739,7 +1741,72 @@
   const secYMinVal = document.getElementById("secYMinVal"), secYMaxVal = document.getElementById("secYMaxVal");
   const secZMinVal = document.getElementById("secZMinVal"), secZMaxVal = document.getElementById("secZMaxVal");
   const sectionBoxOutput = document.getElementById("sectionBoxOutput");
-  const secRot = document.getElementById("secRot"), secRotVal = document.getElementById("secRotVal");
+  
+  const botRot = document.getElementById("botRot"), botRotVal = document.getElementById("botRotVal");
+  const botXMin = document.getElementById("botXMin"), botXMinVal = document.getElementById("botXMinVal");
+  const botXMax = document.getElementById("botXMax"), botXMaxVal = document.getElementById("botXMaxVal");
+  const botYMin = document.getElementById("botYMin"), botYMinVal = document.getElementById("botYMinVal");
+  const botYMax = document.getElementById("botYMax"), botYMaxVal = document.getElementById("botYMaxVal");
+  const botZMin = document.getElementById("botZMin"), botZMinVal = document.getElementById("botZMinVal");
+  const botZMax = document.getElementById("botZMax"), botZMaxVal = document.getElementById("botZMaxVal");
+  const botBoxOutput = document.getElementById("botBoxOutput");
+
+  function updateBotBox() {
+    if(!botXMin) return;
+    const halfW = sceneExtentW / 2 * 1.4, halfH = sceneExtentH / 2 * 1.4;
+    const xMin = -halfW + (parseFloat(botXMin.value) / 100) * (2 * halfW);
+    const xMax = -halfW + (parseFloat(botXMax.value) / 100) * (2 * halfW);
+    const zMin = -halfH + (parseFloat(botZMin.value) / 100) * (2 * halfH);
+    const zMax = -halfH + (parseFloat(botZMax.value) / 100) * (2 * halfH);
+    const yMin = (parseFloat(botYMin.value) / 100) * SECTION_Y_MAX;
+    const yMax = (parseFloat(botYMax.value) / 100) * SECTION_Y_MAX;
+    const rot = botRot ? parseFloat(botRot.value) : 0;
+    const rad = rot * Math.PI / 180;
+    const ux = Math.cos(rad), uz = Math.sin(rad);
+    const vx = -Math.sin(rad), vz = Math.cos(rad);
+    
+    if(botRotVal) botRotVal.textContent = rot + "°";
+    botPlanes.xMin.normal.set(ux, 0, uz); botPlanes.xMin.constant = -xMin;
+    botPlanes.xMax.normal.set(-ux, 0, -uz); botPlanes.xMax.constant = xMax;
+    botPlanes.yMin.constant = -yMin;
+    botPlanes.yMax.constant = yMax;
+    botPlanes.zMin.normal.set(vx, 0, vz); botPlanes.zMin.constant = -zMin;
+    botPlanes.zMax.normal.set(-vx, 0, -vz); botPlanes.zMax.constant = zMax;
+    
+    if(botXMinVal) botXMinVal.textContent = botXMin.value + "%"; 
+    if(botXMaxVal) botXMaxVal.textContent = botXMax.value + "%";
+    if(botYMinVal) botYMinVal.textContent = botYMin.value + "%"; 
+    if(botYMaxVal) botYMaxVal.textContent = botYMax.value + "%";
+    if(botZMinVal) botZMinVal.textContent = botZMin.value + "%"; 
+    if(botZMaxVal) botZMaxVal.textContent = botZMax.value + "%";
+
+    if (botBoxOutput && typeof sceneToReal === "function") {
+      const r0 = sceneToReal(xMin, zMin), r1 = sceneToReal(xMax, zMax);
+      botBoxOutput.value =
+        `Rotación: ${rot}°\n` +
+        `U (a lo largo del giro): ${botXMin.value}% a ${botXMax.value}%\n` +
+        `Y (altura, m): ${(yMin / SCALE).toFixed(1)} a ${(yMax / SCALE).toFixed(1)}\n` +
+        `V (perpendicular): ${botZMin.value}% a ${botZMax.value}%\n` +
+        `(referencia sin girar — real ${Math.round(Math.min(r0[0], r1[0]))} a ${Math.round(Math.max(r0[0], r1[0]))} / ${Math.round(Math.min(r0[1], r1[1]))} a ${Math.round(Math.max(r0[1], r1[1]))})`;
+    }
+  }
+
+  [botRot, botXMin, botXMax, botYMin, botYMax, botZMin, botZMax].forEach(el => {
+    if(el) el.addEventListener("input", () => { updateBotBox(); });
+  });
+
+  const botBoxCopy = document.getElementById("botBoxCopy");
+  if (botBoxCopy && botBoxOutput) {
+    botBoxCopy.addEventListener("click", () => {
+      botBoxOutput.select();
+      document.execCommand("copy");
+      const old = botBoxCopy.innerHTML;
+      botBoxCopy.innerHTML = "¡Copiado!";
+      setTimeout(() => botBoxCopy.innerHTML = old, 1500);
+    });
+  }
+
+const secRot = document.getElementById("secRot"), secRotVal = document.getElementById("secRotVal");
   function updateSectionBox() {
     const halfW = sceneExtentW / 2 * 1.4, halfH = sceneExtentH / 2 * 1.4; // mismo margen que el suelo (*1.4)
     const xMin = -halfW + (parseFloat(secXMin.value) / 100) * (2 * halfW);
@@ -1826,13 +1893,10 @@
     // sirve para una caja girada -- se deja toda la geometria cargada y
     // el recorte por shader (arriba) es el que de verdad muestra el
     // corte girado.
-    const boxFilter = (sectionBoxActive && !isFullRange && !isRotated) ? { xMin, xMax, zMin, zMax, yMin, yMax } : null;
-    if (rawBuildingsData) buildBuildings(rawBuildingsData, boxFilter);
-    if (rawEdgesData) buildRoads(rawEdgesData, boxFilter);
-    // El borde negro sigue el area de la caja de seccion (lo que en
-    // verdad se ve), no el terreno completo (que quedaria muy lejos del
-    // recorte y no se notaria).
-    if (boxFilter) buildAxoBorder(xMin, xMax, zMin, zMax);
+    const mainBoxFilter = (sectionBoxActive && !isFullRange && !isRotated) ? { xMin, xMax, zMin, zMax, yMin, yMax } : null;
+    if (rawBuildingsData) buildBuildings(rawBuildingsData, null); // Render full geometry for bottom view
+    if (rawEdgesData) buildRoads(rawEdgesData, null); // Render full geometry for bottom view
+    if (mainBoxFilter) buildAxoBorder(xMin, xMax, zMin, zMax);
     else buildAxoBorder(-halfW, halfW, -halfH, halfH);
   }
   document.getElementById("sectionBoxToggle").addEventListener("click", (e) => {
@@ -2053,16 +2117,18 @@
   let sectionRotAngle = 54; // rotacion inicial del corte
 
   function updateSectionCutRotation() {
-    if (!sectionRenderer || !sectionCutZ) return;
+    if (!sectionRenderer || sectionCutZ == null) return;
     const rad = sectionRotAngle * Math.PI / 180;
     const nx = Math.cos(rad), nz = Math.sin(rad);
     sectionCutPlane.normal.set(nx, 0, nz);
     sectionCutPlane.constant = -(nx * sectionCutX + nz * sectionCutZ);
-    // Reposicionar la camara del corte segun la rotacion
-    const camY = 6, camDist = 420;
-    sectionCamera.position.set(sectionCutX + nx * camDist, camY, sectionCutZ + nz * camDist);
+    
+    // Hardcode requested camera coordinates
+    sectionCamera.position.set(-610.7, 70.0, 693.2);
     sectionCamera.up.set(0, 1, 0);
-    sectionCamera.lookAt(sectionCutX, camY, sectionCutZ);
+    sectionCamera.lookAt(177.0, 5.5, -25.6);
+    if (sectionControls) sectionControls.target.set(177.0, 5.5, -25.6);
+    sectionCamera.zoom = 3.42;
     sectionCamera.updateProjectionMatrix();
     // Actualizar coordenadas mostradas
     if (sectionCoordsOutput) {
@@ -2164,9 +2230,8 @@
     }
     if (penActive) return; // mientras se dibuja el poligono, no se dispara el paso de capas
 
-    explodeStep = (explodeStep % 12) + 1;
-    applyExplodeStep();
-    return;
+    // removed by script to restore 3 scales
+
 
     // Guardar estado y fondo original
     const origRoadColor = roadMat ? roadMat.color.getHex() : null;
@@ -2224,7 +2289,7 @@
     if (imgTecno) imgTecno.src = fotoTecno;
 
     document.getElementById("sceneWrap").style.display = "none";
-    explodeOverlay.style.display = "flex";
+    openNaturalExplode(); // Skips the 3 scales overview screen
     void explodeOverlay.offsetWidth;
     explodeLayers.forEach(el => { el.style.opacity = "1"; el.style.transform = "scale(1)"; });
 
@@ -2958,7 +3023,13 @@
 
   function advanceNaturalAssemble() {
     natExplodeStep++;
-    if (natExplodeStep > 10) natExplodeStep = 0;
+    if (natExplodeStep > 10) {
+      natExplodeStep = 0;
+      updateNaturalLayersStep(false);
+      closeNaturalExplode();
+      openCulturalExplode();
+      return;
+    }
     updateNaturalLayersStep(true);
   }
 
@@ -3402,7 +3473,13 @@
 
   function advanceTechAssemble() {
     techExplodeStep++;
-    if (techExplodeStep > 10) techExplodeStep = 0;
+    if (techExplodeStep > 10) {
+      techExplodeStep = 0;
+      updateTechLayersStep(false);
+      closeTechExplode();
+      document.getElementById("sceneWrap").style.display = "block"; // Return to live 3D
+      return;
+    }
     updateTechLayersStep(true);
   }
 
@@ -3730,6 +3807,7 @@
     // 2. Cuerpos de agua (Humedal y afluentes) - Azul pizarra / mineral realista con reflejos tenues
     rawWaterData.forEach(body => {
       const isBurro = body === burro;
+      if (!isBurro) return; // USER REQUEST: Remove dark blue patches that aren't the humedal
       let pts = body.pts;
       if (isBurro) {
         // Forma REAL exacta (asi calza con el humedal de la base al bajar).
@@ -5074,7 +5152,13 @@
 
   function advanceCulturalAssemble() {
     cultExplodeStep++;
-    if (cultExplodeStep > 10) cultExplodeStep = 0;
+    if (cultExplodeStep > 10) {
+      cultExplodeStep = 0;
+      updateCulturalLayersStep(false);
+      closeCulturalExplode();
+      openTechExplode();
+      return;
+    }
     updateCulturalLayersStep(true);
   }
 

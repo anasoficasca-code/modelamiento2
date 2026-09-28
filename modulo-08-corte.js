@@ -351,6 +351,27 @@
         );
         for (let k = 0; k < 3; k++) normals.push(0, 1, 0);
       });
+      // Aristas 3D visibles de CADA edificio
+      const allEdgePos = [];
+      for (let i = 0; i < pts.length - 1; i++) {
+        allEdgePos.push(pts[i].x, h, pts[i].z, pts[i + 1].x, h, pts[i + 1].z);
+      }
+      allEdgePos.push(pts[pts.length - 1].x, h, pts[pts.length - 1].z, pts[0].x, h, pts[0].z);
+      for (let i = 0; i < pts.length - 1; i++) {
+        allEdgePos.push(pts[i].x, 0, pts[i].z, pts[i + 1].x, 0, pts[i + 1].z);
+      }
+      allEdgePos.push(pts[pts.length - 1].x, 0, pts[pts.length - 1].z, pts[0].x, 0, pts[0].z);
+      for (let i = 0; i < pts.length; i++) {
+        allEdgePos.push(pts[i].x, 0, pts[i].z, pts[i].x, h, pts[i].z);
+      }
+      const edgeGeo = new THREE.BufferGeometry();
+      edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(allEdgePos, 3));
+      const edgeMat = new THREE.LineBasicMaterial({
+        color: 0x00ff00, transparent: false, opacity: 1.0,
+        depthWrite: false, depthTest: false, clippingPlanes: []
+      });
+      buildingEdgeMat = edgeMat;
+      scene.add(new THREE.LineSegments(edgeGeo, edgeMat));
     });
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
@@ -363,15 +384,6 @@
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
-
-    // Borde oscuro de cada edificio: perimetro del techo + esquinas
-    // verticales (sin lineas internas), para que se lea como un volumen
-    // real y no una silueta plana.
-    const edgeGeo = new THREE.BufferGeometry();
-    edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.14 });
-    buildingEdgeMat = edgeMat;
-    sceneRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
   }
 
   function loadBuildings() {
@@ -1501,6 +1513,22 @@
     });
     updateSectionBox();
   }
+
+  // ---- Boton de descarga HD ----
+  const downloadBtn = document.getElementById("downloadBtn");
+  if (downloadBtn) downloadBtn.addEventListener("click", () => {
+    const originalPixelRatio = renderer.getPixelRatio();
+    renderer.setPixelRatio(2);
+    renderer.render(scene, camera);
+    // Capturar inmediatamente ANTES de cambiar el pixel ratio de vuelta
+    const dataURL = renderer.domElement.toDataURL("image/png");
+    renderer.setPixelRatio(originalPixelRatio);
+    // Descargar la imagen
+    const link = document.createElement("a");
+    link.download = "corte-humedal-el-burro-hd.png";
+    link.href = dataURL;
+    link.click();
+  });
 
   function animate(now) {
     requestAnimationFrame(animate);
