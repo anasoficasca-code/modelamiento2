@@ -2058,10 +2058,46 @@
     });
   }
 
+  const EXPLODE_LAYERS = [
+    { name: "Sistema Hídrico", live: true },
+    { name: "Vegetación", live: false },
+    { name: "Aves / Fauna", live: true },
+    { name: "Conectividad vial", live: true },
+    { name: "Memoria histórica", live: false },
+    { name: "Cerramiento de borde", live: false },
+    { name: "Recorrido pedagógico", live: false },
+    { name: "Fricción vial (SOT)", live: true },
+    { name: "Red vial y tráfico", live: true },
+    { name: "Simulación de ruido", live: true },
+    { name: "Inundación y movilidad", live: true },
+    { name: "Alcantarillado", live: false },
+  ];
+  let explodeStep = 0; // 1..12 = cada una de las 12 capas, sin agrupar por escala ni pantalla intermedia
+  const explodeLabelEl = document.createElement("div");
+  explodeLabelEl.id = "explodeStepLabel";
+  explodeLabelEl.style.cssText = "position:absolute; top:18px; left:50%; transform:translateX(-50%); z-index:9; font:600 11.5px 'Segoe UI',sans-serif; color:#fff; background:rgba(17,20,24,.82); padding:6px 14px; border-radius:999px; pointer-events:none; display:none;";
+  wrap.appendChild(explodeLabelEl);
+  function applyExplodeStep() {
+    if (vehInstanced) vehInstanced.visible = false;
+    if (noiseMesh) noiseMesh.visible = false;
+    if (birdsGroup) birdsGroup.visible = false;
+    if (roadMat) roadMat.color.set(0xb7babd);
+    const layer = EXPLODE_LAYERS[explodeStep - 1];
+    explodeLabelEl.style.display = "block";
+    explodeLabelEl.textContent = `${explodeStep}/12 · ${layer.name}` + (layer.live ? "" : " (en construcción)");
+    if (explodeStep === 3) { if (birdsGroup) birdsGroup.visible = true; }
+    else if (explodeStep === 4) { if (roadMat) roadMat.color.set(0x24c8bd); }
+    else if (explodeStep === 8) { if (roadMat) roadMat.color.set(0xe11d48); }
+    else if (explodeStep === 9) { if (vehInstanced) vehInstanced.visible = true; }
+    else if (explodeStep === 10) { if (noiseMesh) noiseMesh.visible = true; }
+    else if (explodeStep === 11) { if (vehInstanced) vehInstanced.visible = true; if (noiseMesh) noiseMesh.visible = true; }
+  }
   canvas.addEventListener("click", (e) => {
-    // Ya no se congela la vista en 3 fotos separadas: en vez de eso, se
-    // revela el panel de convenciones + el corte (quedan ocultos hasta
-    // este primer clic, para que el modulo siga abriendo igual que antes).
+    // Sin pantalla intermedia de 3 escalas: el primer clic ya revela el
+    // panel + el corte Y muestra de una vez la capa 1 (Sistema Hidrico).
+    // Cada clic siguiente avanza UNA de las 12 capas individuales, sin
+    // agruparlas ni nombrar a que escala pertenecian antes. Al llegar a
+    // 12, el siguiente clic vuelve a la 1.
     const legendPanelEl = document.getElementById("legendPanel");
     const sectionWrapEl = document.getElementById("sectionWrap");
     if (legendPanelEl && legendPanelEl.style.display === "none") {
@@ -2070,11 +2106,12 @@
       resizeSectionView();
       placeSectionCutAtHumedal();
       updateSectionCutRotation();
-      // ya no se corta aca con un "return": el mismo primer clic sigue de
-      // largo y dispara tambien la explosion de las 3 escalas, para que
-      // no haga falta un segundo clic para que "salga" algo
     }
-    if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
+    if (penActive) return; // mientras se dibuja el poligono, no se dispara el paso de capas
+
+    explodeStep = (explodeStep % 12) + 1;
+    applyExplodeStep();
+    return;
 
     // Guardar estado y fondo original
     const origRoadColor = roadMat ? roadMat.color.getHex() : null;
