@@ -1417,7 +1417,7 @@
     // elevacion, que es el angulo que pidio para este modulo).
     camera.position.set(-389.40, 559.68, 542.58);
     controls.target.set(218.76, -53.06, -86.62);
-    camera.zoom = 2.272;
+    camera.zoom = 1.65;
     camera.updateProjectionMatrix();
     // Centrar en el area de estudio (caja de seccion) con el mismo angulo,
     // y ajustar el zoom para que el rombo completo quepa sin cortarse.
@@ -1430,7 +1430,7 @@
         controls.target.set((x0 + x1) / 2, controls.target.y, (z0 + z1) / 2);
         camera.position.copy(controls.target).add(off);
         camera.lookAt(controls.target);
-        camera.zoom = 2.272; // tamaño grande original (el ajuste automatico la dejaba diminuta)
+        camera.zoom = 1.65; // tamaño grande original (el ajuste automatico la dejaba diminuta)
         camera.updateProjectionMatrix(); camera.updateMatrixWorld();
         const v = new THREE.Vector3(); let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
         [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].forEach(([x, z]) => [-6, 0, 8].forEach(yy => { v.set(x, yy, z).project(camera); mnx = Math.min(mnx, v.x); mxx = Math.max(mxx, v.x); mny = Math.min(mny, v.y); mxy = Math.max(mxy, v.y); }));
@@ -2188,7 +2188,7 @@
     if (imgTecno) imgTecno.src = fotoTecno;
 
     document.getElementById("sceneWrap").style.display = "none";
-    explodeOverlay.style.display = "flex";
+    openNaturalExplode(); // Skips the 3 scales overview screen
     void explodeOverlay.offsetWidth;
     explodeLayers.forEach(el => { el.style.opacity = "1"; el.style.transform = "scale(1)"; });
 
@@ -2922,7 +2922,13 @@
 
   function advanceNaturalAssemble() {
     natExplodeStep++;
-    if (natExplodeStep > 10) natExplodeStep = 0;
+    if (natExplodeStep > 10) {
+      natExplodeStep = 0;
+      updateNaturalLayersStep(false);
+      closeNaturalExplode();
+      openCulturalExplode();
+      return;
+    }
     updateNaturalLayersStep(true);
   }
 
@@ -3366,7 +3372,13 @@
 
   function advanceTechAssemble() {
     techExplodeStep++;
-    if (techExplodeStep > 10) techExplodeStep = 0;
+    if (techExplodeStep > 10) {
+      techExplodeStep = 0;
+      updateTechLayersStep(false);
+      closeTechExplode();
+      document.getElementById("sceneWrap").style.display = "block"; // Return to live 3D
+      return;
+    }
     updateTechLayersStep(true);
   }
 
@@ -5038,7 +5050,13 @@
 
   function advanceCulturalAssemble() {
     cultExplodeStep++;
-    if (cultExplodeStep > 10) cultExplodeStep = 0;
+    if (cultExplodeStep > 10) {
+      cultExplodeStep = 0;
+      updateCulturalLayersStep(false);
+      closeCulturalExplode();
+      openTechExplode();
+      return;
+    }
     updateCulturalLayersStep(true);
   }
 
