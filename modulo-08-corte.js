@@ -404,7 +404,7 @@
     }
     const thickEdgeGeo = new THREE.BufferGeometry();
     thickEdgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(thickEdgePositions, 3));
-    const thickEdgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false, clippingPlanes: [] });
+    const thickEdgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.9 });
     buildingEdgeMat = thickEdgeMat;
     sceneRoot.add(new THREE.LineSegments(thickEdgeGeo, thickEdgeMat));
   }
