@@ -77,7 +77,7 @@
   // en la posicion real del Humedal El Burro -- no se mueve con la caja
   // de seccion interactiva de arriba, es su propio corte permanente. ----
   const sectionCanvas2 = document.getElementById("sectionCanvas");
-  const sectionCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 3000);
+  const sectionCamera = new THREE.PerspectiveCamera(55, 1, 1, 5000);
   let sectionRenderer = null, sectionCutZ = null, sectionControls = null;
   if (sectionCanvas2) {
     sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas2, antialias: true, alpha: true });
@@ -88,31 +88,25 @@
   const sectionCutPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6); // se reubica cuando se conoce la posicion real del humedal
   let sectionCutX = 0;
   function placeSectionCutAtHumedal() {
-    // User requested explicitly hardcoded coordinates and values for the section cut
+    // Vista exacta que la usuaria armo y confirmo en el modulo 8: camara
+    // en perspectiva (no ortografica) con estas coordenadas precisas.
     sectionCutX = 177.0;
     sectionCutZ = -25.6;
-    sectionRotAngle = 58;
-
-
-    const nx = Math.cos(sectionRotAngle * Math.PI / 180), nz = Math.sin(sectionRotAngle * Math.PI / 180);
-    sectionCutPlane.normal.set(nx, 0, nz);
-    sectionCutPlane.constant = -(nx * sectionCutX + nz * sectionCutZ);
     if (sectionRenderer) {
       if (typeof updateBotBox === 'function') updateBotBox();
       sectionRenderer.localClippingEnabled = true;
       sectionRenderer.clippingPlanes = botClipPlanesArr;
-      sectionCamera.position.set(-610.7, 70.0, 693.2);
+      sectionCamera.position.set(130.7, 14.1, 11.9);
+      sectionCamera.up.set(0, 1, 0);
+      sectionCamera.lookAt(225.4, -31.3, -53.8);
+      sectionCamera.fov = 55;
       if (!sectionControls) {
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
         sectionControls.enableDamping = true;
         sectionControls.dampingFactor = 0.15;
       }
-      sectionCamera.up.set(0, 1, 0);
-      sectionCamera.lookAt(177.0, 5.5, -25.6);
-      if (sectionControls) sectionControls.target.set(177.0, 5.5, -25.6);
-      sectionCamera.zoom = 3.42;
+      if (sectionControls) sectionControls.target.set(225.4, -31.3, -53.8);
       resizeSectionView();
-      sectionCamera.zoom = 3.42;
       sectionCamera.updateProjectionMatrix();
     }
   }
@@ -121,15 +115,7 @@
     const rect = sectionCanvas2.getBoundingClientRect();
     const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
     sectionRenderer.setSize(w, h, false);
-    // IMPORTANTE: top/bottom deben quedar simetricos (top === -bottom).
-    // Con valores asimetricos, esta version de three.js deja de dibujar
-    // nada en absoluto (se probo y confirmo por separado). Para mostrar
-    // mas territorio por encima del nivel de camara que por debajo, se
-    // desplaza la posicion Y de la camara en vez de romper la simetria.
-    const halfH = Math.max(14, sceneExtentH * 0.035);
-    const halfW = halfH * (w / h);
-    sectionCamera.left = -halfW; sectionCamera.right = halfW;
-    sectionCamera.top = halfH; sectionCamera.bottom = -halfH;
+    sectionCamera.aspect = w / h; // camara de perspectiva: se ajusta el aspecto, no un frustum ortografico
     sectionCamera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resizeSectionView);
@@ -1723,7 +1709,14 @@
     controls.update();
     if (sectionControls) sectionControls.update();
     renderer.render(scene, camera);
-    if (sectionRenderer) sectionRenderer.render(scene, sectionCamera);
+    if (sectionRenderer) {
+      // Lineas de edificios un poco mas visibles/gruesas solo en el
+      // corte de abajo, sin afectar la axonometria de arriba.
+      const prevEdgeOpacity = buildingEdgeMat ? buildingEdgeMat.opacity : null;
+      if (buildingEdgeMat) buildingEdgeMat.opacity = 0.75;
+      sectionRenderer.render(scene, sectionCamera);
+      if (buildingEdgeMat && prevEdgeOpacity !== null) buildingEdgeMat.opacity = prevEdgeOpacity;
+    }
     updateTechLiveMirror(); // si el panel de escala tecnologica esta abierto, "espeja" los carros y el ruido en vivo dentro de sus 2 subcapas (en vez de una foto fija)
   }
   // ---- Caja de seccion: 6 planos de recorte (X min/max, Y min/max, Z
