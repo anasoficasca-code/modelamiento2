@@ -387,8 +387,9 @@
     }
     // Lineas de CADA edificio: dibujar cada arista con offset perpendicular
     // para crear efecto de grosor (LineBasicMaterial siempre es 1px en WebGL).
+    // clippingPlanes: [] evita que los planos de corte del renderer corten las lineas.
     const thickEdgePositions = [];
-    const edgeOffset = 0.8; // offset perpendicular para grosor visible
+    const edgeOffset = 1.5; // offset perpendicular para grosor visible
     for (let i = 0; i < allEdgePositions.length; i += 6) {
       const x1 = allEdgePositions[i], y1 = allEdgePositions[i + 1], z1 = allEdgePositions[i + 2];
       const x2 = allEdgePositions[i + 3], y2 = allEdgePositions[i + 4], z2 = allEdgePositions[i + 5];
@@ -402,9 +403,12 @@
     }
     const thickEdgeGeo = new THREE.BufferGeometry();
     thickEdgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(thickEdgePositions, 3));
-    const thickEdgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 1.0, depthWrite: false, depthTest: false });
+    const thickEdgeMat = new THREE.LineBasicMaterial({
+      color: 0x00ff00, transparent: false, opacity: 1.0,
+      depthWrite: false, depthTest: false, clippingPlanes: []
+    });
     buildingEdgeMat = thickEdgeMat;
-    sceneRoot.add(new THREE.LineSegments(thickEdgeGeo, thickEdgeMat));
+    scene.add(new THREE.LineSegments(thickEdgeGeo, thickEdgeMat));
   }
 
   function loadBuildings() {
