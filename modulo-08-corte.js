@@ -385,26 +385,30 @@
       allEdgePositions.push(pts[i].x, 0, pts[i].z, pts[next].x, 0, pts[next].z);
       allEdgePositions.push(pts[i].x, h, pts[i].z, pts[next].x, h, pts[next].z);
     }
-    // Lineas gruesas: dibujar el contorno dos veces con un offset
+    // Lineas de CADA edificio mas gruesas: dibujar dos pasadas
     // para simular grosor real (LineBasicMaterial siempre es 1px en WebGL).
-    // Primera pasada: linea principal mas oscura
-    const edgeGeo1 = new THREE.BufferGeometry();
-    edgeGeo1.setAttribute("position", new THREE.Float32BufferAttribute(allEdgePositions, 3));
-    const edgeMat1 = new THREE.LineBasicMaterial({ color: 0x1a1d20, transparent: true, opacity: 0.6 });
-    sceneRoot.add(new THREE.LineSegments(edgeGeo1, edgeMat1));
-    // Segunda pasada: linea exterior ligeramente mas grande para efecto grosor
+    // Cada segmento se dibuja con un offset perpendicular para crear efecto de grosor.
     const thickEdgePositions = [];
-    for (let i = 0; i < allEdgePositions.length; i += 3) {
-      const x = allEdgePositions[i], y = allEdgePositions[i + 1], z = allEdgePositions[i + 2];
-      // Escalar ligeramente cada posicion hacia afuera desde el centro
-      const len = Math.sqrt(x * x + z * z) || 0.001;
-      const scale = 1.08;
-      thickEdgePositions.push(x * scale, y, z * scale);
+    const edgeOffset = 0.05; // offset perpendicular para grosor
+    for (let i = 0; i < allEdgePositions.length; i += 6) {
+      const x1 = allEdgePositions[i], y1 = allEdgePositions[i + 1], z1 = allEdgePositions[i + 2];
+      const x2 = allEdgePositions[i + 3], y2 = allEdgePositions[i + 4], z2 = allEdgePositions[i + 5];
+      // Direccion del segmento
+      const dx = x2 - x1, dz = z2 - z1;
+      const len = Math.sqrt(dx * dx + dz * dz) || 0.001;
+      // Normal perpendicular (en plano XZ)
+      const nx = -dz / len, nz = dx / len;
+      // Primera linea (offset negativo)
+      thickEdgePositions.push(x1 - nx * edgeOffset, y1, z1 - nz * edgeOffset);
+      thickEdgePositions.push(x2 - nx * edgeOffset, y2, z2 - nz * edgeOffset);
+      // Segunda linea (offset positivo)
+      thickEdgePositions.push(x1 + nx * edgeOffset, y1, z1 + nz * edgeOffset);
+      thickEdgePositions.push(x2 + nx * edgeOffset, y2, z2 + nz * edgeOffset);
     }
-    const edgeGeo2 = new THREE.BufferGeometry();
-    edgeGeo2.setAttribute("position", new THREE.Float32BufferAttribute(thickEdgePositions, 3));
-    const edgeMat2 = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.4 });
-    sceneRoot.add(new THREE.LineSegments(edgeGeo2, edgeMat2));
+    const thickEdgeGeo = new THREE.BufferGeometry();
+    thickEdgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(thickEdgePositions, 3));
+    const thickEdgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.5 });
+    sceneRoot.add(new THREE.LineSegments(thickEdgeGeo, thickEdgeMat));
   }
 
   function loadBuildings() {
