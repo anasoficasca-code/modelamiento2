@@ -389,14 +389,13 @@
     // (offset perpendicular en ambos lados de cada segmento)
     // para simular grosor real (LineBasicMaterial siempre es 1px en WebGL).
     const thickEdgePositions = [];
-    const edgeOffset = 2.5; // offset perpendicular para grosor visible
+    const edgeOffset = 3.0; // offset perpendicular para grosor visible
     for (let i = 0; i < allEdgePositions.length; i += 6) {
       const x1 = allEdgePositions[i], y1 = allEdgePositions[i + 1], z1 = allEdgePositions[i + 2];
       const x2 = allEdgePositions[i + 3], y2 = allEdgePositions[i + 4], z2 = allEdgePositions[i + 5];
       const dx = x2 - x1, dz = z2 - z1;
       const len = Math.sqrt(dx * dx + dz * dz) || 0.001;
       const nx = -dz / len, nz = dx / len;
-      // 4 segmentos por arista: 2 en cada lado
       thickEdgePositions.push(x1 - nx * edgeOffset, y1, z1 - nz * edgeOffset);
       thickEdgePositions.push(x2 - nx * edgeOffset, y2, z2 - nz * edgeOffset);
       thickEdgePositions.push(x1 + nx * edgeOffset, y1, z1 + nz * edgeOffset);
@@ -404,7 +403,7 @@
     }
     const thickEdgeGeo = new THREE.BufferGeometry();
     thickEdgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(thickEdgePositions, 3));
-    const thickEdgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.9 });
+    const thickEdgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 1.0 });
     buildingEdgeMat = thickEdgeMat;
     sceneRoot.add(new THREE.LineSegments(thickEdgeGeo, thickEdgeMat));
   }
