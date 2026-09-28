@@ -364,51 +364,15 @@
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
 
-    // Bordes oscuros de CADA edificio: perimeter del techo +
-    // perimeter de la base + esquinas verticales (4 verticales por
-    // lado) para que TODAS las lineas de los edificios sean del
-    // mismo grosor y se lea el volumen completo.
-    const allEdgePositions = [];
-    // Perimetro del techo (arriba)
-    for (let i = 0; i < pts.length - 1; i++) {
-      allEdgePositions.push(pts[i].x, h, pts[i].z, pts[i + 1].x, h, pts[i + 1].z);
-    }
-    allEdgePositions.push(pts[pts.length - 1].x, h, pts[pts.length - 1].z, pts[0].x, h, pts[0].z);
-    // Perimetro de la base (abajo)
-    for (let i = 0; i < pts.length - 1; i++) {
-      allEdgePositions.push(pts[i].x, 0, pts[i].z, pts[i + 1].x, 0, pts[i + 1].z);
-    }
-    allEdgePositions.push(pts[pts.length - 1].x, 0, pts[pts.length - 1].z, pts[0].x, 0, pts[0].z);
-    // Esquinas verticales (4 lados)
-    for (let i = 0; i < pts.length; i++) {
-      const next = (i + 1) % pts.length;
-      allEdgePositions.push(pts[i].x, 0, pts[i].z, pts[next].x, 0, pts[next].z);
-      allEdgePositions.push(pts[i].x, h, pts[i].z, pts[next].x, h, pts[next].z);
-    }
-    // Lineas de CADA edificio: dibujar cada arista con offset perpendicular
-    // para crear efecto de grosor (LineBasicMaterial siempre es 1px en WebGL).
-    // clippingPlanes: [] evita que los planos de corte del renderer corten las lineas.
-    const thickEdgePositions = [];
-    const edgeOffset = 1.5; // offset perpendicular para grosor visible
-    for (let i = 0; i < allEdgePositions.length; i += 6) {
-      const x1 = allEdgePositions[i], y1 = allEdgePositions[i + 1], z1 = allEdgePositions[i + 2];
-      const x2 = allEdgePositions[i + 3], y2 = allEdgePositions[i + 4], z2 = allEdgePositions[i + 5];
-      const dx = x2 - x1, dz = z2 - z1;
-      const len = Math.sqrt(dx * dx + dz * dz) || 0.001;
-      const nx = -dz / len, nz = dx / len;
-      thickEdgePositions.push(x1 - nx * edgeOffset, y1, z1 - nz * edgeOffset);
-      thickEdgePositions.push(x2 - nx * edgeOffset, y2, z2 - nz * edgeOffset);
-      thickEdgePositions.push(x1 + nx * edgeOffset, y1, z1 + nz * edgeOffset);
-      thickEdgePositions.push(x2 + nx * edgeOffset, y2, z2 + nz * edgeOffset);
-    }
-    const thickEdgeGeo = new THREE.BufferGeometry();
-    thickEdgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(thickEdgePositions, 3));
-    const thickEdgeMat = new THREE.LineBasicMaterial({
+    // Aristas 3D visibles: usa EdgesGeometry del mesh para generar
+    // todas las aristas automaticamente (paredes + techo = volumen solido).
+    const edgesGeo = new THREE.EdgesGeometry(geo);
+    const edgesMat = new THREE.LineBasicMaterial({
       color: 0x00ff00, transparent: false, opacity: 1.0,
       depthWrite: false, depthTest: false, clippingPlanes: []
     });
-    buildingEdgeMat = thickEdgeMat;
-    scene.add(new THREE.LineSegments(thickEdgeGeo, thickEdgeMat));
+    buildingEdgeMat = edgesMat;
+    scene.add(new THREE.LineSegments(edgesGeo, edgesMat));
   }
 
   function loadBuildings() {
