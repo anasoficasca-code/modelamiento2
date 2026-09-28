@@ -2010,6 +2010,54 @@
     redrawPenSvg();
     updatePenOutput();
   });
+  // ---- Panel del corte: rotacion y coordenadas en vivo ----
+  const sectionRot = document.getElementById("sectionRot");
+  const sectionRotVal = document.getElementById("sectionRotVal");
+  const sectionStraightenBtn = document.getElementById("sectionStraightenBtn");
+  const sectionCoordsOutput = document.getElementById("sectionCoordsOutput");
+  let sectionRotAngle = 54; // rotacion inicial del corte
+
+  function updateSectionCutRotation() {
+    if (!sectionRenderer || !sectionCutZ) return;
+    const rad = sectionRotAngle * Math.PI / 180;
+    const nx = Math.cos(rad), nz = Math.sin(rad);
+    sectionCutPlane.normal.set(nx, 0, nz);
+    sectionCutPlane.constant = -(nx * sectionCutX + nz * sectionCutZ);
+    // Reposicionar la camara del corte segun la rotacion
+    const camY = 6, camDist = 420;
+    sectionCamera.position.set(sectionCutX + nx * camDist, camY, sectionCutZ + nz * camDist);
+    sectionCamera.up.set(0, 1, 0);
+    sectionCamera.lookAt(sectionCutX, camY, sectionCutZ);
+    sectionCamera.updateProjectionMatrix();
+    // Actualizar coordenadas mostradas
+    if (sectionCoordsOutput) {
+      sectionCoordsOutput.value =
+        `Rotación: ${sectionRotAngle}°\n` +
+        `U (a lo largo): 46% a 63%\n` +
+        `Y (altura, m): 0.0 a 100.0\n` +
+        `V (perpendicular): 12% a 30%\n` +
+        `--- Cámara ---\n` +
+        `Posición: ${sectionCamera.position.x.toFixed(1)}, ${sectionCamera.position.y.toFixed(1)}, ${sectionCamera.position.z.toFixed(1)}\n` +
+        `Mira hacia: ${sectionCutX.toFixed(1)}, ${camY.toFixed(1)}, ${sectionCutZ.toFixed(1)}\n` +
+        `Zoom: ${(sectionCamera.zoom || 1).toFixed(2)}`;
+    }
+  }
+  if (sectionRot) {
+    sectionRot.addEventListener("input", () => {
+      sectionRotAngle = parseFloat(sectionRot.value);
+      if (sectionRotVal) sectionRotVal.textContent = sectionRotAngle + "°";
+      updateSectionCutRotation();
+    });
+  }
+  if (sectionStraightenBtn) {
+    sectionStraightenBtn.addEventListener("click", () => {
+      sectionRotAngle = 0;
+      if (sectionRot) sectionRot.value = 0;
+      if (sectionRotVal) sectionRotVal.textContent = "0°";
+      updateSectionCutRotation();
+    });
+  }
+
   canvas.addEventListener("click", (e) => {
     // Ya no se congela la vista en 3 fotos separadas: en vez de eso, se
     // revela el panel de convenciones + el corte (quedan ocultos hasta
@@ -2021,6 +2069,7 @@
       sectionWrapEl.style.display = "block";
       resizeSectionView();
       placeSectionCutAtHumedal();
+      updateSectionCutRotation();
     }
     return;
     if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
