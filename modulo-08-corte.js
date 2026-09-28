@@ -385,12 +385,29 @@
       allEdgePositions.push(pts[i].x, 0, pts[i].z, pts[next].x, 0, pts[next].z);
       allEdgePositions.push(pts[i].x, h, pts[i].z, pts[next].x, h, pts[next].z);
     }
-    // LineGeometry + Line2 con LineMaterial para grosor real de linea
-    const edgeGeo = new LineGeometry();
-    edgeGeo.setPositions(allEdgePositions);
-    const edgeMat = new LineMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.5, linewidth: 3 });
-    buildingEdgeMat = new Line2(edgeGeo, edgeMat);
-    sceneRoot.add(buildingEdgeMat);
+    // Bordes de CADA edificio: perimeter del techo + base + esquinas verticales
+    const allEdgePositions = [];
+    // Perimetro del techo (arriba)
+    for (let i = 0; i < pts.length - 1; i++) {
+      allEdgePositions.push(pts[i].x, h, pts[i].z, pts[i + 1].x, h, pts[i + 1].z);
+    }
+    allEdgePositions.push(pts[pts.length - 1].x, h, pts[pts.length - 1].z, pts[0].x, h, pts[0].z);
+    // Perimetro de la base (abajo)
+    for (let i = 0; i < pts.length - 1; i++) {
+      allEdgePositions.push(pts[i].x, 0, pts[i].z, pts[i + 1].x, 0, pts[i + 1].z);
+    }
+    allEdgePositions.push(pts[pts.length - 1].x, 0, pts[pts.length - 1].z, pts[0].x, 0, pts[0].z);
+    // Esquinas verticales (4 lados)
+    for (let i = 0; i < pts.length; i++) {
+      const next = (i + 1) % pts.length;
+      allEdgePositions.push(pts[i].x, 0, pts[i].z, pts[next].x, 0, pts[next].z);
+      allEdgePositions.push(pts[i].x, h, pts[i].z, pts[next].x, h, pts[next].z);
+    }
+    const allEdgeGeo = new THREE.BufferGeometry();
+    allEdgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(allEdgePositions, 3));
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.4 });
+    buildingEdgeMat = edgeMat;
+    sceneRoot.add(new THREE.LineSegments(allEdgeGeo, edgeMat));
   }
 
   function loadBuildings() {
