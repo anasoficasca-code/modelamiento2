@@ -43,7 +43,7 @@
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.BasicShadowMap;
-  renderer.localClippingEnabled = true; // para la caja de seccion (corte del modelo)
+  renderer.localClippingEnabled = false; // para la caja de seccion (corte del modelo)
 
   // Los planos de recorte de la caja de seccion se crean y se ACTIVAN
   // (aunque sea con un valor lejano que no corta nada todavia) desde ya,
@@ -60,7 +60,7 @@
     zMax: new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6),
   };
   const sectionClipPlanesArr = [secPlanes.xMin, secPlanes.xMax, secPlanes.yMin, secPlanes.yMax, secPlanes.zMin, secPlanes.zMax];
-  renderer.clippingPlanes = sectionClipPlanesArr;
+  // renderer.clippingPlanes = sectionClipPlanesArr;
 
   // ---- Corte fijo (segunda vista, franja inferior): un renderer y una
   // camara aparte, mirando de lado, con un solo plano de recorte fijo
