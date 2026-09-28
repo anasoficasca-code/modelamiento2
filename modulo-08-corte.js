@@ -364,15 +364,33 @@
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
 
-    // Aristas 3D visibles: usa EdgesGeometry del mesh para generar
-    // todas las aristas automaticamente (paredes + techo = volumen solido).
-    const edgesGeo = new THREE.EdgesGeometry(geo);
-    const edgesMat = new THREE.LineBasicMaterial({
+    // Aristas 3D visibles de CADA edificio: perimetro del techo,
+    // perimetro de la base, y esquinas verticales (de base a techo).
+    // depthTest: false y clippingPlanes: [] evitan que las lineas
+    // sean cortadas por los planos de seccion o el fondo.
+    const allEdgePositions = [];
+    // Perimetro del techo (arriba, en altura h)
+    for (let i = 0; i < pts.length - 1; i++) {
+      allEdgePositions.push(pts[i].x, h, pts[i].z, pts[i + 1].x, h, pts[i + 1].z);
+    }
+    allEdgePositions.push(pts[pts.length - 1].x, h, pts[pts.length - 1].z, pts[0].x, h, pts[0].z);
+    // Perimetro de la base (abajo, en altura 0)
+    for (let i = 0; i < pts.length - 1; i++) {
+      allEdgePositions.push(pts[i].x, 0, pts[i].z, pts[i + 1].x, 0, pts[i + 1].z);
+    }
+    allEdgePositions.push(pts[pts.length - 1].x, 0, pts[pts.length - 1].z, pts[0].x, 0, pts[0].z);
+    // Esquinas verticales: de base a techo en CADA esquina
+    for (let i = 0; i < pts.length; i++) {
+      allEdgePositions.push(pts[i].x, 0, pts[i].z, pts[i].x, h, pts[i].z);
+    }
+    const edgeGeo = new THREE.BufferGeometry();
+    edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(allEdgePositions, 3));
+    const edgeMat = new THREE.LineBasicMaterial({
       color: 0x00ff00, transparent: false, opacity: 1.0,
       depthWrite: false, depthTest: false, clippingPlanes: []
     });
-    buildingEdgeMat = edgesMat;
-    scene.add(new THREE.LineSegments(edgesGeo, edgesMat));
+    buildingEdgeMat = edgeMat;
+    scene.add(new THREE.LineSegments(edgeGeo, edgeMat));
   }
 
   function loadBuildings() {
