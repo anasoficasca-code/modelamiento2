@@ -2077,6 +2077,25 @@
   explodeLabelEl.id = "explodeStepLabel";
   explodeLabelEl.style.cssText = "position:absolute; top:18px; left:50%; transform:translateX(-50%); z-index:9; font:600 11.5px 'Segoe UI',sans-serif; color:#fff; background:rgba(17,20,24,.82); padding:6px 14px; border-radius:999px; pointer-events:none; display:none;";
   wrap.appendChild(explodeLabelEl);
+  // Animacion generica de "sube y se asienta": el objeto aparece elevado
+  // sobre el territorio y baja hasta su posicion real, igual que las
+  // capas explotadas de antes (pero ahora en vivo, sobre la escena real).
+  function riseAndSettle(obj, liftHeight, duration) {
+    if (!obj) return;
+    liftHeight = liftHeight || 22; duration = duration || 900;
+    obj.visible = true;
+    const restY = obj.userData.__restY != null ? obj.userData.__restY : obj.position.y;
+    obj.userData.__restY = restY;
+    const start = performance.now();
+    obj.position.y = restY + liftHeight;
+    (function step(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubico
+      obj.position.y = restY + liftHeight * (1 - eased);
+      if (t < 1) requestAnimationFrame(step);
+      else obj.position.y = restY;
+    })(start);
+  }
   function applyExplodeStep() {
     if (vehInstanced) vehInstanced.visible = false;
     if (noiseMesh) noiseMesh.visible = false;
@@ -2085,12 +2104,13 @@
     const layer = EXPLODE_LAYERS[explodeStep - 1];
     explodeLabelEl.style.display = "block";
     explodeLabelEl.textContent = `${explodeStep}/12 · ${layer.name}` + (layer.live ? "" : " (en construcción)");
-    if (explodeStep === 3) { if (birdsGroup) birdsGroup.visible = true; }
+    if (explodeStep === 1) { if (mainBurroMesh) riseAndSettle(mainBurroMesh, 18); }
+    else if (explodeStep === 3) { if (birdsGroup) riseAndSettle(birdsGroup, 26); }
     else if (explodeStep === 4) { if (roadMat) roadMat.color.set(0x24c8bd); }
     else if (explodeStep === 8) { if (roadMat) roadMat.color.set(0xe11d48); }
-    else if (explodeStep === 9) { if (vehInstanced) vehInstanced.visible = true; }
-    else if (explodeStep === 10) { if (noiseMesh) noiseMesh.visible = true; }
-    else if (explodeStep === 11) { if (vehInstanced) vehInstanced.visible = true; if (noiseMesh) noiseMesh.visible = true; }
+    else if (explodeStep === 9) { if (vehInstanced) riseAndSettle(vehInstanced, 20); }
+    else if (explodeStep === 10) { if (noiseMesh) riseAndSettle(noiseMesh, 14); }
+    else if (explodeStep === 11) { if (vehInstanced) riseAndSettle(vehInstanced, 20); if (noiseMesh) riseAndSettle(noiseMesh, 14, 1100); }
   }
   canvas.addEventListener("click", (e) => {
     // Sin pantalla intermedia de 3 escalas: el primer clic ya revela el
