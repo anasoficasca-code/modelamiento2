@@ -1820,6 +1820,40 @@
   });
   updateSectionBox();
 
+  // ---- Zoom controls ----
+  const DEFAULT_ZOOM = 2.272;
+  const ZOOM_STEP = 0.2;
+  const MIN_ZOOM = 0.3;
+  const MAX_ZOOM = 15;
+  const zoomInBtn = document.getElementById("zoomInBtn");
+  const zoomOutBtn = document.getElementById("zoomOutBtn");
+  const zoomResetBtn = document.getElementById("zoomResetBtn");
+  const zoomLevelLabel = document.getElementById("zoomLevelLabel");
+  function updateZoomLabel() {
+    if (zoomLevelLabel) zoomLevelLabel.textContent = Math.round((camera.zoom / DEFAULT_ZOOM) * 100) + "%";
+  }
+  if (zoomInBtn) zoomInBtn.addEventListener("click", () => {
+    camera.zoom = Math.min(camera.zoom + ZOOM_STEP, MAX_ZOOM);
+    camera.updateProjectionMatrix();
+    controls.update();
+    updateZoomLabel();
+  });
+  if (zoomOutBtn) zoomOutBtn.addEventListener("click", () => {
+    camera.zoom = Math.max(camera.zoom - ZOOM_STEP, MIN_ZOOM);
+    camera.updateProjectionMatrix();
+    controls.update();
+    updateZoomLabel();
+  });
+  if (zoomResetBtn) zoomResetBtn.addEventListener("click", () => {
+    camera.zoom = DEFAULT_ZOOM;
+    camera.updateProjectionMatrix();
+    controls.update();
+    updateZoomLabel();
+  });
+  // Sync label when zooming via mouse wheel (OrbitControls dolly)
+  controls.addEventListener("change", () => { updateZoomLabel(); });
+  updateZoomLabel();
+
   // Reorientar las tarjetas de los arboles hacia la camara cuando gira,
   // limitado en frecuencia para no recalcular 120 mil matrices por cuadro.
   let lastTreeBillboardUpdate = 0;

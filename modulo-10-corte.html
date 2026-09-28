@@ -143,6 +143,47 @@
   /* Vista principal limpia: sin convenciones, sin boton de poligono,
      sin botones de ruido/mirlas ni barra de play (todo corre solo). */
   .legend, #penToolBtn, #penCoordsOutput, #noiseToggleBtn, #birdToggleBtn, .controls-bar, #textHandlesLayer{ display:none !important; }
+
+  /* Zoom controls */
+  .zoom-controls {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(255,255,255,.94);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 8px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  }
+  .zoom-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--panel-border);
+    background: #ffffff;
+    color: #111418;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .zoom-btn:hover { background: rgba(0,0,0,.06); }
+  .zoom-btn:active { transform: scale(0.95); }
+  .zoom-level {
+    font-size: 10px;
+    text-align: center;
+    color: #55606e;
+    padding: 2px 0;
+    font-variant-numeric: tabular-nums;
+  }
 </style>
 </head>
 <body>
@@ -241,6 +282,14 @@
     <div class="view-buttons">
       <button type="button" id="noiseToggleBtn">🔊 Mostrar ruido</button>
       <button type="button" id="birdToggleBtn">🐦 Mostrar mirlas</button>
+    </div>
+
+    <!-- Zoom controls -->
+    <div class="zoom-controls" aria-label="Controles de zoom">
+      <button class="zoom-btn" id="zoomInBtn" aria-label="Acercar" title="Acercar">+</button>
+      <span class="zoom-level" id="zoomLevelLabel">100%</span>
+      <button class="zoom-btn" id="zoomOutBtn" aria-label="Alejar" title="Alejar">−</button>
+      <button class="zoom-btn" id="zoomResetBtn" aria-label="Restablecer zoom" title="Restablecer zoom" style="font-size:13px;">⟲</button>
     </div>
 
     <div class="right-panels-wrap" style="display:none;">
