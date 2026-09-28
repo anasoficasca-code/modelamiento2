@@ -2139,7 +2139,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
         `V (perpendicular): 12% a 30%\n` +
         `--- Cámara ---\n` +
         `Posición: ${sectionCamera.position.x.toFixed(1)}, ${sectionCamera.position.y.toFixed(1)}, ${sectionCamera.position.z.toFixed(1)}\n` +
-        `Mira hacia: ${sectionCutX.toFixed(1)}, ${camY.toFixed(1)}, ${sectionCutZ.toFixed(1)}\n` +
+        `Mira hacia: ${sectionCutX.toFixed(1)}, 5.5, ${sectionCutZ.toFixed(1)}\n` +
         `Zoom: ${(sectionCamera.zoom || 1).toFixed(2)}`;
     }
   }
