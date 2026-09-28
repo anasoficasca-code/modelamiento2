@@ -99,7 +99,7 @@
       sectionCamera.position.set(130.7, 14.1, 11.9);
       sectionCamera.up.set(0, 1, 0);
       sectionCamera.lookAt(225.4, -31.3, -53.8);
-      sectionCamera.fov = 32; // mas zoom que antes (55°) para que no se vea tan chiquito
+      sectionCamera.fov = 15; // mucho mas zoom (mas del doble que el intento anterior de 32°), para que el corte llene el recuadro
       if (!sectionControls) {
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
         sectionControls.enableDamping = true;
@@ -151,6 +151,36 @@
         sectionWrapEl2.style.boxShadow = "none";
         sectionFullscreenBtn.textContent = "⛶ Pantalla completa";
       }
+      resizeSectionView();
+    });
+  }
+
+  // Descargar el corte como imagen PNG en alta resolucion: se renderiza
+  // un cuadro extra a un tamano mucho mas grande que el canvas visible
+  // (para que se vea nitido incluso impreso), se exporta y se vuelve a
+  // dejar el canvas en su tamano normal de pantalla.
+  const sectionDownloadBtn = document.getElementById("sectionDownloadBtn");
+  if (sectionDownloadBtn) {
+    sectionDownloadBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!sectionRenderer || !sectionCanvas2) return;
+      const rect = sectionCanvas2.getBoundingClientRect();
+      const scaleUp = 4; // resolucion final: 4x el tamano visible en pantalla
+      const hdW = Math.round(rect.width * scaleUp), hdH = Math.round(rect.height * scaleUp);
+      const prevAspect = sectionCamera.aspect;
+      sectionRenderer.setPixelRatio(1);
+      sectionRenderer.setSize(hdW, hdH, false);
+      sectionCamera.aspect = hdW / hdH;
+      sectionCamera.updateProjectionMatrix();
+      sectionRenderer.render(scene, sectionCamera);
+      const dataUrl = sectionCanvas2.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = "corte-humedal-el-burro-HD.png";
+      a.click();
+      // volver el canvas a su tamano normal en pantalla
+      sectionRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      sectionCamera.aspect = prevAspect;
       resizeSectionView();
     });
   }
