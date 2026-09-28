@@ -369,7 +369,8 @@
     // real y no una silueta plana.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.14 });
+    // Lineas mas gruesas: opacidad mayor para que sean visibles en el corte
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.35 });
     buildingEdgeMat = edgeMat;
     sceneRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
   }
@@ -1501,6 +1502,21 @@
     });
     updateSectionBox();
   }
+
+  // ---- Boton de descarga HD ----
+  const downloadBtn = document.getElementById("downloadBtn");
+  if (downloadBtn) downloadBtn.addEventListener("click", () => {
+    // Renderizar a mayor resolucion para HD
+    const originalPixelRatio = renderer.getPixelRatio();
+    renderer.setPixelRatio(2); // doble resolucion = HD
+    renderer.render(scene, camera);
+    renderer.setPixelRatio(originalPixelRatio);
+    // Descargar la imagen
+    const link = document.createElement("a");
+    link.download = "corte-humedal-el-burro-hd.png";
+    link.href = renderer.domElement.toDataURL("image/png");
+    link.click();
+  });
 
   function animate(now) {
     requestAnimationFrame(animate);
