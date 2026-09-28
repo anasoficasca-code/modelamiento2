@@ -62,6 +62,8 @@
     color:var(--ink); font-size:11.5px; cursor:pointer; text-align:left;
   }
   .view-buttons button:hover{ background:rgba(255,255,255,.1); }
+  #goCorteBtn{ position:absolute; top:18px; right:18px; z-index:7; padding:8px 14px; border-radius:9px; border:1px solid var(--accent); background:rgba(36,200,189,.15); color:var(--accent); font-size:11.5px; cursor:pointer; backdrop-filter:blur(6px); }
+  #goCorteBtn:hover{ background:rgba(36,200,189,.35); }
 
   .legend{
     position:absolute; bottom:78px; left:18px; z-index:5; font-size:11px; color:var(--ink-dim);
@@ -198,8 +200,10 @@
     <div class="view-buttons">
       <button type="button" id="viewReset">Restablecer vista axonométrica</button>
       <button type="button" id="perspToggle">📐 Ver en perspectiva</button>
-      <button type="button" id="goCorteBtn">✂️ Ver corte del Humedal</button>
     </div>
+
+    <!-- Boton del corte arriba a la derecha -->
+    <button type="button" id="goCorteBtn">✂️ Ver corte del Humedal</button>
 
     <!-- Corte: vista en sección con coordenadas fijas -->
     <div id="sectionWrap" style="display:none; position:absolute; left:218px; right:0; bottom:0; height:22%; min-height:130px; z-index:150; border-top:1px solid var(--panel-border); background:rgba(11,12,15,.9);">
