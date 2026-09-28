@@ -384,7 +384,7 @@
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
-  });
+  }
 
   function loadBuildings() {
     return fetch(BUILDINGS_URL)
