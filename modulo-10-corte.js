@@ -43,7 +43,7 @@
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.BasicShadowMap;
-  renderer.localClippingEnabled = false; // para la caja de seccion (corte del modelo)
+  renderer.localClippingEnabled = true; // para la caja de seccion (corte del modelo)
 
   // Los planos de recorte de la caja de seccion se crean y se ACTIVAN
   // (aunque sea con un valor lejano que no corta nada todavia) desde ya,
@@ -60,7 +60,7 @@
     zMax: new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6),
   };
   const sectionClipPlanesArr = [secPlanes.xMin, secPlanes.xMax, secPlanes.yMin, secPlanes.yMax, secPlanes.zMin, secPlanes.zMax];
-  // renderer.clippingPlanes = sectionClipPlanesArr;
+  renderer.clippingPlanes = sectionClipPlanesArr;
 
   // ---- Corte fijo (segunda vista, franja inferior): un renderer y una
   // camara aparte, mirando de lado, con un solo plano de recorte fijo
@@ -82,10 +82,7 @@
     sectionCutX = 177.0;
     sectionCutZ = -25.6;
     sectionRotAngle = 58;
-    if (sectionRot) {
-      sectionRot.value = sectionRotAngle;
-      if (sectionRotVal) sectionRotVal.textContent = sectionRotAngle + "°";
-    }
+
 
     const nx = Math.cos(sectionRotAngle * Math.PI / 180), nz = Math.sin(sectionRotAngle * Math.PI / 180);
     sectionCutPlane.normal.set(nx, 0, nz);
@@ -411,7 +408,7 @@
     const normals = [];
     const edgePositions = []; // solo el perimetro del techo (una linea nativa, se ve bien desde arriba)
     const cornerPositions = []; // esquinas verticales: geometria 3D real (mini-pared delgada), NO una linea nativa - las lineas nativas de WebGL tienen 1px fijo sin importar linewidth, y ademas se pueden "desaparecer" en angulos rasantes por z-fighting; una pared delgada de verdad se ve igual de gruesa siempre, sin importar el angulo
-    const CORNER_THICK = 0.12; // grosor fijo de la mini-pared de esquina (muy delgado, pero real en 3D)
+    const CORNER_THICK = 0.035; // grosor fijo de la mini-pared de esquina (muy delgado, pero real en 3D)
     buildings.forEach(b => {
       const pts = b.pts.map(p => toScene(p[0], p[1]));
       let h = b.h * SCALE;
@@ -1403,7 +1400,7 @@
     // elevacion, que es el angulo que pidio para este modulo).
     camera.position.set(-389.40, 559.68, 542.58);
     controls.target.set(218.76, -53.06, -86.62);
-    camera.zoom = 1.65;
+    camera.zoom = 2.27;
     camera.updateProjectionMatrix();
     // Centrar en el area de estudio (caja de seccion) con el mismo angulo,
     // y ajustar el zoom para que el rombo completo quepa sin cortarse.
@@ -1416,7 +1413,7 @@
         controls.target.set((x0 + x1) / 2, controls.target.y, (z0 + z1) / 2);
         camera.position.copy(controls.target).add(off);
         camera.lookAt(controls.target);
-        camera.zoom = 1.65; // tamaño grande original (el ajuste automatico la dejaba diminuta)
+        camera.zoom = 2.27; // tamaño grande original (el ajuste automatico la dejaba diminuta)
         camera.updateProjectionMatrix(); camera.updateMatrixWorld();
         const v = new THREE.Vector3(); let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
         [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].forEach(([x, z]) => [-6, 0, 8].forEach(yy => { v.set(x, yy, z).project(camera); mnx = Math.min(mnx, v.x); mxx = Math.max(mxx, v.x); mny = Math.min(mny, v.y); mxy = Math.max(mxy, v.y); }));
