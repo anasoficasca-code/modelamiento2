@@ -2022,7 +2022,9 @@
       sectionWrapEl.style.display = "block";
       resizeSectionView();
       placeSectionCutAtHumedal();
-      return; // el primer clic solo revela el panel; el contexto base ya se ve
+      // ya no se corta aca con un "return": el mismo primer clic sigue de
+      // largo y dispara tambien la explosion de las 3 escalas, para que
+      // no haga falta un segundo clic para que "salga" algo
     }
     if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
 
