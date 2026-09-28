@@ -130,6 +130,7 @@
     const halfW = halfH * (w / h);
     sectionCamera.left = -halfW; sectionCamera.right = halfW;
     sectionCamera.top = halfH; sectionCamera.bottom = -halfH;
+    sectionCamera.zoom = 2.0; // zoom aplicado al corte — se ve mas grande de lo que era antes
     sectionCamera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resizeSectionView);
