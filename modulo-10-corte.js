@@ -1743,10 +1743,11 @@
     if (sectionControls) sectionControls.update();
     renderer.render(scene, camera);
     if (sectionRenderer) {
-      // Lineas de edificios un poco mas visibles/gruesas solo en el
-      // corte de abajo, sin afectar la axonometria de arriba.
+      // Lineas de edificios mas delgadas/livianas solo en el corte de
+      // abajo (antes se habian pedido mas gruesas; ahora al reves),
+      // sin afectar la axonometria de arriba.
       const prevEdgeOpacity = buildingEdgeMat ? buildingEdgeMat.opacity : null;
-      if (buildingEdgeMat) buildingEdgeMat.opacity = 0.75;
+      if (buildingEdgeMat) buildingEdgeMat.opacity = 0.15;
       sectionRenderer.render(scene, sectionCamera);
       if (buildingEdgeMat && prevEdgeOpacity !== null) buildingEdgeMat.opacity = prevEdgeOpacity;
     }
