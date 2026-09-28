@@ -2010,7 +2010,43 @@
     redrawPenSvg();
     updatePenOutput();
   });
-  let explodeStep = 0; // 0 = solo contexto base, 1→2→3 = capas que se van prendiendo en vivo con cada clic
+  const EXPLODE_LAYERS = [
+    { name: "Sistema Hídrico", live: true },
+    { name: "Vegetación", live: false },
+    { name: "Aves / Fauna", live: true },
+    { name: "Conectividad vial", live: true },
+    { name: "Memoria histórica", live: false },
+    { name: "Cerramiento de borde", live: false },
+    { name: "Recorrido pedagógico", live: false },
+    { name: "Fricción vial (SOT)", live: true },
+    { name: "Red vial y tráfico", live: true },
+    { name: "Simulación de ruido", live: true },
+    { name: "Inundación y movilidad", live: true },
+    { name: "Alcantarillado", live: false },
+  ];
+  let explodeStep = 0; // 0 = solo contexto base; 1..12 = cada una de las 12 capas, sin agrupar por escala
+  const explodeLabelEl = document.createElement("div");
+  explodeLabelEl.id = "explodeStepLabel";
+  explodeLabelEl.style.cssText = "position:absolute; top:18px; left:50%; transform:translateX(-50%); z-index:9; font:600 11.5px 'Segoe UI',sans-serif; color:#fff; background:rgba(17,20,24,.82); padding:6px 14px; border-radius:999px; pointer-events:none; display:none;";
+  wrap.appendChild(explodeLabelEl);
+  function applyExplodeStep() {
+    // Se apagan primero los toggles que maneja este paso a paso, para
+    // partir de una base limpia en cada capa (no se van acumulando).
+    if (vehInstanced) vehInstanced.visible = false;
+    if (noiseMesh) noiseMesh.visible = false;
+    if (birdsGroup) birdsGroup.visible = false;
+    if (roadMat) roadMat.color.set(0xb7babd);
+    if (explodeStep === 0) { explodeLabelEl.style.display = "none"; return; }
+    const layer = EXPLODE_LAYERS[explodeStep - 1];
+    explodeLabelEl.style.display = "block";
+    explodeLabelEl.textContent = `${explodeStep}/12 · ${layer.name}` + (layer.live ? "" : " (en construcción)");
+    if (explodeStep === 3) { if (birdsGroup) birdsGroup.visible = true; }
+    else if (explodeStep === 4) { if (roadMat) roadMat.color.set(0x24c8bd); }
+    else if (explodeStep === 8) { if (roadMat) roadMat.color.set(0xe11d48); }
+    else if (explodeStep === 9) { if (vehInstanced) vehInstanced.visible = true; }
+    else if (explodeStep === 10) { if (noiseMesh) noiseMesh.visible = true; }
+    else if (explodeStep === 11) { if (vehInstanced) vehInstanced.visible = true; if (noiseMesh) noiseMesh.visible = true; }
+  }
   canvas.addEventListener("click", (e) => {
     // Ya no se congela la vista en 3 fotos separadas: en vez de eso, se
     // revela el panel de convenciones + el corte (quedan ocultos hasta
@@ -2026,22 +2062,11 @@
     }
     if (penActive) return; // mientras se dibuja el poligono, no se dispara el paso de capas
 
-    // Cada clic siguiente prende una capa mas, EN VIVO sobre la misma
-    // axonometria (ya no fotos separadas): 1) agua y vegetacion,
-    // 2) se agregan vehiculos/dinamica urbana, 3) se agrega ruido +
-    // mirlas (lectura tecnologica completa). Al llegar a 3, el siguiente
-    // clic vuelve a 1.
-    explodeStep = (explodeStep % 3) + 1;
-    if (explodeStep === 1) {
-      if (vehInstanced) vehInstanced.visible = false;
-      if (noiseMesh) noiseMesh.visible = false;
-      if (birdsGroup) birdsGroup.visible = false;
-    } else if (explodeStep === 2) {
-      if (vehInstanced) vehInstanced.visible = true;
-    } else if (explodeStep === 3) {
-      if (noiseMesh) noiseMesh.visible = true;
-      if (birdsGroup) birdsGroup.visible = true;
-    }
+    // Cada clic siguiente avanza UNA de las 12 capas individuales (sin
+    // agruparlas ni nombrar a que escala pertenecian antes), en vivo
+    // sobre la misma axonometria. Al llegar a 12, vuelve a 1.
+    explodeStep = (explodeStep % 12) + 1;
+    applyExplodeStep();
     return;
     if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
 
