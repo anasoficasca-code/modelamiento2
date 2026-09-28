@@ -2129,9 +2129,8 @@
     }
     if (penActive) return; // mientras se dibuja el poligono, no se dispara el paso de capas
 
-    explodeStep = (explodeStep % 12) + 1;
-    applyExplodeStep();
-    return;
+    // removed by script to restore 3 scales
+
 
     // Guardar estado y fondo original
     const origRoadColor = roadMat ? roadMat.color.getHex() : null;
