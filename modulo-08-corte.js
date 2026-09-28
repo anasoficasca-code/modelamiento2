@@ -389,7 +389,7 @@
     // (offset perpendicular en ambos lados de cada segmento)
     // para simular grosor real (LineBasicMaterial siempre es 1px en WebGL).
     const thickEdgePositions = [];
-    const edgeOffset = 0.4; // offset perpendicular para grosor visible
+    const edgeOffset = 2.5; // offset perpendicular para grosor visible
     for (let i = 0; i < allEdgePositions.length; i += 6) {
       const x1 = allEdgePositions[i], y1 = allEdgePositions[i + 1], z1 = allEdgePositions[i + 2];
       const x2 = allEdgePositions[i + 3], y2 = allEdgePositions[i + 4], z2 = allEdgePositions[i + 5];
