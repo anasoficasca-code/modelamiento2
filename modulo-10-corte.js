@@ -100,7 +100,7 @@
       sectionCamera.up.set(0, 1, 0);
       sectionCamera.lookAt(165.3, 12.5, -18.4);
       sectionCamera.fov = 40; // FOV mas amplio para que se note la perspectiva real
-      sectionCamera.zoom = 1.0;
+      sectionCamera.zoom = 5.0; // Zoom alto solicitado por usuaria
       if (!sectionControls) {
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
         sectionControls.enableDamping = true;
