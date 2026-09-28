@@ -969,6 +969,7 @@
     const uvs = [];
     const UV_SCALE = 0.08; // repite la textura cada ~12.5 unidades de escena
     bodies.forEach(w => {
+      if (!(w.nombre || "").includes("Burro")) return; // USER REQUEST: Remove dark blue patches (other water bodies)
       const pts = w.pts.map(p => toScene(p[0], p[1]));
       if (pts.length < 3) return;
       // Triangulacion real de poligono (ear-clipping), no un abanico
@@ -3692,6 +3693,7 @@
     // 2. Cuerpos de agua (Humedal y afluentes) - Azul pizarra / mineral realista con reflejos tenues
     rawWaterData.forEach(body => {
       const isBurro = body === burro;
+      if (!isBurro) return; // USER REQUEST: Remove dark blue patches that aren't the humedal
       let pts = body.pts;
       if (isBurro) {
         // Forma REAL exacta (asi calza con el humedal de la base al bajar).
