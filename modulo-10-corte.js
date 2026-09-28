@@ -352,6 +352,7 @@
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     const mat = new THREE.LineBasicMaterial({ color: 0x4a545e, transparent: true, opacity: 0.85 });
     const lines = new THREE.LineSegments(geo, mat);
+    lines.renderOrder = 3;
     sceneRoot.add(lines);
     currentRoadMeshes.push(lines);
 
@@ -421,6 +422,7 @@
     roadMat = ribbonMat;
     const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
     roadMesh.receiveShadow = true;
+    roadMesh.renderOrder = 3;
     sceneRoot.add(roadMesh);
     currentRoadMeshes.push(roadMesh);
   }
@@ -479,7 +481,7 @@
     const normals = [];
     const edgePositions = []; // solo el perimetro del techo (una linea nativa, se ve bien desde arriba)
     const cornerPositions = []; // esquinas verticales: geometria 3D real (mini-pared delgada), NO una linea nativa - las lineas nativas de WebGL tienen 1px fijo sin importar linewidth, y ademas se pueden "desaparecer" en angulos rasantes por z-fighting; una pared delgada de verdad se ve igual de gruesa siempre, sin importar el angulo
-    const CORNER_THICK = 0.035; // grosor fijo de la mini-pared de esquina (muy delgado, pero real en 3D)
+    const CORNER_THICK = 0.015; // grosor fijo de la mini-pared de esquina (muy delgado, pero real en 3D)
     buildings.forEach(b => {
       const pts = b.pts.map(p => toScene(p[0], p[1]));
       let h = b.h * SCALE;
@@ -546,6 +548,7 @@
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    mesh.renderOrder = 4;
     sceneRoot.add(mesh);
     currentBuildingMesh = mesh;
 
@@ -557,6 +560,7 @@
     const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.35 });
     buildingEdgeMat = edgeMat;
     const edgeMesh = new THREE.LineSegments(edgeGeo, edgeMat);
+    edgeMesh.renderOrder = 5;
     sceneRoot.add(edgeMesh);
     currentBuildingEdgeMesh = edgeMesh;
 
@@ -568,6 +572,7 @@
     cornerGeo.computeVertexNormals();
     const cornerMat = new THREE.MeshBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.55, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
     const cornerMesh = new THREE.Mesh(cornerGeo, cornerMat);
+    cornerMesh.renderOrder = 5;
     sceneRoot.add(cornerMesh);
     currentBuildingCornerMesh = cornerMesh;
   }
@@ -1085,7 +1090,8 @@
     });
     waterMat = mat;
     const waterMesh = new THREE.Mesh(geo, mat);
-    waterMesh.receiveShadow = false; // sin sombras encima (se veian como parches/bloques feos sobre el agua)
+    waterMesh.receiveShadow = false;
+    waterMesh.renderOrder = 2;
     sceneRoot.add(waterMesh);
   }
 
@@ -1159,6 +1165,7 @@
     parqueMat = mat;
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
+    mesh.renderOrder = 1;
     sceneRoot.add(mesh);
   }
 
@@ -1295,6 +1302,7 @@
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    mesh.renderOrder = 4;
     sceneRoot.add(mesh);
     return mesh;
   }
