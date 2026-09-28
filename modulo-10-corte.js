@@ -122,6 +122,48 @@
   }
   window.addEventListener("resize", resizeSectionView);
 
+  // ---- Editor de la organizacion del panel (convenciones + axonometria
+  // + corte): controla el ancho de las convenciones y el alto del corte
+  // con sliders, y arma un texto de coordenadas para copiar y reproducir
+  // esa misma organizacion despues. ----
+  const layoutLegendW = document.getElementById("layoutLegendW");
+  const layoutCorteH = document.getElementById("layoutCorteH");
+  const layoutLegendWVal = document.getElementById("layoutLegendWVal");
+  const layoutCorteHVal = document.getElementById("layoutCorteHVal");
+  const layoutCoordsOutput = document.getElementById("layoutCoordsOutput");
+  function applyLayoutOrganization() {
+    if (!layoutLegendW) return;
+    const legendW = parseInt(layoutLegendW.value, 10);
+    const corteH = parseInt(layoutCorteH.value, 10);
+    layoutLegendWVal.textContent = legendW + "px";
+    layoutCorteHVal.textContent = corteH + "%";
+    const legendPanelEl2 = document.getElementById("legendPanel");
+    const sectionWrapEl3 = document.getElementById("sectionWrap");
+    const wrapEl = document.getElementById("sceneWrap");
+    if (legendPanelEl2) legendPanelEl2.style.width = legendW + "px";
+    if (sectionWrapEl3) { sectionWrapEl3.style.left = legendW + "px"; sectionWrapEl3.style.height = corteH + "%"; }
+    if (wrapEl) {
+      wrapEl.style.left = legendW + "px";
+      wrapEl.style.right = "0";
+      wrapEl.style.top = "0";
+      wrapEl.style.bottom = corteH + "%";
+    }
+    resize();
+    resizeSectionView();
+    if (layoutCoordsOutput) {
+      layoutCoordsOutput.value =
+        `// === ORGANIZACION DEL PANEL ===\nconst LAYOUT = {\n  legendWidthPx: ${legendW},\n  corteHeightPct: ${corteH}\n};`;
+    }
+  }
+  if (layoutLegendW) {
+    layoutLegendW.addEventListener("input", applyLayoutOrganization);
+    layoutCorteH.addEventListener("input", applyLayoutOrganization);
+    const layoutCoordsCopy = document.getElementById("layoutCoordsCopy");
+    if (layoutCoordsCopy) layoutCoordsCopy.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(layoutCoordsOutput.value); layoutCoordsCopy.textContent = "✅ Copiado"; setTimeout(() => { layoutCoordsCopy.textContent = "📋 Copiar coordenadas"; }, 1600); } catch (e) {}
+    });
+  }
+
   // Pantalla completa para la franja del corte: se agranda a cubrir casi
   // toda la pantalla para poder acomodarla con comodidad (rotarla, mover
   // la camara), sin tocar la axonometria de arriba ni las capas.
@@ -2247,28 +2289,20 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     // 12, el siguiente clic vuelve a la 1.
     const legendPanelEl = document.getElementById("legendPanel");
     const sectionWrapEl = document.getElementById("sectionWrap");
+    const layoutEditorEl = document.getElementById("layoutEditor");
     if (legendPanelEl && legendPanelEl.style.display === "none") {
       legendPanelEl.style.display = "block";
       sectionWrapEl.style.display = "block";
+      if (layoutEditorEl) layoutEditorEl.style.display = "block";
       // La axonometria inicial (antes del primer clic) no se toca. Solo
-      // ahora, al revelar el panel, se achica un poco y se encuadra para
-      // que el corte de abajo no le tape nada. Se aplica con un pequeño
-      // retraso porque abrir la Capa 1 (agua) reconfigura el renderer
-      // principal para su propia captura y pisa este tamaño si se hace
-      // en el mismo instante.
-      const shrinkSceneWrap = () => {
-        const wrapEl = document.getElementById("sceneWrap");
-        if (wrapEl) {
-          wrapEl.style.left = "200px";
-          wrapEl.style.right = "0";
-          wrapEl.style.top = "0";
-          wrapEl.style.bottom = "38%";
-        }
-        resize();
-      };
-      shrinkSceneWrap();
-      setTimeout(shrinkSceneWrap, 60);
-      setTimeout(shrinkSceneWrap, 300);
+      // ahora, al revelar el panel, se acomoda segun lo que diga el
+      // editor de organizacion (ancho de convenciones / alto del corte).
+      // Se aplica con un pequeño retraso porque abrir la Capa 1 (agua)
+      // reconfigura el renderer principal para su propia captura y pisa
+      // este tamaño si se hace en el mismo instante.
+      applyLayoutOrganization();
+      setTimeout(applyLayoutOrganization, 60);
+      setTimeout(applyLayoutOrganization, 300);
       resizeSectionView();
       placeSectionCutAtHumedal();
       updateSectionCutRotation();

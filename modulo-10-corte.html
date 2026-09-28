@@ -221,6 +221,19 @@
       </div>
     </aside>
 
+    <!-- Editor de la organizacion (panel + axonometria + corte): se puede
+         acomodar el ancho de convenciones y el alto del corte, y copiar
+         las coordenadas resultantes -->
+    <div id="layoutEditor" style="display:none; position:absolute; top:16px; right:16px; z-index:600; width:230px; background:rgba(17,20,24,.92); border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:12px; font-family:'Segoe UI',sans-serif; color:#e8ecf1;">
+      <div style="font:700 10.5px/1 'Segoe UI',sans-serif; letter-spacing:.05em; text-transform:uppercase; color:#8b96a5; margin-bottom:8px;">Organización del panel</div>
+      <label style="font-size:11px; display:flex; justify-content:space-between;">Ancho de convenciones <span id="layoutLegendWVal">200px</span></label>
+      <input type="range" id="layoutLegendW" min="120" max="420" value="200" step="2" style="width:100%; margin:4px 0 10px;">
+      <label style="font-size:11px; display:flex; justify-content:space-between;">Alto del corte <span id="layoutCorteHVal">25%</span></label>
+      <input type="range" id="layoutCorteH" min="15" max="65" value="25" step="1" style="width:100%; margin:4px 0 10px;">
+      <textarea id="layoutCoordsOutput" rows="4" readonly spellcheck="false" style="width:100%; background:#0b0c0f; color:#8fd4c8; border:1px solid rgba(255,255,255,.14); border-radius:6px; font:11px/1.4 monospace; padding:6px; resize:vertical;"></textarea>
+      <button type="button" id="layoutCoordsCopy" style="width:100%; margin-top:6px; padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:11px; font-weight:700; cursor:pointer;">📋 Copiar coordenadas</button>
+    </div>
+
     <!-- Corte: vista en seccion del mismo territorio, cortando por el humedal -->
     <div id="sectionWrap" style="display:none; position:absolute; left:0; right:0; bottom:0; height:25%; min-height:220px; z-index:400; border-top:1px solid rgba(0,0,0,.12); background:#eef2f5;">
       <canvas id="sectionCanvas" style="width:100%; height:100%; display:block; cursor:grab;"></canvas>
