@@ -2104,7 +2104,7 @@
     const layer = EXPLODE_LAYERS[explodeStep - 1];
     explodeLabelEl.style.display = "block";
     explodeLabelEl.textContent = `${explodeStep}/12 · ${layer.name}` + (layer.live ? "" : " (en construcción)");
-    if (explodeStep === 1) { if (mainBurroMesh) riseAndSettle(mainBurroMesh, 18); }
+    if (explodeStep === 1) { if (typeof openNaturalExplode === "function") openNaturalExplode(); return; }
     else if (explodeStep === 3) { if (birdsGroup) riseAndSettle(birdsGroup, 26); }
     else if (explodeStep === 4) { if (roadMat) roadMat.color.set(0x24c8bd); }
     else if (explodeStep === 8) { if (roadMat) roadMat.color.set(0xe11d48); }
