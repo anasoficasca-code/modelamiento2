@@ -99,7 +99,7 @@
       sectionCamera.position.set(130.7, 14.1, 11.9);
       sectionCamera.up.set(0, 1, 0);
       sectionCamera.lookAt(225.4, -31.3, -53.8);
-      sectionCamera.fov = 55;
+      sectionCamera.fov = 32; // mas zoom que antes (55°) para que no se vea tan chiquito
       if (!sectionControls) {
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
         sectionControls.enableDamping = true;
