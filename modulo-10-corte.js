@@ -2217,6 +2217,25 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     if (legendPanelEl && legendPanelEl.style.display === "none") {
       legendPanelEl.style.display = "block";
       sectionWrapEl.style.display = "block";
+      // La axonometria inicial (antes del primer clic) no se toca. Solo
+      // ahora, al revelar el panel, se achica un poco y se encuadra para
+      // que el corte de abajo no le tape nada. Se aplica con un pequeño
+      // retraso porque abrir la Capa 1 (agua) reconfigura el renderer
+      // principal para su propia captura y pisa este tamaño si se hace
+      // en el mismo instante.
+      const shrinkSceneWrap = () => {
+        const wrapEl = document.getElementById("sceneWrap");
+        if (wrapEl) {
+          wrapEl.style.left = "200px";
+          wrapEl.style.right = "0";
+          wrapEl.style.top = "0";
+          wrapEl.style.bottom = "20%";
+        }
+        resize();
+      };
+      shrinkSceneWrap();
+      setTimeout(shrinkSceneWrap, 60);
+      setTimeout(shrinkSceneWrap, 300);
       resizeSectionView();
       placeSectionCutAtHumedal();
       updateSectionCutRotation();
@@ -3053,6 +3072,8 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
 
   function closeNaturalExplode() {
     if (!natOverlay) return;
+    const sceneWrapRestore = document.getElementById("sceneWrap");
+    if (sceneWrapRestore) sceneWrapRestore.style.display = "block"; // volver a la vista 3D en vivo (antes solo lo hacia openTechExplode, por eso Natural y Cultural se quedaban en blanco)
     if (natWaterAnimFrame) { cancelAnimationFrame(natWaterAnimFrame); natWaterAnimFrame = null; }
     const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
     sublayers.forEach(l => {
@@ -3534,6 +3555,8 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
 
   function closeTechExplode() {
     if (!techOverlay) return;
+    const sceneWrapRestore2 = document.getElementById("sceneWrap");
+    if (sceneWrapRestore2) sceneWrapRestore2.style.display = "block";
     if (techAnimFrame) { cancelAnimationFrame(techAnimFrame); techAnimFrame = null; }
     techLiveViewSize = null; // apaga el espejo en vivo de carros/ruido
 
@@ -4995,6 +5018,8 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
 
   function closeCulturalExplode() {
     if (!cultOverlay) return;
+    const sceneWrapRestore3 = document.getElementById("sceneWrap");
+    if (sceneWrapRestore3) sceneWrapRestore3.style.display = "block";
     if (cultAnimFrame) { cancelAnimationFrame(cultAnimFrame); cultAnimFrame = null; }
     if (cultHistPlaying) stopCultHistory();
 
