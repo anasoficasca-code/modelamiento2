@@ -134,6 +134,41 @@
   }
   window.addEventListener("resize", resizeSectionView);
 
+  // Pantalla completa para la franja del corte: se agranda a cubrir casi
+  // toda la pantalla para poder acomodarla con comodidad (rotarla, mover
+  // la camara), sin tocar la axonometria de arriba ni las capas.
+  const sectionWrapEl2 = document.getElementById("sectionWrap");
+  const sectionFullscreenBtn = document.getElementById("sectionFullscreenBtn");
+  let sectionIsFullscreen = false;
+  if (sectionFullscreenBtn && sectionWrapEl2) {
+    sectionFullscreenBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      sectionIsFullscreen = !sectionIsFullscreen;
+      if (sectionIsFullscreen) {
+        sectionWrapEl2.style.left = "18px";
+        sectionWrapEl2.style.top = "18px";
+        sectionWrapEl2.style.right = "18px";
+        sectionWrapEl2.style.bottom = "18px";
+        sectionWrapEl2.style.height = "auto";
+        sectionWrapEl2.style.zIndex = "500";
+        sectionWrapEl2.style.borderRadius = "12px";
+        sectionWrapEl2.style.boxShadow = "0 20px 60px rgba(0,0,0,.35)";
+        sectionFullscreenBtn.textContent = "✕ Cerrar pantalla completa";
+      } else {
+        sectionWrapEl2.style.left = "200px";
+        sectionWrapEl2.style.top = "";
+        sectionWrapEl2.style.right = "0";
+        sectionWrapEl2.style.bottom = "0";
+        sectionWrapEl2.style.height = "20%";
+        sectionWrapEl2.style.zIndex = "150";
+        sectionWrapEl2.style.borderRadius = "0";
+        sectionWrapEl2.style.boxShadow = "none";
+        sectionFullscreenBtn.textContent = "⛶ Pantalla completa";
+      }
+      resizeSectionView();
+    });
+  }
+
   // Tamano visible (mitad de la altura del encuadre, en unidades de la
   // escena) para la proyeccion ortogonal — se ajusta al cargar la red.
   let viewSize = 260;

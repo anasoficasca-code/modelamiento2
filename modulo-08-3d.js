@@ -1554,7 +1554,7 @@
   let cutRotAngle = 54;
   // Líneas más gruesas solo en la vista del corte
   const origEdgeOpacity = buildingEdgeMat ? buildingEdgeMat.opacity : 0.14;
-  buildingEdgeMat.opacity = 0.30;
+  if (buildingEdgeMat) buildingEdgeMat.opacity = 0.30; // buildingEdgeMat aun puede ser null aqui (los edificios cargan despues, de forma asincrona); se aplica mas abajo cuando ya existe
 
   function updateCutView() {
     if (!sectionRenderer) return;
