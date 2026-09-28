@@ -385,11 +385,12 @@
       allEdgePositions.push(pts[i].x, 0, pts[i].z, pts[next].x, 0, pts[next].z);
       allEdgePositions.push(pts[i].x, h, pts[i].z, pts[next].x, h, pts[next].z);
     }
-    const allEdgeGeo = new THREE.BufferGeometry();
-    allEdgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(allEdgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.4 });
-    buildingEdgeMat = edgeMat;
-    sceneRoot.add(new THREE.LineSegments(allEdgeGeo, edgeMat));
+    // LineGeometry + Line2 con LineMaterial para grosor real de linea
+    const edgeGeo = new LineGeometry();
+    edgeGeo.setPositions(allEdgePositions);
+    const edgeMat = new LineMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.5, linewidth: 3 });
+    buildingEdgeMat = new Line2(edgeGeo, edgeMat);
+    sceneRoot.add(buildingEdgeMat);
   }
 
   function loadBuildings() {
