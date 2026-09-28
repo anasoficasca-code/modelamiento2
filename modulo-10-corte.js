@@ -2259,7 +2259,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
           wrapEl.style.left = "200px";
           wrapEl.style.right = "0";
           wrapEl.style.top = "0";
-          wrapEl.style.bottom = "20%";
+          wrapEl.style.bottom = "38%";
         }
         resize();
       };
