@@ -1502,28 +1502,6 @@
     updateSectionBox();
   }
 
-  // ---- Boton para ir al corte con coordenadas fijas ----
-  const goCorteBtn = document.getElementById("goCorteBtn");
-  if (goCorteBtn) goCorteBtn.addEventListener("click", () => {
-    const params = new URLSearchParams();
-    params.set("cutRot", "54");
-    params.set("cutXMin", "48");
-    params.set("cutXMax", "62");
-    params.set("cutYMin", "0");
-    params.set("cutYMax", "100");
-    params.set("cutZMin", "14");
-    params.set("cutZMax", "30");
-    params.set("cutPersp", "1");
-    params.set("cutCamX", "102.0");
-    params.set("cutCamY", "17.7");
-    params.set("cutCamZ", "38.4");
-    params.set("cutLookX", "249.7");
-    params.set("cutLookY", "10.5");
-    params.set("cutLookZ", "-75.6");
-    params.set("cutFov", "55");
-    window.location.href = "modulo-10-corte.html?" + params.toString();
-  });
-
   function animate(now) {
     requestAnimationFrame(animate);
     if (playing && timesteps.length) {
@@ -1541,7 +1519,7 @@
     // el zoom (asi no se ven gruesas/densas cuando no se esta haciendo
     // zoom, y no cambian de aspecto al acercar/alejar la camara).
     // Agua con movimiento: se desplaza lentamente la textura de color Y
-    // la capa de relieve (bump) a velocidades/escalas DISTINCTAS entre si,
+    // la capa de relieve (bump) a velocidades/escalas DISTINTAS entre si,
     // simulando dos capas de oleaje superpuestas.
     if (waterTexRef) {
       waterTexRef.offset.x = (now * 0.000018) % 1;
@@ -1555,6 +1533,87 @@
     controls.update();
     renderer.render(scene, camera);
   }
+  // ---- Corte del Humedal: vista en perspectiva con coordenadas fijas ----
+  const sectionCanvas = document.getElementById("sectionCanvas");
+  const sectionWrap = document.getElementById("sectionWrap");
+  const sectionRot = document.getElementById("sectionRot");
+  const sectionRotVal = document.getElementById("sectionRotVal");
+  const sectionStraightenBtn = document.getElementById("sectionStraightenBtn");
+  const sectionCoordsOutput = document.getElementById("sectionCoordsOutput");
+  const goCorteBtn = document.getElementById("goCorteBtn");
+  const sectionCamera = new THREE.PerspectiveCamera(55, 1, 0.5, 5000);
+  let sectionRenderer = null;
+  if (sectionCanvas) {
+    sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas, antialias: true, alpha: true });
+    sectionRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    sectionRenderer.localClippingEnabled = true;
+    sectionRenderer.setClearColor(0x0b0c0f, 1);
+  }
+  // Plano de corte fijo (se actualiza con la rotación)
+  const cutPlane = new THREE.Plane(new THREE.Vector3(1, 0, 0), 1e6);
+  let cutRotAngle = 54;
+  // Líneas más gruesas solo en la vista del corte
+  const origEdgeOpacity = buildingEdgeMat ? buildingEdgeMat.opacity : 0.14;
+  buildingEdgeMat.opacity = 0.30;
+
+  function updateCutView() {
+    if (!sectionRenderer) return;
+    const rad = cutRotAngle * Math.PI / 180;
+    cutPlane.normal.set(Math.cos(rad), 0, Math.sin(rad));
+    cutPlane.constant = 0;
+    sectionRenderer.clippingPlanes = [cutPlane];
+    // Cámara en perspectiva con coordenadas fijas
+    sectionCamera.position.set(102.0, 17.7, 38.4);
+    sectionCamera.up.set(0, 1, 0);
+    sectionCamera.lookAt(249.7, 10.5, -75.6);
+    sectionCamera.fov = 55;
+    sectionCamera.updateProjectionMatrix();
+    // Actualizar coordenadas mostradas
+    if (sectionCoordsOutput) {
+      sectionCoordsOutput.value =
+        `Rotación: ${cutRotAngle}°\n` +
+        `U (a lo largo del giro): 48% a 62%\n` +
+        `Y (altura, m): 0.0 a 100.0\n` +
+        `V (perpendicular): 14% a 30%\n` +
+        `(referencia sin girar — real 5042 a 7136 / 4933 a 6349)\n` +
+        `--- Cámara ---\n` +
+        `Proyección: perspectiva\n` +
+        `Posición: ${sectionCamera.position.x.toFixed(1)}, ${sectionCamera.position.y.toFixed(1)}, ${sectionCamera.position.z.toFixed(1)}\n` +
+        `Mira hacia: 249.7, 10.5, -75.6\n` +
+        `FOV: 55.0°`;
+    }
+  }
+  function resizeCutView() {
+    if (!sectionRenderer || !sectionCanvas) return;
+    const rect = sectionCanvas.getBoundingClientRect();
+    const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
+    sectionRenderer.setSize(w, h, false);
+    sectionCamera.aspect = w / h;
+    sectionCamera.updateProjectionMatrix();
+  }
+  if (sectionRot) sectionRot.addEventListener("input", () => {
+    cutRotAngle = parseFloat(sectionRot.value);
+    if (sectionRotVal) sectionRotVal.textContent = cutRotAngle + "°";
+    updateCutView();
+  });
+  if (sectionStraightenBtn) sectionStraightenBtn.addEventListener("click", () => {
+    cutRotAngle = 0;
+    if (sectionRot) sectionRot.value = 0;
+    if (sectionRotVal) sectionRotVal.textContent = "0°";
+    updateCutView();
+  });
+  if (goCorteBtn) goCorteBtn.addEventListener("click", () => {
+    if (sectionWrap) {
+      const isHidden = sectionWrap.style.display === "none";
+      sectionWrap.style.display = isHidden ? "block" : "none";
+      goCorteBtn.textContent = isHidden ? "✂️ Ocultar corte" : "✂️ Ver corte del Humedal";
+      if (isHidden) {
+        resizeCutView();
+        updateCutView();
+      }
+    }
+  });
+
   resize();
   requestAnimationFrame(animate);
 })();

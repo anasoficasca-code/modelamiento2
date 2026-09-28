@@ -198,7 +198,20 @@
     <div class="view-buttons">
       <button type="button" id="viewReset">Restablecer vista axonométrica</button>
       <button type="button" id="perspToggle">📐 Ver en perspectiva</button>
-      <button type="button" id="goCorteBtn">✂️ Ir al corte del Humedal</button>
+      <button type="button" id="goCorteBtn">✂️ Ver corte del Humedal</button>
+    </div>
+
+    <!-- Corte: vista en sección con coordenadas fijas -->
+    <div id="sectionWrap" style="display:none; position:absolute; left:218px; right:0; bottom:0; height:22%; min-height:130px; z-index:150; border-top:1px solid var(--panel-border); background:rgba(11,12,15,.9);">
+      <canvas id="sectionCanvas" style="width:100%; height:100%; display:block;"></canvas>
+      <span style="position:absolute; top:8px; left:14px; font:700 10.5px 'Segoe UI',sans-serif; color:var(--ink-dim); letter-spacing:.04em; text-transform:uppercase; pointer-events:none;">Corte — Humedal El Burro</span>
+      <div style="position:absolute; bottom:8px; left:14px; display:flex; align-items:center; gap:8px; z-index:5;">
+        <label style="font:600 10px 'Segoe UI',sans-serif; color:var(--ink-dim);">Rotación</label>
+        <input type="range" id="sectionRot" min="0" max="360" value="54" step="1" style="width:80px; accent-color:var(--accent);">
+        <span id="sectionRotVal" style="font:600 10px 'Segoe UI',sans-serif; color:var(--ink); min-width:28px;">54°</span>
+        <button id="sectionStraightenBtn" style="padding:4px 8px; border-radius:6px; border:1px solid var(--panel-border); background:var(--panel); font:600 10px 'Segoe UI',sans-serif; color:var(--ink); cursor:pointer;">Enderezar</button>
+      </div>
+      <textarea id="sectionCoordsOutput" readonly style="position:absolute; top:28px; right:10px; width:210px; height:76px; font:9.5px monospace; background:rgba(255,255,255,.06); color:var(--ink); border:1px solid var(--panel-border); border-radius:6px; padding:5px; resize:none; pointer-events:none;"></textarea>
     </div>
 
     <div class="rotate-panel" id="rotatePanel">

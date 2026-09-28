@@ -67,7 +67,7 @@
   // en la posicion real del Humedal El Burro -- no se mueve con la caja
   // de seccion interactiva de arriba, es su propio corte permanente. ----
   const sectionCanvas2 = document.getElementById("sectionCanvas");
-  const sectionCamera = new THREE.PerspectiveCamera(50, 1, 0.5, 5000);
+  const sectionCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 3000);
   let sectionRenderer = null, sectionCutZ = null;
   if (sectionCanvas2) {
     sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas2, antialias: true, alpha: true });
@@ -106,12 +106,13 @@
     sectionCutPlane.constant = -(nx * sp.x + nz * sp.z);
     if (sectionRenderer) {
       sectionRenderer.clippingPlanes = [sectionCutPlane];
-      // Camara en perspectiva con las coordenadas del modulo 8
-      sectionCamera.position.set(132.2, 6.9, 9.4);
+      // la camara mira horizontalmente hacia el humedal, desde el lado
+      // perpendicular a la calle, ligeramente por encima del nivel del
+      // suelo, para que el corte se vea como un alzado
+      const camY = 6, camDist = 420;
+      sectionCamera.position.set(sp.x + nx * camDist, camY, sp.z + nz * camDist);
       sectionCamera.up.set(0, 1, 0);
-      sectionCamera.lookAt(223.8, 2.4, -64.3);
-      sectionCamera.fov = 50;
-      sectionCamera.updateProjectionMatrix();
+      sectionCamera.lookAt(sp.x, camY, sp.z);
       resizeSectionView();
     }
   }
@@ -120,7 +121,15 @@
     const rect = sectionCanvas2.getBoundingClientRect();
     const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
     sectionRenderer.setSize(w, h, false);
-    sectionCamera.aspect = w / h;
+    // IMPORTANTE: top/bottom deben quedar simetricos (top === -bottom).
+    // Con valores asimetricos, esta version de three.js deja de dibujar
+    // nada en absoluto (se probo y confirmo por separado). Para mostrar
+    // mas territorio por encima del nivel de camara que por debajo, se
+    // desplaza la posicion Y de la camara en vez de romper la simetria.
+    const halfH = Math.max(14, sceneExtentH * 0.035);
+    const halfW = halfH * (w / h);
+    sectionCamera.left = -halfW; sectionCamera.right = halfW;
+    sectionCamera.top = halfH; sectionCamera.bottom = -halfH;
     sectionCamera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resizeSectionView);
@@ -2009,28 +2018,27 @@
   let sectionRotAngle = 54; // rotacion inicial del corte
 
   function updateSectionCutRotation() {
-    if (!sectionRenderer || sectionCutZ === null) return;
+    if (!sectionRenderer || !sectionCutZ) return;
     const rad = sectionRotAngle * Math.PI / 180;
     const nx = Math.cos(rad), nz = Math.sin(rad);
     sectionCutPlane.normal.set(nx, 0, nz);
     sectionCutPlane.constant = -(nx * sectionCutX + nz * sectionCutZ);
-    // Camara en perspectiva con las coordenadas fijas del modulo 8
-    sectionCamera.position.set(132.2, 6.9, 9.4);
+    // Reposicionar la camara del corte segun la rotacion
+    const camY = 6, camDist = 420;
+    sectionCamera.position.set(sectionCutX + nx * camDist, camY, sectionCutZ + nz * camDist);
     sectionCamera.up.set(0, 1, 0);
-    sectionCamera.lookAt(223.8, 2.4, -64.3);
-    sectionCamera.fov = 50;
+    sectionCamera.lookAt(sectionCutX, camY, sectionCutZ);
     sectionCamera.updateProjectionMatrix();
     // Actualizar coordenadas mostradas
     if (sectionCoordsOutput) {
       sectionCoordsOutput.value =
         `Rotación: ${sectionRotAngle}°\n` +
-        `U (a lo largo del giro): 46% a 63%\n` +
+        `U (a lo largo): 46% a 63%\n` +
         `Y (altura, m): 0.0 a 100.0\n` +
         `V (perpendicular): 12% a 30%\n` +
-        `(referencia sin girar — real 4743 a 7286 / 4933 a 6526)\n` +
         `--- Cámara ---\n` +
         `Posición: ${sectionCamera.position.x.toFixed(1)}, ${sectionCamera.position.y.toFixed(1)}, ${sectionCamera.position.z.toFixed(1)}\n` +
-        `Mira hacia: 223.8, 2.4, -64.3\n` +
+        `Mira hacia: ${sectionCutX.toFixed(1)}, ${camY.toFixed(1)}, ${sectionCutZ.toFixed(1)}\n` +
         `Zoom: ${(sectionCamera.zoom || 1).toFixed(2)}`;
     }
   }
@@ -5921,23 +5929,6 @@
     window.addEventListener("pointermove", e => { if (!dragPt) return; dragPt.pl.pts[dragPt.i] = localPt(e); redraw(); });
     window.addEventListener("pointerup", () => { dragPt = null; });
   })();
-
-  // ---- Configuracion desde URL (cuando viene el boton del modulo 8) ----
-  const urlParams = new URLSearchParams(location.search);
-  const cutFromUrl = urlParams.get("cutRot") !== null;
-  if (cutFromUrl) {
-    // Aplicar coordenadas de la caja de seccion
-    if (secRot) { secRot.value = urlParams.get("cutRot") || "54"; secRotVal.textContent = secRot.value + "°"; }
-    if (secXMin) secXMin.value = urlParams.get("cutXMin") || "48";
-    if (secXMax) secXMax.value = urlParams.get("cutXMax") || "62";
-    if (secYMin) secYMin.value = urlParams.get("cutYMin") || "0";
-    if (secYMax) secYMax.value = urlParams.get("cutYMax") || "100";
-    if (secZMin) secZMin.value = urlParams.get("cutZMin") || "14";
-    if (secZMax) secZMax.value = urlParams.get("cutZMax") || "30";
-    updateSectionBox();
-    // Engrosar lineas solo en esta vista (cuando viene del modulo 8)
-    if (buildingEdgeMat) buildingEdgeMat.opacity = 0.30;
-  }
 
 })();
 
