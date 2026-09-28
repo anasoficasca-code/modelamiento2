@@ -1502,28 +1502,6 @@
     updateSectionBox();
   }
 
-  // ---- Boton para ir al corte con coordenadas fijas ----
-  const goCorteBtn = document.getElementById("goCorteBtn");
-  if (goCorteBtn) goCorteBtn.addEventListener("click", () => {
-    const params = new URLSearchParams();
-    params.set("cutRot", "54");
-    params.set("cutXMin", "48");
-    params.set("cutXMax", "62");
-    params.set("cutYMin", "0");
-    params.set("cutYMax", "100");
-    params.set("cutZMin", "14");
-    params.set("cutZMax", "30");
-    params.set("cutPersp", "1");
-    params.set("cutCamX", "102.0");
-    params.set("cutCamY", "17.7");
-    params.set("cutCamZ", "38.4");
-    params.set("cutLookX", "249.7");
-    params.set("cutLookY", "10.5");
-    params.set("cutLookZ", "-75.6");
-    params.set("cutFov", "55");
-    window.location.href = "modulo-10-corte.html?" + params.toString();
-  });
-
   function animate(now) {
     requestAnimationFrame(animate);
     if (playing && timesteps.length) {
@@ -1541,7 +1519,7 @@
     // el zoom (asi no se ven gruesas/densas cuando no se esta haciendo
     // zoom, y no cambian de aspecto al acercar/alejar la camara).
     // Agua con movimiento: se desplaza lentamente la textura de color Y
-    // la capa de relieve (bump) a velocidades/escalas DISTINCTAS entre si,
+    // la capa de relieve (bump) a velocidades/escalas DISTINTAS entre si,
     // simulando dos capas de oleaje superpuestas.
     if (waterTexRef) {
       waterTexRef.offset.x = (now * 0.000018) % 1;
