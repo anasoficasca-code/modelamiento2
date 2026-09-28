@@ -251,6 +251,10 @@
     { from:"n7", to:"n5", pol:"+", verbo:"P5→P6: el vacío de autoridad en los portones dificulta el control del comercio informal y el acopio no autorizado de guacales." },
     { from:"n1", to:"n2", pol:"+", verbo:"P7→P3: el parqueo de tractomulas con motores encendidos deja goteos de grasas e hidrocarburos que la escorrentía pluvial conduce al humedal." },
     { from:"n4", to:"n2", pol:"+", verbo:"P4→P3: la sobrecarga poblacional sobre tuberías sanitarias antiguas genera conexiones erradas y reboses que descargan aguas servidas al humedal." },
+    { from:"n3", to:"n6", pol:"+", verbo:"P1→P2: la alta producción de desechos orgánicos de la central presiona directamente los bordes de la franja ambiental." },
+    { from:"n3", to:"n2", pol:"+", verbo:"P1→P3: el volumen de vertimientos y lavado de la operación comercial aporta carga contaminante directa al cuerpo hídrico." },
+    { from:"n3", to:"n5", pol:"+", verbo:"P1→P6: la saturación interna de la central desplaza el parqueo y las maniobras de cargue hacia andenes y calles del barrio." },
+    { from:"n7", to:"n1", pol:"+", verbo:"P5→P7: la falta de una autoridad unificada en los portones impide ordenar los horarios de ingreso, agravando el represamiento de camiones." },
   ];
 
   const SUBNETS = {
@@ -401,6 +405,10 @@
     { from:"s7_4", to:"s5_5", pol:"+", verbo:"P5→P6: el vacío de autoridad en los portones dificulta el control del comercio informal y el acopio de guacales", inter:true },
     { from:"s1_5", to:"s2_2", pol:"+", verbo:"P7→P3: el parqueo de tractomulas con motores encendidos deja goteos de grasas que la escorrentía conduce al humedal", inter:true },
     { from:"s4_7", to:"s2_1", pol:"+", verbo:"P4→P3: la sobrecarga poblacional sobre tuberías antiguas genera conexiones erradas y reboses hacia el humedal", inter:true },
+    { from:"s3_5", to:"s6_1", pol:"+", verbo:"P1→P2: la alta producción de desechos orgánicos de la central presiona los bordes de la franja ambiental", inter:true },
+    { from:"s3_6", to:"s2_1", pol:"+", verbo:"P1→P3: el volumen de vertimientos y lavado de la operación comercial aporta carga contaminante al cuerpo hídrico", inter:true },
+    { from:"s3_5", to:"s5_1", pol:"+", verbo:"P1→P6: la saturación interna de la central desplaza el parqueo y las maniobras de cargue hacia las calles del barrio", inter:true },
+    { from:"s7_4", to:"s1_1", pol:"+", verbo:"P5→P7: la falta de una autoridad unificada en los portones impide ordenar los horarios de ingreso, agravando el represamiento", inter:true },
   ];
 
   const gooLayer = document.getElementById("gooLayer");
@@ -861,6 +869,18 @@
       });
     }
     nodePos = best;
+
+    // Seguro contra nodos sin posicion: en la vista completa (muchos
+    // nodos + muchas relaciones inter-red) el layout de fuerzas puede
+    // dejar algun nodo puntual sin entrada en "best" y esto rompia toda
+    // la vista (pantalla en blanco). Se le da una posicion de reserva a
+    // cualquier nodo que falte, sin tocar el resto del layout.
+    nodes.forEach((n, i) => {
+      if (!nodePos[n.id]) {
+        const step = (Math.PI * 2) / Math.max(1, nodes.length);
+        nodePos[n.id] = { x: cx + spread * Math.cos(i * step), y: cy + spread * Math.sin(i * step) };
+      }
+    });
 
     // Fijacion final de limites: el layout (fuerzas + minimizacion de
     // cruces) puede dejar algun nodo fuera del area visible en ciertos
