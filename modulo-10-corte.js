@@ -573,7 +573,7 @@
   function loadBuildings() {
     return fetch(BUILDINGS_URL)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + BUILDINGS_URL); return r.json(); })
-      .then(data => { rawBuildingsData = data; rebuildFilteredGeometry(); })
+      .then(data => { rawBuildingsData = data; buildBuildings(rawBuildingsData, null); rebuildFilteredGeometry(); })
       .catch(err => console.warn("No se pudieron cargar los edificios:", err));
   }
 
@@ -1422,6 +1422,7 @@
       buildGround(data.bbox);
       buildNoiseGround(data.bbox);
       rawEdgesData = data.edges;
+      buildRoads(rawEdgesData, null);
       const w = (data.bbox[2] - data.bbox[0]) * SCALE;
       const h = (data.bbox[3] - data.bbox[1]) * SCALE;
       sceneExtentW = w; sceneExtentH = h;
@@ -1917,8 +1918,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     // el recorte por shader (arriba) es el que de verdad muestra el
     // corte girado.
     const mainBoxFilter = (sectionBoxActive && !isFullRange && !isRotated) ? { xMin, xMax, zMin, zMax, yMin, yMax } : null;
-    if (rawBuildingsData) buildBuildings(rawBuildingsData, null); // Render full geometry for bottom view
-    if (rawEdgesData) buildRoads(rawEdgesData, null); // Render full geometry for bottom view
     if (mainBoxFilter) buildAxoBorder(xMin, xMax, zMin, zMax);
     else buildAxoBorder(-halfW, halfW, -halfH, halfH);
   }
