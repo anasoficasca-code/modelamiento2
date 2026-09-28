@@ -104,6 +104,7 @@
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
         sectionControls.enableDamping = true;
         sectionControls.dampingFactor = 0.15;
+        sectionControls.addEventListener("change", updateBotBox);
       }
       if (sectionControls) sectionControls.target.set(225.4, -31.3, -53.8);
       resizeSectionView();
@@ -1806,12 +1807,19 @@
 
     if (botBoxOutput && typeof sceneToReal === "function") {
       const r0 = sceneToReal(xMin, zMin), r1 = sceneToReal(xMax, zMax);
+      let camStr = "";
+      if (sectionCamera && sectionControls) {
+        camStr = `\n--- Cámara Inferior ---\n` +
+                 `Posición: ${sectionCamera.position.x.toFixed(1)}, ${sectionCamera.position.y.toFixed(1)}, ${sectionCamera.position.z.toFixed(1)}\n` +
+                 `Mira hacia: ${sectionControls.target.x.toFixed(1)}, ${sectionControls.target.y.toFixed(1)}, ${sectionControls.target.z.toFixed(1)}\n` +
+                 `Zoom: ${sectionCamera.zoom.toFixed(2)}`;
+      }
       botBoxOutput.value =
         `Rotación: ${rot}°\n` +
         `U (a lo largo del giro): ${botXMin.value}% a ${botXMax.value}%\n` +
         `Y (altura, m): ${(yMin / SCALE).toFixed(1)} a ${(yMax / SCALE).toFixed(1)}\n` +
         `V (perpendicular): ${botZMin.value}% a ${botZMax.value}%\n` +
-        `(referencia sin girar — real ${Math.round(Math.min(r0[0], r1[0]))} a ${Math.round(Math.max(r0[0], r1[0]))} / ${Math.round(Math.min(r0[1], r1[1]))} a ${Math.round(Math.max(r0[1], r1[1]))})`;
+        `(referencia sin girar — real ${Math.round(Math.min(r0[0], r1[0]))} a ${Math.round(Math.max(r0[0], r1[0]))} / ${Math.round(Math.min(r0[1], r1[1]))} a ${Math.round(Math.max(r0[1], r1[1]))})` + camStr;
     }
   }
 
