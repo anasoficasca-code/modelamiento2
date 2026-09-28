@@ -67,7 +67,7 @@
   // en la posicion real del Humedal El Burro -- no se mueve con la caja
   // de seccion interactiva de arriba, es su propio corte permanente. ----
   const sectionCanvas2 = document.getElementById("sectionCanvas");
-  const sectionCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 3000);
+  const sectionCamera = new THREE.PerspectiveCamera(50, 1, 0.5, 5000);
   let sectionRenderer = null, sectionCutZ = null;
   if (sectionCanvas2) {
     sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas2, antialias: true, alpha: true });
@@ -106,13 +106,12 @@
     sectionCutPlane.constant = -(nx * sp.x + nz * sp.z);
     if (sectionRenderer) {
       sectionRenderer.clippingPlanes = [sectionCutPlane];
-      // la camara mira horizontalmente hacia el humedal, desde el lado
-      // perpendicular a la calle, ligeramente por encima del nivel del
-      // suelo, para que el corte se vea como un alzado
-      const camY = 6, camDist = 420;
-      sectionCamera.position.set(sp.x + nx * camDist, camY, sp.z + nz * camDist);
+      // Camara en perspectiva con las coordenadas que dejo el usuario en el modulo 8
+      sectionCamera.position.set(132.2, 6.9, 9.4);
       sectionCamera.up.set(0, 1, 0);
-      sectionCamera.lookAt(sp.x, camY, sp.z);
+      sectionCamera.lookAt(223.8, 2.4, -64.3);
+      sectionCamera.fov = 50;
+      sectionCamera.updateProjectionMatrix();
       resizeSectionView();
     }
   }
@@ -121,16 +120,7 @@
     const rect = sectionCanvas2.getBoundingClientRect();
     const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
     sectionRenderer.setSize(w, h, false);
-    // IMPORTANTE: top/bottom deben quedar simetricos (top === -bottom).
-    // Con valores asimetricos, esta version de three.js deja de dibujar
-    // nada en absoluto (se probo y confirmo por separado). Para mostrar
-    // mas territorio por encima del nivel de camara que por debajo, se
-    // desplaza la posicion Y de la camara en vez de romper la simetria.
-    const halfH = Math.max(14, sceneExtentH * 0.035);
-    const halfW = halfH * (w / h);
-    sectionCamera.left = -halfW; sectionCamera.right = halfW;
-    sectionCamera.top = halfH; sectionCamera.bottom = -halfH;
-    sectionCamera.zoom = 3.5; // zoom aplicado al corte — bien grande
+    sectionCamera.aspect = w / h;
     sectionCamera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resizeSectionView);
