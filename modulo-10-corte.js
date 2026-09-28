@@ -82,7 +82,7 @@
   if (sectionCanvas2) {
     sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas2, antialias: true, alpha: true });
     sectionRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-    sectionRenderer.localClippingEnabled = true;
+    sectionRenderer.localClippingEnabled = false;
     sectionRenderer.setClearColor(0xeef2f5, 1);
   }
   const sectionCutPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6); // se reubica cuando se conoce la posicion real del humedal
@@ -94,7 +94,7 @@
     sectionCutZ = -25.6;
     if (sectionRenderer) {
       if (typeof updateBotBox === 'function') updateBotBox();
-      sectionRenderer.localClippingEnabled = true;
+      sectionRenderer.localClippingEnabled = false;
       sectionRenderer.clippingPlanes = botClipPlanesArr;
       sectionCamera.position.set(130.7, 14.1, 11.9);
       sectionCamera.up.set(0, 1, 0);
