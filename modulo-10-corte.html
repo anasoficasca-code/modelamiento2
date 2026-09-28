@@ -217,14 +217,23 @@
         <div style="display:flex; align-items:center; gap:8px;"><i style="width:12px; height:12px; border-radius:50%; background:#f59e0b; flex:none;"></i> Mapa de ruido (si está activo)</div>
       </div>
       <div style="margin-top:22px; padding-top:14px; border-top:1px dashed rgba(0,0,0,.1); font-size:10.5px; color:#64748b; line-height:1.5;">
-        Arriba: axonometría en vivo del territorio.<br>Abajo: el mismo territorio, cortado transversal a la calle que pasa junto al humedal.<br><br>Toca la axonometría para ir prendiendo capas: agua y vegetación → vehículos → ruido y aves.
+        Arriba: axonometría en vivo del territorio.<br>Abajo: el mismo territorio, cortado a la altura del humedal.
       </div>
     </aside>
 
     <!-- Corte: vista en seccion del mismo territorio, cortando por el humedal -->
     <div id="sectionWrap" style="display:none; position:absolute; left:200px; right:0; bottom:0; height:20%; min-height:120px; z-index:150; border-top:1px solid rgba(0,0,0,.12); background:#eef2f5;">
-      <canvas id="sectionCanvas" style="width:100%; height:100%; display:block;"></canvas>
+      <canvas id="sectionCanvas" style="width:100%; height:100%; display:block; cursor:grab;"></canvas>
       <span style="position:absolute; top:8px; left:14px; font:700 10.5px 'Segoe UI',sans-serif; color:#475569; letter-spacing:.04em; text-transform:uppercase; pointer-events:none;">Corte — Humedal El Burro</span>
+      <!-- Controls: rotar y enderezar -->
+      <div style="position:absolute; bottom:8px; left:14px; display:flex; align-items:center; gap:8px; z-index:5;">
+        <label style="font:600 10px 'Segoe UI',sans-serif; color:#475569;">Rotación</label>
+        <input type="range" id="sectionRot" min="0" max="360" value="54" step="1" style="width:80px; accent-color:#24c8bd;">
+        <span id="sectionRotVal" style="font:600 10px 'Segoe UI',sans-serif; color:#111418; min-width:28px;">54°</span>
+        <button id="sectionStraightenBtn" style="padding:4px 8px; border-radius:6px; border:1px solid rgba(0,0,0,.15); background:#fff; font:600 10px 'Segoe UI',sans-serif; color:#111418; cursor:pointer;">Enderezar</button>
+      </div>
+      <!-- Coordenadas del corte -->
+      <textarea id="sectionCoordsOutput" readonly style="position:absolute; top:28px; right:10px; width:200px; height:72px; font:9.5px monospace; background:rgba(255,255,255,.92); color:#111418; border:1px solid rgba(0,0,0,.12); border-radius:6px; padding:5px; resize:none; pointer-events:none;"></textarea>
     </div>
 
     <div class="hud-title">
@@ -242,8 +251,6 @@
       <button type="button" id="noiseToggleBtn">🔊 Mostrar ruido</button>
       <button type="button" id="birdToggleBtn">🐦 Mostrar mirlas</button>
     </div>
-
-
 
     <div class="right-panels-wrap" style="display:none;">
 
@@ -277,16 +284,16 @@
       </div>
       <p class="draw-hint">El corte ya está activo — mueve cualquiera de los 6 límites y el modelo se corta al instante.</p>
       <div class="rotate-row">
-        <label>Rotación de la caja <span id="secRotVal">54°</span></label>
-        <input type="range" id="secRot" min="0" max="179" value="54" step="1">
+        <label>Rotación de la caja <span id="secRotVal">0°</span></label>
+        <input type="range" id="secRot" min="0" max="179" value="0" step="1">
       </div>
       <div class="rotate-row">
-        <label>X mínimo <span id="secXMinVal">46%</span></label>
-        <input type="range" id="secXMin" min="0" max="100" value="46" step="1">
+        <label>X mínimo <span id="secXMinVal">58%</span></label>
+        <input type="range" id="secXMin" min="0" max="100" value="58" step="1">
       </div>
       <div class="rotate-row">
-        <label>X máximo <span id="secXMaxVal">63%</span></label>
-        <input type="range" id="secXMax" min="0" max="100" value="63" step="1">
+        <label>X máximo <span id="secXMaxVal">67%</span></label>
+        <input type="range" id="secXMax" min="0" max="100" value="67" step="1">
       </div>
       <div class="rotate-row">
         <label>Y mínimo (piso) <span id="secYMinVal">0%</span></label>
@@ -297,12 +304,12 @@
         <input type="range" id="secYMax" min="0" max="100" value="100" step="1">
       </div>
       <div class="rotate-row">
-        <label>Z mínimo <span id="secZMinVal">12%</span></label>
-        <input type="range" id="secZMin" min="0" max="100" value="12" step="1">
+        <label>Z mínimo <span id="secZMinVal">39%</span></label>
+        <input type="range" id="secZMin" min="0" max="100" value="39" step="1">
       </div>
       <div class="rotate-row">
-        <label>Z máximo <span id="secZMaxVal">30%</span></label>
-        <input type="range" id="secZMax" min="0" max="100" value="30" step="1">
+        <label>Z máximo <span id="secZMaxVal">54%</span></label>
+        <input type="range" id="secZMax" min="0" max="100" value="54" step="1">
       </div>
       <div class="rotate-row rotate-buttons">
         <button type="button" id="sectionBoxReset">↺ Restablecer</button>
