@@ -385,11 +385,26 @@
       allEdgePositions.push(pts[i].x, 0, pts[i].z, pts[next].x, 0, pts[next].z);
       allEdgePositions.push(pts[i].x, h, pts[i].z, pts[next].x, h, pts[next].z);
     }
-    const allEdgeGeo = new LineGeometry();
-    allEdgeGeo.setPositions(allEdgePositions);
-    const edgeMat = new LineMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.5, linewidth: 3 });
-    buildingEdgeMat = new Line2(allEdgeGeo, edgeMat);
-    sceneRoot.add(buildingEdgeMat);
+    // Lineas gruesas: dibujar el contorno dos veces con un offset
+    // para simular grosor real (LineBasicMaterial siempre es 1px en WebGL).
+    // Primera pasada: linea principal mas oscura
+    const edgeGeo1 = new THREE.BufferGeometry();
+    edgeGeo1.setAttribute("position", new THREE.Float32BufferAttribute(allEdgePositions, 3));
+    const edgeMat1 = new THREE.LineBasicMaterial({ color: 0x1a1d20, transparent: true, opacity: 0.6 });
+    sceneRoot.add(new THREE.LineSegments(edgeGeo1, edgeMat1));
+    // Segunda pasada: linea exterior ligeramente mas grande para efecto grosor
+    const thickEdgePositions = [];
+    for (let i = 0; i < allEdgePositions.length; i += 3) {
+      const x = allEdgePositions[i], y = allEdgePositions[i + 1], z = allEdgePositions[i + 2];
+      // Escalar ligeramente cada posicion hacia afuera desde el centro
+      const len = Math.sqrt(x * x + z * z) || 0.001;
+      const scale = 1.08;
+      thickEdgePositions.push(x * scale, y, z * scale);
+    }
+    const edgeGeo2 = new THREE.BufferGeometry();
+    edgeGeo2.setAttribute("position", new THREE.Float32BufferAttribute(thickEdgePositions, 3));
+    const edgeMat2 = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.4 });
+    sceneRoot.add(new THREE.LineSegments(edgeGeo2, edgeMat2));
   }
 
   function loadBuildings() {
