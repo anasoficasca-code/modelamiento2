@@ -284,16 +284,16 @@
       </div>
       <p class="draw-hint">El corte ya está activo — mueve cualquiera de los 6 límites y el modelo se corta al instante.</p>
       <div class="rotate-row">
-        <label>Rotación de la caja <span id="secRotVal">0°</span></label>
-        <input type="range" id="secRot" min="0" max="179" value="0" step="1">
+        <label>Rotación de la caja <span id="secRotVal">58°</span></label>
+        <input type="range" id="secRot" min="0" max="179" value="58" step="1">
       </div>
       <div class="rotate-row">
-        <label>X mínimo <span id="secXMinVal">58%</span></label>
-        <input type="range" id="secXMin" min="0" max="100" value="58" step="1">
+        <label>X mínimo <span id="secXMinVal">0%</span></label>
+        <input type="range" id="secXMin" min="0" max="100" value="0" step="1">
       </div>
       <div class="rotate-row">
-        <label>X máximo <span id="secXMaxVal">67%</span></label>
-        <input type="range" id="secXMax" min="0" max="100" value="67" step="1">
+        <label>X máximo <span id="secXMaxVal">90%</span></label>
+        <input type="range" id="secXMax" min="0" max="100" value="90" step="1">
       </div>
       <div class="rotate-row">
         <label>Y mínimo (piso) <span id="secYMinVal">0%</span></label>
@@ -304,12 +304,12 @@
         <input type="range" id="secYMax" min="0" max="100" value="100" step="1">
       </div>
       <div class="rotate-row">
-        <label>Z mínimo <span id="secZMinVal">39%</span></label>
-        <input type="range" id="secZMin" min="0" max="100" value="39" step="1">
+        <label>Z mínimo <span id="secZMinVal">0%</span></label>
+        <input type="range" id="secZMin" min="0" max="100" value="0" step="1">
       </div>
       <div class="rotate-row">
-        <label>Z máximo <span id="secZMaxVal">54%</span></label>
-        <input type="range" id="secZMax" min="0" max="100" value="54" step="1">
+        <label>Z máximo <span id="secZMaxVal">29%</span></label>
+        <input type="range" id="secZMax" min="0" max="100" value="29" step="1">
       </div>
       <div class="rotate-row rotate-buttons">
         <button type="button" id="sectionBoxReset">↺ Restablecer</button>
@@ -384,7 +384,7 @@
     </div>
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA NATURAL (4 CAPAS ARQUITECTÓNICAS) -->
-    <div id="naturalExplodeOverlay" style="position:absolute; inset:0; z-index:320; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:auto;">
+    <div id="naturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:20%; z-index:320; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:auto;">
       <div id="natLayerContext" style="position:absolute; top:50%; left:50%; width:min(96vw, 1400px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -46%); transition:opacity 1.2s ease; pointer-events:none;">
         <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="natContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
       </div>
@@ -508,7 +508,7 @@
     </div>
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA CULTURAL Y SOCIO-URBANA (4 CAPAS DE SIMULACIÓN) -->
-    <div id="culturalExplodeOverlay" style="position:absolute; inset:0; z-index:320; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:auto;">
+    <div id="culturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:20%; z-index:320; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:auto;">
       <div id="culLayerContext" style="position:absolute; top:50%; left:50%; width:min(96vw, 1400px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -46%); transition:opacity 1.2s ease; pointer-events:none;">
         <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="culContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
       </div>
@@ -649,7 +649,7 @@
     </div>
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA TECNOLÓGICA (2 CAPAS DE SIMULACIÓN) -->
-    <div id="techExplodeOverlay" style="position:absolute; inset:0; z-index:320; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:auto;">
+    <div id="techExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:20%; z-index:320; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:auto;">
       <div id="techLayerContext" style="position:absolute; top:50%; left:50%; width:min(96vw, 1400px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -46%); transition:opacity 1.2s ease; pointer-events:none;">
         <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="techContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
       </div>

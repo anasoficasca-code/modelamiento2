@@ -78,42 +78,27 @@
   const sectionCutPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6); // se reubica cuando se conoce la posicion real del humedal
   let sectionCutX = 0;
   function placeSectionCutAtHumedal() {
-    if (!rawWaterData) return;
-    const b = rawWaterData.find(w => (w.nombre || "").includes("Burro"));
-    if (!b || !b.pts || !b.pts.length) return;
-    const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length;
-    const cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
-    const sp = toScene(cx, cy);
-    sectionCutZ = sp.z; sectionCutX = sp.x;
-    // El corte se orienta transversal (perpendicular) a la calle real mas
-    // cercana al humedal -- se busca el segmento de via mas cercano y se
-    // usa su misma direccion para poner el plano de corte, en vez de
-    // cortar siempre de este a oeste sin relacion con el territorio real.
-    let roadAngleReal = 0, bestDist = Infinity;
-    if (rawEdgesData) {
-      rawEdgesData.forEach(([kind, pts]) => {
-        for (let i = 0; i < pts.length - 1; i++) {
-          const [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
-          const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-          const d = Math.hypot(mx - cx, my - cy);
-          if (d < bestDist) { bestDist = d; roadAngleReal = Math.atan2(y2 - y1, x2 - x1); }
-        }
-      });
+    // User requested explicitly hardcoded coordinates and values for the section cut
+    sectionCutX = 177.0;
+    sectionCutZ = -25.6;
+    sectionRotAngle = 58;
+    if (sectionRot) {
+      sectionRot.value = sectionRotAngle;
+      if (sectionRotVal) sectionRotVal.textContent = sectionRotAngle + "°";
     }
-    const roadAngleScene = -roadAngleReal; // toScene invierte el eje norte-sur
-    const nx = Math.cos(roadAngleScene), nz = Math.sin(roadAngleScene);
-    sectionCutPlane.normal.set(nx, 0, nz); // normal = misma direccion de la calle -> el corte queda transversal a ella
-    sectionCutPlane.constant = -(nx * sp.x + nz * sp.z);
+
+    const nx = Math.cos(sectionRotAngle * Math.PI / 180), nz = Math.sin(sectionRotAngle * Math.PI / 180);
+    sectionCutPlane.normal.set(nx, 0, nz);
+    sectionCutPlane.constant = -(nx * sectionCutX + nz * sectionCutZ);
     if (sectionRenderer) {
       sectionRenderer.clippingPlanes = [sectionCutPlane];
-      // la camara mira horizontalmente hacia el humedal, desde el lado
-      // perpendicular a la calle, ligeramente por encima del nivel del
-      // suelo, para que el corte se vea como un alzado
-      const camY = 6, camDist = 420;
-      sectionCamera.position.set(sp.x + nx * camDist, camY, sp.z + nz * camDist);
+      sectionCamera.position.set(-610.7, 70.0, 693.2);
       sectionCamera.up.set(0, 1, 0);
-      sectionCamera.lookAt(sp.x, camY, sp.z);
+      sectionCamera.lookAt(177.0, 5.5, -25.6);
+      sectionCamera.zoom = 3.42;
       resizeSectionView();
+      sectionCamera.zoom = 3.42;
+      sectionCamera.updateProjectionMatrix();
     }
   }
   function resizeSectionView() {
@@ -426,7 +411,7 @@
     const normals = [];
     const edgePositions = []; // solo el perimetro del techo (una linea nativa, se ve bien desde arriba)
     const cornerPositions = []; // esquinas verticales: geometria 3D real (mini-pared delgada), NO una linea nativa - las lineas nativas de WebGL tienen 1px fijo sin importar linewidth, y ademas se pueden "desaparecer" en angulos rasantes por z-fighting; una pared delgada de verdad se ve igual de gruesa siempre, sin importar el angulo
-    const CORNER_THICK = 0.035; // grosor fijo de la mini-pared de esquina (muy delgado, pero real en 3D)
+    const CORNER_THICK = 0.12; // grosor fijo de la mini-pared de esquina (muy delgado, pero real en 3D)
     buildings.forEach(b => {
       const pts = b.pts.map(p => toScene(p[0], p[1]));
       let h = b.h * SCALE;
@@ -501,7 +486,7 @@
     // rasantes que si afecta a las verticales).
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.35 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.7 });
     buildingEdgeMat = edgeMat;
     const edgeMesh = new THREE.LineSegments(edgeGeo, edgeMat);
     sceneRoot.add(edgeMesh);
@@ -2018,16 +2003,17 @@
   let sectionRotAngle = 54; // rotacion inicial del corte
 
   function updateSectionCutRotation() {
-    if (!sectionRenderer || !sectionCutZ) return;
+    if (!sectionRenderer || sectionCutZ == null) return;
     const rad = sectionRotAngle * Math.PI / 180;
     const nx = Math.cos(rad), nz = Math.sin(rad);
     sectionCutPlane.normal.set(nx, 0, nz);
     sectionCutPlane.constant = -(nx * sectionCutX + nz * sectionCutZ);
-    // Reposicionar la camara del corte segun la rotacion
-    const camY = 6, camDist = 420;
-    sectionCamera.position.set(sectionCutX + nx * camDist, camY, sectionCutZ + nz * camDist);
+    
+    // Hardcode requested camera coordinates
+    sectionCamera.position.set(-610.7, 70.0, 693.2);
     sectionCamera.up.set(0, 1, 0);
-    sectionCamera.lookAt(sectionCutX, camY, sectionCutZ);
+    sectionCamera.lookAt(177.0, 5.5, -25.6);
+    sectionCamera.zoom = 3.42;
     sectionCamera.updateProjectionMatrix();
     // Actualizar coordenadas mostradas
     if (sectionCoordsOutput) {
