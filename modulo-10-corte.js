@@ -125,6 +125,21 @@
   // Zoom +/- del corte: cambia sectionCamera.zoom (sin tocar el tamaño
   // del panel), reflejado de inmediato en el cuadro de coordenadas.
   const corteZoomIn = document.getElementById("corteZoomIn");
+  // Zoom +/- de la axonometria (solo zoom, sin otras opciones), reflejado
+  // en su propio cuadro de coordenadas.
+  const axoZoomIn = document.getElementById("axoZoomIn");
+  const axoZoomOut = document.getElementById("axoZoomOut");
+  function bumpAxoZoom(mult) {
+    if (typeof axoZoomFactor === "undefined") return;
+    axoZoomFactor = Math.max(0.3, Math.min(3, axoZoomFactor * mult));
+    if (typeof resize === "function") resize();
+    const val = document.getElementById("axoZoomVal");
+    if (val) val.textContent = Math.round(100 / axoZoomFactor) + "%";
+    const out = document.getElementById("axoCoordsOutput");
+    if (out) out.value = `// === ZOOM AXONOMETRÍA ===\nconst AXO_ZOOM = ${axoZoomFactor.toFixed(2)};`;
+  }
+  if (axoZoomIn) axoZoomIn.addEventListener("click", (e) => { e.stopPropagation(); bumpAxoZoom(0.9); });
+  if (axoZoomOut) axoZoomOut.addEventListener("click", (e) => { e.stopPropagation(); bumpAxoZoom(1 / 0.9); });
   const corteZoomOut = document.getElementById("corteZoomOut");
   function bumpCorteZoom(delta) {
     if (!sectionCamera) return;
@@ -500,14 +515,16 @@
   // Tamano visible (mitad de la altura del encuadre, en unidades de la
   // escena) para la proyeccion ortogonal — se ajusta al cargar la red.
   let viewSize = 260;
+  let axoZoomFactor = 1;
   function resize() {
     const w = wrap.clientWidth, h = wrap.clientHeight;
     renderer.setSize(w, h, false);
     const aspect = w / h;
-    camera.left = -viewSize * aspect;
-    camera.right = viewSize * aspect;
-    camera.top = viewSize;
-    camera.bottom = -viewSize;
+    const vs = viewSize * axoZoomFactor;
+    camera.left = -vs * aspect;
+    camera.right = vs * aspect;
+    camera.top = vs;
+    camera.bottom = -vs;
     camera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resize);
@@ -1907,7 +1924,7 @@
   let mainBurroMesh = null, mainBurroMes = 0, mainBurroLast = 0, mainBurroPlaying = true;
   const MESES_TXT = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const mainBurroPanel = document.createElement("div");
-  mainBurroPanel.style.cssText = "position:absolute; bottom:18px; right:18px; z-index:12; width:230px; font-family:'Segoe UI',sans-serif; color:#0f172a; background:rgba(255,255,255,.94); backdrop-filter:blur(8px); border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,.12);";
+  mainBurroPanel.style.cssText = "margin-bottom:18px; padding-bottom:16px; border-bottom:1px dashed rgba(0,0,0,.12); font-family:'Segoe UI',sans-serif; color:#0f172a;";
   mainBurroPanel.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
       <span style="font:700 11px 'Segoe UI',sans-serif;">Humedal El Burro</span>
@@ -1933,7 +1950,11 @@
       <button type="button" id="mainBurroPlayBtn" style="font-size:10px; font-weight:700; color:#0369a1; background:#eaf4fb; border:1px solid rgba(3,105,161,.25); border-radius:6px; padding:3px 8px; cursor:pointer;">⏸ Pausar</button>
     </div>
   `;
-  (document.getElementById("sceneWrap") || document.body).appendChild(mainBurroPanel);
+  (() => {
+    const lp = document.getElementById("legendPanel");
+    if (lp) lp.insertBefore(mainBurroPanel, lp.firstChild);
+    else document.body.appendChild(mainBurroPanel);
+  })();
   const mainBurroSlider = mainBurroPanel.querySelector("#mainBurroSlider");
   const mainBurroPlayBtn = mainBurroPanel.querySelector("#mainBurroPlayBtn");
   const mainBurroMesLbl = mainBurroPanel.querySelector("#mainBurroMesLbl");
