@@ -2326,38 +2326,13 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     if (axoContextFadeEl) axoContextFadeEl.style.display = "block";
   }
   canvas.addEventListener("click", (e) => {
-    // Sin pantalla intermedia de 3 escalas: el primer clic ya revela el
-    // panel + el corte Y muestra de una vez la capa 1 (Sistema Hidrico).
-    // Cada clic siguiente avanza UNA de las 12 capas individuales, sin
-    // agruparlas ni nombrar a que escala pertenecian antes. Al llegar a
-    // 12, el siguiente clic vuelve a la 1.
-    const legendPanelEl = document.getElementById("legendPanel");
-    const sectionWrapEl = document.getElementById("sectionWrap");
-    const layoutEditorEl = document.getElementById("layoutEditor");
-    if (legendPanelEl && legendPanelEl.style.display === "none") {
-      legendPanelEl.style.display = "block";
-      sectionWrapEl.style.display = "block";
-      if (layoutEditorEl) layoutEditorEl.style.display = "block";
-      // La axonometria inicial (antes del primer clic) no se toca. Solo
-      // ahora, al revelar el panel, se acomoda segun lo que diga el
-      // editor de organizacion (ancho de convenciones / alto del corte).
-      // Se aplica con un pequeño retraso porque abrir la Capa 1 (agua)
-      // reconfigura el renderer principal para su propia captura y pisa
-      // este tamaño si se hace en el mismo instante.
-      applyLayoutOrganization();
-      setTimeout(applyLayoutOrganization, 60);
-      setTimeout(applyLayoutOrganization, 300);
-      resizeSectionView();
-      placeSectionCutAtHumedal();
-      updateSectionCutRotation();
-    }
-    if (penActive) return; // mientras se dibuja el poligono, no se dispara el paso de capas
-
-    // Cada clic avanza UNA de las 12 capas individuales, sin agruparlas
-    // ni abrir ninguna pantalla completa aparte (ya no hay "escalas" a
-    // las que volver). Al llegar a 12, el siguiente clic vuelve a la 1.
-    explodeStep = (explodeStep % 12) + 1;
-    applyExplodeStep();
+    // Vuelta a la simulacion original: clic en la axonometria principal
+    // abre directamente la escala natural (agua creciendo por años,
+    // tinguas, garzas), tal como estaba antes de todo el panel unificado
+    // de hoy (convenciones + corte + 12 capas). La axonometria principal
+    // (antes de este clic) no se toca.
+    if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
+    openNaturalExplode();
     return;
 
     // Guardar estado y fondo original
