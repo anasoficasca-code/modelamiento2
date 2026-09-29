@@ -77,7 +77,7 @@
   // en la posicion real del Humedal El Burro -- no se mueve con la caja
   // de seccion interactiva de arriba, es su propio corte permanente. ----
   const sectionCanvas2 = document.getElementById("sectionCanvas");
-  const sectionCamera = new THREE.PerspectiveCamera(55, 1, 1, 5000);
+  const sectionCamera = new THREE.PerspectiveCamera(16, 1, 1, 5000);
   let sectionRenderer = null, sectionCutZ = null, sectionControls = null;
   if (sectionCanvas2) {
     sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas2, antialias: true, alpha: true });
@@ -333,35 +333,13 @@ const ESCALA_TRANSFORM = {
   const panRight = document.getElementById("panRight");
   const PAN_STEP = 20;
   
-  const escalaZoomSlider = document.getElementById("escalaZoomSlider");
-  if (escalaZoomSlider) {
-    escalaZoomSlider.addEventListener("input", (e) => {
-      escalaScale = parseFloat(e.target.value) / 100;
-      applyEscalaTransform();
+    function applyEscalaTransform() {
+    ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.transform = `scale(${escalaScale}) translate(${escalaOffX}px, ${escalaOffY}px)`;
     });
   }
-
-  const sectionZoomSlider = document.getElementById("sectionZoomSlider");
-  if (sectionZoomSlider) {
-    sectionZoomSlider.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      const valEl = document.getElementById("sectionZoomVal");
-      if (valEl) valEl.textContent = val;
-      if (typeof sectionCamera !== 'undefined' && sectionCamera) {
-        sectionCamera.fov = val;
-        sectionCamera.updateProjectionMatrix();
-        applyEscalaTransform(); // to update output
-      }
-    });
-  }
-  if (panUp) panUp.addEventListener("click", (e) => { e.stopPropagation(); escalaOffY -= PAN_STEP; applyEscalaTransform(); });
-  if (panDown) panDown.addEventListener("click", (e) => { e.stopPropagation(); escalaOffY += PAN_STEP; applyEscalaTransform(); });
-  if (panLeft) panLeft.addEventListener("click", (e) => { e.stopPropagation(); escalaOffX -= PAN_STEP; applyEscalaTransform(); });
-  if (panRight) panRight.addEventListener("click", (e) => { e.stopPropagation(); escalaOffX += PAN_STEP; applyEscalaTransform(); });
-  const escalaCoordsCopy = document.getElementById("escalaCoordsCopy");
-  if (escalaCoordsCopy) escalaCoordsCopy.addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(document.getElementById("escalaCoordsOutput").value); escalaCoordsCopy.textContent = "✅ Copiado"; setTimeout(() => { escalaCoordsCopy.textContent = "📋 Copiar coordenadas"; }, 1600); } catch (err) {}
-  });
   // Arrastre: se activa sobre el fondo blanco de la escala (no sobre
   // botones/inputs), moviendola libremente por la pantalla.
   let escalaDrag = null;
