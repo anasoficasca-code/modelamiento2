@@ -96,10 +96,10 @@
       if (typeof updateBotBox === 'function') updateBotBox();
       sectionRenderer.localClippingEnabled = false;
       sectionRenderer.clippingPlanes = botClipPlanesArr;
-      sectionCamera.position.set(152.7, 6.8, -12.5);
+      sectionCamera.position.set(163.0, 6.8, -21.2);
       sectionCamera.up.set(0, 1, 0);
-      sectionCamera.lookAt(187.6, 2.1, -36.8);
-      sectionCamera.fov = 18; // solo se agranda el contenido (mas zoom), el tamaño del panel no se toca
+      sectionCamera.lookAt(182.4, 4.2, -35.7);
+      sectionCamera.fov = 12; // solo se agranda el contenido (mas zoom), el tamaño del panel no se toca
       sectionCamera.zoom = 1.0;
       if (!sectionControls) {
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
@@ -107,7 +107,7 @@
         sectionControls.dampingFactor = 0.15;
         sectionControls.addEventListener("change", updateBotBox);
       }
-      if (sectionControls) sectionControls.target.set(187.6, 2.1, -36.8);
+      if (sectionControls) sectionControls.target.set(182.4, 4.2, -35.7);
       resizeSectionView();
       sectionCamera.updateProjectionMatrix();
     }
