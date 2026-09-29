@@ -306,7 +306,7 @@
   // el encaje inicial. ----
   let escalaScale = 1.20, escalaOffX = -160, escalaOffY = -40;
   function applyEscalaTransform() {
-    ["sceneWrap", "naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+    ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.style.transform = `translate(${escalaOffX}px, ${escalaOffY}px) scale(${escalaScale})`;
@@ -333,7 +333,7 @@
   // Arrastre: se activa sobre el fondo blanco de la escala (no sobre
   // botones/inputs), moviendola libremente por la pantalla.
   let escalaDrag = null;
-  ["sceneWrap", "naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+  ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener("pointerdown", (e) => {
@@ -354,7 +354,7 @@
     const corteH = (document.getElementById("layoutCorteH") || {}).value || 25;
     // A pedido de la usuaria: sin fondo solido, sin cuadro visible --
     // la escala flota libre, sin recuadro detras.
-    ["sceneWrap", "naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+    ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.style.left = legendW + "px";
