@@ -143,16 +143,17 @@
     if (dynSecRafId) { cancelAnimationFrame(dynSecRafId); dynSecRafId = null; }
     document.querySelectorAll(".dynSprite").forEach(el => el.remove());
 
-    // Recortes REALES tomados de la propia imagen subida (coordenadas en
-    // pixeles del archivo original, 8000x5654 -- verificadas una por una
-    // recortandolas y revisandolas antes de usarlas). Nada de esto es
-    // dibujado a mano: es la misma foto, solo una ventanita de ella.
+    // Recortes REALES de la imagen subida (pixeles del archivo original,
+    // 8000x5654 -- verificados uno por uno). "rest" es el punto de un
+    // arbol cercano donde el ave llega y se queda; el vuelo entra desde
+    // AFUERA del cuadro, pasa cerca del agua, y termina posado ahi.
     const NATW = 8000, NATH = 5654;
     const birdsDef = [
-      { box: [3382,3767,3515,3850], kind: "bird" },   // ave rojiza volando
-      { box: [5095,4375,5260,4485], kind: "duck" },   // pato volando (grupo)
-      { box: [5265,4345,5440,4465], kind: "duck" },   // pato volando (grupo)
-      { box: [5175,4445,5385,4605], kind: "duck" },   // pato volando (grupo)
+      { box: [3382,3767,3515,3850], toLeft: true },   // ave rojiza
+      { box: [5095,4375,5260,4485], toLeft: false },  // pato volando (grupo)
+      { box: [5265,4345,5440,4465], toLeft: false },  // pato volando (grupo)
+      { box: [5175,4445,5385,4605], toLeft: false },  // pato volando (grupo)
+      { box: [4345,4655,4455,4720], toLeft: false, idle: true }, // pato posado junto al agua -- antes se quedaba quieto
     ];
     const fishDef = [
       { box: [3955,4795,4075,4840] },
@@ -171,7 +172,10 @@
         const w = (x1 - x0) * scale, h = (y1 - y0) * scale;
         const el = document.createElement("div");
         el.className = "dynSprite";
-        el.style.cssText = `position:absolute; width:${w}px; height:${h}px; background-image:url(corte-burro-referencia.png); background-repeat:no-repeat; background-size:${NATW*scale}px ${NATH*scale}px; background-position:-${x0*scale}px -${y0*scale}px; pointer-events:none; will-change:transform;`;
+        // mix-blend-mode:multiply quita el fondo blanco del recorte
+        // rectangular -- asi no se ve un cuadro blanco al pasar sobre
+        // los arboles, solo la silueta real del ave.
+        el.style.cssText = `position:absolute; width:${w}px; height:${h}px; background-image:url(corte-burro-referencia.png); background-repeat:no-repeat; background-size:${NATW*scale}px ${NATH*scale}px; background-position:-${x0*scale}px -${y0*scale}px; pointer-events:none; will-change:transform; mix-blend-mode:multiply;`;
         const baseX = imgOffX + x0 * scale, baseY = imgOffY + y0 * scale;
         el.style.left = baseX + "px";
         el.style.top = baseY + "px";
@@ -179,31 +183,65 @@
         return { el, baseX, baseY, w, h };
       }
 
+      // curva suave (sin saltos de velocidad en los quiebres del recorrido)
+      function smooth(k) { return k * k * (3 - 2 * k); }
+
       const birds = birdsDef.map((b, i) => {
         const spr = makeSprite(b.box);
-        return { ...spr, toLeft: (b.box[0] + b.box[2]) / 2 / NATW < 0.53, phase: i * 1.3, cyc: 5.2 + i * 0.4 };
+        const dir = b.toLeft ? -1 : 1;
+        // punto de entrada bien afuera del cuadro (arriba y al lado
+        // contrario del arbol de destino), pasando cerca del agua antes
+        // de subir al arbol
+        const enterX = -dir * (420 + i * 60);
+        const enterY = -160 - i * 20;
+        const nearWaterX = -dir * 40;
+        const nearWaterY = 40;
+        const treeX = dir * 70;
+        const treeY = -60;
+        return { ...spr, phase: i * 2.6, cyc: b.idle ? 999999 : (13 + i * 2), enterX, enterY, nearWaterX, nearWaterY, treeX, treeY, idle: !!b.idle };
       });
       const fishes = fishDef.map((f, i) => {
         const spr = makeSprite(f.box);
         return { ...spr, dir: i % 2 === 0 ? 1 : -1, phase: i * 1.6, cyc: 3.8 + i * 0.5 };
       });
 
-      function easeFly(t, dx, dy) {
-        // 0-25% vuela hacia el arbol, 25-55% se queda posada, 55-100% vuelve
-        let fx, fy;
-        if (t < 0.25) { const k = t / 0.25; fx = dx * k; fy = dy * k; }
-        else if (t < 0.55) { fx = dx; fy = dy; }
-        else { const k = (t - 0.55) / 0.45; fx = dx * (1 - k); fy = dy * (1 - k); }
-        return [fx, fy];
-      }
-
       function frame(tSec) {
         birds.forEach(b => {
+          if (b.idle) {
+            // el pato posado no se va: solo un ligero balanceo, para que
+            // "tambien se mueva" sin salir volando de donde esta
+            const bob = Math.sin(tSec * 1.6 + b.phase) * 1.6;
+            const flap = 1 - Math.abs(Math.sin(tSec * 2.2 + b.phase)) * 0.06;
+            b.el.style.transform = `translate(0, ${bob}px) scaleY(${flap})`;
+            return;
+          }
           const t = ((tSec + b.phase) % b.cyc) / b.cyc;
-          const dx = (b.toLeft ? -1 : 1) * 110;
-          const [fx, fy] = easeFly(t, dx, -80);
-          const wobble = Math.sin(tSec * 8 + b.phase) * 2.5;
-          b.el.style.transform = `translate(${fx}px, ${fy + wobble}px)`;
+          // 0-35%: entra desde afuera y baja cerca del agua
+          // 35-45%: pasa cerca del agua
+          // 45-70%: sube y se posa en el arbol
+          // 70-100%: se queda posado (quieto salvo el aleteo/balanceo)
+          let x, y;
+          if (t < 0.35) {
+            const k = smooth(t / 0.35);
+            x = b.enterX + (b.nearWaterX - b.enterX) * k;
+            y = b.enterY + (b.nearWaterY - b.enterY) * k;
+          } else if (t < 0.45) {
+            const k = smooth((t - 0.35) / 0.10);
+            x = b.nearWaterX + (b.nearWaterX * 0.4 - b.nearWaterX) * k;
+            y = b.nearWaterY;
+          } else if (t < 0.70) {
+            const k = smooth((t - 0.45) / 0.25);
+            x = b.nearWaterX * 0.6 + (b.treeX - b.nearWaterX * 0.6) * k;
+            y = b.nearWaterY + (b.treeY - b.nearWaterY) * k;
+          } else {
+            // posado en el arbol -- se queda ahi la mayor parte del ciclo
+            x = b.treeX; y = b.treeY;
+          }
+          // aleteo: solo mientras vuela (no cuando ya esta posado), como
+          // una leve compresion vertical ritmica
+          const flying = t < 0.70;
+          const flap = flying ? (1 - Math.abs(Math.sin(tSec * 10 + b.phase)) * 0.4) : 1;
+          b.el.style.transform = `translate(${x}px, ${y}px) scaleY(${flap})`;
         });
         fishes.forEach(f => {
           const t = ((tSec + f.phase) % f.cyc) / f.cyc;
