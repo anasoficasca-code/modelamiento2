@@ -96,11 +96,11 @@
       if (typeof updateBotBox === 'function') updateBotBox();
       sectionRenderer.localClippingEnabled = false;
       sectionRenderer.clippingPlanes = botClipPlanesArr;
-      sectionCamera.position.set(163.0, 6.8, -21.2);
+      sectionCamera.position.set(150.0, 8.5, -11.5);
       sectionCamera.up.set(0, 1, 0);
       sectionCamera.lookAt(182.4, 4.2, -35.7);
       sectionCamera.fov = 12; // solo se agranda el contenido (mas zoom), el tamaño del panel no se toca
-      sectionCamera.zoom = 1.0;
+      sectionCamera.zoom = 0.80;
       if (!sectionControls) {
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
         sectionControls.enableDamping = true;
@@ -313,7 +313,7 @@
   // ---- Texto con el numero/titulo de la capa activa, DENTRO de
   // convenciones (a la izquierda de la axonometria) -- movible con
   // flechitas, con coordenadas para copiar. ----
-  let labelOffX = 0, labelOffY = 0;
+  let labelOffX = 276, labelOffY = -144;
   function applyLabelPosition() {
     // Estas son las etiquetas "CAPA 01/02/03/04" que aparecen a la
     // izquierda de cada capa dentro de la axonometria (una por sub-capa;
