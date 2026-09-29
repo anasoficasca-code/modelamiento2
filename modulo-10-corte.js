@@ -382,8 +382,13 @@ const ESCALA_TRANSFORM = {
   window.addEventListener("pointerup", () => { escalaDrag = null; });
 
   function fitEscalaOverlays() {
-    const legendW = (document.getElementById("layoutLegendW") || {}).value || 200;
-    const corteH = (document.getElementById("layoutCorteH") || {}).value || 25;
+    const legendW = 200;
+    const corteH = 20; // 20% instead of 25% (corte menos grande)
+    
+    // Ocultar la axonometria principal para siempre (ya no va a salir mas, solo al inicio)
+    const sw = document.getElementById("sceneWrap");
+    if (sw) sw.style.visibility = "hidden";
+
     // A pedido de la usuaria: sin fondo solido, sin cuadro visible --
     // la escala flota libre, sin recuadro detras.
     ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
@@ -998,13 +1003,35 @@ const ESCALA_TRANSFORM = {
     treeMesh = mesh;
 
     treeInstanceData = new Array(trees.length);
+    const colorAlimento1 = new THREE.Color(0xff5fa8); // Cerezo
+    const colorAlimento2 = new THREE.Color(0xb06bff); // Sauco
+    const colorDescanso = new THREE.Color(0x25d0a0);  // Urapan
+    const colorNormal = new THREE.Color(0xffffff);
+    
+    // InstancedBufferAttribute needed to apply instanceColor
+    const colors = new Float32Array(trees.length * 3);
+    for (let i = 0; i < trees.length; i++) {
+       colors[i*3] = 1; colors[i*3+1] = 1; colors[i*3+2] = 1;
+    }
+    mesh.instanceColor = new THREE.InstancedBufferAttribute(colors, 3);
+    
     trees.forEach((t, i) => {
-      const [x, y, hMeters, , code] = t;
+      const [x, y, hMeters, especieStr, code] = t;
       const p = toScene(x, y);
       const h = Math.max(0.3, hMeters * SCALE);
       const w = h * (1.1 + (hash2(code) % 20) / 100 - 0.1);
       treeInstanceData[i] = { x: p.x, z: p.z, w, h };
+      
+      let c = colorNormal;
+      if (especieStr) {
+        const lower = especieStr.toLowerCase();
+        if (lower.includes("fresno") || lower.includes("urapan") || lower.includes("urap")) c = colorDescanso;
+        else if (lower.includes("cerezo") || lower.includes("capul")) c = colorAlimento1;
+        else if (lower.includes("sauco") || lower.includes("saco") || lower.includes("saúco")) c = colorAlimento2;
+      }
+      mesh.setColorAt(i, c);
     });
+    mesh.instanceColor.needsUpdate = true;
     sceneRoot.add(mesh);
     treeMeshes = [{ mesh, data: trees }];
     rebuildBirds(); // ahora que ya hay datos reales de arboles, se reconstruyen las mirlas con sus atractores correctos
@@ -1174,7 +1201,13 @@ const ESCALA_TRANSFORM = {
   function sampleAttractorTrees(trees) {
     const porEspecie = {};
     trees.forEach(t => {
-      const meta = BIRD_TREE_SPECIES[t[3]]; // el codigo de especie va en el indice 3 (verificado con datos reales: 9250 coincidencias de 119886 arboles); mi "correccion" anterior a indice 4 (el codigo numerico de identificacion, no la especie) estaba mal
+      let meta = null;
+      if (t[3]) {
+          const lower = t[3].toLowerCase();
+          if (lower.includes("fresno") || lower.includes("urapan") || lower.includes("urap")) meta = BIRD_TREE_SPECIES["Urapán, Fresno"] || { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 };
+          else if (lower.includes("cerezo") || lower.includes("capul")) meta = BIRD_TREE_SPECIES["Cerezo, capuli"] || { key: "capuli", color: 0xff5fa8, weight: 0.76, base: 200 };
+          else if (lower.includes("sauco") || lower.includes("saco") || lower.includes("saúco")) meta = BIRD_TREE_SPECIES["Sauco"] || { key: "sauco", color: 0xb06bff, weight: 1.0, base: 260 };
+      }
       if (meta) (porEspecie[meta.key] || (porEspecie[meta.key] = [])).push({ x: t[0], y: t[1], meta });
     });
     const out = [];
