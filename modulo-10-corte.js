@@ -146,19 +146,21 @@
 
       // aves (incluye garzas nuevas entrando desde afuera del cuadro)
       const birds = [
-        { xPct: 0.421, yPct: 0.719, s: 1.0, color: "#c07356", dur: 3.2 },
-        { xPct: 0.551, yPct: 0.800, s: 0.85, color: "#8f97a3", dur: 2.6 },
-        { xPct: 0.642, yPct: 0.792, s: 0.9, color: "#1c1c1c", dur: 2.9 },
-        { xPct: 0.661, yPct: 0.812, s: 0.9, color: "#1c1c1c", dur: 2.9 },
-        { xPct: 0.30, yPct: 0.70, s: 1.3, color: "#e7e2d8", dur: 4.5, garza: true },
-        { xPct: 0.75, yPct: 0.75, s: 1.3, color: "#e7e2d8", dur: 5.2, garza: true },
+        { xPct: 0.421, yPct: 0.719, s: 1.0, color: "#c07356", dur: 5.5 },
+        { xPct: 0.551, yPct: 0.800, s: 0.85, color: "#8f97a3", dur: 6.2 },
+        { xPct: 0.642, yPct: 0.792, s: 0.9, color: "#1c1c1c", dur: 5.8 },
+        { xPct: 0.661, yPct: 0.812, s: 0.9, color: "#1c1c1c", dur: 5.8 },
+        { xPct: 0.30, yPct: 0.70, s: 1.3, color: "#e7e2d8", dur: 7.5, garza: true },
+        { xPct: 0.75, yPct: 0.75, s: 1.3, color: "#e7e2d8", dur: 8.2, garza: true },
       ];
       let birdsHTML = birds.map((b, i) => {
         const p = toPx(b.xPct, b.yPct);
         const s = b.s * scaleF;
+        const toLeft = b.xPct < 0.53;
         if (b.garza) {
-          // garza volando: cuerpo alargado + alas en "M", vuelo mas largo
-          return `<g class="dynGarzaFly" style="animation-duration:${b.dur}s; animation-delay:${i*0.6}s;">
+          // garza volando: cuerpo alargado + alas en "M", va hacia el
+          // arbolado mas cercano, se queda posada un rato y vuelve
+          return `<g class="dynGarzaFly ${toLeft ? "toLeft" : ""}" style="animation-duration:${b.dur}s; animation-delay:${i*0.6}s;">
             <g style="transform-origin:${p.x}px ${p.y}px;">
               <ellipse cx="${p.x}" cy="${p.y}" rx="${9*s}" ry="${3.5*s}" fill="${b.color}"/>
               <path class="dynWing2" d="M${p.x-16*s},${p.y} Q${p.x},${p.y-13*s} ${p.x+16*s},${p.y} Q${p.x},${p.y-5*s} ${p.x-16*s},${p.y} Z"
@@ -166,7 +168,7 @@
             </g>
           </g>`;
         }
-        return `<g class="dynBirdFly2" style="animation-duration:${b.dur}s; animation-delay:${i*0.4}s; transform-origin:${p.x}px ${p.y}px;">
+        return `<g class="dynBirdFly2 ${toLeft ? "toLeft" : ""}" style="animation-duration:${b.dur}s; animation-delay:${i*0.4}s; transform-origin:${p.x}px ${p.y}px;">
           <path class="dynWing2" d="M${p.x-14*s},${p.y} Q${p.x},${p.y-11*s} ${p.x+14*s},${p.y} Q${p.x},${p.y-4*s} ${p.x-14*s},${p.y} Z"
             fill="${b.color}" style="transform-origin:${p.x}px ${p.y}px;"/>
         </g>`;
@@ -216,14 +218,18 @@
       const st = document.createElement("style");
       st.id = "dynSecStyle2";
       st.textContent = `
-        .dynBirdFly2 { animation-name: dynFly2; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
-        @keyframes dynFly2 { 0%{transform:translate(0,0)} 50%{transform:translate(18px,-10px)} 100%{transform:translate(0,0)} }
+        .dynBirdFly2 { animation-name: dynToTreeR; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        .dynBirdFly2.toLeft { animation-name: dynToTreeL; }
+        @keyframes dynToTreeR { 0%{transform:translate(0,0)} 30%{transform:translate(90px,-70px)} 65%{transform:translate(90px,-70px)} 90%{transform:translate(10px,-8px)} 100%{transform:translate(0,0)} }
+        @keyframes dynToTreeL { 0%{transform:translate(0,0)} 30%{transform:translate(-90px,-70px)} 65%{transform:translate(-90px,-70px)} 90%{transform:translate(-10px,-8px)} 100%{transform:translate(0,0)} }
         .dynWing2 { animation: dynFlap2 .45s ease-in-out infinite; }
         @keyframes dynFlap2 { 0%{transform:scaleY(1)} 50%{transform:scaleY(.3)} 100%{transform:scaleY(1)} }
-        .dynGarzaFly { animation-name: dynGarzaPath; animation-timing-function: linear; animation-iteration-count: infinite; }
-        @keyframes dynGarzaPath { 0%{transform:translate(-40px,20px)} 100%{transform:translate(340px,-60px)} }
+        .dynGarzaFly { animation-name: dynGarzaPath; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        .dynGarzaFly.toLeft { animation-name: dynGarzaPathL; }
+        @keyframes dynGarzaPath { 0%{transform:translate(-40px,20px)} 35%{transform:translate(180px,-90px)} 65%{transform:translate(180px,-90px)} 90%{transform:translate(60px,-20px)} 100%{transform:translate(-40px,20px)} }
+        @keyframes dynGarzaPathL { 0%{transform:translate(40px,20px)} 35%{transform:translate(-180px,-90px)} 65%{transform:translate(-180px,-90px)} 90%{transform:translate(-60px,-20px)} 100%{transform:translate(40px,20px)} }
         .dynFishSwim { animation-name: dynFishMove; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
-        @keyframes dynFishMove { 0%{transform:translateX(0)} 50%{transform:translateX(22px)} 100%{transform:translateX(0)} }
+        @keyframes dynFishMove { 0%{transform:translateX(0)} 50%{transform:translateX(38px)} 100%{transform:translateX(0)} }
         .dynWaterShine { animation: dynShineMove 3.5s linear infinite; }
         @keyframes dynShineMove { 0%{transform:translateX(-40px)} 100%{transform:translateX(260px)} }
       `;
