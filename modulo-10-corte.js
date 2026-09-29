@@ -88,36 +88,18 @@
   const sectionCutPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6); // se reubica cuando se conoce la posicion real del humedal
   let sectionCutX = 0;
   function placeSectionCutAtHumedal() {
-    // El corte se centra en el humedal REAL (se calcula su centro a
-    // partir del poligono cargado), para garantizar que la vista
-    // muestre agua de un lado y tierra del otro, como un corte real de
-    // humedal -- antes usaba coordenadas fijas que apuntaban a otra
-    // parte de la ciudad y nunca mostraban el agua.
-    let wx = 177.0, wz = -25.6; // respaldo por si el poligono aun no cargo
-    if (rawWaterData) {
-      const b = rawWaterData.find(w => (w.nombre || "").includes("Burro"));
-      if (b && b.pts && b.pts.length) {
-        const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length;
-        const cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
-        const sp = toScene(cx, cy);
-        wx = sp.x; wz = sp.z;
-      }
-    }
-    sectionCutX = wx;
-    sectionCutZ = wz;
+    // Vista exacta que la usuaria dio: camara en perspectiva con estas
+    // coordenadas precisas (rotacion 143°, U 26-38%, V 32-50%).
+    sectionCutX = 177.0;
+    sectionCutZ = -25.6;
     if (sectionRenderer) {
       if (typeof updateBotBox === 'function') updateBotBox();
       sectionRenderer.localClippingEnabled = false;
       sectionRenderer.clippingPlanes = botClipPlanesArr;
-      // Camara a media altura sobre el nivel del agua, retrocedida en la
-      // direccion del giro (143°) para ver el corte de lado: tierra
-      // arriba/a un costado, agua al fondo del corte.
-      const rad = 143 * Math.PI / 180;
-      const dist = 60, camY = 14;
-      sectionCamera.position.set(wx + Math.cos(rad) * dist, camY, wz + Math.sin(rad) * dist);
+      sectionCamera.position.set(139.3, 10.3, 0.1);
       sectionCamera.up.set(0, 1, 0);
-      sectionCamera.lookAt(wx, 2, wz);
-      sectionCamera.fov = 20; // mas zoom (antes 40) para que se note el corte de cerca
+      sectionCamera.lookAt(188.2, 8.1, -36.7);
+      sectionCamera.fov = 20;
       sectionCamera.zoom = 1.0;
       if (!sectionControls) {
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
@@ -125,7 +107,7 @@
         sectionControls.dampingFactor = 0.15;
         sectionControls.addEventListener("change", updateBotBox);
       }
-      if (sectionControls) sectionControls.target.set(wx, 2, wz);
+      if (sectionControls) sectionControls.target.set(188.2, 8.1, -36.7);
       resizeSectionView();
       sectionCamera.updateProjectionMatrix();
     }
@@ -1688,7 +1670,7 @@
   let mainBurroMesh = null, mainBurroMes = 0, mainBurroLast = 0, mainBurroPlaying = true;
   const MESES_TXT = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const mainBurroPanel = document.createElement("div");
-  mainBurroPanel.style.cssText = "margin-top:20px; padding-top:16px; border-top:1px dashed rgba(0,0,0,.12); font-family:'Segoe UI',sans-serif; color:#0f172a;";
+  mainBurroPanel.style.cssText = "position:absolute; bottom:18px; right:18px; z-index:12; width:230px; font-family:'Segoe UI',sans-serif; color:#0f172a; background:rgba(255,255,255,.94); backdrop-filter:blur(8px); border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,.12);";
   mainBurroPanel.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
       <span style="font:700 11px 'Segoe UI',sans-serif;">Humedal El Burro</span>
@@ -1714,7 +1696,7 @@
       <button type="button" id="mainBurroPlayBtn" style="font-size:10px; font-weight:700; color:#0369a1; background:#eaf4fb; border:1px solid rgba(3,105,161,.25); border-radius:6px; padding:3px 8px; cursor:pointer;">⏸ Pausar</button>
     </div>
   `;
-  (document.getElementById("legendPanel") || document.getElementById("sceneWrap") || document.body).appendChild(mainBurroPanel);
+  (document.getElementById("sceneWrap") || document.body).appendChild(mainBurroPanel);
   const mainBurroSlider = mainBurroPanel.querySelector("#mainBurroSlider");
   const mainBurroPlayBtn = mainBurroPanel.querySelector("#mainBurroPlayBtn");
   const mainBurroMesLbl = mainBurroPanel.querySelector("#mainBurroMesLbl");
