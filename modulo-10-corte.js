@@ -96,9 +96,9 @@
       if (typeof updateBotBox === 'function') updateBotBox();
       sectionRenderer.localClippingEnabled = false;
       sectionRenderer.clippingPlanes = botClipPlanesArr;
-      sectionCamera.position.set(139.3, 10.3, 0.1);
+      sectionCamera.position.set(152.7, 6.8, -12.5);
       sectionCamera.up.set(0, 1, 0);
-      sectionCamera.lookAt(188.2, 8.1, -36.7);
+      sectionCamera.lookAt(187.6, 2.1, -36.8);
       sectionCamera.fov = 20;
       sectionCamera.zoom = 1.0;
       if (!sectionControls) {
@@ -107,7 +107,7 @@
         sectionControls.dampingFactor = 0.15;
         sectionControls.addEventListener("change", updateBotBox);
       }
-      if (sectionControls) sectionControls.target.set(188.2, 8.1, -36.7);
+      if (sectionControls) sectionControls.target.set(187.6, 2.1, -36.8);
       resizeSectionView();
       sectionCamera.updateProjectionMatrix();
     }
@@ -130,121 +130,115 @@
   // cual, sin redibujar nada -- solo se le agregan aves, peces y un
   // brillo de agua animados encima, ubicados sobre las mismas zonas
   // donde ya estaban dibujados en la imagen original. ----
+  // ---- Corte dinamico: imagen REAL de la usuaria de fondo, con aves y
+  // peces animados encima. La animacion se hace con requestAnimationFrame
+  // y se escribe el atributo transform directamente en cada cuadro (no
+  // se usa CSS @keyframes sobre SVG, que en algunos navegadores no se
+  // aplica de forma confiable sobre elementos <g>). ----
+  let dynSecRafId = null;
   function buildDynamicSection() {
-    const svg = document.getElementById("dynSecBirdsSvg");
+    const stage = document.getElementById("dynSecStage");
     const img = document.getElementById("dynSecBaseImg");
-    if (!svg || !img) return;
+    if (!stage || !img) return;
+    if (dynSecRafId) { cancelAnimationFrame(dynSecRafId); dynSecRafId = null; }
+    document.querySelectorAll(".dynSprite").forEach(el => el.remove());
 
-    function layoutBirds() {
-      const stageRect = document.getElementById("dynSecStage").getBoundingClientRect();
+    // Recortes REALES tomados de la propia imagen subida (coordenadas en
+    // pixeles del archivo original, 8000x5654 -- verificadas una por una
+    // recortandolas y revisandolas antes de usarlas). Nada de esto es
+    // dibujado a mano: es la misma foto, solo una ventanita de ella.
+    const NATW = 8000, NATH = 5654;
+    const birdsDef = [
+      { box: [3382,3767,3515,3850], kind: "bird" },   // ave rojiza volando
+      { box: [5095,4375,5260,4485], kind: "duck" },   // pato volando (grupo)
+      { box: [5265,4345,5440,4465], kind: "duck" },   // pato volando (grupo)
+      { box: [5175,4445,5385,4605], kind: "duck" },   // pato volando (grupo)
+    ];
+    const fishDef = [
+      { box: [3955,4795,4075,4840] },
+      { box: [4665,4800,4730,4838] },
+    ];
+
+    function setup() {
+      const stageRect = stage.getBoundingClientRect();
       const imgRect = img.getBoundingClientRect();
-      const toPx = (xPct, yPct) => ({
-        x: (imgRect.left - stageRect.left) + imgRect.width * xPct,
-        y: (imgRect.top - stageRect.top) + imgRect.height * yPct,
+      const scale = imgRect.width / NATW;
+      const imgOffX = imgRect.left - stageRect.left;
+      const imgOffY = imgRect.top - stageRect.top;
+
+      function makeSprite(box) {
+        const [x0, y0, x1, y1] = box;
+        const w = (x1 - x0) * scale, h = (y1 - y0) * scale;
+        const el = document.createElement("div");
+        el.className = "dynSprite";
+        el.style.cssText = `position:absolute; width:${w}px; height:${h}px; background-image:url(corte-burro-referencia.png); background-repeat:no-repeat; background-size:${NATW*scale}px ${NATH*scale}px; background-position:-${x0*scale}px -${y0*scale}px; pointer-events:none; will-change:transform;`;
+        const baseX = imgOffX + x0 * scale, baseY = imgOffY + y0 * scale;
+        el.style.left = baseX + "px";
+        el.style.top = baseY + "px";
+        stage.appendChild(el);
+        return { el, baseX, baseY, w, h };
+      }
+
+      const birds = birdsDef.map((b, i) => {
+        const spr = makeSprite(b.box);
+        return { ...spr, toLeft: (b.box[0] + b.box[2]) / 2 / NATW < 0.53, phase: i * 1.3, cyc: 5.2 + i * 0.4 };
       });
-      const scaleF = imgRect.height / 900;
+      const fishes = fishDef.map((f, i) => {
+        const spr = makeSprite(f.box);
+        return { ...spr, dir: i % 2 === 0 ? 1 : -1, phase: i * 1.6, cyc: 3.8 + i * 0.5 };
+      });
 
-      // aves (incluye garzas nuevas entrando desde afuera del cuadro)
-      const birds = [
-        { xPct: 0.421, yPct: 0.719, s: 1.0, color: "#c07356", dur: 4.0 },
-        { xPct: 0.551, yPct: 0.800, s: 0.85, color: "#8f97a3", dur: 4.4 },
-        { xPct: 0.642, yPct: 0.792, s: 0.9, color: "#1c1c1c", dur: 4.2 },
-        { xPct: 0.661, yPct: 0.812, s: 0.9, color: "#1c1c1c", dur: 4.2 },
-        { xPct: 0.30, yPct: 0.70, s: 1.3, color: "#e7e2d8", dur: 5.0, garza: true },
-        { xPct: 0.75, yPct: 0.75, s: 1.3, color: "#e7e2d8", dur: 5.4, garza: true },
-      ];
-      let birdsHTML = birds.map((b, i) => {
-        const p = toPx(b.xPct, b.yPct);
-        const s = b.s * scaleF;
-        const toLeft = b.xPct < 0.53;
-        if (b.garza) {
-          // garza volando: cuerpo alargado + alas en "M", va hacia el
-          // arbolado mas cercano, se queda posada un rato y vuelve
-          return `<g class="dynGarzaFly ${toLeft ? "toLeft" : ""}" style="animation-duration:${b.dur}s; animation-delay:${i*0.6}s;">
-            <g style="transform-origin:${p.x}px ${p.y}px;">
-              <ellipse cx="${p.x}" cy="${p.y}" rx="${9*s}" ry="${3.5*s}" fill="${b.color}"/>
-              <path class="dynWing2" d="M${p.x-16*s},${p.y} Q${p.x},${p.y-13*s} ${p.x+16*s},${p.y} Q${p.x},${p.y-5*s} ${p.x-16*s},${p.y} Z"
-                fill="${b.color}" style="transform-origin:${p.x}px ${p.y}px;"/>
-            </g>
-          </g>`;
-        }
-        return `<g class="dynBirdFly2 ${toLeft ? "toLeft" : ""}" style="animation-duration:${b.dur}s; animation-delay:${i*0.4}s; transform-origin:${p.x}px ${p.y}px;">
-          <path class="dynWing2" d="M${p.x-14*s},${p.y} Q${p.x},${p.y-11*s} ${p.x+14*s},${p.y} Q${p.x},${p.y-4*s} ${p.x-14*s},${p.y} Z"
-            fill="${b.color}" style="transform-origin:${p.x}px ${p.y}px;"/>
-        </g>`;
-      }).join("");
+      function easeFly(t, dx, dy) {
+        // 0-25% vuela hacia el arbol, 25-55% se queda posada, 55-100% vuelve
+        let fx, fy;
+        if (t < 0.25) { const k = t / 0.25; fx = dx * k; fy = dy * k; }
+        else if (t < 0.55) { fx = dx; fy = dy; }
+        else { const k = (t - 0.55) / 0.45; fx = dx * (1 - k); fy = dy * (1 - k); }
+        return [fx, fy];
+      }
 
-      // peces (en el agua, calcados de donde ya estaban dibujados)
-      const fishes = [
-        { xPct: 0.520, yPct: 0.858, s: 1.0, dur: 3.5, dir: 1 },
-        { xPct: 0.555, yPct: 0.863, s: 0.9, dur: 4.0, dir: -1 },
-        { xPct: 0.592, yPct: 0.856, s: 1.0, dur: 3.2, dir: 1 },
-        { xPct: 0.463, yPct: 0.845, s: 0.9, dur: 3.8, dir: -1 },
-      ];
-      let fishHTML = fishes.map((f, i) => {
-        const p = toPx(f.xPct, f.yPct);
-        const s = f.s * scaleF;
-        return `<g class="dynFishSwim" style="animation-duration:${f.dur}s; animation-delay:${i*0.3}s;">
-          <g transform="scale(${f.dir},1)" style="transform-origin:${p.x}px ${p.y}px;">
-            <path d="M${p.x-9*s},${p.y} q${9*s},-${5*s} ${18*s},0 q-${9*s},${5*s} -${18*s},0 Z M${p.x-9*s},${p.y} l-${6*s},-${4*s} l0,${8*s} Z"
-              fill="#1c2a2e" opacity=".78"/>
-          </g>
-        </g>`;
-      }).join("");
+      function frame(tSec) {
+        birds.forEach(b => {
+          const t = ((tSec + b.phase) % b.cyc) / b.cyc;
+          const dx = (b.toLeft ? -1 : 1) * 110;
+          const [fx, fy] = easeFly(t, dx, -80);
+          const wobble = Math.sin(tSec * 8 + b.phase) * 2.5;
+          b.el.style.transform = `translate(${fx}px, ${fy + wobble}px)`;
+        });
+        fishes.forEach(f => {
+          const t = ((tSec + f.phase) % f.cyc) / f.cyc;
+          const dx = Math.sin(t * Math.PI * 2) * 34 * f.dir;
+          f.el.style.transform = `translate(${dx}px, 0) scaleX(${f.dir})`;
+        });
+      }
 
-      // brillo de agua: una franja de luz que recorre el espejo de agua
-      const wl = toPx(0.435, 0.845), wr = toPx(0.635, 0.845);
-      const waterShineHTML = `<rect class="dynWaterShine" x="${wl.x}" y="${wl.y-14*scaleF}" width="${(wr.x-wl.x)*0.35}" height="${28*scaleF}"
-        fill="url(#dynShineGrad)" opacity=".5"/>`;
-
-      svg.innerHTML = `<defs>
-          <linearGradient id="dynShineGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
-            <stop offset="50%" stop-color="#ffffff" stop-opacity=".9"/>
-            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <clipPath id="dynWaterClip"><rect x="${wl.x}" y="${wl.y-20*scaleF}" width="${wr.x-wl.x}" height="${40*scaleF}"/></clipPath>
-        <g clip-path="url(#dynWaterClip)">${waterShineHTML}</g>
-        ${fishHTML}
-        ${birdsHTML}`;
+      const start = performance.now();
+      function loop(now) {
+        frame((now - start) / 1000);
+        dynSecRafId = requestAnimationFrame(loop);
+      }
+      dynSecRafId = requestAnimationFrame(loop);
     }
 
-    if (img.complete) layoutBirds();
-    else img.addEventListener("load", layoutBirds, { once: true });
-    window.addEventListener("resize", layoutBirds);
-
-    if (!document.getElementById("dynSecStyle2")) {
-      const st = document.createElement("style");
-      st.id = "dynSecStyle2";
-      st.textContent = `
-        .dynBirdFly2 { animation-name: dynToTreeR; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
-        .dynBirdFly2.toLeft { animation-name: dynToTreeL; }
-        @keyframes dynToTreeR { 0%{transform:translate(0,0)} 25%{transform:translate(90px,-70px)} 45%{transform:translate(90px,-70px)} 75%{transform:translate(10px,-8px)} 100%{transform:translate(0,0)} }
-        @keyframes dynToTreeL { 0%{transform:translate(0,0)} 25%{transform:translate(-90px,-70px)} 45%{transform:translate(-90px,-70px)} 75%{transform:translate(-10px,-8px)} 100%{transform:translate(0,0)} }
-        .dynWing2 { animation: dynFlap2 .45s ease-in-out infinite; }
-        @keyframes dynFlap2 { 0%{transform:scaleY(1)} 50%{transform:scaleY(.3)} 100%{transform:scaleY(1)} }
-        .dynGarzaFly { animation-name: dynGarzaPath; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
-        .dynGarzaFly.toLeft { animation-name: dynGarzaPathL; }
-        @keyframes dynGarzaPath { 0%{transform:translate(-40px,20px)} 25%{transform:translate(180px,-90px)} 45%{transform:translate(180px,-90px)} 75%{transform:translate(60px,-20px)} 100%{transform:translate(-40px,20px)} }
-        @keyframes dynGarzaPathL { 0%{transform:translate(40px,20px)} 25%{transform:translate(-180px,-90px)} 45%{transform:translate(-180px,-90px)} 75%{transform:translate(-60px,-20px)} 100%{transform:translate(40px,20px)} }
-        .dynFishSwim { animation-name: dynFishMove; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
-        @keyframes dynFishMove { 0%{transform:translateX(0)} 50%{transform:translateX(38px)} 100%{transform:translateX(0)} }
-        .dynWaterShine { animation: dynShineMove 3.5s linear infinite; }
-        @keyframes dynShineMove { 0%{transform:translateX(-40px)} 100%{transform:translateX(260px)} }
-      `;
-      document.head.appendChild(st);
+    if (img.complete) setup();
+    else img.addEventListener("load", setup, { once: true });
+    if (!window.__dynSecResizeBound) {
+      window.__dynSecResizeBound = true;
+      window.addEventListener("resize", () => { if (img.complete) setup(); });
     }
   }
-
 
   const dynamicSectionBtn = document.getElementById("dynamicSectionBtn");
   const dynamicSectionOverlay = document.getElementById("dynamicSectionOverlay");
   const dynamicSectionClose = document.getElementById("dynamicSectionClose");
   if (dynamicSectionBtn) dynamicSectionBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    buildDynamicSection();
     if (dynamicSectionOverlay) dynamicSectionOverlay.style.display = "block";
+    // Importante: el overlay debe estar visible ANTES de medir el
+    // tamaño real de la imagen (antes se media con el overlay aun
+    // oculto, dando 0x0 y sprites invisibles). Un frame de margen para
+    // que el navegador aplique el layout.
+    requestAnimationFrame(() => requestAnimationFrame(buildDynamicSection));
   });
   if (dynamicSectionClose) dynamicSectionClose.addEventListener("click", (e) => {
     e.stopPropagation();
