@@ -127,10 +127,9 @@
   // agua, arboles, peces, aves, patos, anden, lamparas). Se construye
   // una sola vez, todo en SVG con animaciones CSS por transform. ----
   // ---- Corte dinamico: se usa la imagen REAL que la usuaria subio, tal
-  // cual, sin redibujar nada -- solo se le agregan aves animadas encima,
-  // ubicadas sobre las mismas zonas donde ya estaban dibujadas en la
-  // imagen (una rojiza, una gris y un par de negras cerca del arbolado
-  // derecho), para que se vean moviendose. ----
+  // cual, sin redibujar nada -- solo se le agregan aves, peces y un
+  // brillo de agua animados encima, ubicados sobre las mismas zonas
+  // donde ya estaban dibujados en la imagen original. ----
   function buildDynamicSection() {
     const svg = document.getElementById("dynSecBirdsSvg");
     const img = document.getElementById("dynSecBaseImg");
@@ -139,23 +138,74 @@
     function layoutBirds() {
       const stageRect = document.getElementById("dynSecStage").getBoundingClientRect();
       const imgRect = img.getBoundingClientRect();
-      // posiciones como % del ANCHO/ALTO de la imagen real, calcadas de
-      // donde ya estaban dibujadas las aves en la ilustracion original
+      const toPx = (xPct, yPct) => ({
+        x: (imgRect.left - stageRect.left) + imgRect.width * xPct,
+        y: (imgRect.top - stageRect.top) + imgRect.height * yPct,
+      });
+      const scaleF = imgRect.height / 900;
+
+      // aves (incluye garzas nuevas entrando desde afuera del cuadro)
       const birds = [
         { xPct: 0.421, yPct: 0.719, s: 1.0, color: "#c07356", dur: 3.2 },
         { xPct: 0.551, yPct: 0.800, s: 0.85, color: "#8f97a3", dur: 2.6 },
         { xPct: 0.642, yPct: 0.792, s: 0.9, color: "#1c1c1c", dur: 2.9 },
         { xPct: 0.661, yPct: 0.812, s: 0.9, color: "#1c1c1c", dur: 2.9 },
+        { xPct: 0.30, yPct: 0.70, s: 1.3, color: "#e7e2d8", dur: 4.5, garza: true },
+        { xPct: 0.75, yPct: 0.75, s: 1.3, color: "#e7e2d8", dur: 5.2, garza: true },
       ];
-      svg.innerHTML = birds.map((b, i) => {
-        const x = (imgRect.left - stageRect.left) + imgRect.width * b.xPct;
-        const y = (imgRect.top - stageRect.top) + imgRect.height * b.yPct;
-        const s = b.s * (imgRect.height / 900); // escala segun tamaño real de la imagen
-        return `<g class="dynBirdFly2" style="animation-duration:${b.dur}s; animation-delay:${i*0.4}s; transform-origin:${x}px ${y}px;">
-          <path class="dynWing2" d="M${x-14*s},${y} Q${x},${y-11*s} ${x+14*s},${y} Q${x},${y-4*s} ${x-14*s},${y} Z"
-            fill="${b.color}" style="transform-origin:${x}px ${y}px;"/>
+      let birdsHTML = birds.map((b, i) => {
+        const p = toPx(b.xPct, b.yPct);
+        const s = b.s * scaleF;
+        if (b.garza) {
+          // garza volando: cuerpo alargado + alas en "M", vuelo mas largo
+          return `<g class="dynGarzaFly" style="animation-duration:${b.dur}s; animation-delay:${i*0.6}s;">
+            <g style="transform-origin:${p.x}px ${p.y}px;">
+              <ellipse cx="${p.x}" cy="${p.y}" rx="${9*s}" ry="${3.5*s}" fill="${b.color}"/>
+              <path class="dynWing2" d="M${p.x-16*s},${p.y} Q${p.x},${p.y-13*s} ${p.x+16*s},${p.y} Q${p.x},${p.y-5*s} ${p.x-16*s},${p.y} Z"
+                fill="${b.color}" style="transform-origin:${p.x}px ${p.y}px;"/>
+            </g>
+          </g>`;
+        }
+        return `<g class="dynBirdFly2" style="animation-duration:${b.dur}s; animation-delay:${i*0.4}s; transform-origin:${p.x}px ${p.y}px;">
+          <path class="dynWing2" d="M${p.x-14*s},${p.y} Q${p.x},${p.y-11*s} ${p.x+14*s},${p.y} Q${p.x},${p.y-4*s} ${p.x-14*s},${p.y} Z"
+            fill="${b.color}" style="transform-origin:${p.x}px ${p.y}px;"/>
         </g>`;
       }).join("");
+
+      // peces (en el agua, calcados de donde ya estaban dibujados)
+      const fishes = [
+        { xPct: 0.520, yPct: 0.858, s: 1.0, dur: 3.5, dir: 1 },
+        { xPct: 0.555, yPct: 0.863, s: 0.9, dur: 4.0, dir: -1 },
+        { xPct: 0.592, yPct: 0.856, s: 1.0, dur: 3.2, dir: 1 },
+        { xPct: 0.463, yPct: 0.845, s: 0.9, dur: 3.8, dir: -1 },
+      ];
+      let fishHTML = fishes.map((f, i) => {
+        const p = toPx(f.xPct, f.yPct);
+        const s = f.s * scaleF;
+        return `<g class="dynFishSwim" style="animation-duration:${f.dur}s; animation-delay:${i*0.3}s;">
+          <g transform="scale(${f.dir},1)" style="transform-origin:${p.x}px ${p.y}px;">
+            <path d="M${p.x-9*s},${p.y} q${9*s},-${5*s} ${18*s},0 q-${9*s},${5*s} -${18*s},0 Z M${p.x-9*s},${p.y} l-${6*s},-${4*s} l0,${8*s} Z"
+              fill="#1c2a2e" opacity=".78"/>
+          </g>
+        </g>`;
+      }).join("");
+
+      // brillo de agua: una franja de luz que recorre el espejo de agua
+      const wl = toPx(0.435, 0.845), wr = toPx(0.635, 0.845);
+      const waterShineHTML = `<rect class="dynWaterShine" x="${wl.x}" y="${wl.y-14*scaleF}" width="${(wr.x-wl.x)*0.35}" height="${28*scaleF}"
+        fill="url(#dynShineGrad)" opacity=".5"/>`;
+
+      svg.innerHTML = `<defs>
+          <linearGradient id="dynShineGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+            <stop offset="50%" stop-color="#ffffff" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <clipPath id="dynWaterClip"><rect x="${wl.x}" y="${wl.y-20*scaleF}" width="${wr.x-wl.x}" height="${40*scaleF}"/></clipPath>
+        <g clip-path="url(#dynWaterClip)">${waterShineHTML}</g>
+        ${fishHTML}
+        ${birdsHTML}`;
     }
 
     if (img.complete) layoutBirds();
@@ -170,6 +220,12 @@
         @keyframes dynFly2 { 0%{transform:translate(0,0)} 50%{transform:translate(18px,-10px)} 100%{transform:translate(0,0)} }
         .dynWing2 { animation: dynFlap2 .45s ease-in-out infinite; }
         @keyframes dynFlap2 { 0%{transform:scaleY(1)} 50%{transform:scaleY(.3)} 100%{transform:scaleY(1)} }
+        .dynGarzaFly { animation-name: dynGarzaPath; animation-timing-function: linear; animation-iteration-count: infinite; }
+        @keyframes dynGarzaPath { 0%{transform:translate(-40px,20px)} 100%{transform:translate(340px,-60px)} }
+        .dynFishSwim { animation-name: dynFishMove; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        @keyframes dynFishMove { 0%{transform:translateX(0)} 50%{transform:translateX(22px)} 100%{transform:translateX(0)} }
+        .dynWaterShine { animation: dynShineMove 3.5s linear infinite; }
+        @keyframes dynShineMove { 0%{transform:translateX(-40px)} 100%{transform:translateX(260px)} }
       `;
       document.head.appendChild(st);
     }
@@ -1570,7 +1626,7 @@
       sceneExtentW = w; sceneExtentH = h;
       if (typeof updateSectionBox === "function") updateSectionBox();
       rebuildFilteredGeometry();
-      viewSize = Math.max(w, h) * 0.155; // un poco mas chico que antes (0.14), para que la axonometria no se corte en los bordes de la pantalla
+      viewSize = Math.max(w, h) * 0.135; // mas zoom (antes 0.155) para que se vea mas grande en el recuadro reducido del panel
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
