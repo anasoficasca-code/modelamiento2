@@ -88,26 +88,44 @@
   const sectionCutPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6); // se reubica cuando se conoce la posicion real del humedal
   let sectionCutX = 0;
   function placeSectionCutAtHumedal() {
-    // Vista exacta que la usuaria armo y confirmo en el modulo 8: camara
-    // en perspectiva (no ortografica) con estas coordenadas precisas.
-    sectionCutX = 177.0;
-    sectionCutZ = -25.6;
+    // El corte se centra en el humedal REAL (se calcula su centro a
+    // partir del poligono cargado), para garantizar que la vista
+    // muestre agua de un lado y tierra del otro, como un corte real de
+    // humedal -- antes usaba coordenadas fijas que apuntaban a otra
+    // parte de la ciudad y nunca mostraban el agua.
+    let wx = 177.0, wz = -25.6; // respaldo por si el poligono aun no cargo
+    if (rawWaterData) {
+      const b = rawWaterData.find(w => (w.nombre || "").includes("Burro"));
+      if (b && b.pts && b.pts.length) {
+        const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length;
+        const cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
+        const sp = toScene(cx, cy);
+        wx = sp.x; wz = sp.z;
+      }
+    }
+    sectionCutX = wx;
+    sectionCutZ = wz;
     if (sectionRenderer) {
       if (typeof updateBotBox === 'function') updateBotBox();
       sectionRenderer.localClippingEnabled = false;
       sectionRenderer.clippingPlanes = botClipPlanesArr;
-      sectionCamera.position.set(-134.8, 35.6, 218.4);
+      // Camara a media altura sobre el nivel del agua, retrocedida en la
+      // direccion del giro (143°) para ver el corte de lado: tierra
+      // arriba/a un costado, agua al fondo del corte.
+      const rad = 143 * Math.PI / 180;
+      const dist = 60, camY = 14;
+      sectionCamera.position.set(wx + Math.cos(rad) * dist, camY, wz + Math.sin(rad) * dist);
       sectionCamera.up.set(0, 1, 0);
-      sectionCamera.lookAt(165.3, 12.5, -18.4);
-      sectionCamera.fov = 40; // FOV mas amplio para que se note la perspectiva real
-      sectionCamera.zoom = 5.0; // Zoom alto solicitado por usuaria
+      sectionCamera.lookAt(wx, 2, wz);
+      sectionCamera.fov = 20; // mas zoom (antes 40) para que se note el corte de cerca
+      sectionCamera.zoom = 1.0;
       if (!sectionControls) {
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
         sectionControls.enableDamping = true;
         sectionControls.dampingFactor = 0.15;
         sectionControls.addEventListener("change", updateBotBox);
       }
-      if (sectionControls) sectionControls.target.set(165.3, 12.5, -18.4);
+      if (sectionControls) sectionControls.target.set(wx, 2, wz);
       resizeSectionView();
       sectionCamera.updateProjectionMatrix();
     }
