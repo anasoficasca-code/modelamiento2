@@ -311,12 +311,8 @@
   function fitEscalaOverlays() {
     const legendW = (document.getElementById("layoutLegendW") || {}).value || 200;
     const corteH = (document.getElementById("layoutCorteH") || {}).value || 25;
-    const backdrop = document.getElementById("axoBackdrop");
-    if (backdrop) {
-      backdrop.style.display = "block";
-      backdrop.style.left = legendW + "px";
-      backdrop.style.bottom = corteH + "%";
-    }
+    // A pedido de la usuaria: sin fondo solido, sin cuadro visible --
+    // la escala flota libre, sin recuadro detras.
     ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;

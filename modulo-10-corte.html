@@ -211,7 +211,7 @@
          de abajo para que nunca se vea "el fondo" ni se transparente
          nada. Ocupa el mismo recuadro que la escala (izquierda: ancho de
          convenciones; abajo: alto del corte), por debajo de ella. -->
-    <div id="axoBackdrop" style="display:none; position:absolute; top:0; right:0; bottom:0; z-index:440; background:#ffffff;"></div>
+    <div id="axoBackdrop" style="display:none;"></div>
 
     <!-- Panel de convenciones (reemplaza la antigua etiqueta de escala) -->
     <aside id="legendPanel" style="display:none; position:absolute; top:0; left:0; bottom:0; width:200px; z-index:400; background:rgba(255,255,255,.96); backdrop-filter:blur(10px); border-right:1px solid rgba(0,0,0,.08); padding:70px 16px 16px; overflow-y:auto; font-family:'Segoe UI',sans-serif;">
@@ -509,7 +509,7 @@
     </div>
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA NATURAL (4 CAPAS ARQUITECTÓNICAS) -->
-    <div id="naturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:450; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
+    <div id="naturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:380; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
       <div id="natLayerContext" style="position:absolute; top:50%; left:50%; width:min(96vw, 1400px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -46%); transition:opacity 1.2s ease; pointer-events:none;">
         <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="natContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
       </div>
@@ -606,7 +606,7 @@
     </div>
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA CULTURAL Y SOCIO-URBANA (4 CAPAS DE SIMULACIÓN) -->
-    <div id="culturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:450; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
+    <div id="culturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:380; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
       <div id="culLayerContext" style="position:absolute; top:50%; left:50%; width:min(96vw, 1400px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -46%); transition:opacity 1.2s ease; pointer-events:none;">
         <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="culContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
       </div>
@@ -747,7 +747,7 @@
     </div>
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA TECNOLÓGICA (2 CAPAS DE SIMULACIÓN) -->
-    <div id="techExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:450; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
+    <div id="techExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:380; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
       <div id="techLayerContext" style="position:absolute; top:50%; left:50%; width:min(96vw, 1400px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -46%); transition:opacity 1.2s ease; pointer-events:none;">
         <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="techContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
       </div>
