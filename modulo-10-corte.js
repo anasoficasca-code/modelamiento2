@@ -1672,7 +1672,7 @@
   let mainBurroMesh = null, mainBurroMes = 0, mainBurroLast = 0, mainBurroPlaying = true;
   const MESES_TXT = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const mainBurroPanel = document.createElement("div");
-  mainBurroPanel.style.cssText = "position:absolute; bottom:18px; right:18px; z-index:12; width:230px; font-family:'Segoe UI',sans-serif; color:#0f172a; background:rgba(255,255,255,.94); backdrop-filter:blur(8px); border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,.12);";
+  mainBurroPanel.style.cssText = "margin-top:20px; padding-top:16px; border-top:1px dashed rgba(0,0,0,.12); font-family:'Segoe UI',sans-serif; color:#0f172a;";
   mainBurroPanel.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
       <span style="font:700 11px 'Segoe UI',sans-serif;">Humedal El Burro</span>
@@ -1698,7 +1698,7 @@
       <button type="button" id="mainBurroPlayBtn" style="font-size:10px; font-weight:700; color:#0369a1; background:#eaf4fb; border:1px solid rgba(3,105,161,.25); border-radius:6px; padding:3px 8px; cursor:pointer;">⏸ Pausar</button>
     </div>
   `;
-  (document.getElementById("sceneWrap") || document.body).appendChild(mainBurroPanel);
+  (document.getElementById("legendPanel") || document.getElementById("sceneWrap") || document.body).appendChild(mainBurroPanel);
   const mainBurroSlider = mainBurroPanel.querySelector("#mainBurroSlider");
   const mainBurroPlayBtn = mainBurroPanel.querySelector("#mainBurroPlayBtn");
   const mainBurroMesLbl = mainBurroPanel.querySelector("#mainBurroMesLbl");
@@ -2306,7 +2306,13 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     const layer = EXPLODE_LAYERS[explodeStep - 1];
     explodeLabelEl.style.display = "block";
     explodeLabelEl.textContent = `${explodeStep}/12 · ${layer.name}` + (layer.live ? "" : " (en construcción)");
-    if (explodeStep === 1) { if (typeof openNaturalExplode === "function") openNaturalExplode(); return; }
+    const legendActiveLayer = document.getElementById("legendActiveLayer");
+    const legendActiveLayerText = document.getElementById("legendActiveLayerText");
+    if (legendActiveLayer && legendActiveLayerText) {
+      legendActiveLayer.style.display = "block";
+      legendActiveLayerText.textContent = `${explodeStep}/12 · ${layer.name}` + (layer.live ? "" : " (en construcción)");
+    }
+    if (explodeStep === 1) { if (mainBurroMesh) riseAndSettle(mainBurroMesh, 18); }
     else if (explodeStep === 3) { if (birdsGroup) riseAndSettle(birdsGroup, 26); }
     else if (explodeStep === 4) { if (roadMat) roadMat.color.set(0x24c8bd); }
     else if (explodeStep === 8) { if (roadMat) roadMat.color.set(0xe11d48); }
@@ -2342,8 +2348,12 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     }
     if (penActive) return; // mientras se dibuja el poligono, no se dispara el paso de capas
 
-    // removed by script to restore 3 scales
-
+    // Cada clic avanza UNA de las 12 capas individuales, sin agruparlas
+    // ni abrir ninguna pantalla completa aparte (ya no hay "escalas" a
+    // las que volver). Al llegar a 12, el siguiente clic vuelve a la 1.
+    explodeStep = (explodeStep % 12) + 1;
+    applyExplodeStep();
+    return;
 
     // Guardar estado y fondo original
     const origRoadColor = roadMat ? roadMat.color.getHex() : null;
