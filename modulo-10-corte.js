@@ -96,9 +96,9 @@
       if (typeof updateBotBox === 'function') updateBotBox();
       sectionRenderer.localClippingEnabled = false;
       sectionRenderer.clippingPlanes = botClipPlanesArr;
-      sectionCamera.position.set(152.7, 6.8, -12.5);
+      sectionCamera.position.set(163.0, 6.8, -21.2);
       sectionCamera.up.set(0, 1, 0);
-      sectionCamera.lookAt(187.6, 2.1, -36.8);
+      sectionCamera.lookAt(182.4, 4.2, -35.7);
       sectionCamera.fov = 12; // solo se agranda el contenido (mas zoom), el tamaño del panel no se toca
       sectionCamera.zoom = 1.0;
       if (!sectionControls) {
@@ -107,7 +107,7 @@
         sectionControls.dampingFactor = 0.15;
         sectionControls.addEventListener("change", updateBotBox);
       }
-      if (sectionControls) sectionControls.target.set(187.6, 2.1, -36.8);
+      if (sectionControls) sectionControls.target.set(182.4, 4.2, -35.7);
       resizeSectionView();
       sectionCamera.updateProjectionMatrix();
     }
@@ -3635,7 +3635,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     const origVehCount = vehInstanced ? vehInstanced.count : 0;
 
     const origBg = scene.background;
-    scene.background = new THREE.Color(0xffffff);
 
     // 1. CAPA BASE (Sin ruido, sin carros)
     if (noiseMesh) noiseMesh.visible = false;
@@ -3643,7 +3642,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
 
-    renderer.render(scene, camera);
     const fotoBase = captureBaseWithContext(); // mismo contexto clarito + area de estudio que en Natural
 
     // Captura de CONTEXTO (camara alejada), igual que en Escala natural,
@@ -5281,8 +5279,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
 
-    scene.background = new THREE.Color(0xffffff);
-    renderer.render(scene, camera);
     const fotoBase = captureBaseWithContext(); // mismo contexto clarito + area de estudio que en Natural
 
     // Captura de CONTEXTO (camara alejada), igual que en Escala natural.
@@ -6392,6 +6388,5 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     window.addEventListener("pointermove", e => { if (!dragPt) return; dragPt.pl.pts[dragPt.i] = localPt(e); redraw(); });
     window.addEventListener("pointerup", () => { dragPt = null; });
   })();
-
 })();
 
