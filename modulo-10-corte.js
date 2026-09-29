@@ -153,6 +153,22 @@
   const layoutAxoHVal = document.getElementById("layoutAxoHVal");
   const layoutCorteHVal = document.getElementById("layoutCorteHVal");
   const layoutCoordsOutput = document.getElementById("layoutCoordsOutput");
+  // Encaja las escalas (Natural/Cultural/Tecnologica) dentro del panel en
+  // vez de pantalla completa -- sin tocar nada de su contenido interno,
+  // solo el tamaño y la posicion del contenedor que las envuelve.
+  function fitEscalaOverlays() {
+    const legendW = (document.getElementById("layoutLegendW") || {}).value || 200;
+    const corteH = (document.getElementById("layoutCorteH") || {}).value || 25;
+    ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.left = legendW + "px";
+      el.style.top = "0";
+      el.style.right = "0";
+      el.style.bottom = corteH + "%";
+    });
+  }
+
   function applyLayoutOrganization() {
     if (!layoutLegendW) return;
     const legendW = parseInt(layoutLegendW.value, 10);
@@ -2326,12 +2342,20 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     if (axoContextFadeEl) axoContextFadeEl.style.display = "block";
   }
   canvas.addEventListener("click", (e) => {
-    // Vuelta a la simulacion original: clic en la axonometria principal
-    // abre directamente la escala natural (agua creciendo por años,
-    // tinguas, garzas), tal como estaba antes de todo el panel unificado
-    // de hoy (convenciones + corte + 12 capas). La axonometria principal
-    // (antes de este clic) no se toca.
+    // Clic en la axonometria principal: abre la escala natural exactamente
+    // igual que siempre (agua creciendo por años, tinguas, garzas -- nada
+    // de su contenido interno cambia), pero encajada dentro del panel:
+    // convenciones a la izquierda, corte abajo, y la escala ocupando
+    // arriba a la derecha, mas chica, en vez de pantalla completa.
     if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
+    const legendPanelEl = document.getElementById("legendPanel");
+    const sectionWrapEl = document.getElementById("sectionWrap");
+    if (legendPanelEl) legendPanelEl.style.display = "block";
+    if (sectionWrapEl) sectionWrapEl.style.display = "block";
+    fitEscalaOverlays();
+    resizeSectionView();
+    placeSectionCutAtHumedal();
+    updateSectionCutRotation();
     openNaturalExplode();
     return;
 
