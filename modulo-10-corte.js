@@ -210,21 +210,6 @@
     sectionRedrawPenSvg();
     sectionUpdatePenOutput();
   });
-  // Zoom +/- de la axonometria (solo zoom, sin otras opciones), reflejado
-  // en su propio cuadro de coordenadas.
-  const axoZoomIn = document.getElementById("axoZoomIn");
-  const axoZoomOut = document.getElementById("axoZoomOut");
-  function bumpAxoZoom(mult) {
-    if (typeof axoZoomFactor === "undefined") return;
-    axoZoomFactor = Math.max(0.3, Math.min(3, axoZoomFactor * mult));
-    if (typeof resize === "function") resize();
-    const val = document.getElementById("axoZoomVal");
-    if (val) val.textContent = Math.round(100 / axoZoomFactor) + "%";
-    const out = document.getElementById("axoCoordsOutput");
-    if (out) out.value = `// === ZOOM AXONOMETRÍA ===\nconst AXO_ZOOM = ${axoZoomFactor.toFixed(2)};`;
-  }
-  if (axoZoomIn) axoZoomIn.addEventListener("click", (e) => { e.stopPropagation(); bumpAxoZoom(0.9); });
-  if (axoZoomOut) axoZoomOut.addEventListener("click", (e) => { e.stopPropagation(); bumpAxoZoom(1 / 0.9); });
   const corteZoomOut = document.getElementById("corteZoomOut");
   function bumpCorteZoom(delta) {
     if (!sectionCamera) return;
@@ -613,6 +598,21 @@
     camera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resize);
+  // Zoom +/- de la axonometria: se agrega ACA (mismo alcance que
+  // resize/camera/axoZoomFactor) -- un intento anterior quedo en otra
+  // parte del archivo sin acceso real a estas variables y no hacia nada.
+  const axoZoomIn = document.getElementById("axoZoomIn");
+  const axoZoomOut = document.getElementById("axoZoomOut");
+  function bumpAxoZoom(mult) {
+    axoZoomFactor = Math.max(0.3, Math.min(3, axoZoomFactor * mult));
+    resize();
+    const val = document.getElementById("axoZoomVal");
+    if (val) val.textContent = Math.round(100 / axoZoomFactor) + "%";
+    const out = document.getElementById("axoCoordsOutput");
+    if (out) out.value = `// === ZOOM AXONOMETRÍA ===\nconst AXO_ZOOM = ${axoZoomFactor.toFixed(2)};`;
+  }
+  if (axoZoomIn) axoZoomIn.addEventListener("click", (e) => { e.stopPropagation(); bumpAxoZoom(0.9); });
+  if (axoZoomOut) axoZoomOut.addEventListener("click", (e) => { e.stopPropagation(); bumpAxoZoom(1 / 0.9); });
 
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   canvas.addEventListener("contextmenu", (e) => e.preventDefault()); // sin esto, el navegador abre su menu contextual con el clic derecho en vez de dejarlo mover (panear) la vista
