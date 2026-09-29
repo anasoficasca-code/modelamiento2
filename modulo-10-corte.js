@@ -125,6 +125,91 @@
   // Zoom +/- del corte: cambia sectionCamera.zoom (sin tocar el tamaño
   // del panel), reflejado de inmediato en el cuadro de coordenadas.
   const corteZoomIn = document.getElementById("corteZoomIn");
+
+  // ---- Dibujar poligonos dentro del panel del corte (igual que en la
+  // axonometria principal, pero con la camara del corte). ----
+  const SVGNS2 = "http://www.w3.org/2000/svg";
+  let sectionPenActive = false;
+  let sectionPenPoints = [];
+  let sectionDraggingPenIdx = null;
+  const sectionPenSvg = document.getElementById("sectionPenSvg");
+  const sectionPenCoordsOutput = document.getElementById("sectionPenCoordsOutput");
+  const sectionPenNdc = new THREE.Vector2();
+  const sectionPenRaycaster = new THREE.Raycaster();
+  function sectionScreenToGround(clientX, clientY) {
+    const rect = sectionCanvas2.getBoundingClientRect();
+    sectionPenNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    sectionPenNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    sectionPenRaycaster.setFromCamera(sectionPenNdc, sectionCamera);
+    const dir = sectionPenRaycaster.ray.direction, origin = sectionPenRaycaster.ray.origin;
+    const t = (0 - origin.y) / dir.y;
+    const hit = origin.clone().add(dir.clone().multiplyScalar(t));
+    return fromScene(hit.x, hit.z);
+  }
+  function sectionRedrawPenSvg() {
+    sectionPenSvg.innerHTML = "";
+    if (sectionPenPoints.length === 0) return;
+    if (sectionPenPoints.length >= 2) {
+      const pts = sectionPenPoints.map(p => `${p.sx},${p.sy}`).join(" ");
+      const poly = document.createElementNS(SVGNS2, "polygon");
+      poly.setAttribute("points", pts);
+      poly.setAttribute("fill", "rgba(10,10,10,0.35)");
+      poly.setAttribute("stroke", "#0a0a0a");
+      poly.setAttribute("stroke-width", "2.5");
+      sectionPenSvg.appendChild(poly);
+    }
+    sectionPenPoints.forEach((p, idx) => {
+      const c = document.createElementNS(SVGNS2, "circle");
+      c.setAttribute("cx", p.sx); c.setAttribute("cy", p.sy); c.setAttribute("r", "5");
+      c.setAttribute("fill", "#0a0a0a");
+      c.style.pointerEvents = "auto";
+      c.style.cursor = "move";
+      c.addEventListener("pointerdown", (ev) => { ev.stopPropagation(); sectionDraggingPenIdx = idx; });
+      sectionPenSvg.appendChild(c);
+    });
+  }
+  function sectionUpdatePenOutput() {
+    if (sectionPenPoints.length === 0) { sectionPenCoordsOutput.style.display = "none"; return; }
+    sectionPenCoordsOutput.style.display = "block";
+    sectionPenCoordsOutput.value = sectionPenPoints.map((p, i) =>
+      `Punto ${i + 1}: local x:${p.x.toFixed(1)} y:${p.y.toFixed(1)}` +
+      (typeof localToLat === "function" ? `  (lat ${localToLat(p.y).toFixed(6)}, lng ${localToLng(p.x).toFixed(6)})` : "")
+    ).join("\n");
+  }
+  document.getElementById("sectionPenBtn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    sectionPenActive = !sectionPenActive;
+    const btn = document.getElementById("sectionPenBtn");
+    btn.textContent = sectionPenActive ? "✏️ Dibujando… (clic para terminar)" : "✏️ Dibujar polígono";
+    btn.style.background = sectionPenActive ? "rgba(255,45,85,.85)" : "rgba(10,12,14,.85)";
+    sectionPenSvg.style.display = sectionPenActive ? "block" : "none";
+    if (sectionControls) sectionControls.enabled = !sectionPenActive;
+    if (!sectionPenActive) { sectionPenPoints.length = 0; sectionRedrawPenSvg(); sectionPenCoordsOutput.style.display = "none"; }
+  });
+  let justDraggedSectionPen = false;
+  window.addEventListener("pointerup", () => {
+    if (sectionDraggingPenIdx !== null) justDraggedSectionPen = true;
+    sectionDraggingPenIdx = null;
+  });
+  window.addEventListener("pointermove", (e) => {
+    if (sectionDraggingPenIdx === null) return;
+    const rect = sectionPenSvg.getBoundingClientRect();
+    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    const pt3d = sectionScreenToGround(e.clientX, e.clientY);
+    sectionPenPoints[sectionDraggingPenIdx] = { sx, sy, x: pt3d.x, y: pt3d.y };
+    sectionRedrawPenSvg();
+    sectionUpdatePenOutput();
+  });
+  window.addEventListener("click", (e) => {
+    if (!sectionPenActive) return;
+    if (justDraggedSectionPen) { justDraggedSectionPen = false; return; }
+    if (!e.target.closest("#sectionWrap")) return;
+    const pt3d = sectionScreenToGround(e.clientX, e.clientY);
+    const svgRect = sectionPenSvg.getBoundingClientRect();
+    sectionPenPoints.push({ sx: e.clientX - svgRect.left, sy: e.clientY - svgRect.top, x: pt3d.x, y: pt3d.y });
+    sectionRedrawPenSvg();
+    sectionUpdatePenOutput();
+  });
   // Zoom +/- de la axonometria (solo zoom, sin otras opciones), reflejado
   // en su propio cuadro de coordenadas.
   const axoZoomIn = document.getElementById("axoZoomIn");
@@ -698,7 +783,7 @@
       // las vias que se cruzan en una interseccion no quedan EXACTAMENTE
       // coplanares (evita z-fighting). El rango es minusculo para que no
       // se note como un "escalon" entre una via y la siguiente.
-      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.05;
+      const yJitter = 0.35 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.05; // un poco mas alto (antes 0.03) para que no se vea "inundada" en el corte
       const n = pts.length;
       if (n < 2) return;
       const scenePts = pts.map(p => toScene(p[0], p[1]));
