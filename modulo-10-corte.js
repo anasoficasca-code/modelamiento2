@@ -3111,7 +3111,33 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     const borderVis = axoBorderMesh ? axoBorderMesh.visible : false;
     if (axoBorderMesh) axoBorderMesh.visible = false;
     if (renderFocusSetup) renderFocusSetup();
-    // Renderizamos SOLAMENTE el area de estudio (la base del rombo), sin el contexto desvanecido de la axonometria inicial.
+    // 1) Contexto: sin recorte, con edificios y vias alrededor
+    const savedConst = Object.values(secPlanes).map(p => p.constant);
+    Object.values(secPlanes).forEach(p => (p.constant = 1e6));
+    const origClip = renderer.clippingPlanes; renderer.clippingPlanes = [];
+    if (rawBuildingsData) buildBuildings(rawBuildingsData, { xMin: cx - bw, xMax: cx + bw, zMin: cz - bh, zMax: cz + bh, yMin: 0, yMax: 1e6 });
+    if (rawEdgesData) buildRoads(rawEdgesData, { xMin: cx - bw, xMax: cx + bw, zMin: cz - bh, zMax: cz + bh, yMin: 0, yMax: 1e6 });
+    if (axoBorderMesh) axoBorderMesh.visible = false;
+    scene.background = new THREE.Color(0xffffff);
+    renderer.render(scene, camera);
+    { // contexto solo "un poquito" alrededor: se desvanece con la distancia al area de estudio
+      const tmp = document.createElement("canvas"); tmp.width = W; tmp.height = H; const t = tmp.getContext("2d");
+      t.drawImage(renderer.domElement, 0, 0);
+      const vv = new THREE.Vector3(); const cs = [[bx0, bz0], [bx1, bz0], [bx1, bz1], [bx0, bz1]].map(([x, z]) => { vv.set(x, 0, z).project(camera); return [(vv.x * .5 + .5) * W, (-vv.y * .5 + .5) * H]; });
+      const ccx = cs.reduce((s, p) => s + p[0], 0) / 4, ccy = cs.reduce((s, p) => s + p[1], 0) / 4;
+      const rad = Math.max(...cs.map(p => Math.hypot(p[0] - ccx, p[1] - ccy)));
+      const radY = Math.max(...cs.map(p => Math.abs(p[1] - ccy)));
+      const sy = Math.min(1, (radY * 1.25) / rad, (H / 2 - 2) / (rad * 1.25)); // elipse que se desvanece ANTES del borde del cuadro
+      t.globalCompositeOperation = "destination-in";
+      t.save(); t.translate(ccx, ccy); t.scale(1, sy);
+      const g = t.createRadialGradient(0, 0, rad * 0.7, 0, 0, rad * 1.25);
+      g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)");
+      t.fillStyle = g; t.fillRect(-W, -H / sy, W * 2, (H / sy) * 2); t.restore();
+      c.globalAlpha = 0.48; c.drawImage(tmp, 0, 0);
+    }
+    // 2) Area de estudio nitida (con su recorte normal), fondo transparente
+    Object.values(secPlanes).forEach((p, i) => (p.constant = savedConst[i]));
+    renderer.clippingPlanes = origClip;
     rebuildFilteredGeometry();
     if (axoBorderMesh) axoBorderMesh.visible = false;
     scene.background = null; renderer.setClearColor(0x000000, 0);
@@ -3135,7 +3161,8 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   // ---- OFFSET real de un poligono: el borde se desplaza hacia afuera
   // (d > 0) la MISMA distancia en todos lados, en metros. Asi el agua
   // crece como una cota de inundacion, sin correrse ni deformarse. ----
-  function offsetPoly(pts, d) {
+
+  // ---- OFFSET real(pts, d) {
     const n = pts.length; if (n < 3 || !d) return pts.map(p => [p[0], p[1]]);
     let area = 0; for (let i = 0; i < n; i++) { const a = pts[i], b = pts[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; }
     const sgn = area > 0 ? 1 : -1; // antihorario: la normal hacia afuera es (dy, -dx)
