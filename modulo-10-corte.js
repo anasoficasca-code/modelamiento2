@@ -302,8 +302,14 @@
   // flechitas, con coordenadas para copiar. ----
   let labelOffX = 0, labelOffY = 0;
   function applyLabelPosition() {
-    const el = document.getElementById("legendActiveLayer");
-    if (el) el.style.transform = `translate(${labelOffX}px, ${labelOffY}px)`;
+    // Estas son las etiquetas "CAPA 01/02/03/04" que aparecen a la
+    // izquierda de cada capa dentro de la axonometria (una por sub-capa;
+    // solo la de la capa activa esta visible). Conservan su centrado
+    // vertical propio (translateY(-50%)) y se les suma el desplazamiento
+    // de las flechitas encima.
+    document.querySelectorAll(".nat-layer-tag").forEach(el => {
+      el.style.transform = `translate(${labelOffX}px, calc(-50% + ${labelOffY}px))`;
+    });
     const out = document.getElementById("escalaCoordsOutput");
     if (out) out.value = `// === POSICIÓN DEL TÍTULO ===\nconst LABEL_POS = {\n  offsetX: ${Math.round(labelOffX)},\n  offsetY: ${Math.round(labelOffY)}\n};`;
   }
