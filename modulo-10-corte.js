@@ -304,11 +304,11 @@
   // transform ADICIONAL sobre el contenido, encima del encuadre base
   // (fitEscalaOverlays), para poder agrandar/achicar y mover sin romper
   // el encaje inicial. ----
-  let escalaScale = 1.20, escalaOffX = 0, escalaOffY = 0;
+  let escalaScale = 1.20, escalaOffX = -160, escalaOffY = -40;
   function applyEscalaTransform() {
-    ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+    ["sceneWrap", "naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
       const el = document.getElementById(id);
-      if (!el || el.style.display === "none") return;
+      if (!el) return;
       el.style.transform = `translate(${escalaOffX}px, ${escalaOffY}px) scale(${escalaScale})`;
       el.style.transformOrigin = "center center";
     });
@@ -333,7 +333,7 @@
   // Arrastre: se activa sobre el fondo blanco de la escala (no sobre
   // botones/inputs), moviendola libremente por la pantalla.
   let escalaDrag = null;
-  ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+  ["sceneWrap", "naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener("pointerdown", (e) => {
@@ -354,7 +354,7 @@
     const corteH = (document.getElementById("layoutCorteH") || {}).value || 25;
     // A pedido de la usuaria: sin fondo solido, sin cuadro visible --
     // la escala flota libre, sin recuadro detras.
-    ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+    ["sceneWrap", "naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.style.left = legendW + "px";
@@ -6415,6 +6415,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     window.addEventListener("pointermove", e => { if (!dragPt) return; dragPt.pl.pts[dragPt.i] = localPt(e); redraw(); });
     window.addEventListener("pointerup", () => { dragPt = null; });
   })();
-
+  applyEscalaTransform();
 })();
 
