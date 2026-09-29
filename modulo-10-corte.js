@@ -96,11 +96,11 @@
       if (typeof updateBotBox === 'function') updateBotBox();
       sectionRenderer.localClippingEnabled = false;
       sectionRenderer.clippingPlanes = botClipPlanesArr;
-      sectionCamera.position.set(150.0, 8.5, -11.5);
+      sectionCamera.position.set(163.0, 6.8, -21.2);
       sectionCamera.up.set(0, 1, 0);
       sectionCamera.lookAt(182.4, 4.2, -35.7);
       sectionCamera.fov = 12; // solo se agranda el contenido (mas zoom), el tamaño del panel no se toca
-      sectionCamera.zoom = 0.80;
+      sectionCamera.zoom = 1.0;
       if (!sectionControls) {
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
         sectionControls.enableDamping = true;
@@ -121,104 +121,6 @@
     sectionCamera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resizeSectionView);
-
-  // Zoom +/- del corte: cambia sectionCamera.zoom (sin tocar el tamaño
-  // del panel), reflejado de inmediato en el cuadro de coordenadas.
-  const corteZoomIn = document.getElementById("corteZoomIn");
-
-  // ---- Dibujar poligonos dentro del panel del corte (igual que en la
-  // axonometria principal, pero con la camara del corte). ----
-  const SVGNS2 = "http://www.w3.org/2000/svg";
-  let sectionPenActive = false;
-  let sectionPenPoints = [];
-  let sectionDraggingPenIdx = null;
-  const sectionPenSvg = document.getElementById("sectionPenSvg");
-  const sectionPenCoordsOutput = document.getElementById("sectionPenCoordsOutput");
-  const sectionPenNdc = new THREE.Vector2();
-  const sectionPenRaycaster = new THREE.Raycaster();
-  function sectionScreenToGround(clientX, clientY) {
-    const rect = sectionCanvas2.getBoundingClientRect();
-    sectionPenNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    sectionPenNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    sectionPenRaycaster.setFromCamera(sectionPenNdc, sectionCamera);
-    const dir = sectionPenRaycaster.ray.direction, origin = sectionPenRaycaster.ray.origin;
-    const t = (0 - origin.y) / dir.y;
-    const hit = origin.clone().add(dir.clone().multiplyScalar(t));
-    return fromScene(hit.x, hit.z);
-  }
-  function sectionRedrawPenSvg() {
-    sectionPenSvg.innerHTML = "";
-    if (sectionPenPoints.length === 0) return;
-    if (sectionPenPoints.length >= 2) {
-      const pts = sectionPenPoints.map(p => `${p.sx},${p.sy}`).join(" ");
-      const poly = document.createElementNS(SVGNS2, "polygon");
-      poly.setAttribute("points", pts);
-      poly.setAttribute("fill", "rgba(10,10,10,0.35)");
-      poly.setAttribute("stroke", "#0a0a0a");
-      poly.setAttribute("stroke-width", "2.5");
-      sectionPenSvg.appendChild(poly);
-    }
-    sectionPenPoints.forEach((p, idx) => {
-      const c = document.createElementNS(SVGNS2, "circle");
-      c.setAttribute("cx", p.sx); c.setAttribute("cy", p.sy); c.setAttribute("r", "5");
-      c.setAttribute("fill", "#0a0a0a");
-      c.style.pointerEvents = "auto";
-      c.style.cursor = "move";
-      c.addEventListener("pointerdown", (ev) => { ev.stopPropagation(); sectionDraggingPenIdx = idx; });
-      sectionPenSvg.appendChild(c);
-    });
-  }
-  function sectionUpdatePenOutput() {
-    if (sectionPenPoints.length === 0) { sectionPenCoordsOutput.style.display = "none"; return; }
-    sectionPenCoordsOutput.style.display = "block";
-    sectionPenCoordsOutput.value = sectionPenPoints.map((p, i) =>
-      `Punto ${i + 1}: local x:${p.x.toFixed(1)} y:${p.y.toFixed(1)}` +
-      (typeof localToLat === "function" ? `  (lat ${localToLat(p.y).toFixed(6)}, lng ${localToLng(p.x).toFixed(6)})` : "")
-    ).join("\n");
-  }
-  document.getElementById("sectionPenBtn").addEventListener("click", (e) => {
-    e.stopPropagation();
-    sectionPenActive = !sectionPenActive;
-    const btn = document.getElementById("sectionPenBtn");
-    btn.textContent = sectionPenActive ? "✏️ Dibujando… (clic para terminar)" : "✏️ Dibujar polígono";
-    btn.style.background = sectionPenActive ? "rgba(255,45,85,.85)" : "rgba(10,12,14,.85)";
-    sectionPenSvg.style.display = sectionPenActive ? "block" : "none";
-    if (sectionControls) sectionControls.enabled = !sectionPenActive;
-    if (!sectionPenActive) { sectionPenPoints.length = 0; sectionRedrawPenSvg(); sectionPenCoordsOutput.style.display = "none"; }
-  });
-  let justDraggedSectionPen = false;
-  window.addEventListener("pointerup", () => {
-    if (sectionDraggingPenIdx !== null) justDraggedSectionPen = true;
-    sectionDraggingPenIdx = null;
-  });
-  window.addEventListener("pointermove", (e) => {
-    if (sectionDraggingPenIdx === null) return;
-    const rect = sectionPenSvg.getBoundingClientRect();
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-    const pt3d = sectionScreenToGround(e.clientX, e.clientY);
-    sectionPenPoints[sectionDraggingPenIdx] = { sx, sy, x: pt3d.x, y: pt3d.y };
-    sectionRedrawPenSvg();
-    sectionUpdatePenOutput();
-  });
-  window.addEventListener("click", (e) => {
-    if (!sectionPenActive) return;
-    if (justDraggedSectionPen) { justDraggedSectionPen = false; return; }
-    if (!e.target.closest("#sectionWrap")) return;
-    const pt3d = sectionScreenToGround(e.clientX, e.clientY);
-    const svgRect = sectionPenSvg.getBoundingClientRect();
-    sectionPenPoints.push({ sx: e.clientX - svgRect.left, sy: e.clientY - svgRect.top, x: pt3d.x, y: pt3d.y });
-    sectionRedrawPenSvg();
-    sectionUpdatePenOutput();
-  });
-  const corteZoomOut = document.getElementById("corteZoomOut");
-  function bumpCorteZoom(delta) {
-    if (!sectionCamera) return;
-    sectionCamera.zoom = Math.max(0.3, Math.min(6, sectionCamera.zoom + delta));
-    sectionCamera.updateProjectionMatrix();
-    if (typeof updateBotBox === "function") updateBotBox();
-  }
-  if (corteZoomIn) corteZoomIn.addEventListener("click", (e) => { e.stopPropagation(); bumpCorteZoom(0.2); });
-  if (corteZoomOut) corteZoomOut.addEventListener("click", (e) => { e.stopPropagation(); bumpCorteZoom(-0.2); });
 
   // ---- Corte dinamico: ilustracion animada del perfil del humedal,
   // en el mismo estilo del corte de referencia (siluetas planas: tierra,
@@ -395,45 +297,91 @@
   const layoutCorteHVal = document.getElementById("layoutCorteHVal");
   const layoutCoordsOutput = document.getElementById("layoutCoordsOutput");
   // Encaja las escalas (Natural/Cultural/Tecnologica) dentro del panel en
-  // ---- Texto con el numero/titulo de la capa activa, DENTRO de
-  // convenciones (a la izquierda de la axonometria) -- movible con
-  // flechitas, con coordenadas para copiar. ----
-  let labelOffX = 276, labelOffY = -144;
-  function applyLabelPosition() {
-    // Estas son las etiquetas "CAPA 01/02/03/04" que aparecen a la
-    // izquierda de cada capa dentro de la axonometria (una por sub-capa;
-    // solo la de la capa activa esta visible). Conservan su centrado
-    // vertical propio (translateY(-50%)) y se les suma el desplazamiento
-    // de las flechitas encima.
-    document.querySelectorAll(".nat-layer-tag").forEach(el => {
-      el.style.transform = `translate(${labelOffX}px, calc(-50% + ${labelOffY}px))`;
+  // vez de pantalla completa -- sin tocar nada de su contenido interno,
+  // solo el tamaño y la posicion del contenedor que las envuelve.
+  // ---- Zoom + arrastre libre para la escala/axonometria activa, con
+  // coordenadas para copiar. El zoom/posicion se aplican como un
+  // transform ADICIONAL sobre el contenido, encima del encuadre base
+  // (fitEscalaOverlays), para poder agrandar/achicar y mover sin romper
+  // el encaje inicial. ----
+  let escalaScale = 1.20, escalaOffX = 40, escalaOffY = -20;
+  function applyEscalaTransform() {
+    ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.transform = `translate(${escalaOffX}px, ${escalaOffY}px) scale(${escalaScale})`;
+      el.style.transformOrigin = "center center";
     });
+    const zv = document.getElementById("escalaZoomVal");
+    if (zv) zv.textContent = Math.round(escalaScale * 100) + "%";
     const out = document.getElementById("escalaCoordsOutput");
-    if (out) out.value = `// === POSICIÓN DEL TÍTULO ===\nconst LABEL_POS = {\n  offsetX: ${Math.round(labelOffX)},\n  offsetY: ${Math.round(labelOffY)}\n};`;
+    if (out) {
+      const fovVal = typeof sectionCamera !== 'undefined' && sectionCamera ? sectionCamera.fov : 12;
+      out.value = `// === TAMAÑO Y POSICIÓN ===
+const ESCALA_TRANSFORM = {
+  scale: ${escalaScale.toFixed(2)},
+  offsetX: ${Math.round(escalaOffX)},
+  offsetY: ${Math.round(escalaOffY)}
+};
+
+// Zoom del corte (FOV): ${fovVal}`;
+    }
   }
-  function syncFloatLabelText() {
-    const label = document.getElementById("natEscalaLabel");
-    const btnText = document.getElementById("natAssembleBtnText");
-    const legendActiveLayerText = document.getElementById("legendActiveLayerText");
-    if (label && legendActiveLayerText) legendActiveLayerText.textContent = label.textContent.trim() + (btnText ? " — " + btnText.textContent.trim() : "");
+  const panUp = document.getElementById("panUp");
+  const panDown = document.getElementById("panDown");
+  const panLeft = document.getElementById("panLeft");
+  const panRight = document.getElementById("panRight");
+  const PAN_STEP = 20;
+  
+  const escalaZoomSlider = document.getElementById("escalaZoomSlider");
+  if (escalaZoomSlider) {
+    escalaZoomSlider.addEventListener("input", (e) => {
+      escalaScale = parseFloat(e.target.value) / 100;
+      applyEscalaTransform();
+    });
   }
-  const STEP = 12;
-  const labelMoveUp = document.getElementById("labelMoveUp");
-  const labelMoveDown = document.getElementById("labelMoveDown");
-  const labelMoveLeft = document.getElementById("labelMoveLeft");
-  const labelMoveRight = document.getElementById("labelMoveRight");
-  if (labelMoveUp) labelMoveUp.addEventListener("click", (e) => { e.stopPropagation(); labelOffY -= STEP; applyLabelPosition(); });
-  if (labelMoveDown) labelMoveDown.addEventListener("click", (e) => { e.stopPropagation(); labelOffY += STEP; applyLabelPosition(); });
-  if (labelMoveLeft) labelMoveLeft.addEventListener("click", (e) => { e.stopPropagation(); labelOffX -= STEP; applyLabelPosition(); });
-  if (labelMoveRight) labelMoveRight.addEventListener("click", (e) => { e.stopPropagation(); labelOffX += STEP; applyLabelPosition(); });
+
+  const sectionZoomSlider = document.getElementById("sectionZoomSlider");
+  if (sectionZoomSlider) {
+    sectionZoomSlider.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      const valEl = document.getElementById("sectionZoomVal");
+      if (valEl) valEl.textContent = val;
+      if (typeof sectionCamera !== 'undefined' && sectionCamera) {
+        sectionCamera.fov = val;
+        sectionCamera.updateProjectionMatrix();
+        applyEscalaTransform(); // to update output
+      }
+    });
+  }
+  if (panUp) panUp.addEventListener("click", (e) => { e.stopPropagation(); escalaOffY -= PAN_STEP; applyEscalaTransform(); });
+  if (panDown) panDown.addEventListener("click", (e) => { e.stopPropagation(); escalaOffY += PAN_STEP; applyEscalaTransform(); });
+  if (panLeft) panLeft.addEventListener("click", (e) => { e.stopPropagation(); escalaOffX -= PAN_STEP; applyEscalaTransform(); });
+  if (panRight) panRight.addEventListener("click", (e) => { e.stopPropagation(); escalaOffX += PAN_STEP; applyEscalaTransform(); });
   const escalaCoordsCopy = document.getElementById("escalaCoordsCopy");
   if (escalaCoordsCopy) escalaCoordsCopy.addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(document.getElementById("escalaCoordsOutput").value); escalaCoordsCopy.textContent = "✅ Copiado"; setTimeout(() => { escalaCoordsCopy.textContent = "📋 Copiar coordenadas"; }, 1600); } catch (err) {}
   });
+  // Arrastre: se activa sobre el fondo blanco de la escala (no sobre
+  // botones/inputs), moviendola libremente por la pantalla.
+  let escalaDrag = null;
+  ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button, input, .nat-sublayer, canvas")) return;
+      escalaDrag = { startX: e.clientX, startY: e.clientY, offX: escalaOffX, offY: escalaOffY };
+    });
+  });
+  window.addEventListener("pointermove", (e) => {
+    if (!escalaDrag) return;
+    escalaOffX = escalaDrag.offX + (e.clientX - escalaDrag.startX);
+    escalaOffY = escalaDrag.offY + (e.clientY - escalaDrag.startY);
+    applyEscalaTransform();
+  });
+  window.addEventListener("pointerup", () => { escalaDrag = null; });
 
   function fitEscalaOverlays() {
-    const layoutEditorEl = document.getElementById("layoutEditor");
-    if (layoutEditorEl) layoutEditorEl.style.display = "block";
     const legendW = (document.getElementById("layoutLegendW") || {}).value || 200;
     const corteH = (document.getElementById("layoutCorteH") || {}).value || 25;
     // A pedido de la usuaria: sin fondo solido, sin cuadro visible --
@@ -455,20 +403,46 @@
       const el = document.getElementById(id);
       if (el) el.style.display = "none";
     });
-    // El texto "ESCALA NATURAL / Extraer Capa..." vive dentro de
-    // convenciones (a la izquierda de la axonometria), y se puede mover
-    // con las flechitas dentro de ese mismo panel.
-    const legendActiveLayer = document.getElementById("legendActiveLayer");
-    if (legendActiveLayer) legendActiveLayer.style.display = "block";
-    syncFloatLabelText();
-    applyLabelPosition();
+    // El texto que decia "ESCALA NATURAL / Extraer Capa..." se mueve a
+    // convenciones, y se actualiza cada vez que se avanza de sub-capa.
+    function syncLegendFromEscala() {
+      const legendActiveLayer = document.getElementById("legendActiveLayer");
+      const legendActiveLayerText = document.getElementById("legendActiveLayerText");
+      const label = document.getElementById("natEscalaLabel");
+      const btnText = document.getElementById("natAssembleBtnText");
+      if (!legendActiveLayer || !legendActiveLayerText || !label) return;
+      legendActiveLayer.style.display = "block";
+      const txt = label.textContent.trim() + (btnText ? " \u2014 " + btnText.textContent.trim() : "");
+      legendActiveLayerText.textContent = txt;
+      updateAgentsLegend(txt);
+    }
+    
+    function updateAgentsLegend(txt) {
+      const c = document.getElementById("legendAgentsContainer");
+      if (!c) return;
+      const lower = txt.toLowerCase();
+      let html = `<div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">`;
+
+      // SOLO mostrar los agentes explícitos que ella pidió: Pato, Garza, Tingua, y textura de agua.
+      // Ocultamos completamente Edificios, Vías, Vehículos, Ruido, etc.
+      
+      html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/pato.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Pato (Boreal)</span></div>`;
+      html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/garza.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Garza (Llanos)</span></div>`;
+      html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/tingua.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Tingua (Endémica)</span></div>`;
+      html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:16px; border-radius:50%; background:url('assets/textura_agua.jpg') center/cover; border:1px solid #0284c7; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Agua (Dinámica)</span></div>`;
+
+      html += `</div>`;
+      c.innerHTML = html;
+    }
+    syncLegendFromEscala();
     const escalaZoomPanel = document.getElementById("escalaZoomPanel");
     if (escalaZoomPanel) escalaZoomPanel.style.display = "block";
-    if (!window.__labelEscalaObs) {
+    applyEscalaTransform();
+    if (!window.__legendEscalaObs) {
       const btnTextEl = document.getElementById("natAssembleBtnText");
       if (btnTextEl && window.MutationObserver) {
-        window.__labelEscalaObs = new MutationObserver(syncFloatLabelText);
-        window.__labelEscalaObs.observe(btnTextEl, { childList: true, characterData: true, subtree: true });
+        window.__legendEscalaObs = new MutationObserver(syncLegendFromEscala);
+        window.__legendEscalaObs.observe(btnTextEl, { childList: true, characterData: true, subtree: true });
       }
     }
   }
@@ -585,34 +559,17 @@
   // Tamano visible (mitad de la altura del encuadre, en unidades de la
   // escena) para la proyeccion ortogonal — se ajusta al cargar la red.
   let viewSize = 260;
-  let axoZoomFactor = 1;
   function resize() {
     const w = wrap.clientWidth, h = wrap.clientHeight;
     renderer.setSize(w, h, false);
     const aspect = w / h;
-    const vs = viewSize * axoZoomFactor;
-    camera.left = -vs * aspect;
-    camera.right = vs * aspect;
-    camera.top = vs;
-    camera.bottom = -vs;
+    camera.left = -viewSize * aspect;
+    camera.right = viewSize * aspect;
+    camera.top = viewSize;
+    camera.bottom = -viewSize;
     camera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resize);
-  // Zoom +/- de la axonometria: se agrega ACA (mismo alcance que
-  // resize/camera/axoZoomFactor) -- un intento anterior quedo en otra
-  // parte del archivo sin acceso real a estas variables y no hacia nada.
-  const axoZoomIn = document.getElementById("axoZoomIn");
-  const axoZoomOut = document.getElementById("axoZoomOut");
-  function bumpAxoZoom(mult) {
-    axoZoomFactor = Math.max(0.3, Math.min(3, axoZoomFactor * mult));
-    resize();
-    const val = document.getElementById("axoZoomVal");
-    if (val) val.textContent = Math.round(100 / axoZoomFactor) + "%";
-    const out = document.getElementById("axoCoordsOutput");
-    if (out) out.value = `// === ZOOM AXONOMETRÍA ===\nconst AXO_ZOOM = ${axoZoomFactor.toFixed(2)};`;
-  }
-  if (axoZoomIn) axoZoomIn.addEventListener("click", (e) => { e.stopPropagation(); bumpAxoZoom(0.9); });
-  if (axoZoomOut) axoZoomOut.addEventListener("click", (e) => { e.stopPropagation(); bumpAxoZoom(1 / 0.9); });
 
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   canvas.addEventListener("contextmenu", (e) => e.preventDefault()); // sin esto, el navegador abre su menu contextual con el clic derecho en vez de dejarlo mover (panear) la vista
@@ -783,7 +740,7 @@
       // las vias que se cruzan en una interseccion no quedan EXACTAMENTE
       // coplanares (evita z-fighting). El rango es minusculo para que no
       // se note como un "escalon" entre una via y la siguiente.
-      const yJitter = 0.35 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.05; // un poco mas alto (antes 0.03) para que no se vea "inundada" en el corte
+      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.05;
       const n = pts.length;
       if (n < 2) return;
       const scenePts = pts.map(p => toScene(p[0], p[1]));
@@ -1842,7 +1799,7 @@
       sceneExtentW = w; sceneExtentH = h;
       if (typeof updateSectionBox === "function") updateSectionBox();
       rebuildFilteredGeometry();
-      viewSize = Math.max(w, h) * 0.125; // un poco mas de zoom todavia (antes 0.135)
+      viewSize = Math.max(w, h) * 0.135; // mas zoom (antes 0.155) para que se vea mas grande en el recuadro reducido del panel
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
@@ -2009,7 +1966,7 @@
   let mainBurroMesh = null, mainBurroMes = 0, mainBurroLast = 0, mainBurroPlaying = true;
   const MESES_TXT = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const mainBurroPanel = document.createElement("div");
-  mainBurroPanel.style.cssText = "margin-bottom:18px; padding-bottom:16px; border-bottom:1px dashed rgba(0,0,0,.12); font-family:'Segoe UI',sans-serif; color:#0f172a;";
+  mainBurroPanel.style.cssText = "position:absolute; bottom:18px; right:18px; z-index:12; width:230px; font-family:'Segoe UI',sans-serif; color:#0f172a; background:rgba(255,255,255,.94); backdrop-filter:blur(8px); border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,.12);";
   mainBurroPanel.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
       <span style="font:700 11px 'Segoe UI',sans-serif;">Humedal El Burro</span>
@@ -2035,11 +1992,7 @@
       <button type="button" id="mainBurroPlayBtn" style="font-size:10px; font-weight:700; color:#0369a1; background:#eaf4fb; border:1px solid rgba(3,105,161,.25); border-radius:6px; padding:3px 8px; cursor:pointer;">⏸ Pausar</button>
     </div>
   `;
-  (() => {
-    const lp = document.getElementById("legendPanel");
-    if (lp) lp.insertBefore(mainBurroPanel, lp.firstChild);
-    else document.body.appendChild(mainBurroPanel);
-  })();
+  (document.getElementById("sceneWrap") || document.body).appendChild(mainBurroPanel);
   const mainBurroSlider = mainBurroPanel.querySelector("#mainBurroSlider");
   const mainBurroPlayBtn = mainBurroPanel.querySelector("#mainBurroPlayBtn");
   const mainBurroMesLbl = mainBurroPanel.querySelector("#mainBurroMesLbl");
@@ -2651,7 +2604,10 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     const legendActiveLayerText = document.getElementById("legendActiveLayerText");
     if (legendActiveLayer && legendActiveLayerText) {
       legendActiveLayer.style.display = "block";
-      legendActiveLayerText.textContent = `${explodeStep}/12 · ${layer.name}` + (layer.live ? "" : " (en construcción)");
+      const txt = `${explodeStep}/12 \u2014 ${layer.name}` + (layer.live ? "" : " (en construcción)");
+      legendActiveLayerText.textContent = txt;
+      if (typeof updateAgentsLegend === "function") updateAgentsLegend(txt);
+      else if (window.updateAgentsLegend) window.updateAgentsLegend(txt);
     }
     if (explodeStep === 1) { if (mainBurroMesh) riseAndSettle(mainBurroMesh, 18); }
     else if (explodeStep === 3) { if (birdsGroup) riseAndSettle(birdsGroup, 26); }
@@ -2751,7 +2707,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   });
   document.getElementById("explodeClose").addEventListener("click", () => {
     explodeOverlay.style.display = "none";
-    document.getElementById("sceneWrap").style.display = "block";
+    // document.getElementById("sceneWrap").style.display = "block";
     explodeLayers.forEach(el => { el.style.opacity = "0"; el.style.transform = "scale(.05)"; });
     hideAllHandles();
   });
@@ -2930,6 +2886,12 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
       l.style.transform = "scale(1)"; l.style.opacity = "1"; l.style.visibility = "visible"; l.style.zIndex = "1"; l.style.position = "relative"; l.style.top = ""; l.style.left = ""; l.style.width = "";
     });
     zoomedLayer = null;
+    const p = document.getElementById("escalaZoomPanel");
+    if (p) p.style.display = "none";
+    const l = document.getElementById("legendActiveLayer");
+    if (l) l.style.display = "none";
+    const lp = document.getElementById("legendPanel");
+    if (lp) lp.style.display = "none";
   }
   document.querySelectorAll(".explode-layer").forEach((layerEl) => {
     const clip = layerEl.querySelector(".explode-clip");
@@ -3136,33 +3098,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     const borderVis = axoBorderMesh ? axoBorderMesh.visible : false;
     if (axoBorderMesh) axoBorderMesh.visible = false;
     if (renderFocusSetup) renderFocusSetup();
-    // 1) Contexto: sin recorte, con edificios y vias alrededor
-    const savedConst = Object.values(secPlanes).map(p => p.constant);
-    Object.values(secPlanes).forEach(p => (p.constant = 1e6));
-    const origClip = renderer.clippingPlanes; renderer.clippingPlanes = [];
-    if (rawBuildingsData) buildBuildings(rawBuildingsData, { xMin: cx - bw, xMax: cx + bw, zMin: cz - bh, zMax: cz + bh, yMin: 0, yMax: 1e6 });
-    if (rawEdgesData) buildRoads(rawEdgesData, { xMin: cx - bw, xMax: cx + bw, zMin: cz - bh, zMax: cz + bh, yMin: 0, yMax: 1e6 });
-    if (axoBorderMesh) axoBorderMesh.visible = false;
-    scene.background = new THREE.Color(0xffffff);
-    renderer.render(scene, camera);
-    { // contexto solo "un poquito" alrededor: se desvanece con la distancia al area de estudio
-      const tmp = document.createElement("canvas"); tmp.width = W; tmp.height = H; const t = tmp.getContext("2d");
-      t.drawImage(renderer.domElement, 0, 0);
-      const vv = new THREE.Vector3(); const cs = [[bx0, bz0], [bx1, bz0], [bx1, bz1], [bx0, bz1]].map(([x, z]) => { vv.set(x, 0, z).project(camera); return [(vv.x * .5 + .5) * W, (-vv.y * .5 + .5) * H]; });
-      const ccx = cs.reduce((s, p) => s + p[0], 0) / 4, ccy = cs.reduce((s, p) => s + p[1], 0) / 4;
-      const rad = Math.max(...cs.map(p => Math.hypot(p[0] - ccx, p[1] - ccy)));
-      const radY = Math.max(...cs.map(p => Math.abs(p[1] - ccy)));
-      const sy = Math.min(1, (radY * 1.25) / rad, (H / 2 - 2) / (rad * 1.25)); // elipse que se desvanece ANTES del borde del cuadro
-      t.globalCompositeOperation = "destination-in";
-      t.save(); t.translate(ccx, ccy); t.scale(1, sy);
-      const g = t.createRadialGradient(0, 0, rad * 0.7, 0, 0, rad * 1.25);
-      g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)");
-      t.fillStyle = g; t.fillRect(-W, -H / sy, W * 2, (H / sy) * 2); t.restore();
-      c.globalAlpha = 0.48; c.drawImage(tmp, 0, 0);
-    }
-    // 2) Area de estudio nitida (con su recorte normal), fondo transparente
-    Object.values(secPlanes).forEach((p, i) => (p.constant = savedConst[i]));
-    renderer.clippingPlanes = origClip;
+    // Renderizamos SOLAMENTE el area de estudio (la base del rombo), sin el contexto desvanecido de la axonometria inicial.
     rebuildFilteredGeometry();
     if (axoBorderMesh) axoBorderMesh.visible = false;
     scene.background = null; renderer.setClearColor(0x000000, 0);
@@ -3204,6 +3140,16 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     return out;
   }
   function openNaturalExplode() {
+    const lp = document.getElementById("legendPanel");
+    if (lp) lp.style.display = "block";
+    const cp = document.getElementById("natClimatePanel");
+    if (cp) cp.style.display = "block";
+    const c1 = document.getElementById("cultCapa1Panel");
+    if (c1) c1.style.display = "none";
+    const t4 = document.getElementById("techCapa4Panel");
+    if (t4) t4.style.display = "none";
+    const sw = document.getElementById("sceneWrap");
+    if (sw) sw.style.display = "none";
     if (!natOverlay) return;
 
     // Sincronizar dimensiones exactas del lienzo de capa
@@ -3519,9 +3465,13 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   }
 
   function closeNaturalExplode() {
+    const p = document.getElementById("escalaZoomPanel");
+    if (p) p.style.display = "none";
+    const l = document.getElementById("legendActiveLayer");
+    if (l) l.style.display = "none";
     if (!natOverlay) return;
     const sceneWrapRestore = document.getElementById("sceneWrap");
-    if (sceneWrapRestore) sceneWrapRestore.style.display = "block"; // volver a la vista 3D en vivo (antes solo lo hacia openTechExplode, por eso Natural y Cultural se quedaban en blanco)
+    // if (sceneWrapRestore) sceneWrapRestore.style.display = "block"; // volver a la vista 3D en vivo (antes solo lo hacia openTechExplode, por eso Natural y Cultural se quedaban en blanco)
     if (natWaterAnimFrame) { cancelAnimationFrame(natWaterAnimFrame); natWaterAnimFrame = null; }
     const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
     sublayers.forEach(l => {
@@ -3735,6 +3685,16 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   let techTime = 0;
   
   function openTechExplode() {
+    const lp = document.getElementById("legendPanel");
+    if (lp) lp.style.display = "block";
+    const cp = document.getElementById("natClimatePanel");
+    if (cp) cp.style.display = "none";
+    const c1 = document.getElementById("cultCapa1Panel");
+    if (c1) c1.style.display = "none";
+    const t4 = document.getElementById("techCapa4Panel");
+    if (t4) t4.style.display = "block";
+    const sw = document.getElementById("sceneWrap");
+    if (sw) sw.style.display = "none";
     if (!techOverlay) return;
     if (!noiseMesh && typeof rebuildNoiseGround === "function") rebuildNoiseGround(); // se asegura que el mapa de ruido exista, por si el usuario nunca movio la caja de seccion ni toco "Mostrar ruido" antes de entrar aqui
 
@@ -3757,6 +3717,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     const origVehCount = vehInstanced ? vehInstanced.count : 0;
 
     const origBg = scene.background;
+    scene.background = new THREE.Color(0xffffff);
 
     // 1. CAPA BASE (Sin ruido, sin carros)
     if (noiseMesh) noiseMesh.visible = false;
@@ -3764,6 +3725,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
 
+    renderer.render(scene, camera);
     const fotoBase = captureBaseWithContext(); // mismo contexto clarito + area de estudio que en Natural
 
     // Captura de CONTEXTO (camara alejada), igual que en Escala natural,
@@ -3937,7 +3899,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
       techExplodeStep = 0;
       updateTechLayersStep(false);
       closeTechExplode();
-      document.getElementById("sceneWrap").style.display = "block"; // Return to live 3D
+      // document.getElementById("sceneWrap").style.display = "block"; // Return to live 3D
       return;
     }
     updateTechLayersStep(true);
@@ -4000,9 +3962,13 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   }
 
   function closeTechExplode() {
+    const p = document.getElementById("escalaZoomPanel");
+    if (p) p.style.display = "none";
+    const l = document.getElementById("legendActiveLayer");
+    if (l) l.style.display = "none";
     if (!techOverlay) return;
     const sceneWrapRestore2 = document.getElementById("sceneWrap");
-    if (sceneWrapRestore2) sceneWrapRestore2.style.display = "block";
+    // if (sceneWrapRestore2) sceneWrapRestore2.style.display = "block";
     if (techAnimFrame) { cancelAnimationFrame(techAnimFrame); techAnimFrame = null; }
     techLiveViewSize = null; // apaga el espejo en vivo de carros/ruido
 
@@ -5376,6 +5342,16 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   let isSotElevated = false;
 
   function openCulturalExplode() {
+    const lp = document.getElementById("legendPanel");
+    if (lp) lp.style.display = "block";
+    const cp = document.getElementById("natClimatePanel");
+    if (cp) cp.style.display = "none";
+    const c1 = document.getElementById("cultCapa1Panel");
+    if (c1) c1.style.display = "block";
+    const t4 = document.getElementById("techCapa4Panel");
+    if (t4) t4.style.display = "none";
+    const sw = document.getElementById("sceneWrap");
+    if (sw) sw.style.display = "none";
     if (!cultOverlay) return;
 
     const targetW = 960, targetH = 540;
@@ -5395,12 +5371,14 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     const origVehVis = vehInstanced ? vehInstanced.visible : false;
     const origVehCount = vehInstanced ? vehInstanced.count : 0;
     const origBg = scene.background;
+    scene.background = new THREE.Color(0xffffff);
 
     if (noiseMesh) noiseMesh.visible = false;
     if (birdsGroup) birdsGroup.visible = false;
     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
 
+    renderer.render(scene, camera);
     const fotoBase = captureBaseWithContext(); // mismo contexto clarito + area de estudio que en Natural
 
     // Captura de CONTEXTO (camara alejada), igual que en Escala natural.
@@ -5461,9 +5439,13 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   }
 
   function closeCulturalExplode() {
+    const p = document.getElementById("escalaZoomPanel");
+    if (p) p.style.display = "none";
+    const l = document.getElementById("legendActiveLayer");
+    if (l) l.style.display = "none";
     if (!cultOverlay) return;
     const sceneWrapRestore3 = document.getElementById("sceneWrap");
-    if (sceneWrapRestore3) sceneWrapRestore3.style.display = "block";
+    // if (sceneWrapRestore3) sceneWrapRestore3.style.display = "block";
     if (cultAnimFrame) { cancelAnimationFrame(cultAnimFrame); cultAnimFrame = null; }
     if (cultHistPlaying) stopCultHistory();
 
@@ -6510,5 +6492,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     window.addEventListener("pointermove", e => { if (!dragPt) return; dragPt.pl.pts[dragPt.i] = localPt(e); redraw(); });
     window.addEventListener("pointerup", () => { dragPt = null; });
   })();
+  applyEscalaTransform();
 })();
 
