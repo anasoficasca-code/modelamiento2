@@ -304,7 +304,7 @@
   // transform ADICIONAL sobre el contenido, encima del encuadre base
   // (fitEscalaOverlays), para poder agrandar/achicar y mover sin romper
   // el encaje inicial. ----
-  let escalaScale = 1.20, escalaOffX = 40, escalaOffY = -20;
+  let escalaScale = 1.20, escalaOffX = 60, escalaOffY = 20;
   function applyEscalaTransform() {
     ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
       const el = document.getElementById(id);
