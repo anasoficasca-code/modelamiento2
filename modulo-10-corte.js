@@ -1725,7 +1725,7 @@
       sceneExtentW = w; sceneExtentH = h;
       if (typeof updateSectionBox === "function") updateSectionBox();
       rebuildFilteredGeometry();
-      viewSize = Math.max(w, h) * 0.135; // mas zoom (antes 0.155) para que se vea mas grande en el recuadro reducido del panel
+      viewSize = Math.max(w, h) * 0.125; // un poco mas de zoom todavia (antes 0.135)
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
