@@ -278,6 +278,34 @@
       el.style.right = "0";
       el.style.bottom = corteH + "%";
     });
+    // Se ocultan el boton "Volver a escalas", el boton de extraer/ensamblar
+    // capa y el rotulo "ESCALA NATURAL..." -- ese contenido ahora va
+    // dentro de convenciones. El diamante sigue respondiendo al clic para
+    // avanzar sus sub-capas (advanceNaturalAssemble), asi que no se pierde
+    // la funcionalidad, solo se oculta el boton.
+    ["natExplodeBack", "natAssembleBtn", "natEscalaLabel"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+    // El texto que decia "ESCALA NATURAL / Extraer Capa..." se mueve a
+    // convenciones, y se actualiza cada vez que se avanza de sub-capa.
+    function syncLegendFromEscala() {
+      const legendActiveLayer = document.getElementById("legendActiveLayer");
+      const legendActiveLayerText = document.getElementById("legendActiveLayerText");
+      const label = document.getElementById("natEscalaLabel");
+      const btnText = document.getElementById("natAssembleBtnText");
+      if (!legendActiveLayer || !legendActiveLayerText || !label) return;
+      legendActiveLayer.style.display = "block";
+      legendActiveLayerText.textContent = label.textContent.trim() + (btnText ? " — " + btnText.textContent.trim() : "");
+    }
+    syncLegendFromEscala();
+    if (!window.__legendEscalaObs) {
+      const btnTextEl = document.getElementById("natAssembleBtnText");
+      if (btnTextEl && window.MutationObserver) {
+        window.__legendEscalaObs = new MutationObserver(syncLegendFromEscala);
+        window.__legendEscalaObs.observe(btnTextEl, { childList: true, characterData: true, subtree: true });
+      }
+    }
   }
 
   function applyLayoutOrganization() {

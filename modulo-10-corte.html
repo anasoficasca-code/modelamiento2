@@ -486,7 +486,7 @@
     </div>
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA NATURAL (4 CAPAS ARQUITECTÓNICAS) -->
-    <div id="naturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:450; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:auto;">
+    <div id="naturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:450; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
       <div id="natLayerContext" style="position:absolute; top:50%; left:50%; width:min(96vw, 1400px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -46%); transition:opacity 1.2s ease; pointer-events:none;">
         <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="natContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
       </div>
@@ -498,7 +498,7 @@
         <button type="button" id="natAssembleBtn" style="display:flex; align-items:center; gap:8px; padding:7px 16px; border-radius:20px; border:1px solid rgba(42,133,106,.3); background:#2a856a; color:#ffffff; font-size:12px; font-weight:700; cursor:pointer; box-shadow:0 3px 12px rgba(42,133,106,.25); transition:background .2s ease;">
           <i class="fa-solid fa-layer-group"></i> <span id="natAssembleBtnText">Bajar y ensamblar en base axo</span>
         </button>
-        <span style="font-size:12.5px; font-weight:700; color:#111418; letter-spacing:-.01em;">
+        <span id="natEscalaLabel" style="font-size:12.5px; font-weight:700; color:#111418; letter-spacing:-.01em;">
           ESCALA NATURAL · <span style="color:#2a856a; font-weight:600;">Simulación Hídrica y Cobertura Vegetal</span>
         </span>
       </div>
@@ -583,7 +583,7 @@
     </div>
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA CULTURAL Y SOCIO-URBANA (4 CAPAS DE SIMULACIÓN) -->
-    <div id="culturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:450; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:auto;">
+    <div id="culturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:450; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
       <div id="culLayerContext" style="position:absolute; top:50%; left:50%; width:min(96vw, 1400px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -46%); transition:opacity 1.2s ease; pointer-events:none;">
         <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="culContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
       </div>
@@ -724,7 +724,7 @@
     </div>
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA TECNOLÓGICA (2 CAPAS DE SIMULACIÓN) -->
-    <div id="techExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:450; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:auto;">
+    <div id="techExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:450; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
       <div id="techLayerContext" style="position:absolute; top:50%; left:50%; width:min(96vw, 1400px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -46%); transition:opacity 1.2s ease; pointer-events:none;">
         <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="techContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
       </div>
