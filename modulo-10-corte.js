@@ -3155,6 +3155,10 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     scene.background = origBg;
     if (axoBorderMesh) axoBorderMesh.visible = borderVis;
     if (mainBurroMesh) mainBurroMesh.visible = burroVisPrev;
+    // Restore full city geometry for the main live view
+    if (rawBuildingsData) buildBuildings(rawBuildingsData, null);
+    if (rawEdgesData) buildRoads(rawEdgesData, null);
+    rebuildFilteredGeometry(); // Re-apply section box if active
     return off.toDataURL("image/png");
   }
 
@@ -3162,7 +3166,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   // (d > 0) la MISMA distancia en todos lados, en metros. Asi el agua
   // crece como una cota de inundacion, sin correrse ni deformarse. ----
 
-  // ---- OFFSET real(pts, d) {
+  function offsetPoly(pts, d) {
     const n = pts.length; if (n < 3 || !d) return pts.map(p => [p[0], p[1]]);
     let area = 0; for (let i = 0; i < n; i++) { const a = pts[i], b = pts[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; }
     const sgn = area > 0 ? 1 : -1; // antihorario: la normal hacia afuera es (dy, -dx)
