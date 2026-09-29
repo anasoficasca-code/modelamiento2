@@ -126,188 +126,55 @@
   // en el mismo estilo del corte de referencia (siluetas planas: tierra,
   // agua, arboles, peces, aves, patos, anden, lamparas). Se construye
   // una sola vez, todo en SVG con animaciones CSS por transform. ----
+  // ---- Corte dinamico: se usa la imagen REAL que la usuaria subio, tal
+  // cual, sin redibujar nada -- solo se le agregan aves animadas encima,
+  // ubicadas sobre las mismas zonas donde ya estaban dibujadas en la
+  // imagen (una rojiza, una gris y un par de negras cerca del arbolado
+  // derecho), para que se vean moviendose. ----
   function buildDynamicSection() {
-    const svg = document.getElementById("dynSecSvg");
-    if (!svg || svg.dataset.built) return;
-    svg.dataset.built = "1";
+    const svg = document.getElementById("dynSecBirdsSvg");
+    const img = document.getElementById("dynSecBaseImg");
+    if (!svg || !img) return;
 
-    const NS = "http://www.w3.org/2000/svg";
-    const groundY = 470; // linea del suelo
-    const waterL = 840, waterR = 1360; // bordes del agua
-    const waterDipY = 545, waterBotY = 615;
-
-    function frag(str) {
-      const t = document.createElementNS(NS, "g");
-      t.innerHTML = str;
-      return t.firstElementChild ? t : t; // placeholder, se usa innerHTML directo abajo
+    function layoutBirds() {
+      const stageRect = document.getElementById("dynSecStage").getBoundingClientRect();
+      const imgRect = img.getBoundingClientRect();
+      // posiciones como % del ANCHO/ALTO de la imagen real, calcadas de
+      // donde ya estaban dibujadas las aves en la ilustracion original
+      const birds = [
+        { xPct: 0.421, yPct: 0.719, s: 1.0, color: "#c07356", dur: 3.2 },
+        { xPct: 0.551, yPct: 0.800, s: 0.85, color: "#8f97a3", dur: 2.6 },
+        { xPct: 0.642, yPct: 0.792, s: 0.9, color: "#1c1c1c", dur: 2.9 },
+        { xPct: 0.661, yPct: 0.812, s: 0.9, color: "#1c1c1c", dur: 2.9 },
+      ];
+      svg.innerHTML = birds.map((b, i) => {
+        const x = (imgRect.left - stageRect.left) + imgRect.width * b.xPct;
+        const y = (imgRect.top - stageRect.top) + imgRect.height * b.yPct;
+        const s = b.s * (imgRect.height / 900); // escala segun tamaño real de la imagen
+        return `<g class="dynBirdFly2" style="animation-duration:${b.dur}s; animation-delay:${i*0.4}s; transform-origin:${x}px ${y}px;">
+          <path class="dynWing2" d="M${x-14*s},${y} Q${x},${y-11*s} ${x+14*s},${y} Q${x},${y-4*s} ${x-14*s},${y} Z"
+            fill="${b.color}" style="transform-origin:${x}px ${y}px;"/>
+        </g>`;
+      }).join("");
     }
 
-    // ---- fondo: cielo ----
-    let svgHTML = `
-    <defs>
-      <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#cdb08c"/>
-        <stop offset="55%" stop-color="#a9835c"/>
-        <stop offset="100%" stop-color="#7c5c3c" stop-opacity=".25"/>
-      </linearGradient>
-      <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#7fd0c8"/>
-        <stop offset="100%" stop-color="#2f8f8c"/>
-      </linearGradient>
-      <radialGradient id="treeGrad" cx="40%" cy="30%" r="75%">
-        <stop offset="0%" stop-color="#9fae7c"/>
-        <stop offset="100%" stop-color="#7c8f5c"/>
-      </radialGradient>
-    </defs>`;
+    if (img.complete) layoutBirds();
+    else img.addEventListener("load", layoutBirds, { once: true });
+    window.addEventListener("resize", layoutBirds);
 
-    // ---- linea de suelo (ligeramente ondulada) + relleno de tierra ----
-    const groundPath = `M0,${groundY} C120,${groundY-6} 260,${groundY+4} 420,${groundY-2}
-      L${waterL-40},${groundY-2} C${waterL-10},${groundY-2} ${waterL-10},${waterDipY} ${waterL+30},${waterDipY}
-      L${waterR-30},${waterDipY} C${waterR+10},${waterDipY} ${waterR+10},${groundY-2} ${waterR+40},${groundY-2}
-      L1600,${groundY-4} C1750,${groundY-8} 1880,${groundY+3} 2000,${groundY-2}
-      L2000,700 L0,700 Z`;
-    svgHTML += `<path d="${groundPath}" fill="url(#groundGrad)"/>`;
-    svgHTML += `<path d="M0,${groundY} C120,${groundY-6} 260,${groundY+4} 420,${groundY-2}
-      L${waterL-40},${groundY-2} C${waterL-10},${groundY-2} ${waterL-10},${waterDipY} ${waterL+30},${waterDipY}
-      L${waterR-30},${waterDipY} C${waterR+10},${waterDipY} ${waterR+10},${groundY-2} ${waterR+40},${groundY-2}
-      L1600,${groundY-4} C1750,${groundY-8} 1880,${groundY+3} 2000,${groundY-2}"
-      fill="none" stroke="#5c4326" stroke-width="3"/>`;
-
-    // ---- raices (lineas ramificadas colgando del suelo) ----
-    function rootAt(x, y, scale) {
-      const s = scale || 1;
-      return `<g stroke="#5c4326" stroke-width="${1.4*s}" fill="none" opacity=".55">
-        <path d="M${x},${y} q-10,${28*s} -26,${46*s} q-6,${14*s} -18,${20*s}"/>
-        <path d="M${x},${y} q6,${30*s} -4,${58*s} q4,${12*s} -6,${24*s}"/>
-        <path d="M${x},${y} q18,${24*s} 22,${50*s} q8,${10*s} 4,${26*s}"/>
-      </g>`;
-    }
-    let rootsHTML = "";
-    [90,190,300,520,650,760, 1440,1560,1680,1800,1900].forEach((x,i)=>{
-      rootsHTML += rootAt(x, groundY + 6, 0.8 + (i%3)*0.15);
-    });
-    svgHTML += rootsHTML;
-
-    // ---- lamparas de aden ----
-    svgHTML += `<g stroke="#41454b" stroke-width="3" fill="none" opacity=".85">
-      <path d="M740,${groundY} L740,${groundY-150}"/>
-      <path d="M740,${groundY-150} q-4,-14 -24,-16 q-14,0 -18,10"/>
-      <ellipse cx="716" cy="${groundY-158}" rx="9" ry="5" fill="#41454b" stroke="none"/>
-      <path d="M790,${groundY} L790,${groundY-115}"/>
-      <path d="M790,${groundY-115} q-4,-12 -22,-14 q-12,0 -16,9"/>
-      <ellipse cx="770" cy="${groundY-121}" rx="8" ry="4.5" fill="#41454b" stroke="none"/>
-    </g>`;
-
-    // ---- personas (simples) ----
-    function person(x, shirt) {
-      const y = groundY;
-      return `<g>
-        <circle cx="${x}" cy="${y-58}" r="7" fill="#3b3530"/>
-        <path d="M${x-7},${y-48} q7,-8 14,0 l3,30 q-10,5 -20,0 z" fill="${shirt}"/>
-        <path d="M${x-4},${y-18} l-2,18 M${x+4},${y-18} l2,18" stroke="#3b3530" stroke-width="3" fill="none"/>
-      </g>`;
-    }
-    svgHTML += person(945, "#c96a5a");
-    svgHTML += person(965, "#8b8f95");
-
-    // ---- pastos / juncos en los bordes del agua ----
-    function reedCluster(x) {
-      let g = `<g stroke="#5f7a45" stroke-width="2.4" fill="none" opacity=".8">`;
-      for (let i=0;i<6;i++){
-        const dx = (i-2.5)*7, h = 34+ (i%3)*10;
-        g += `<path d="M${x+dx},${groundY+4} q${2-i%3},-${h*0.6} ${1-i%2},-${h}"/>`;
-      }
-      g += `</g>`;
-      return g;
-    }
-    svgHTML += reedCluster(waterL-15);
-    svgHTML += reedCluster(waterR+15);
-
-    // ---- arboles: racimos de blobs a ambos lados ----
-    function treeBlob(cx, cy, r, op) {
-      return `<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r*0.78}" fill="url(#treeGrad)" opacity="${op}"/>`;
-    }
-    function treeCluster(baseX, n, spread, big) {
-      let g = "";
-      for (let i=0;i<n;i++){
-        const cx = baseX + (i-n/2)*spread*0.6 + (i%2? 18:-10);
-        const r = big*(0.7+ (i%3)*0.18);
-        const cy = groundY - r*0.85 - (i%2)*10;
-        g += treeBlob(cx, cy, r, 0.42 + (i%3)*0.12);
-      }
-      return g;
-    }
-    svgHTML += treeCluster(230, 3, 90, 95);
-    svgHTML += treeCluster(560, 5, 95, 115);
-    svgHTML += treeCluster(1700, 6, 100, 120);
-    svgHTML += treeCluster(1930, 3, 90, 95);
-    // troncos sutiles
-    [230,300,520,600,700,1620,1700,1780,1860,1940].forEach(x=>{
-      svgHTML += `<path d="M${x},${groundY} l0,-46" stroke="#5c5a3e" stroke-width="3" opacity=".35"/>`;
-    });
-
-    // ---- agua ----
-    const waterPath = `M${waterL},${waterDipY} L${waterR},${waterDipY}
-      C${waterR},${waterBotY-30} ${waterR-40},${waterBotY} ${(waterL+waterR)/2},${waterBotY}
-      C${waterL+40},${waterBotY} ${waterL},${waterBotY-30} ${waterL},${waterDipY} Z`;
-    svgHTML += `<path d="${waterPath}" fill="url(#waterGrad)"/>`;
-    svgHTML += `<path d="M${waterL+10},${waterDipY+3} Q${(waterL+waterR)/2},${waterDipY-4} ${waterR-10},${waterDipY+3}" fill="none" stroke="#cdeee9" stroke-width="2.5" opacity=".7"/>`;
-
-    // ---- peces (dentro del agua, con animacion de nado) ----
-    function fish(x, y, s, dur, delay, flip) {
-      return `<g class="dynFish" style="animation-duration:${dur}s; animation-delay:${delay}s; transform-origin:${x}px ${y}px;">
-        <path d="M${x-10*s},${y} q${10*s},-${6*s} ${20*s},0 q-${10*s},${6*s} -${20*s},0 Z M${x-10*s},${y} l-${7*s},-${5*s} l0,${10*s} Z"
-          fill="#22343a" opacity=".8" transform="${flip? `scale(-1,1) translate(${-2*x},0)`:""}"/>
-      </g>`;
-    }
-    svgHTML += fish(waterL+120, waterDipY+35, 1, 6, 0, false);
-    svgHTML += fish(waterL+260, waterDipY+50, 1.2, 7, 1.2, true);
-    svgHTML += fish((waterL+waterR)/2+40, waterDipY+40, 0.9, 5.5, 0.6, false);
-    svgHTML += fish(waterR-140, waterDipY+55, 1.1, 6.5, 2, true);
-
-    // ---- patos en la superficie del agua ----
-    function duck(x) {
-      const y = waterDipY + 6;
-      return `<g class="dynDuck" style="transform-origin:${x}px ${y}px;">
-        <ellipse cx="${x}" cy="${y}" rx="11" ry="7" fill="#2b2620"/>
-        <circle cx="${x+9}" cy="${y-6}" r="5" fill="#2b2620"/>
-        <path d="M${x+13},${y-6} l6,1 l-6,2 Z" fill="#caa23a"/>
-      </g>`;
-    }
-    svgHTML += duck(waterL+70);
-
-    // ---- aves volando (con aleteo y traslado) ----
-    function flyingBird(x, y, s, color, dur, delay) {
-      return `<g class="dynBirdFly" style="animation-duration:${dur}s; animation-delay:${delay}s;">
-        <path class="dynWing" d="M${x-12*s},${y} Q${x},${y-10*s} ${x+12*s},${y} Q${x},${y-4*s} ${x-12*s},${y} Z"
-          fill="${color}" style="transform-origin:${x}px ${y}px;"/>
-      </g>`;
-    }
-    svgHTML += flyingBird(940, 130, 2.6, "#b5583f", 14, 0);
-    svgHTML += flyingBird(1260, 230, 3.0, "#6d7278", 12, 2);
-    svgHTML += flyingBird(1420, 200, 2.4, "#1c1c1c", 13, 1);
-    svgHTML += flyingBird(1470, 185, 2.4, "#1c1c1c", 13, 1.35);
-    svgHTML += flyingBird(560, 190, 2.2, "#8a8f95", 15, 3);
-
-    svg.innerHTML = svgHTML;
-
-    // ---- animaciones (una sola vez) ----
-    if (!document.getElementById("dynSecStyle")) {
+    if (!document.getElementById("dynSecStyle2")) {
       const st = document.createElement("style");
-      st.id = "dynSecStyle";
+      st.id = "dynSecStyle2";
       st.textContent = `
-        .dynFish { animation-name: dynSwim; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
-        @keyframes dynSwim { 0%{transform:translateX(0)} 50%{transform:translateX(26px)} 100%{transform:translateX(0)} }
-        .dynDuck { animation: dynBob 3.2s ease-in-out infinite; }
-        @keyframes dynBob { 0%{transform:translateY(0)} 50%{transform:translateY(-3px)} 100%{transform:translateY(0)} }
-        .dynBirdFly { animation-name: dynFly; animation-timing-function: linear; animation-iteration-count: infinite; }
-        @keyframes dynFly { 0%{transform:translate(-60px,10px)} 100%{transform:translate(760px,-90px)} }
-        .dynWing { animation: dynFlap .5s ease-in-out infinite; }
-        @keyframes dynFlap { 0%{transform:scaleY(1)} 50%{transform:scaleY(.35)} 100%{transform:scaleY(1)} }
+        .dynBirdFly2 { animation-name: dynFly2; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+        @keyframes dynFly2 { 0%{transform:translate(0,0)} 50%{transform:translate(18px,-10px)} 100%{transform:translate(0,0)} }
+        .dynWing2 { animation: dynFlap2 .45s ease-in-out infinite; }
+        @keyframes dynFlap2 { 0%{transform:scaleY(1)} 50%{transform:scaleY(.3)} 100%{transform:scaleY(1)} }
       `;
       document.head.appendChild(st);
     }
   }
+
 
   const dynamicSectionBtn = document.getElementById("dynamicSectionBtn");
   const dynamicSectionOverlay = document.getElementById("dynamicSectionOverlay");
