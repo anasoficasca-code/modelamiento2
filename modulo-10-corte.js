@@ -145,15 +145,23 @@
   // con sliders, y arma un texto de coordenadas para copiar y reproducir
   // esa misma organizacion despues. ----
   const layoutLegendW = document.getElementById("layoutLegendW");
+  const layoutAxoTop = document.getElementById("layoutAxoTop");
+  const layoutAxoH = document.getElementById("layoutAxoH");
   const layoutCorteH = document.getElementById("layoutCorteH");
   const layoutLegendWVal = document.getElementById("layoutLegendWVal");
+  const layoutAxoTopVal = document.getElementById("layoutAxoTopVal");
+  const layoutAxoHVal = document.getElementById("layoutAxoHVal");
   const layoutCorteHVal = document.getElementById("layoutCorteHVal");
   const layoutCoordsOutput = document.getElementById("layoutCoordsOutput");
   function applyLayoutOrganization() {
     if (!layoutLegendW) return;
     const legendW = parseInt(layoutLegendW.value, 10);
+    const axoTop = parseInt(layoutAxoTop.value, 10);
+    const axoH = parseInt(layoutAxoH.value, 10);
     const corteH = parseInt(layoutCorteH.value, 10);
     layoutLegendWVal.textContent = legendW + "px";
+    layoutAxoTopVal.textContent = axoTop + "px";
+    layoutAxoHVal.textContent = axoH + "%";
     layoutCorteHVal.textContent = corteH + "%";
     const legendPanelEl2 = document.getElementById("legendPanel");
     const sectionWrapEl3 = document.getElementById("sectionWrap");
@@ -161,20 +169,27 @@
     if (legendPanelEl2) legendPanelEl2.style.width = legendW + "px";
     if (sectionWrapEl3) { sectionWrapEl3.style.left = legendW + "px"; sectionWrapEl3.style.height = corteH + "%"; }
     if (wrapEl) {
+      // La axonometria ya no depende del alto del corte: tiene su propia
+      // posicion vertical (puede moverse hacia arriba, incluso a valores
+      // negativos, para que no la tape nada al explotar una capa) y su
+      // propio alto, independientes del corte de abajo.
       wrapEl.style.left = legendW + "px";
       wrapEl.style.right = "0";
-      wrapEl.style.top = "0";
-      wrapEl.style.bottom = corteH + "%";
+      wrapEl.style.top = axoTop + "px";
+      wrapEl.style.height = axoH + "%";
+      wrapEl.style.bottom = "";
     }
     resize();
     resizeSectionView();
     if (layoutCoordsOutput) {
       layoutCoordsOutput.value =
-        `// === ORGANIZACION DEL PANEL ===\nconst LAYOUT = {\n  legendWidthPx: ${legendW},\n  corteHeightPct: ${corteH}\n};`;
+        `// === ORGANIZACION DEL PANEL ===\nconst LAYOUT = {\n  legendWidthPx: ${legendW},\n  axoTopPx: ${axoTop},\n  axoHeightPct: ${axoH},\n  corteHeightPct: ${corteH}\n};`;
     }
   }
   if (layoutLegendW) {
     layoutLegendW.addEventListener("input", applyLayoutOrganization);
+    layoutAxoTop.addEventListener("input", applyLayoutOrganization);
+    layoutAxoH.addEventListener("input", applyLayoutOrganization);
     layoutCorteH.addEventListener("input", applyLayoutOrganization);
     const layoutCoordsCopy = document.getElementById("layoutCoordsCopy");
     if (layoutCoordsCopy) layoutCoordsCopy.addEventListener("click", async () => {
@@ -2630,6 +2645,15 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
 
   // ---- Clic en Escala Natural (Capa 1): abre la sub-explosión de 4 capas arquitectónicas ----
   const natOverlay = document.getElementById("naturalExplodeOverlay");
+  // Delegacion de eventos para el boton de volver: si el contenido del
+  // overlay se regenera en algun momento y el listener directo del boton
+  // se pierde, este de aqui sigue funcionando porque esta en el
+  // contenedor estable (natOverlay), no en el boton mismo.
+  if (natOverlay) natOverlay.addEventListener("click", (e) => {
+    if (e.target && (e.target.id === "natExplodeBack" || e.target.closest("#natExplodeBack"))) {
+      closeNaturalExplode();
+    }
+  });
   const natBackBtn = document.getElementById("natExplodeBack");
   const natAssembleBtn = document.getElementById("natAssembleBtn");
   const natAssembleBtnText = document.getElementById("natAssembleBtnText");
