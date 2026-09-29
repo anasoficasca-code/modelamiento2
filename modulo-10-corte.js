@@ -99,7 +99,7 @@
       sectionCamera.position.set(152.7, 6.8, -12.5);
       sectionCamera.up.set(0, 1, 0);
       sectionCamera.lookAt(187.6, 2.1, -36.8);
-      sectionCamera.fov = 20;
+      sectionCamera.fov = 12; // solo se agranda el contenido (mas zoom), el tamaño del panel no se toca
       sectionCamera.zoom = 1.0;
       if (!sectionControls) {
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);

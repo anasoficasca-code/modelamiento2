@@ -286,16 +286,16 @@
       <input type="range" id="layoutLegendW" min="120" max="420" value="200" step="2" style="width:100%; margin:4px 0 10px;">
       <label style="font-size:11px; display:flex; justify-content:space-between;">Posición vertical de la axonometría <span id="layoutAxoTopVal">0px</span></label>
       <input type="range" id="layoutAxoTop" min="-150" max="200" value="0" step="2" style="width:100%; margin:4px 0 10px;">
-      <label style="font-size:11px; display:flex; justify-content:space-between;">Alto de la axonometría <span id="layoutAxoHVal">72%</span></label>
-      <input type="range" id="layoutAxoH" min="30" max="100" value="72" step="1" style="width:100%; margin:4px 0 10px;">
-      <label style="font-size:11px; display:flex; justify-content:space-between;">Alto del corte <span id="layoutCorteHVal">28%</span></label>
-      <input type="range" id="layoutCorteH" min="10" max="80" value="28" step="1" style="width:100%; margin:4px 0 10px;">
+      <label style="font-size:11px; display:flex; justify-content:space-between;">Alto de la axonometría <span id="layoutAxoHVal">84%</span></label>
+      <input type="range" id="layoutAxoH" min="30" max="100" value="84" step="1" style="width:100%; margin:4px 0 10px;">
+      <label style="font-size:11px; display:flex; justify-content:space-between;">Alto del corte <span id="layoutCorteHVal">16%</span></label>
+      <input type="range" id="layoutCorteH" min="10" max="80" value="16" step="1" style="width:100%; margin:4px 0 10px;">
       <textarea id="layoutCoordsOutput" rows="5" readonly spellcheck="false" style="width:100%; background:#0b0c0f; color:#8fd4c8; border:1px solid rgba(255,255,255,.14); border-radius:6px; font:11px/1.4 monospace; padding:6px; resize:vertical;"></textarea>
       <button type="button" id="layoutCoordsCopy" style="width:100%; margin-top:6px; padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:11px; font-weight:700; cursor:pointer;">📋 Copiar coordenadas</button>
     </div>
 
     <!-- Corte: vista en seccion del mismo territorio, cortando por el humedal -->
-    <div id="sectionWrap" style="display:none; position:absolute; left:0; right:0; bottom:0; height:28%; min-height:220px; z-index:400; border-top:1px solid rgba(0,0,0,.12); background:#eef2f5;">
+    <div id="sectionWrap" style="display:none; position:absolute; left:0; right:0; bottom:0; height:16%; min-height:150px; z-index:400; border-top:1px solid rgba(0,0,0,.12); background:#eef2f5;">
       <canvas id="sectionCanvas" style="width:100%; height:100%; display:block; cursor:grab;"></canvas>
       <!-- Controles independientes para el corte inferior -->
       <div id="botControls" style="display:block; position:absolute; right:10px; top:10px; width:220px; background:rgba(255,255,255,0.9); padding:10px; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.15); font-family:'Segoe UI',sans-serif; font-size:11px; color:#333; z-index:10;">
