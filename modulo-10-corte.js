@@ -99,7 +99,7 @@
       sectionCamera.position.set(152.7, 6.8, -12.5);
       sectionCamera.up.set(0, 1, 0);
       sectionCamera.lookAt(187.6, 2.1, -36.8);
-      sectionCamera.fov = 12; // solo se agranda el contenido (mas zoom), el tamaño del panel no se toca
+      sectionCamera.fov = 14; // solo se agranda el contenido (mas zoom), el tamaño del panel no se toca
       sectionCamera.zoom = 1.0;
       if (!sectionControls) {
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
@@ -304,7 +304,7 @@
   // transform ADICIONAL sobre el contenido, encima del encuadre base
   // (fitEscalaOverlays), para poder agrandar/achicar y mover sin romper
   // el encaje inicial. ----
-  let escalaScale = 1, escalaOffX = 0, escalaOffY = 0;
+  let escalaScale = 1.20, escalaOffX = 0, escalaOffY = 0;
   function applyEscalaTransform() {
     ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
       const el = document.getElementById(id);
@@ -317,12 +317,15 @@
     const out = document.getElementById("escalaCoordsOutput");
     if (out) out.value = `// === TAMAÑO Y POSICIÓN ===\nconst ESCALA_TRANSFORM = {\n  scale: ${escalaScale.toFixed(2)},\n  offsetX: ${Math.round(escalaOffX)},\n  offsetY: ${Math.round(escalaOffY)}\n};`;
   }
-  const escalaZoomIn = document.getElementById("escalaZoomIn");
-  const escalaZoomOut = document.getElementById("escalaZoomOut");
-  const escalaZoomReset = document.getElementById("escalaZoomReset");
-  if (escalaZoomIn) escalaZoomIn.addEventListener("click", (e) => { e.stopPropagation(); escalaScale = Math.min(2.5, escalaScale + 0.1); applyEscalaTransform(); });
-  if (escalaZoomOut) escalaZoomOut.addEventListener("click", (e) => { e.stopPropagation(); escalaScale = Math.max(0.4, escalaScale - 0.1); applyEscalaTransform(); });
-  if (escalaZoomReset) escalaZoomReset.addEventListener("click", (e) => { e.stopPropagation(); escalaScale = 1; escalaOffX = 0; escalaOffY = 0; applyEscalaTransform(); });
+  const panUp = document.getElementById("panUp");
+  const panDown = document.getElementById("panDown");
+  const panLeft = document.getElementById("panLeft");
+  const panRight = document.getElementById("panRight");
+  const PAN_STEP = 20;
+  if (panUp) panUp.addEventListener("click", (e) => { e.stopPropagation(); escalaOffY -= PAN_STEP; applyEscalaTransform(); });
+  if (panDown) panDown.addEventListener("click", (e) => { e.stopPropagation(); escalaOffY += PAN_STEP; applyEscalaTransform(); });
+  if (panLeft) panLeft.addEventListener("click", (e) => { e.stopPropagation(); escalaOffX -= PAN_STEP; applyEscalaTransform(); });
+  if (panRight) panRight.addEventListener("click", (e) => { e.stopPropagation(); escalaOffX += PAN_STEP; applyEscalaTransform(); });
   const escalaCoordsCopy = document.getElementById("escalaCoordsCopy");
   if (escalaCoordsCopy) escalaCoordsCopy.addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(document.getElementById("escalaCoordsOutput").value); escalaCoordsCopy.textContent = "✅ Copiado"; setTimeout(() => { escalaCoordsCopy.textContent = "📋 Copiar coordenadas"; }, 1600); } catch (err) {}
