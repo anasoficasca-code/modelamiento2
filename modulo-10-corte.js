@@ -2319,40 +2319,10 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     else if (explodeStep === 9) { if (vehInstanced) riseAndSettle(vehInstanced, 20); }
     else if (explodeStep === 10) { if (noiseMesh) riseAndSettle(noiseMesh, 14); }
     else if (explodeStep === 11) { if (vehInstanced) riseAndSettle(vehInstanced, 20); if (noiseMesh) riseAndSettle(noiseMesh, 14, 1100); }
-    updateExplodeInsets();
-  }
-
-  // ---- Reutiliza EXACTAMENTE las simulaciones que ya existian (no unas
-  // simplificadas nuevas): la del crecimiento del agua mes a mes y la de
-  // las aves, moviendo esos mismos canvases dentro de la axonometria
-  // para la capa correspondiente, en vez de abrir el panel aparte. ----
-  let natInsetAnimFrame = null;
-  function updateExplodeInsets() {
-    const waterInset = document.getElementById("natWaterInset");
-    const birdInset = document.getElementById("natBirdInset");
-    if (natInsetAnimFrame) { cancelAnimationFrame(natInsetAnimFrame); natInsetAnimFrame = null; }
-    if (explodeStep === 1 && waterInset && typeof natWaterCanvas !== "undefined" && natWaterCanvas) {
-      waterInset.style.display = "block";
-      if (birdInset) birdInset.style.display = "none";
-      waterInset.appendChild(natWaterCanvas);
-      const loop = () => {
-        renderNaturalWaterLayer(mainBurroMes || 1);
-        natInsetAnimFrame = requestAnimationFrame(loop);
-      };
-      loop();
-    } else if (explodeStep === 3 && birdInset && typeof natBirdCanvas !== "undefined" && natBirdCanvas) {
-      birdInset.style.display = "block";
-      if (waterInset) waterInset.style.display = "none";
-      birdInset.appendChild(natBirdCanvas);
-      const loop = () => {
-        renderNaturalBirdLayer(mainBurroMes || 1);
-        natInsetAnimFrame = requestAnimationFrame(loop);
-      };
-      loop();
-    } else {
-      if (waterInset) waterInset.style.display = "none";
-      if (birdInset) birdInset.style.display = "none";
-    }
+    const waterInsetEl = document.getElementById("natWaterInset");
+    const birdInsetEl = document.getElementById("natBirdInset");
+    if (waterInsetEl) waterInsetEl.style.display = "none";
+    if (birdInsetEl) birdInsetEl.style.display = "none";
   }
   canvas.addEventListener("click", (e) => {
     // Sin pantalla intermedia de 3 escalas: el primer clic ya revela el
