@@ -297,54 +297,38 @@
   const layoutCorteHVal = document.getElementById("layoutCorteHVal");
   const layoutCoordsOutput = document.getElementById("layoutCoordsOutput");
   // Encaja las escalas (Natural/Cultural/Tecnologica) dentro del panel en
-  // vez de pantalla completa -- sin tocar nada de su contenido interno,
-  // solo el tamaño y la posicion del contenedor que las envuelve.
-  // ---- Zoom + arrastre libre para la escala/axonometria activa, con
-  // coordenadas para copiar. El zoom/posicion se aplican como un
-  // transform ADICIONAL sobre el contenido, encima del encuadre base
-  // (fitEscalaOverlays), para poder agrandar/achicar y mover sin romper
-  // el encaje inicial. ----
-  let escalaScale = 1, escalaOffX = 0, escalaOffY = 0;
-  function applyEscalaTransform() {
-    ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el || el.style.display === "none") return;
-      el.style.transform = `translate(${escalaOffX}px, ${escalaOffY}px) scale(${escalaScale})`;
-      el.style.transformOrigin = "center center";
-    });
-    const zv = document.getElementById("escalaZoomVal");
-    if (zv) zv.textContent = Math.round(escalaScale * 100) + "%";
+  // ---- Texto flotante con el numero/titulo de la capa, movible con
+  // flechitas dentro de la escala activa, con coordenadas para copiar. ----
+  let labelOffX = 0, labelOffY = 0;
+  const escalaFloatLabel = (() => {
+    const el = document.createElement("div");
+    el.id = "escalaFloatLabel";
+    el.style.cssText = "position:absolute; top:18px; left:50%; z-index:5; font:600 12px 'Segoe UI',sans-serif; color:#111418; background:rgba(255,255,255,.92); padding:6px 14px; border-radius:20px; box-shadow:0 2px 10px rgba(0,0,0,.1); pointer-events:none; white-space:nowrap;";
+    return el;
+  })();
+  function applyLabelPosition() {
+    escalaFloatLabel.style.transform = `translate(calc(-50% + ${labelOffX}px), ${labelOffY}px)`;
     const out = document.getElementById("escalaCoordsOutput");
-    if (out) out.value = `// === TAMAÑO Y POSICIÓN ===\nconst ESCALA_TRANSFORM = {\n  scale: ${escalaScale.toFixed(2)},\n  offsetX: ${Math.round(escalaOffX)},\n  offsetY: ${Math.round(escalaOffY)}\n};`;
+    if (out) out.value = `// === POSICIÓN DEL TÍTULO ===\nconst LABEL_POS = {\n  offsetX: ${Math.round(labelOffX)},\n  offsetY: ${Math.round(labelOffY)}\n};`;
   }
-  const escalaZoomIn = document.getElementById("escalaZoomIn");
-  const escalaZoomOut = document.getElementById("escalaZoomOut");
-  const escalaZoomReset = document.getElementById("escalaZoomReset");
-  if (escalaZoomIn) escalaZoomIn.addEventListener("click", (e) => { e.stopPropagation(); escalaScale = Math.min(2.5, escalaScale + 0.1); applyEscalaTransform(); });
-  if (escalaZoomOut) escalaZoomOut.addEventListener("click", (e) => { e.stopPropagation(); escalaScale = Math.max(0.4, escalaScale - 0.1); applyEscalaTransform(); });
-  if (escalaZoomReset) escalaZoomReset.addEventListener("click", (e) => { e.stopPropagation(); escalaScale = 1; escalaOffX = 0; escalaOffY = 0; applyEscalaTransform(); });
+  function syncFloatLabelText() {
+    const label = document.getElementById("natEscalaLabel");
+    const btnText = document.getElementById("natAssembleBtnText");
+    if (label) escalaFloatLabel.textContent = label.textContent.trim() + (btnText ? " — " + btnText.textContent.trim() : "");
+  }
+  const STEP = 12;
+  const labelMoveUp = document.getElementById("labelMoveUp");
+  const labelMoveDown = document.getElementById("labelMoveDown");
+  const labelMoveLeft = document.getElementById("labelMoveLeft");
+  const labelMoveRight = document.getElementById("labelMoveRight");
+  if (labelMoveUp) labelMoveUp.addEventListener("click", (e) => { e.stopPropagation(); labelOffY -= STEP; applyLabelPosition(); });
+  if (labelMoveDown) labelMoveDown.addEventListener("click", (e) => { e.stopPropagation(); labelOffY += STEP; applyLabelPosition(); });
+  if (labelMoveLeft) labelMoveLeft.addEventListener("click", (e) => { e.stopPropagation(); labelOffX -= STEP; applyLabelPosition(); });
+  if (labelMoveRight) labelMoveRight.addEventListener("click", (e) => { e.stopPropagation(); labelOffX += STEP; applyLabelPosition(); });
   const escalaCoordsCopy = document.getElementById("escalaCoordsCopy");
   if (escalaCoordsCopy) escalaCoordsCopy.addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(document.getElementById("escalaCoordsOutput").value); escalaCoordsCopy.textContent = "✅ Copiado"; setTimeout(() => { escalaCoordsCopy.textContent = "📋 Copiar coordenadas"; }, 1600); } catch (err) {}
   });
-  // Arrastre: se activa sobre el fondo blanco de la escala (no sobre
-  // botones/inputs), moviendola libremente por la pantalla.
-  let escalaDrag = null;
-  ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("pointerdown", (e) => {
-      if (e.target.closest("button, input, .nat-sublayer, canvas")) return;
-      escalaDrag = { startX: e.clientX, startY: e.clientY, offX: escalaOffX, offY: escalaOffY };
-    });
-  });
-  window.addEventListener("pointermove", (e) => {
-    if (!escalaDrag) return;
-    escalaOffX = escalaDrag.offX + (e.clientX - escalaDrag.startX);
-    escalaOffY = escalaDrag.offY + (e.clientY - escalaDrag.startY);
-    applyEscalaTransform();
-  });
-  window.addEventListener("pointerup", () => { escalaDrag = null; });
 
   function fitEscalaOverlays() {
     const legendW = (document.getElementById("layoutLegendW") || {}).value || 200;
@@ -368,26 +352,22 @@
       const el = document.getElementById(id);
       if (el) el.style.display = "none";
     });
-    // El texto que decia "ESCALA NATURAL / Extraer Capa..." se mueve a
-    // convenciones, y se actualiza cada vez que se avanza de sub-capa.
-    function syncLegendFromEscala() {
-      const legendActiveLayer = document.getElementById("legendActiveLayer");
-      const legendActiveLayerText = document.getElementById("legendActiveLayerText");
-      const label = document.getElementById("natEscalaLabel");
-      const btnText = document.getElementById("natAssembleBtnText");
-      if (!legendActiveLayer || !legendActiveLayerText || !label) return;
-      legendActiveLayer.style.display = "block";
-      legendActiveLayerText.textContent = label.textContent.trim() + (btnText ? " — " + btnText.textContent.trim() : "");
-    }
-    syncLegendFromEscala();
+    // El texto "ESCALA NATURAL / Extraer Capa..." ahora es un rotulo
+    // flotante DENTRO de la escala, movible con las flechitas (ya no fijo
+    // dentro de convenciones).
+    const legendActiveLayer = document.getElementById("legendActiveLayer");
+    if (legendActiveLayer) legendActiveLayer.style.display = "none";
+    const activeOverlay = document.getElementById("naturalExplodeOverlay");
+    if (activeOverlay && !activeOverlay.contains(escalaFloatLabel)) activeOverlay.appendChild(escalaFloatLabel);
+    syncFloatLabelText();
+    applyLabelPosition();
     const escalaZoomPanel = document.getElementById("escalaZoomPanel");
     if (escalaZoomPanel) escalaZoomPanel.style.display = "block";
-    applyEscalaTransform();
-    if (!window.__legendEscalaObs) {
+    if (!window.__labelEscalaObs) {
       const btnTextEl = document.getElementById("natAssembleBtnText");
       if (btnTextEl && window.MutationObserver) {
-        window.__legendEscalaObs = new MutationObserver(syncLegendFromEscala);
-        window.__legendEscalaObs.observe(btnTextEl, { childList: true, characterData: true, subtree: true });
+        window.__labelEscalaObs = new MutationObserver(syncFloatLabelText);
+        window.__labelEscalaObs.observe(btnTextEl, { childList: true, characterData: true, subtree: true });
       }
     }
   }
