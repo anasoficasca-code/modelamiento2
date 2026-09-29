@@ -2319,10 +2319,11 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     else if (explodeStep === 9) { if (vehInstanced) riseAndSettle(vehInstanced, 20); }
     else if (explodeStep === 10) { if (noiseMesh) riseAndSettle(noiseMesh, 14); }
     else if (explodeStep === 11) { if (vehInstanced) riseAndSettle(vehInstanced, 20); if (noiseMesh) riseAndSettle(noiseMesh, 14, 1100); }
-    const waterInsetEl = document.getElementById("natWaterInset");
-    const birdInsetEl = document.getElementById("natBirdInset");
-    if (waterInsetEl) waterInsetEl.style.display = "none";
-    if (birdInsetEl) birdInsetEl.style.display = "none";
+    // El contexto se ve difuminado detras, tal como se veia antes en las
+    // escalas, pero ahora ajustado al recuadro chico de la axonometria
+    // (no a pantalla completa).
+    const axoContextFadeEl = document.getElementById("axoContextFade");
+    if (axoContextFadeEl) axoContextFadeEl.style.display = "block";
   }
   canvas.addEventListener("click", (e) => {
     // Sin pantalla intermedia de 3 escalas: el primer clic ya revela el
