@@ -122,6 +122,19 @@
   }
   window.addEventListener("resize", resizeSectionView);
 
+  // Zoom +/- del corte: cambia sectionCamera.zoom (sin tocar el tamaño
+  // del panel), reflejado de inmediato en el cuadro de coordenadas.
+  const corteZoomIn = document.getElementById("corteZoomIn");
+  const corteZoomOut = document.getElementById("corteZoomOut");
+  function bumpCorteZoom(delta) {
+    if (!sectionCamera) return;
+    sectionCamera.zoom = Math.max(0.3, Math.min(6, sectionCamera.zoom + delta));
+    sectionCamera.updateProjectionMatrix();
+    if (typeof updateBotBox === "function") updateBotBox();
+  }
+  if (corteZoomIn) corteZoomIn.addEventListener("click", (e) => { e.stopPropagation(); bumpCorteZoom(0.2); });
+  if (corteZoomOut) corteZoomOut.addEventListener("click", (e) => { e.stopPropagation(); bumpCorteZoom(-0.2); });
+
   // ---- Corte dinamico: ilustracion animada del perfil del humedal,
   // en el mismo estilo del corte de referencia (siluetas planas: tierra,
   // agua, arboles, peces, aves, patos, anden, lamparas). Se construye
@@ -334,6 +347,8 @@
   });
 
   function fitEscalaOverlays() {
+    const layoutEditorEl = document.getElementById("layoutEditor");
+    if (layoutEditorEl) layoutEditorEl.style.display = "block";
     const legendW = (document.getElementById("layoutLegendW") || {}).value || 200;
     const corteH = (document.getElementById("layoutCorteH") || {}).value || 25;
     // A pedido de la usuaria: sin fondo solido, sin cuadro visible --
