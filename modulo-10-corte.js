@@ -267,6 +267,53 @@
   // Encaja las escalas (Natural/Cultural/Tecnologica) dentro del panel en
   // vez de pantalla completa -- sin tocar nada de su contenido interno,
   // solo el tamaño y la posicion del contenedor que las envuelve.
+  // ---- Zoom + arrastre libre para la escala/axonometria activa, con
+  // coordenadas para copiar. El zoom/posicion se aplican como un
+  // transform ADICIONAL sobre el contenido, encima del encuadre base
+  // (fitEscalaOverlays), para poder agrandar/achicar y mover sin romper
+  // el encaje inicial. ----
+  let escalaScale = 1, escalaOffX = 0, escalaOffY = 0;
+  function applyEscalaTransform() {
+    ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el || el.style.display === "none") return;
+      el.style.transform = `translate(${escalaOffX}px, ${escalaOffY}px) scale(${escalaScale})`;
+      el.style.transformOrigin = "center center";
+    });
+    const zv = document.getElementById("escalaZoomVal");
+    if (zv) zv.textContent = Math.round(escalaScale * 100) + "%";
+    const out = document.getElementById("escalaCoordsOutput");
+    if (out) out.value = `// === TAMAÑO Y POSICIÓN ===\nconst ESCALA_TRANSFORM = {\n  scale: ${escalaScale.toFixed(2)},\n  offsetX: ${Math.round(escalaOffX)},\n  offsetY: ${Math.round(escalaOffY)}\n};`;
+  }
+  const escalaZoomIn = document.getElementById("escalaZoomIn");
+  const escalaZoomOut = document.getElementById("escalaZoomOut");
+  const escalaZoomReset = document.getElementById("escalaZoomReset");
+  if (escalaZoomIn) escalaZoomIn.addEventListener("click", (e) => { e.stopPropagation(); escalaScale = Math.min(2.5, escalaScale + 0.1); applyEscalaTransform(); });
+  if (escalaZoomOut) escalaZoomOut.addEventListener("click", (e) => { e.stopPropagation(); escalaScale = Math.max(0.4, escalaScale - 0.1); applyEscalaTransform(); });
+  if (escalaZoomReset) escalaZoomReset.addEventListener("click", (e) => { e.stopPropagation(); escalaScale = 1; escalaOffX = 0; escalaOffY = 0; applyEscalaTransform(); });
+  const escalaCoordsCopy = document.getElementById("escalaCoordsCopy");
+  if (escalaCoordsCopy) escalaCoordsCopy.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(document.getElementById("escalaCoordsOutput").value); escalaCoordsCopy.textContent = "✅ Copiado"; setTimeout(() => { escalaCoordsCopy.textContent = "📋 Copiar coordenadas"; }, 1600); } catch (err) {}
+  });
+  // Arrastre: se activa sobre el fondo blanco de la escala (no sobre
+  // botones/inputs), moviendola libremente por la pantalla.
+  let escalaDrag = null;
+  ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button, input, .nat-sublayer, canvas")) return;
+      escalaDrag = { startX: e.clientX, startY: e.clientY, offX: escalaOffX, offY: escalaOffY };
+    });
+  });
+  window.addEventListener("pointermove", (e) => {
+    if (!escalaDrag) return;
+    escalaOffX = escalaDrag.offX + (e.clientX - escalaDrag.startX);
+    escalaOffY = escalaDrag.offY + (e.clientY - escalaDrag.startY);
+    applyEscalaTransform();
+  });
+  window.addEventListener("pointerup", () => { escalaDrag = null; });
+
   function fitEscalaOverlays() {
     const legendW = (document.getElementById("layoutLegendW") || {}).value || 200;
     const corteH = (document.getElementById("layoutCorteH") || {}).value || 25;
@@ -299,6 +346,9 @@
       legendActiveLayerText.textContent = label.textContent.trim() + (btnText ? " — " + btnText.textContent.trim() : "");
     }
     syncLegendFromEscala();
+    const escalaZoomPanel = document.getElementById("escalaZoomPanel");
+    if (escalaZoomPanel) escalaZoomPanel.style.display = "block";
+    applyEscalaTransform();
     if (!window.__legendEscalaObs) {
       const btnTextEl = document.getElementById("natAssembleBtnText");
       if (btnTextEl && window.MutationObserver) {
