@@ -3658,7 +3658,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     const origVehCount = vehInstanced ? vehInstanced.count : 0;
 
     const origBg = scene.background;
-    scene.background = new THREE.Color(0xffffff);
 
     // 1. CAPA BASE (Sin ruido, sin carros)
     if (noiseMesh) noiseMesh.visible = false;
@@ -3666,7 +3665,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
 
-    renderer.render(scene, camera);
     const fotoBase = captureBaseWithContext(); // mismo contexto clarito + area de estudio que en Natural
 
     // Captura de CONTEXTO (camara alejada), igual que en Escala natural,
@@ -5304,8 +5302,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
 
-    scene.background = new THREE.Color(0xffffff);
-    renderer.render(scene, camera);
     const fotoBase = captureBaseWithContext(); // mismo contexto clarito + area de estudio que en Natural
 
     // Captura de CONTEXTO (camara alejada), igual que en Escala natural.
