@@ -710,7 +710,7 @@ const ESCALA_TRANSFORM = {
       for (let i = 0; i < pts.length - 1; i++) {
         const a = toScene(pts[i][0], pts[i][1]);
         const b = toScene(pts[i + 1][0], pts[i + 1][1]);
-        positions.push(a.x, 0, a.z, b.x, 0, b.z);
+        positions.push(a.x, 0.05, a.z, b.x, 0.05, b.z);
       }
     });
     const geo = new THREE.BufferGeometry();
@@ -736,7 +736,7 @@ const ESCALA_TRANSFORM = {
       // las vias que se cruzan en una interseccion no quedan EXACTAMENTE
       // coplanares (evita z-fighting). El rango es minusculo para que no
       // se note como un "escalon" entre una via y la siguiente.
-      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.05;
+      const yJitter = 0.06 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.05;
       const n = pts.length;
       if (n < 2) return;
       const scenePts = pts.map(p => toScene(p[0], p[1]));
@@ -6550,3 +6550,44 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   applyEscalaTransform();
 })();
 
+
+
+// Restored zoom listeners
+const fovSlider = document.getElementById("fovSlider");
+if (fovSlider) {
+    fovSlider.addEventListener("input", (e) => {
+        const v = parseInt(e.target.value);
+        if(document.getElementById("valFov")) document.getElementById("valFov").textContent = v;
+        if(typeof sectionCamera !== 'undefined' && sectionCamera) {
+            sectionCamera.fov = v;
+            sectionCamera.updateProjectionMatrix();
+        }
+    });
+}
+const scaleSlider = document.getElementById("scaleSlider");
+if (scaleSlider) {
+    scaleSlider.addEventListener("input", (e) => {
+        const v = parseFloat(e.target.value);
+        if(document.getElementById("valScale")) document.getElementById("valScale").textContent = v.toFixed(1);
+        escalaScale = v;
+        applyEscalaTransform();
+    });
+}
+const offXSlider = document.getElementById("offXSlider");
+if (offXSlider) {
+    offXSlider.addEventListener("input", (e) => {
+        const v = parseInt(e.target.value);
+        if(document.getElementById("valOffX")) document.getElementById("valOffX").textContent = v;
+        escalaOffX = v;
+        applyEscalaTransform();
+    });
+}
+const offYSlider = document.getElementById("offYSlider");
+if (offYSlider) {
+    offYSlider.addEventListener("input", (e) => {
+        const v = parseInt(e.target.value);
+        if(document.getElementById("valOffY")) document.getElementById("valOffY").textContent = v;
+        escalaOffY = v;
+        applyEscalaTransform();
+    });
+}
