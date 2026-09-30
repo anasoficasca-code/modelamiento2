@@ -72,6 +72,12 @@
 
   renderer.clippingPlanes = sectionClipPlanesArr;
 
+  // === POSICIÓN DEL TÍTULO ===
+  const LABEL_POS = {
+    offsetX: 276,
+    offsetY: -144
+  };
+
   // ---- Corte fijo (segunda vista, franja inferior): un renderer y una
   // camara aparte, mirando de lado, con un solo plano de recorte fijo
   // en la posicion real del Humedal El Burro -- no se mueve con la caja
@@ -96,11 +102,11 @@
       if (typeof updateBotBox === 'function') updateBotBox();
       sectionRenderer.localClippingEnabled = false;
       sectionRenderer.clippingPlanes = botClipPlanesArr;
-      sectionCamera.position.set(142.6, 9.5, -6.0);
+      sectionCamera.position.set(150.0, 8.5, -11.5);
       sectionCamera.up.set(0, 1, 0);
       sectionCamera.lookAt(182.4, 4.2, -35.7);
       sectionCamera.fov = 12; // solo se agranda el contenido (mas zoom), el tamaño del panel no se toca
-      sectionCamera.zoom = 1.0;
+      sectionCamera.zoom = 0.80;
       if (!sectionControls) {
         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
         sectionControls.enableDamping = true;
@@ -391,12 +397,50 @@ const ESCALA_TRANSFORM = {
     function syncLegendFromEscala() {
       const legendActiveLayer = document.getElementById("legendActiveLayer");
       const legendActiveLayerText = document.getElementById("legendActiveLayerText");
-      const label = document.getElementById("natEscalaLabel");
-      const btnText = document.getElementById("natAssembleBtnText");
-      if (!legendActiveLayer || !legendActiveLayerText || !label) return;
-      legendActiveLayer.style.display = "block";
-      const txt = label.textContent.trim() + (btnText ? " \u2014 " + btnText.textContent.trim() : "");
-      legendActiveLayerText.textContent = txt;
+      
+      const natOverlay = document.getElementById("naturalExplodeOverlay");
+      const cultOverlay = document.getElementById("culturalExplodeOverlay");
+      
+      let txt = "";
+
+      if (natOverlay && natOverlay.style.display !== "none") {
+          if (typeof natExplodeStep !== "undefined") {
+              if (natExplodeStep === 1 || natExplodeStep === 2) txt = "Capa 1: Sistema Inerte & Físico-Hidrológico (Agua)";
+              else if (natExplodeStep === 3 || natExplodeStep === 4) txt = "Capa 2: Cobertura Vegetal (Árboles)";
+              else if (natExplodeStep === 5 || natExplodeStep === 6) txt = "Capa 3: Vegetación Riparia (Flora)";
+              else if (natExplodeStep === 7 || natExplodeStep === 8) txt = "Capa 4: Dinámica de Fauna y Aves (Animales)";
+              else txt = "Escala Natural — General";
+          } else {
+              txt = "Escala Natural — General";
+          }
+      } else if (cultOverlay && cultOverlay.style.display !== "none") {
+          if (typeof cultExplodeStep !== "undefined") {
+              if (cultExplodeStep === 1 || cultExplodeStep === 2 || cultExplodeStep === 0) txt = "Capa Histórica: Crecimiento del Humedal";
+              else if (cultExplodeStep === 3 || cultExplodeStep === 4) txt = "Capa 2: Cerramiento EAAB & Filtro de Borde";
+              else if (cultExplodeStep === 5 || cultExplodeStep === 6) txt = "Capa 3: Redes de Uso & Conectividad";
+              else if (cultExplodeStep === 7 || cultExplodeStep === 8) txt = "Capa 4: Dinámica Cultural & Actores";
+              else txt = "Capa Histórica: Crecimiento del Humedal";
+          } else {
+              txt = "Capa Histórica: Crecimiento del Humedal";
+          }
+      } else {
+          txt = "Corte Humedal del Burro";
+      }
+
+      if (legendActiveLayer && legendActiveLayerText) {
+          legendActiveLayer.style.display = "block";
+          legendActiveLayerText.textContent = txt;
+      }
+      
+      const cultCapa1Panel = document.getElementById("cultCapa1Panel");
+      if (cultCapa1Panel) {
+          if (txt.toLowerCase().includes("histórica") || txt.toLowerCase().includes("crecimiento")) {
+              cultCapa1Panel.style.display = "block";
+          } else {
+              cultCapa1Panel.style.display = "none";
+          }
+      }
+      
       updateAgentsLegend(txt);
     }
     
@@ -408,32 +452,38 @@ const ESCALA_TRANSFORM = {
     let html = `<div style="display:flex; flex-direction:column; gap:6px;">`;
     const lower = txt.toLowerCase();
     
-    // CAPA 1: Hídrico / Físico
-    if (lower.includes("físico") || lower.includes("hídrico") || lower.includes("agua") || lower.includes("inunda") || lower.includes("capa 1")) {
+    const isHist = lower.includes("histórica") || lower.includes("crecimiento");
+    const isCapa1 = lower.includes("capa 1") || lower.includes("hídrico") || lower.includes("agua");
+    const isCapa2 = lower.includes("capa 2") || lower.includes("arboles") || lower.includes("árboles") || lower.includes("estratificación");
+    const isCapa3 = lower.includes("capa 3") || lower.includes("riparia") || lower.includes("typha");
+    const isCapa4 = lower.includes("capa 4") || lower.includes("fauna") || lower.includes("animales") || lower.includes("aves");
+
+    if (isHist) {
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:14px; height:14px; border-radius:3px; background:#9333ea; border:1px solid #7e22ce;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Área Histórica del Humedal</span></div>`;
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:4px; background:#e11d48; border-radius:2px;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Reducción del Espejo Hídrico</span></div>`;
+    } else if (isCapa1) {
+        // CAPA 1 EXCLUSIVA: Agua
         html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:4px; background:#0284c7; border-radius:2px;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Río Bogotá</span></div>`;
-        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:4px; background:#38bdf8; border-radius:2px;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Río Fucha / Tunjuelo</span></div>`;
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:4px; background:#38bdf8; border-radius:2px;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Río Funza</span></div>`;
         html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:14px; height:14px; border-radius:3px; background:#7dd3fc; border:1px solid #0284c7;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Humedal El Burro / La Vaca</span></div>`;
-    }
-    
-    // CAPA 2/3: Vegetal / Verde
-    if (lower.includes("vegetal") || lower.includes("verde") || lower.includes("estratificación") || lower.includes("flora") || lower.includes("capa 2") || lower.includes("capa 3")) {
-        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#b06bff; border:1px solid #7c3aed;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Saúco</span></div>`;
-        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#ff5fa8; border:1px solid #db2777;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Capulí</span></div>`;
-        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#25d0a0; border:1px solid #059669;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Urapán</span></div>`;
-    }
-    
-    // CAPA 4: Animal / Fauna
-    if (lower.includes("animal") || lower.includes("fauna") || lower.includes("aves") || lower.includes("capa 4") || lower.includes("pato") || lower.includes("garza") || lower.includes("tingua")) {
+    } else if (isCapa2) {
+        // CAPA 2 EXCLUSIVA: Árboles
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#b06bff; border:1px solid #7c3aed;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Saúco (Morado)</span></div>`;
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#ff5fa8; border:1px solid #db2777;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Capulí (Rosado)</span></div>`;
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#a3e635; border:1px solid #059669;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Urapán (Verde Lima)</span></div>`;
+    } else if (isCapa3) {
+        // CAPA 3 EXCLUSIVA: Vegetación Riparia
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:14px; height:14px; border-radius:3px; background:#84cc16; border:1px solid #65a30d;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Franja Riparia / Typha</span></div>`;
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:14px; height:14px; border-radius:3px; background:#15803d; border:1px solid #166534;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Matorral Perimetral ZMPA</span></div>`;
+    } else if (isCapa4) {
+        // CAPA 4 EXCLUSIVA: Fauna / Aves
         html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/pato.png" style="width:20px; height:20px; object-fit:contain; mix-blend-mode:multiply;"> <span style="font-size:11px; font-weight:600; color:#334155;">Pato</span></div>`;
         html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/garza.png" style="width:20px; height:20px; object-fit:contain; mix-blend-mode:multiply;"> <span style="font-size:11px; font-weight:600; color:#334155;">Garza</span></div>`;
         html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/tingua.png" style="width:20px; height:20px; object-fit:contain; mix-blend-mode:multiply;"> <span style="font-size:11px; font-weight:600; color:#334155;">Tingua</span></div>`;
-    }
-    
-    // If it's a general base or global view, show a bit of everything or nothing
-    if (!lower.includes("capa") && !lower.includes("físico") && !lower.includes("vegetal") && !lower.includes("animal") && !lower.includes("verde") && !lower.includes("fauna") && !lower.includes("agua")) {
-        html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/tingua.png" style="width:20px; height:20px; object-fit:contain; mix-blend-mode:multiply;"> <span style="font-size:11px; font-weight:600; color:#334155;">Fauna Nativa</span></div>`;
-        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#25d0a0; border:1px solid #059669;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Cobertura Vegetal</span></div>`;
+    } else {
         html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:4px; background:#0284c7; border-radius:2px;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Sistema Hídrico</span></div>`;
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#a3e635; border:1px solid #059669;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Cobertura Vegetal</span></div>`;
+        html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/tingua.png" style="width:20px; height:20px; object-fit:contain; mix-blend-mode:multiply;"> <span style="font-size:11px; font-weight:600; color:#334155;">Fauna Nativa</span></div>`;
     }
     
     html += `</div>`;
@@ -499,67 +549,13 @@ const ESCALA_TRANSFORM = {
   // Pantalla completa para la franja del corte: se agranda a cubrir casi
   // toda la pantalla para poder acomodarla con comodidad (rotarla, mover
   // la camara), sin tocar la axonometria de arriba ni las capas.
-  const sectionWrapEl2 = document.getElementById("sectionWrap");
-  const sectionFullscreenBtn = document.getElementById("sectionFullscreenBtn");
-  let sectionIsFullscreen = false;
-  if (sectionFullscreenBtn && sectionWrapEl2) {
-    sectionFullscreenBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      sectionIsFullscreen = !sectionIsFullscreen;
-      if (sectionIsFullscreen) {
-        sectionWrapEl2.style.left = "18px";
-        sectionWrapEl2.style.top = "18px";
-        sectionWrapEl2.style.right = "18px";
-        sectionWrapEl2.style.bottom = "18px";
-        sectionWrapEl2.style.height = "auto";
-        sectionWrapEl2.style.zIndex = "500";
-        sectionWrapEl2.style.borderRadius = "12px";
-        sectionWrapEl2.style.boxShadow = "0 20px 60px rgba(0,0,0,.35)";
-        sectionFullscreenBtn.textContent = "✕ Cerrar pantalla completa";
-      } else {
-        sectionWrapEl2.style.left = "200px";
-        sectionWrapEl2.style.top = "";
-        sectionWrapEl2.style.right = "0";
-        sectionWrapEl2.style.bottom = "0";
-        sectionWrapEl2.style.height = "20%";
-        sectionWrapEl2.style.zIndex = "150";
-        sectionWrapEl2.style.borderRadius = "0";
-        sectionWrapEl2.style.boxShadow = "none";
-        sectionFullscreenBtn.textContent = "⛶ Pantalla completa";
-      }
-      resizeSectionView();
-    });
-  }
+  
 
   // Descargar el corte como imagen PNG en alta resolucion: se renderiza
   // un cuadro extra a un tamano mucho mas grande que el canvas visible
   // (para que se vea nitido incluso impreso), se exporta y se vuelve a
   // dejar el canvas en su tamano normal de pantalla.
-  const sectionDownloadBtn = document.getElementById("sectionDownloadBtn");
-  if (sectionDownloadBtn) {
-    sectionDownloadBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (!sectionRenderer || !sectionCanvas2) return;
-      const rect = sectionCanvas2.getBoundingClientRect();
-      const scaleUp = 4; // resolucion final: 4x el tamano visible en pantalla
-      const hdW = Math.round(rect.width * scaleUp), hdH = Math.round(rect.height * scaleUp);
-      const prevAspect = sectionCamera.aspect;
-      sectionRenderer.setPixelRatio(1);
-      sectionRenderer.setSize(hdW, hdH, false);
-      sectionCamera.aspect = hdW / hdH;
-      sectionCamera.updateProjectionMatrix();
-      sectionRenderer.render(scene, sectionCamera);
-      const dataUrl = sectionCanvas2.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = "corte-humedal-el-burro-HD.png";
-      a.click();
-      // volver el canvas a su tamano normal en pantalla
-      sectionRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-      sectionCamera.aspect = prevAspect;
-      resizeSectionView();
-    });
-  }
+  
 
   // Tamano visible (mitad de la altura del encuadre, en unidades de la
   // escena) para la proyeccion ortogonal — se ajusta al cargar la red.
@@ -633,8 +629,8 @@ const ESCALA_TRANSFORM = {
   let groundMesh = null;
 
   function buildGround(bbox) {
-    const w = (bbox[2] - bbox[0]) * SCALE * 1.4;
-    const h = (bbox[3] - bbox[1]) * SCALE * 1.4;
+    const w = (bbox[2] - bbox[0]) * SCALE * 5.0;
+    const h = (bbox[3] - bbox[1]) * SCALE * 5.0;
     const geo = new THREE.PlaneGeometry(w, h);
     const mat = new THREE.MeshStandardMaterial({ clippingPlanes: sectionClipPlanesArr, color: 0xeceeef, roughness: 1, metalness: 0 });
     groundMesh = new THREE.Mesh(geo, mat);
@@ -992,7 +988,7 @@ const ESCALA_TRANSFORM = {
     treeInstanceData = new Array(trees.length);
     const colorAlimento1 = new THREE.Color(0xff5fa8); // Cerezo
     const colorAlimento2 = new THREE.Color(0xb06bff); // Sauco
-    const colorDescanso = new THREE.Color(0x25d0a0);  // Urapan
+    const colorDescanso = new THREE.Color(0xa3e635); // Urapán lime  // Urapan
     const colorNormal = new THREE.Color(0xffffff);
     
     // InstancedBufferAttribute needed to apply instanceColor
@@ -3125,7 +3121,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     const bx1 = -halfW + (parseFloat(secXMax.value) / 100) * (2 * halfW);
     const bz0 = -halfH + (parseFloat(secZMin.value) / 100) * (2 * halfH);
     const bz1 = -halfH + (parseFloat(secZMax.value) / 100) * (2 * halfH);
-    const cx = (bx0 + bx1) / 2, cz = (bz0 + bz1) / 2, K = 3.2;
+    const cx = (bx0 + bx1) / 2, cz = (bz0 + bz1) / 2, K = 5.0;
     const bw = (bx1 - bx0) * K / 2, bh = (bz1 - bz0) * K / 2;
     const origBg = scene.background;
     const borderVis = axoBorderMesh ? axoBorderMesh.visible : false;
@@ -3149,11 +3145,11 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
       const radY = Math.max(...cs.map(p => Math.abs(p[1] - ccy)));
       const sy = Math.min(1, (radY * 1.25) / rad, (H / 2 - 2) / (rad * 1.25)); // elipse que se desvanece ANTES del borde del cuadro
       t.globalCompositeOperation = "destination-in";
-      t.save(); t.translate(ccx, ccy); t.scale(1, sy);
-      const g = t.createRadialGradient(0, 0, rad * 0.4, 0, 0, rad * 2.8);
-      g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)");
-      t.fillStyle = g; t.fillRect(-W, -H / sy, W * 2, (H / sy) * 2); t.restore();
-      c.globalAlpha = 0.48; c.drawImage(tmp, 0, 0);
+      t.save(); t.translate(ccx, ccy); t.scale(1, 1);
+      const g = t.createRadialGradient(0, 0, rad * 0.35, 0, 0, rad * 1.8);
+      g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(0.6, "rgba(0,0,0,0.5)"); g.addColorStop(1, "rgba(0,0,0,0)");
+      t.fillStyle = g; t.fillRect(-W, -H, W * 2, H * 2); t.restore();
+      c.globalAlpha = 0.45; c.drawImage(tmp, 0, 0);
     }
     // 2) Area de estudio nitida (con su recorte normal), fondo transparente
     Object.values(secPlanes).forEach((p, i) => (p.constant = savedConst[i]));
@@ -3170,8 +3166,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
       v.set(x, 0, z); v.project(camera);
       return [(v.x * 0.5 + 0.5) * W, (-v.y * 0.5 + 0.5) * H];
     });
-    c.strokeStyle = "rgba(20,24,30,.55)"; c.lineWidth = Math.max(1, W / 900);
-    c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath(); c.stroke();
     scene.background = origBg;
     if (axoBorderMesh) axoBorderMesh.visible = borderVis;
     if (mainBurroMesh) mainBurroMesh.visible = burroVisPrev;
@@ -3356,6 +3350,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   // 10: Integración total (todas las capas asentadas en la base simulando en conjunto)
 
   function updateNaturalLayersStep(animated = true) {
+    if (typeof syncLegendFromEscala === "function") syncLegendFromEscala();
     const sublayers = [
       document.getElementById("natLayerWater"),
       document.getElementById("natLayer2"),
@@ -5539,6 +5534,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   if (cultBackBtn) cultBackBtn.addEventListener("click", closeCulturalExplode);
 
   function updateCulturalLayersStep(animated = true) {
+    if (typeof syncLegendFromEscala === "function") syncLegendFromEscala();
     const sublayers = [cultLayer1, cultLayer2, cultLayer3, cultLayer4];
     const panels = [cultCapa1Panel, cultCapa2Panel, cultCapa3Panel, cultCapa4Panel];
     const tags = cultOverlay.querySelectorAll(".cult-layer-tag");
@@ -6566,11 +6562,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
 const btnZoomOutSec = document.getElementById("btnZoomOutSec");
 const btnZoomInSec = document.getElementById("btnZoomInSec");
 
-if (btnZoomOutSec && btnZoomInSec && typeof sectionCamera !== 'undefined') {
-    btnZoomOutSec.addEventListener("click", () => {
-        sectionCamera.fov = Math.min(100, sectionCamera.fov + 2);
-        sectionCamera.updateProjectionMatrix();
-    });
+
     btnZoomInSec.addEventListener("click", () => {
         sectionCamera.fov = Math.max(2, sectionCamera.fov - 2);
         sectionCamera.updateProjectionMatrix();
