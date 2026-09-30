@@ -6550,3 +6550,30 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   applyEscalaTransform();
 })();
 
+
+
+const btnZoomInSec = document.getElementById("btnZoomInSec");
+const btnZoomOutSec = document.getElementById("btnZoomOutSec");
+const sectionZoomVal = document.getElementById("sectionZoomVal");
+
+if (btnZoomInSec && btnZoomOutSec && typeof sectionCamera !== 'undefined') {
+  btnZoomInSec.addEventListener("click", () => {
+    sectionCamera.zoom = Math.min(5.0, sectionCamera.zoom + 0.1);
+    sectionCamera.updateProjectionMatrix();
+    if(sectionZoomVal) sectionZoomVal.textContent = sectionCamera.zoom.toFixed(2);
+    if(typeof updateBotBox === "function") updateBotBox();
+  });
+  btnZoomOutSec.addEventListener("click", () => {
+    sectionCamera.zoom = Math.max(0.1, sectionCamera.zoom - 0.1);
+    sectionCamera.updateProjectionMatrix();
+    if(sectionZoomVal) sectionZoomVal.textContent = sectionCamera.zoom.toFixed(2);
+    if(typeof updateBotBox === "function") updateBotBox();
+  });
+  
+  // also listen to orbit controls so moving updates the box
+  if(typeof sectionControls !== 'undefined') {
+      sectionControls.addEventListener("change", () => {
+          if(typeof updateBotBox === "function") updateBotBox();
+      });
+  }
+}
