@@ -427,26 +427,23 @@ if (lower.includes("tecnol") || lower.includes("cultural") || lower.includes("ll
 }
 
 if (showWater) {
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:16px; border-radius:50%; background:#0284c7; border:1px solid #0369a1; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div> <span style="font-size:11px; font-weight:600; color:#334155;">R\u00edo Fucha</span></div>`;
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:16px; border-radius:50%; background:#0284c7; border:1px solid #0369a1; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Humedal La Vaca</span></div>`;
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:16px; border-radius:50%; background:#0284c7; border:1px solid #0369a1; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Humedal del Burro</span></div>`;
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:16px; border-radius:50%; background:#0284c7; border:1px solid #0369a1; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div> <span style="font-size:11px; font-weight:600; color:#334155;">R\u00edo Tunjuelo</span></div>`;
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:16px; border-radius:50%; background:#0284c7; border:1px solid #0369a1; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div> <span style="font-size:11px; font-weight:600; color:#334155;">R\u00edo Bogot\u00e1</span></div>`;
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:16px; border-radius:50%; background:transparent; border:2px dashed #0369a1;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Cota de Inundaci\u00f3n Anual</span></div>`;
+    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:16px; border-radius:50%; background:url('assets/textura_agua.jpg') center/cover; border:1px solid #0284c7; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Agua (Humedal y R\u00edo)</span></div>`;
 }
 if (showVeg) {
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#ff5fa8; border:1px solid #db2777;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Capul\u00ed</span></div>`;
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#25d0a0; border:1px solid #059669;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Urap\u00e1n</span></div>`;
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#b06bff; border:1px solid #7c3aed;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Sa\u00faco</span></div>`;
+    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#b06bff; border:1px solid #7c3aed;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Sa\u00faco (Alimento)</span></div>`;
+    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#ff5fa8; border:1px solid #db2777;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Capul\u00ed / Cerezo</span></div>`;
+    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#25d0a0; border:1px solid #059669;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Urap\u00e1n / Fresno</span></div>`;
 }
 if (showBirds) {
-    html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/tingua.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Tingua</span></div>`;
-    html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/garza.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Garza</span></div>`;
+    html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/pato.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Pato (Boreal)</span></div>`;
+    html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/garza.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Garza (Llanos)</span></div>`;
+    html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/tingua.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Tingua (End\u00e9mica)</span></div>`;
 }
 
 html += `</div>`;
 c.innerHTML = html;
-}syncLegendFromEscala();
+}
+syncLegendFromEscala();
     const escalaZoomPanel = document.getElementById("escalaZoomPanel");
     if (escalaZoomPanel) escalaZoomPanel.style.display = "block";
     applyEscalaTransform();
@@ -1111,7 +1108,7 @@ c.innerHTML = html;
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set((c0.x + c1.x) / 2, 0.2, (c0.z + c1.z) / 2);
+    mesh.position.set((c0.x + c1.x) / 2, 0.06, (c0.z + c1.z) / 2);
     mesh.visible = noiseOn; // antes quedaba oculto aunque el ruido estuviera activado
     sceneRoot.add(mesh);
     noiseMesh = mesh;
@@ -1794,7 +1791,7 @@ c.innerHTML = html;
       const v = vehicles[i];
       const p = toScene(v.x, v.y);
       const angle = lastAngle[v.id] || 0;
-      dummy.position.set(p.x, 0.25, p.z);
+      dummy.position.set(p.x, 0.1, p.z);
       dummy.rotation.set(0, angle, 0);
       dummy.updateMatrix();
       vehInstanced.setMatrixAt(i, dummy.matrix);
@@ -6605,21 +6602,5 @@ if (offYSlider) {
         if(document.getElementById("valOffY")) document.getElementById("valOffY").textContent = v;
         escalaOffY = v;
         applyEscalaTransform();
-    });
-}
-
-
-if (typeof sectionControls !== 'undefined') {
-    sectionControls.addEventListener("change", () => {
-        const cx = sectionCamera.position.x.toFixed(2);
-        const cy = sectionCamera.position.y.toFixed(2);
-        const cz = sectionCamera.position.z.toFixed(2);
-        const tx = sectionControls.target.x.toFixed(2);
-        const ty = sectionControls.target.y.toFixed(2);
-        const tz = sectionControls.target.z.toFixed(2);
-        const out = document.getElementById("sectionCamCoords");
-        if (out) {
-            out.value = `sectionCamera.position.set(${cx}, ${cy}, ${cz});\nsectionControls.target.set(${tx}, ${ty}, ${tz});`;
-        }
     });
 }
