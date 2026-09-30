@@ -232,30 +232,49 @@
   function mainW() { return Math.max(320, (mainEl && mainEl.clientWidth) ? mainEl.clientWidth : window.innerWidth); }
   function mainH() { return Math.max(320, (mainEl && mainEl.clientHeight) ? mainEl.clientHeight : window.innerHeight); }
   const MACRO = [
-    { id:"n1", corto:"P7 · Sobrecarga de la malla vial", full:"Sobrecarga operativa de la malla vial y transporte pesado", color:"#5b8ad6" },
-    { id:"n2", corto:"P3 · Eutrofización hídrica", full:"Eutrofización y deterioro de la calidad de la red hídrica", color:"#d669a8" },
-    { id:"n3", corto:"P1 · Concentración del mercado mayorista", full:"Concentración del mercado mayorista e hipercomercialización", color:"#e2635a" },
-    { id:"n4", corto:"P4 · Densificación residencial en altura", full:"Sobrecarga por densificación residencial vertical en altura", color:"#9b7ede" },
-    { id:"n5", corto:"P6 · Interferencia en el espacio público", full:"Interferencia y ocupación del espacio público peatonal", color:"#4caf7d" },
-    { id:"n6", corto:"P2 · Degradación de suelos", full:"Degradación de suelos biológicos por acumulación de residuos", color:"#e8a33d" },
-    { id:"n7", corto:"P5 · Inoperancia del ordenamiento", full:"Inoperancia del ordenamiento oficial ante patrones reales", color:"#45b8c4" },
-  ];
+  { id:"c1", corto:"C1", full:"C1: Sobrecarga de masa alimentaria", color:"#3b82f6" },
+  { id:"k1", corto:"K1", full:"K1: Volumen de alimentos (5,4 a 5,7M ton/año)", color:"#64748b" },
+  { id:"k1_2", corto:"K1.2", full:"K1.2: Entrada de 3,86M de vehículos de carga/año", color:"#64748b" },
+  { id:"c2", corto:"C2", full:"C2: Arribo nocturno desacoplado", color:"#3b82f6" },
+  { id:"s1", corto:"S1", full:"S1: Represamiento de 1.500 camiones en vía", color:"#ef4444" },
+  { id:"k12", corto:"K12", full:"K12: Ausencia de puertos secos periféricos", color:"#64748b" },
+  { id:"s2", corto:"S2", full:"S2: Ocupación no autorizada de andenes con pucheros", color:"#ef4444" },
+  { id:"s3", corto:"S3", full:"S3: Desplazamiento del peatón a la calzada vehicular", color:"#ef4444" },
+  { id:"k6", corto:"K6", full:"K6: Portones a 90°", color:"#64748b" },
+  { id:"s10", corto:"S10", full:"S10: Colapso del transporte público SITP/TransMilenio", color:"#ef4444" },
+  { id:"s4", corto:"S4", full:"S4: Acumulación de más de 40.000 t/año de residuos", color:"#ef4444" },
+  { id:"s9", corto:"S9", full:"S9: Compactación del suelo de ronda", color:"#ef4444" },
+  { id:"s5", corto:"S5", full:"S5: Escorrentía pluvial de aceites y lixiviados", color:"#ef4444" },
+  { id:"c5", corto:"C5", full:"C5: Conexiones erradas por densificación", color:"#3b82f6" },
+  { id:"s6", corto:"S6", full:"S6: Elevación de Carga DBO5/DQO", color:"#ef4444" },
+  { id:"s7", corto:"S7", full:"S7: Eutrofización y multiplicación de buchón", color:"#ef4444" },
+  { id:"s_ox", corto:"S_ox", full:"S_ox: Caída del Oxígeno Disuelto y anoxia", color:"#ef4444" },
+  { id:"c7", corto:"C7", full:"C7: Invasión de ronda", color:"#3b82f6" }
+];
   const MACRO_REL = [
-    { from:"n3", to:"n1", pol:"+", verbo:"P1→P7: mover más de 5,4 millones de toneladas anuales de alimentos hacia un solo predio atrae más de 3,8 millones de viajes anuales de camiones pesados, desbordando la malla vial." },
-    { from:"n1", to:"n5", pol:"+", verbo:"P7→P6: al represarse más de 1.500 camiones en la calle esperando turno de ingreso, las maniobras de descarga y reempaque se desplazan hacia los andenes y vías residenciales." },
-    { from:"n5", to:"n6", pol:"+", verbo:"P6→P2: el vertimiento de basuras orgánicas y el parqueo pesado en aceras invade la franja de amortiguación, compactando el suelo biológico del humedal." },
-    { from:"n6", to:"n2", pol:"+", verbo:"P2→P3: al destruirse la cobertura vegetal y perderse la porosidad del suelo de ronda, las lluvias arrastran aceites, sedimentos y lixiviados hacia el espejo de agua." },
-    { from:"n2", to:"n4", pol:"-", verbo:"P3→P4: el colapso ambiental, la eutrofización y los malos olores reducen la habitabilidad y calidad de vida en los nuevos proyectos residenciales." },
-    { from:"n4", to:"n1", pol:"+", verbo:"P4→P7: el aumento de residentes incrementa el flujo de automóviles particulares que compiten por el mismo espacio con las tractomulas de carga." },
-    { from:"n7", to:"n3", pol:"+", verbo:"P5→P1: la falta de articulación entre el POT distrital y el reglamento privado de la central permite que el mercado siga expandiéndose sin mitigar sus impactos." },
-    { from:"n7", to:"n5", pol:"+", verbo:"P5→P6: el vacío de autoridad en los portones dificulta el control del comercio informal y el acopio no autorizado de guacales." },
-    { from:"n1", to:"n2", pol:"+", verbo:"P7→P3: el parqueo de tractomulas con motores encendidos deja goteos de grasas e hidrocarburos que la escorrentía pluvial conduce al humedal." },
-    { from:"n4", to:"n2", pol:"+", verbo:"P4→P3: la sobrecarga poblacional sobre tuberías sanitarias antiguas genera conexiones erradas y reboses que descargan aguas servidas al humedal." },
-    { from:"n3", to:"n6", pol:"+", verbo:"P1→P2: la alta producción de desechos orgánicos de la central presiona directamente los bordes de la franja ambiental." },
-    { from:"n3", to:"n2", pol:"+", verbo:"P1→P3: el volumen de vertimientos y lavado de la operación comercial aporta carga contaminante directa al cuerpo hídrico." },
-    { from:"n3", to:"n5", pol:"+", verbo:"P1→P6: la saturación interna de la central desplaza el parqueo y las maniobras de cargue hacia andenes y calles del barrio." },
-    { from:"n7", to:"n1", pol:"+", verbo:"P5→P7: la falta de una autoridad unificada en los portones impide ordenar los horarios de ingreso, agravando el represamiento de camiones." },
-  ];
+  { from:"c1", to:"k1", pol:"+", verbo:"Concentrar la oferta alimentaria fija el tonelaje masivo" },
+  { from:"k1", to:"k1_2", pol:"+", verbo:"Mayor volumen alimentario exige más vehículos" },
+  { from:"c2", to:"s1", pol:"+", verbo:"Arribo nocturno genera fila de espera" },
+  { from:"k1_2", to:"s1", pol:"+", verbo:"Flujo continuo de vehículos agrava el represamiento" },
+  { from:"k12", to:"c1", pol:"+", verbo:"Sin puertos secos, toda la carga entra directo" },
+  { from:"s1", to:"s2", pol:"+", verbo:"Permanencia de camiones atrae acopio informal" },
+  { from:"s2", to:"s3", pol:"+", verbo:"Andén bloqueado desplaza peatones a la calle" },
+  { from:"k6", to:"s10", pol:"+", verbo:"Giros a 90° obligan a frenar en seco" },
+  { from:"s1", to:"s10", pol:"+", verbo:"Camiones en vía trancan carriles compartidos" },
+  { from:"k1", to:"s4", pol:"+", verbo:"Actividad comercial desborda recolección de residuos" },
+  { from:"s4", to:"s9", pol:"+", verbo:"Disposición de escombros aplasta suelo protegido" },
+  { from:"k1", to:"s9", pol:"+", verbo:"Colindancia física presiona la franja de amortiguación" },
+  { from:"s9", to:"s5", pol:"+", verbo:"Suelo sin vegetación no filtra aceites" },
+  { from:"s5", to:"s6", pol:"+", verbo:"Lixiviados y aceites elevan carga contaminante" },
+  { from:"c5", to:"s6", pol:"+", verbo:"Aguas servidas sobrecargan calidad hídrica" },
+  { from:"s6", to:"s7", pol:"+", verbo:"Exceso de nutrientes dispara plantas acuáticas" },
+  { from:"s7", to:"s_ox", pol:"-", verbo:"Pudrición de plantas consume oxígeno" },
+  { from:"s_ox", to:"s7", pol:"+", verbo:"Muerte orgánica libera más nutrientes" },
+  
+  { from:"s2", to:"c1", pol:"+", verbo:"[R1] Oferta informal atrae más masa alimentaria", loop:true },
+  { from:"s9", to:"c7", pol:"+", verbo:"[R2] Tierra pelada permite invasión" },
+  { from:"c7", to:"s4", pol:"+", verbo:"[R2] Invasión acumula más residuos", loop:true }
+];
 
   const SUBNETS = {
     n1: {
@@ -743,14 +762,28 @@
   };
 
   const SAVED_MACRO_POSITIONS = {
-    "n1": { x: 559.2, y: 330.2, t: "P7 · Sobrecarga de la malla vial" },
-    "n2": { x: 194.4, y: 427.0, t: "P3 · Eutrofización hídrica" },
-    "n3": { x: 1089.6, y: 523.0, t: "P1 · Concentración del mercado mayorista" },
-    "n4": { x: 620.8, y: 572.6, t: "P4 · Densificación residencial en altura" },
-    "n5": { x: 866.4, y: 199.8, t: "P6 · Interferencia en el espacio público" },
-    "n6": { x: 273.6, y: 165.4, t: "P2 · Degradación de suelos" },
-    "n7": { x: 1220.0, y: 251.0, t: "P5 · Inoperancia del ordenamiento" },
-  };
+  "k12": { x: 120, y: 300, r: 60 },
+  "c1": { x: 340, y: 300, r: 64 },
+  "k1": { x: 560, y: 300, r: 60 },
+  "k1_2": { x: 780, y: 300, r: 60 },
+  "c2": { x: 740, y: 120, r: 60 },
+  "s1": { x: 1000, y: 260, r: 64 },
+  "s2": { x: 1220, y: 340, r: 60 },
+  "s3": { x: 1440, y: 340, r: 60 },
+  
+  "k6": { x: 960, y: 80, r: 60 },
+  "s10": { x: 1220, y: 160, r: 60 },
+  
+  "s4": { x: 560, y: 500, r: 60 },
+  "s9": { x: 780, y: 500, r: 60 },
+  "c7": { x: 960, y: 440, r: 60 },
+  
+  "c5": { x: 560, y: 700, r: 60 },
+  "s5": { x: 780, y: 700, r: 60 },
+  "s6": { x: 1000, y: 700, r: 64 },
+  "s7": { x: 1220, y: 700, r: 60 },
+  "s_ox": { x: 1440, y: 700, r: 60 }
+};
 
   function resizeIndividualNode(id, delta) {
     if (!nodeRadiusMap[id]) return;
