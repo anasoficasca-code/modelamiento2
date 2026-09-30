@@ -318,6 +318,17 @@
     const legendActiveLayerText = document.getElementById("legendActiveLayerText");
     if (label && legendActiveLayerText) legendActiveLayerText.textContent = label.textContent.trim() + (btnText ? " — " + btnText.textContent.trim() : "");
     updateDynamicLegend();
+    syncSceneToLayer();
+  }
+  // ---- El corte comparte la misma escena 3D que la axonometria, asi que
+  // para que "se vea lo mismo" alla abajo, se refleja el estado real de
+  // cada capa en los objetos reales de la escena (ya asentados en el
+  // territorio, sin animacion de explosion -- solo se prenden/apagan). ----
+  function syncSceneToLayer() {
+    const step = typeof natExplodeStep !== "undefined" ? natExplodeStep : 0;
+    if (typeof birdsGroup !== "undefined" && birdsGroup) birdsGroup.visible = (step === 5 || step === 6);
+    if (typeof roadMat !== "undefined" && roadMat) roadMat.color.set(step === 7 || step === 8 ? 0x24c8bd : 0xb7babd);
+    if (typeof vehInstanced !== "undefined" && vehInstanced) vehInstanced.visible = (step === 7 || step === 8);
   }
   // ---- Convenciones dinamicas: cambian segun la capa que se este
   // mostrando -- solo los agentes/elementos que realmente aparecen en
