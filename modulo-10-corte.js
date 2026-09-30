@@ -6559,10 +6559,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
 
 
 
-const btnZoomOutSec = document.getElementById("btnZoomOutSec");
-const btnZoomInSec = document.getElementById("btnZoomInSec");
-
-
+if (btnZoomInSec && typeof sectionCamera !== 'undefined') {
     btnZoomInSec.addEventListener("click", () => {
         sectionCamera.fov = Math.max(2, sectionCamera.fov - 2);
         sectionCamera.updateProjectionMatrix();
