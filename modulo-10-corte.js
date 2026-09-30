@@ -183,6 +183,34 @@
         return { el, baseX, baseY, w, h };
       }
 
+      // ---- Garzas del recuadro superior derecho (foto_humedal.png) --
+      // recortadas de esa misma foto (no dibujadas), volando desde bien
+      // afuera de la pantalla hasta posarse cerca de donde ya estaban. ----
+      const topCutBox = document.getElementById("dynSecTopCut");
+      const HERONW = 2009, HERONH = 1493;
+      const heronDefs = [
+        { box: [1180, 10, 1520, 400], restX: 0, restY: 0 }, // la garza volando de la foto
+      ];
+      let herons = [];
+      if (topCutBox) {
+        const topRect = topCutBox.getBoundingClientRect();
+        const hScale = topRect.width / HERONW;
+        const topOffX = topRect.left - stageRect.left;
+        const topOffY = topRect.top - stageRect.top;
+        herons = heronDefs.map((h, i) => {
+          const [x0, y0, x1, y1] = h.box;
+          const w = (x1 - x0) * hScale, hh = (y1 - y0) * hScale;
+          const el = document.createElement("div");
+          el.className = "dynSprite";
+          el.style.cssText = `position:absolute; width:${w}px; height:${hh}px; background-image:url(assets/foto_humedal.png); background-repeat:no-repeat; background-size:${HERONW*hScale}px ${HERONH*hScale}px; background-position:-${x0*hScale}px -${y0*hScale}px; pointer-events:none; will-change:transform; mix-blend-mode:multiply; z-index:6;`;
+          const baseX = topOffX + x0 * hScale, baseY = topOffY + y0 * hScale;
+          el.style.left = baseX + "px";
+          el.style.top = baseY + "px";
+          stage.appendChild(el);
+          return { el, baseX, baseY, phase: i * 3, cyc: 9 + i * 2 };
+        });
+      }
+
       // curva suave (sin saltos de velocidad en los quiebres del recorrido)
       function smooth(k) { return k * k * (3 - 2 * k); }
 
@@ -247,6 +275,19 @@
           const t = ((tSec + f.phase) % f.cyc) / f.cyc;
           const dx = Math.sin(t * Math.PI * 2) * 34 * f.dir;
           f.el.style.transform = `translate(${dx}px, 0) scaleX(${f.dir})`;
+        });
+        herons.forEach(h => {
+          const t = ((tSec + h.phase) % h.cyc) / h.cyc;
+          // entra desde MUY afuera de la pantalla (derecha), vuela hacia
+          // su posicion dentro del recuadro, se queda un rato, y vuelve
+          // a salir para repetir el ciclo.
+          const FAR = 1400;
+          let x;
+          if (t < 0.3) { const k = smooth(t / 0.3); x = FAR * (1 - k); }
+          else if (t < 0.75) { x = 0; }
+          else { const k = smooth((t - 0.75) / 0.25); x = FAR * k; }
+          const wobble = Math.sin(tSec * 2.2 + h.phase) * 6;
+          h.el.style.transform = `translate(${x}px, ${wobble}px)`;
         });
       }
 
