@@ -197,9 +197,14 @@
   <p id="levelSubText"></p>
 </div>
 <div class="cld-legend">
-  <b>Notación del diagrama causal</b><br>
-  <b>+</b> si la causa aumenta, el efecto también aumenta &nbsp; <b>–</b> si la causa aumenta, el efecto disminuye<br>
-  <b>↻ R</b> bucle reforzador (se retroalimenta y crece) &nbsp; <b>↻ B</b> bucle balanceador (actúa como freno o límite)
+  <b>Convenciones de la Red</b><br>
+  <span style="color:#3b82f6; font-weight:800; font-size:14px;">■</span> Causas &nbsp;
+  <span style="color:#64748b; font-weight:800; font-size:14px;">■</span> Características &nbsp;
+  <span style="color:#ef4444; font-weight:800; font-size:14px;">■</span> Efectos<br>
+  <div style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(0,0,0,.1);">
+  <b>+</b> directamente proporcional &nbsp; <b>-</b> inversamente proporcional<br>
+  <b> R</b> Bucle reforzador (se retroalimenta)
+  </div>
 </div>
 
 <div class="stage" id="stage">
@@ -232,24 +237,24 @@
   function mainW() { return Math.max(320, (mainEl && mainEl.clientWidth) ? mainEl.clientWidth : window.innerWidth); }
   function mainH() { return Math.max(320, (mainEl && mainEl.clientHeight) ? mainEl.clientHeight : window.innerHeight); }
   const MACRO = [
-  { id:"c1", corto:"C1", full:"C1: Sobrecarga de masa alimentaria", color:"#3b82f6" },
-  { id:"k1", corto:"K1", full:"K1: Volumen de alimentos (5,4 a 5,7M ton/año)", color:"#64748b" },
-  { id:"k1_2", corto:"K1.2", full:"K1.2: Entrada de 3,86M de vehículos de carga/año", color:"#64748b" },
-  { id:"c2", corto:"C2", full:"C2: Arribo nocturno desacoplado", color:"#3b82f6" },
-  { id:"s1", corto:"S1", full:"S1: Represamiento de 1.500 camiones en vía", color:"#ef4444" },
-  { id:"k12", corto:"K12", full:"K12: Ausencia de puertos secos periféricos", color:"#64748b" },
-  { id:"s2", corto:"S2", full:"S2: Ocupación no autorizada de andenes con pucheros", color:"#ef4444" },
-  { id:"s3", corto:"S3", full:"S3: Desplazamiento del peatón a la calzada vehicular", color:"#ef4444" },
-  { id:"k6", corto:"K6", full:"K6: Portones a 90°", color:"#64748b" },
-  { id:"s10", corto:"S10", full:"S10: Colapso del transporte público SITP/TransMilenio", color:"#ef4444" },
-  { id:"s4", corto:"S4", full:"S4: Acumulación de más de 40.000 t/año de residuos", color:"#ef4444" },
-  { id:"s9", corto:"S9", full:"S9: Compactación del suelo de ronda", color:"#ef4444" },
-  { id:"s5", corto:"S5", full:"S5: Escorrentía pluvial de aceites y lixiviados", color:"#ef4444" },
-  { id:"c5", corto:"C5", full:"C5: Conexiones erradas por densificación", color:"#3b82f6" },
-  { id:"s6", corto:"S6", full:"S6: Elevación de Carga DBO5/DQO", color:"#ef4444" },
-  { id:"s7", corto:"S7", full:"S7: Eutrofización y multiplicación de buchón", color:"#ef4444" },
-  { id:"s_ox", corto:"S_ox", full:"S_ox: Caída del Oxígeno Disuelto y anoxia", color:"#ef4444" },
-  { id:"c7", corto:"C7", full:"C7: Invasión de ronda", color:"#3b82f6" }
+  { id:"c1", corto:"C1: Sobrecarga de masa alimentaria", full:"C1: Sobrecarga de masa alimentaria", color:"#3b82f6" },
+  { id:"k1", corto:"K1: Volumen de alimentos (5,4 a 5,7M ton/año)", full:"K1: Volumen de alimentos (5,4 a 5,7M ton/año)", color:"#64748b" },
+  { id:"k1_2", corto:"K1.2: Entrada de 3,86M vehículos/año", full:"K1.2: Entrada de 3,86M de vehículos de carga/año", color:"#64748b" },
+  { id:"c2", corto:"C2: Arribo nocturno desacoplado", full:"C2: Arribo nocturno desacoplado", color:"#3b82f6" },
+  { id:"s1", corto:"S1: Represamiento de 1.500 camiones", full:"S1: Represamiento de 1.500 camiones en vía", color:"#ef4444" },
+  { id:"k12", corto:"K12: Ausencia de puertos secos", full:"K12: Ausencia de puertos secos periféricos", color:"#64748b" },
+  { id:"s2", corto:"S2: Ocupación andenes con pucheros", full:"S2: Ocupación no autorizada de andenes con pucheros", color:"#ef4444" },
+  { id:"s3", corto:"S3: Peatón en calzada vehicular", full:"S3: Desplazamiento del peatón a la calzada vehicular", color:"#ef4444" },
+  { id:"k6", corto:"K6: Portones a 90°", full:"K6: Portones a 90°", color:"#64748b" },
+  { id:"s10", corto:"S10: Colapso SITP/TransMilenio", full:"S10: Colapso del transporte público SITP/TransMilenio", color:"#ef4444" },
+  { id:"s4", corto:"S4: Acumulación de >40.000 t/año residuos", full:"S4: Acumulación de más de 40.000 t/año de residuos", color:"#ef4444" },
+  { id:"s9", corto:"S9: Compactación del suelo de ronda", full:"S9: Compactación del suelo de ronda", color:"#ef4444" },
+  { id:"s5", corto:"S5: Escorrentía pluvial de aceites", full:"S5: Escorrentía pluvial de aceites y lixiviados", color:"#ef4444" },
+  { id:"c5", corto:"C5: Conexiones erradas (densificación)", full:"C5: Conexiones erradas por densificación", color:"#3b82f6" },
+  { id:"s6", corto:"S6: Elevación Carga DBO5/DQO", full:"S6: Elevación de Carga DBO5/DQO", color:"#ef4444" },
+  { id:"s7", corto:"S7: Eutrofización y buchón", full:"S7: Eutrofización y multiplicación de buchón", color:"#ef4444" },
+  { id:"s_ox", corto:"S_ox: Caída de Oxígeno Disuelto (Anoxia)", full:"S_ox: Caída del Oxígeno Disuelto y anoxia", color:"#ef4444" },
+  { id:"c7", corto:"C7: Invasión de ronda", full:"C7: Invasión de ronda", color:"#3b82f6" }
 ];
   const MACRO_REL = [
   { from:"c1", to:"k1", pol:"+", verbo:"Concentrar la oferta alimentaria fija el tonelaje masivo" },
@@ -615,7 +620,7 @@
       const ux = dx / dist, uy = dy / dist;
       const startX = a.x + ux * (rFrom + 4), startY = a.y + uy * (rFrom + 4);
       const endX = b.x - ux * (rTo + 4), endY = b.y - uy * (rTo + 4);
-      const arrowColorRaw = level === "full" ? "#ffffff" : (r.inter ? "#24c8bd" : (colorFrom.startsWith("#") ? colorFrom : "#e8ecf1"));
+      const arrowColorRaw = "#ffffff";
       const markerKey = ensureArrowMarker(arrowColorRaw);
       const line = document.createElementNS(SVGNS, "line");
       line.setAttribute("class", "arrow-line");
@@ -762,27 +767,24 @@
   };
 
   const SAVED_MACRO_POSITIONS = {
-  "k12": { x: 120, y: 300, r: 60 },
-  "c1": { x: 340, y: 300, r: 64 },
-  "k1": { x: 560, y: 300, r: 60 },
-  "k1_2": { x: 780, y: 300, r: 60 },
-  "c2": { x: 740, y: 120, r: 60 },
-  "s1": { x: 1000, y: 260, r: 64 },
-  "s2": { x: 1220, y: 340, r: 60 },
-  "s3": { x: 1440, y: 340, r: 60 },
-  
-  "k6": { x: 960, y: 80, r: 60 },
-  "s10": { x: 1220, y: 160, r: 60 },
-  
-  "s4": { x: 560, y: 500, r: 60 },
-  "s9": { x: 780, y: 500, r: 60 },
-  "c7": { x: 960, y: 440, r: 60 },
-  
-  "c5": { x: 560, y: 700, r: 60 },
-  "s5": { x: 780, y: 700, r: 60 },
-  "s6": { x: 1000, y: 700, r: 64 },
-  "s7": { x: 1220, y: 700, r: 60 },
-  "s_ox": { x: 1440, y: 700, r: 60 }
+  "c1": { x: 340.0, y: 300.0, r: 76.0, t: "C1" },
+  "k1": { x: 571.2, y: 138.2, r: 84.0, t: "K1" },
+  "k1_2": { x: 780.0, y: 300.0, r: 68.0, t: "K1.2" },
+  "c2": { x: 740.0, y: 147.4, r: 60.0, t: "C2" },
+  "s1": { x: 1000.0, y: 260.0, r: 84.0, t: "S1" },
+  "k12": { x: 147.4, y: 300.0, r: 60.0, t: "K12" },
+  "s2": { x: 1220.0, y: 340.0, r: 76.0, t: "S2" },
+  "s3": { x: 1308.6, y: 340.0, r: 60.0, t: "S3" },
+  "k6": { x: 960.0, y: 147.4, r: 60.0, t: "K6" },
+  "s10": { x: 1220.0, y: 160.0, r: 68.0, t: "S10" },
+  "s4": { x: 560.0, y: 500.0, r: 76.0, t: "S4" },
+  "s9": { x: 780.0, y: 500.0, r: 84.0, t: "S9" },
+  "s5": { x: 780.0, y: 547.6, r: 68.0, t: "S5" },
+  "c5": { x: 560.0, y: 547.6, r: 60.0, t: "C5" },
+  "s6": { x: 1000.0, y: 543.6, r: 76.0, t: "S6" },
+  "s7": { x: 1220.0, y: 547.6, r: 76.0, t: "S7" },
+  "s_ox": { x: 1308.6, y: 547.6, r: 68.0, t: "S_ox" },
+  "c7": { x: 960.0, y: 440.0, r: 68.0, t: "C7" },
 };
 
   function resizeIndividualNode(id, delta) {
