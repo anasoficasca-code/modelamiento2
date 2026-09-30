@@ -317,6 +317,51 @@
     const btnText = document.getElementById("natAssembleBtnText");
     const legendActiveLayerText = document.getElementById("legendActiveLayerText");
     if (label && legendActiveLayerText) legendActiveLayerText.textContent = label.textContent.trim() + (btnText ? " — " + btnText.textContent.trim() : "");
+    updateDynamicLegend();
+  }
+  // ---- Convenciones dinamicas: cambian segun la capa que se este
+  // mostrando -- solo los agentes/elementos que realmente aparecen en
+  // esa capa, no una lista generica fija. ----
+  function legendRow(iconHTML, label) {
+    return `<div style="display:flex; align-items:center; gap:10px;">${iconHTML}<span>${label}</span></div>`;
+  }
+  function legendImgIcon(size, bgX, bgY) {
+    return `<i style="width:26px; height:26px; border-radius:6px; flex:none; background-image:url(corte-burro-referencia.png); background-repeat:no-repeat; background-size:${size}; background-position:${bgX} ${bgY}; background-color:#eef2f5;"></i>`;
+  }
+  function legendDotIcon(color, round) {
+    return `<i style="width:16px; height:${round ? 16 : 6}px; border-radius:${round ? "50%" : "3px"}; flex:none; background:${color};"></i>`;
+  }
+  function updateDynamicLegend() {
+    const c = document.getElementById("legendDynamicContent");
+    if (!c) return;
+    const step = typeof natExplodeStep !== "undefined" ? natExplodeStep : 0;
+    let rows = "";
+    if (step === 1 || step === 2) {
+      // Capa 1: Sistema Hidrico -- todo lo que hace parte de esa simulacion
+      rows += legendRow(legendDotIcon("#0284c7"), "Río Bogotá");
+      rows += legendRow(legendDotIcon("#38bdf8"), "Río Fucha");
+      rows += legendRow(legendDotIcon("#7dd3fc", true), "Humedal El Burro / La Vaca");
+    } else if (step === 3 || step === 4) {
+      // Capa 2: Cobertura vegetal -- los 3 colores de arboles
+      rows += legendRow(legendDotIcon("#b06bff", true), "Saúco (morado)");
+      rows += legendRow(legendDotIcon("#ff5fa8", true), "Capulí (rosado)");
+      rows += legendRow(legendDotIcon("#a3e635", true), "Urapán (verde lima)");
+    } else if (step === 5 || step === 6) {
+      // Capa 3: Aves -- solo las que aparecen en esta capa
+      rows += legendRow(legendImgIcon("2600px 1838px", "-1417px", "-1511px"), "Pato");
+      rows += legendRow(legendImgIcon("1891px 1336px", "-1250px", "-1028px"), "Garza");
+    } else if (step === 7 || step === 8) {
+      // Capa 4: Conectividad vial
+      rows += legendRow(legendDotIcon("#7a838d"), "Vías y malla vial");
+      rows += legendRow(legendDotIcon("#e2635a", true), "Vehículos en movimiento");
+    } else {
+      // Vista base / sin capa especifica: contexto general
+      rows += legendRow(legendDotIcon("#7a838d"), "Vías y malla vial");
+      rows += legendRow(legendDotIcon("#c7cdd3"), "Edificios y manzanas");
+      rows += legendRow(legendDotIcon("#7dd3fc", true), "Cuerpos de agua / humedal");
+      rows += legendRow(legendDotIcon("#6b9e78"), "Cobertura vegetal");
+    }
+    c.innerHTML = rows;
   }
   const STEP = 12;
   const labelMoveUp = document.getElementById("labelMoveUp");

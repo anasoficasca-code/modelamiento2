@@ -232,20 +232,9 @@ window.addEventListener("unhandledrejection", function(e) { alert("Promise Error
     <!-- Panel de convenciones (reemplaza la antigua etiqueta de escala) -->
     <aside id="legendPanel" style="display:none; position:absolute; top:0; left:0; bottom:0; width:200px; z-index:400; background:rgba(255,255,255,.96); backdrop-filter:blur(10px); border-right:1px solid rgba(0,0,0,.08); padding:70px 16px 16px; overflow-y:auto; font-family:'Segoe UI',sans-serif;">
       <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:12px;">Convenciones</div>
-      <div style="display:flex; flex-direction:column; gap:12px; font-size:11.5px; color:#1e293b;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <i style="width:26px; height:26px; border-radius:6px; flex:none; background-image:url(corte-burro-referencia.png); background-repeat:no-repeat; background-size:2600px 1838px; background-position:-1417px -1511px; background-color:#eef2f5;"></i>
-          Pato
-        </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <i style="width:26px; height:26px; border-radius:6px; flex:none; background-image:url(corte-burro-referencia.png); background-repeat:no-repeat; background-size:1891px 1336px; background-position:-1250px -1028px; background-color:#eef2f5;"></i>
-          Garza
-        </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <i style="width:26px; height:26px; border-radius:50%; flex:none; background:radial-gradient(circle at 35% 30%, #bfe9e6, #3fa7ac 55%, #1f6e73 100%);"></i>
-          Agua
-        </div>
-      </div>
+      <!-- Las convenciones cambian segun la capa que se este mostrando --
+           esto se llena en JS (updateDynamicLegend). -->
+      <div id="legendDynamicContent" style="display:flex; flex-direction:column; gap:12px; font-size:11.5px; color:#1e293b;"></div>
       <div id="legendActiveLayer" style="margin-top:16px; padding:10px 12px; border-radius:8px; background:#f1f5f9; font-size:11px; color:#0f172a; display:none;">
         <div style="font-weight:800; text-transform:uppercase; letter-spacing:.05em; font-size:9.5px; color:#64748b; margin-bottom:4px;">Capa activa</div>
         <div id="legendActiveLayerText"></div>
@@ -325,35 +314,8 @@ window.addEventListener("unhandledrejection", function(e) { alert("Promise Error
       </div>
     </aside>
 
-    <!-- Editor de la organizacion: ya no hay sliders de tamaño (todo
-         quedo fijo por decision de la usuaria); solo queda el zoom de la
-         axonometria y la posicion del titulo de la capa, mas abajo. -->
-    <div id="layoutEditor" style="display:none; position:absolute; top:16px; right:16px; z-index:600; width:230px; background:rgba(17,20,24,.92); border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:12px; font-family:'Segoe UI',sans-serif; color:#e8ecf1;">
-
-      <div id="axoZoomBox" style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,.15);">
-        <div style="font-weight:800; text-transform:uppercase; letter-spacing:.05em; font-size:9.5px; color:#8b96a5; margin-bottom:6px;">Zoom de la axonometría</div>
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-          <button type="button" id="axoZoomOut" style="width:30px; height:30px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:16px; font-weight:700; cursor:pointer;">−</button>
-          <span id="axoZoomVal" style="font-size:11px; color:#fff; font-variant-numeric:tabular-nums;">100%</span>
-          <button type="button" id="axoZoomIn" style="width:30px; height:30px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:16px; font-weight:700; cursor:pointer;">+</button>
-        </div>
-        <textarea id="axoCoordsOutput" rows="2" readonly spellcheck="false" style="width:100%; background:#0b0c0f; color:#8fd4c8; border:1px solid rgba(255,255,255,.14); border-radius:6px; font:10.5px/1.4 monospace; padding:6px; resize:vertical;"></textarea>
-      </div>
-
-      <div id="escalaZoomPanel" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,.15);">
-        <div style="font-weight:800; text-transform:uppercase; letter-spacing:.05em; font-size:9.5px; color:#8b96a5; margin-bottom:6px;">Posición del título de la capa</div>
-        <div style="display:grid; grid-template-columns:repeat(3,30px); grid-template-rows:repeat(2,30px); gap:4px; justify-content:center; margin-bottom:8px;">
-          <div></div>
-          <button type="button" id="labelMoveUp" style="border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:14px; cursor:pointer;">↑</button>
-          <div></div>
-          <button type="button" id="labelMoveLeft" style="border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:14px; cursor:pointer;">←</button>
-          <button type="button" id="labelMoveDown" style="border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:14px; cursor:pointer;">↓</button>
-          <button type="button" id="labelMoveRight" style="border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:14px; cursor:pointer;">→</button>
-        </div>
-        <textarea id="escalaCoordsOutput" rows="3" readonly spellcheck="false" style="width:100%; background:#0b0c0f; color:#8fd4c8; border:1px solid rgba(255,255,255,.14); border-radius:6px; font:10.5px/1.4 monospace; padding:6px; resize:vertical;"></textarea>
-        <button type="button" id="escalaCoordsCopy" style="width:100%; margin-top:6px; padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:11px; font-weight:700; cursor:pointer;">📋 Copiar coordenadas</button>
-      </div>
-    </div>
+    <!-- Editor de organizacion: ya no se necesita, todo quedo fijo. -->
+    <div id="layoutEditor" style="display:none;"></div>
 
     <!-- Corte: vista en seccion del mismo territorio, cortando por el humedal -->
     <div id="sectionWrap" style="display:none; position:absolute; left:0; right:0; bottom:0; height:16%; min-height:150px; z-index:400; border-top:1px solid rgba(0,0,0,.12); background:#eef2f5;">
