@@ -77,7 +77,7 @@
   // en la posicion real del Humedal El Burro -- no se mueve con la caja
   // de seccion interactiva de arriba, es su propio corte permanente. ----
   const sectionCanvas2 = document.getElementById("sectionCanvas");
-  const sectionCamera = new THREE.PerspectiveCamera(16, 1, 1, 5000);
+  const sectionCamera = new THREE.PerspectiveCamera(35, 1, 1, 5000);
   let sectionRenderer = null, sectionCutZ = null, sectionControls = null;
   if (sectionCanvas2) {
     sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas2, antialias: true, alpha: true });
