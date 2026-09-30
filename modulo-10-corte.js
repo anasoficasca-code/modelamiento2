@@ -2140,7 +2140,8 @@ const ESCALA_TRANSFORM = {
     controls.update();
     if (sectionControls) sectionControls.update();
     renderer.render(scene, camera);
-    if (sectionRenderer && sectionWrapEl2 && sectionWrapEl2.style.display !== "none") {
+    const secWrapEl = document.getElementById("sectionWrap");
+    if (sectionRenderer && secWrapEl && secWrapEl.style.display !== "none") {
       // Lineas de edificios mas delgadas/livianas solo en el corte de
       // abajo (antes se habian pedido mas gruesas; ahora al reves),
       // sin afectar la axonometria de arriba.

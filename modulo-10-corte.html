@@ -620,7 +620,7 @@ img[src*="pato.png"] { background: transparent !important; mix-blend-mode: multi
 
         <!-- Capa Base inferior: Contexto existente / Corte base -->
         <div id="natLayerBase" class="nat-sublayer" data-exploded-top="70%" style="position:absolute; top:50%; left:50%; width:min(82vw, 900px); aspect-ratio:16/9; z-index:2; opacity:1; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="natBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="natBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:calc(50% - 144px); left:calc(50% + 276px); right:auto; transform:none; font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(100,116,139,.2);">Base</span>
@@ -721,7 +721,7 @@ img[src*="pato.png"] { background: transparent !important; mix-blend-mode: multi
 
         <!-- Capa Base inferior -->
         <div id="cultLayerBase" class="cult-sublayer" data-exploded-top="70%" style="position:absolute; top:50%; left:50%; width:min(82vw, 900px); aspect-ratio:16/9; z-index:2; opacity:1; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="cultBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="cultBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
           <div class="cult-layer-tag" style="position:absolute; top:calc(50% - 144px); left:calc(50% + 276px); right:auto; transform:none; font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(100,116,139,.2);">Base</span>
             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">EXISTING FEATURES</div>
@@ -807,7 +807,7 @@ img[src*="pato.png"] { background: transparent !important; mix-blend-mode: multi
 
         <!-- Capa Base inferior -->
         <div id="techLayerBase" class="tech-sublayer" data-exploded-top="72%" style="position:absolute; top:50%; left:50%; width:min(82vw, 900px); aspect-ratio:16/9; z-index:2; opacity:1; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="techBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="techBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
           <div class="tech-layer-tag" style="position:absolute; top:calc(50% - 144px); left:calc(50% + 276px); right:auto; transform:none; font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(100,116,139,.2);">Base</span>
             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">EXISTING FEATURES</div>
@@ -821,7 +821,7 @@ img[src*="pato.png"] { background: transparent !important; mix-blend-mode: multi
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js?v=1002"></script>
+<script src="modulo-10-corte.js?v=1003"></script>
 <div id="tagCoordsBox" style="position:fixed; top:20px; right:20px; background:#fff; border:2px solid #000; padding:10px; z-index:9999; font-family:monospace; display:none;"></div>
 </body>
 </html>
