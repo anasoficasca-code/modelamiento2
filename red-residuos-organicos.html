@@ -241,140 +241,132 @@
     { id:"n7", corto:"P5 · Inoperancia del ordenamiento", full:"Inoperancia del ordenamiento oficial ante patrones reales", color:"#45b8c4" },
   ];
   const MACRO_REL = [
-    { from:"n3", to:"n1", pol:"+", verbo:"P1→P7: mover más de 5,4 millones de toneladas anuales de alimentos hacia un solo predio atrae más de 3,8 millones de viajes anuales de camiones pesados, desbordando la malla vial." },
-    { from:"n1", to:"n5", pol:"+", verbo:"P7→P6: al represarse más de 1.500 camiones en la calle esperando turno de ingreso, las maniobras de descarga y reempaque se desplazan hacia los andenes y vías residenciales." },
-    { from:"n5", to:"n6", pol:"+", verbo:"P6→P2: el vertimiento de basuras orgánicas y el parqueo pesado en aceras invade la franja de amortiguación, compactando el suelo biológico del humedal." },
-    { from:"n6", to:"n2", pol:"+", verbo:"P2→P3: al destruirse la cobertura vegetal y perderse la porosidad del suelo de ronda, las lluvias arrastran aceites, sedimentos y lixiviados hacia el espejo de agua." },
-    { from:"n2", to:"n4", pol:"-", verbo:"P3→P4: el colapso ambiental, la eutrofización y los malos olores reducen la habitabilidad y calidad de vida en los nuevos proyectos residenciales." },
-    { from:"n4", to:"n1", pol:"+", verbo:"P4→P7: el aumento de residentes incrementa el flujo de automóviles particulares que compiten por el mismo espacio con las tractomulas de carga." },
-    { from:"n7", to:"n3", pol:"+", verbo:"P5→P1: la falta de articulación entre el POT distrital y el reglamento privado de la central permite que el mercado siga expandiéndose sin mitigar sus impactos." },
-    { from:"n7", to:"n5", pol:"+", verbo:"P5→P6: el vacío de autoridad en los portones dificulta el control del comercio informal y el acopio no autorizado de guacales." },
-    { from:"n1", to:"n2", pol:"+", verbo:"P7→P3: el parqueo de tractomulas con motores encendidos deja goteos de grasas e hidrocarburos que la escorrentía pluvial conduce al humedal." },
-    { from:"n4", to:"n2", pol:"+", verbo:"P4→P3: la sobrecarga poblacional sobre tuberías sanitarias antiguas genera conexiones erradas y reboses que descargan aguas servidas al humedal." },
-    { from:"n3", to:"n6", pol:"+", verbo:"P1→P2: la alta producción de desechos orgánicos de la central presiona directamente los bordes de la franja ambiental." },
-    { from:"n3", to:"n2", pol:"+", verbo:"P1→P3: el volumen de vertimientos y lavado de la operación comercial aporta carga contaminante directa al cuerpo hídrico." },
-    { from:"n3", to:"n5", pol:"+", verbo:"P1→P6: la saturación interna de la central desplaza el parqueo y las maniobras de cargue hacia andenes y calles del barrio." },
-    { from:"n7", to:"n1", pol:"+", verbo:"P5→P7: la falta de una autoridad unificada en los portones impide ordenar los horarios de ingreso, agravando el represamiento de camiones." },
+    { from:"n3", to:"n1", pol:"+", verbo:"P1→P7: el volumen de más de 5,4 millones de toneladas de alimentos al año presiona la capacidad vial." },
+    { from:"n1", to:"n5", pol:"+", verbo:"P7→P6: el represamiento de más de 1.500 camiones desplaza la operación hacia vías y andenes." },
+    { from:"n5", to:"n6", pol:"+", verbo:"P6→P2: el parqueo en vía y el acopio informal deterioran la zona de amortiguación." },
+    { from:"n6", to:"n2", pol:"+", verbo:"P2→P3: la pérdida de absorción en el suelo canaliza lixiviados y escorrentía hacia el humedal." },
+    { from:"n2", to:"n4", pol:"-", verbo:"P3→P4: la pérdida de calidad ambiental degrada el entorno habitacional." },
+    { from:"n7", to:"n3", pol:"+", verbo:"P5→P1: la falta de regulación integrada perpetúa el crecimiento del mercado sin mitigación." },
   ];
 
   const SUBNETS = {
     n1: {
       nodes: [
-        { id:"s1_1", t:"C7.1 · Descalce entre el arribo nocturno continuo de flota intermunicipal y la apertura de bodegas" },
-        { id:"s1_2", t:"C7.2 · Puertas de entrada en esquina (a 90°) sobre arterias viales sin bahías de desaceleración" },
-        { id:"s1_3", t:"K7.1 · Malla vial barrial de calzada sencilla (María Paz, Patio Bonito)" },
-        { id:"s1_4", t:"K7.2 · Estado físico malo o regular en más del 60% del asfalto por sobrepeso" },
-        { id:"s1_5", t:"S7.1 · Represamiento nocturno de más de 1.500 camiones pesados en vía pública" },
-        { id:"s1_6", t:"S7.2 · Parqueo informal en carriles de circulación de Av. Ciudad de Cali y Cra 80" },
-        { id:"s1_7", t:"S7.3 · Caída de la velocidad operacional e interrupción de TransMilenio / SITP" },
+        { id:"s1_1", t:"C7.1 · Confluencia de flujos intermunicipales de carga en corredores regionales y descalce de horarios" },
+        { id:"s1_2", t:"C7.2 · Geometría de accesos con portones a 90° sobre arterias sin bahías de desaceleración" },
+        { id:"s1_3", t:"K7.1 · Restricción de capacidad en la red vial perimetral de calzada sencilla (María Paz, Patio Bonito)" },
+        { id:"s1_4", t:"K7.2 · Estado físico malo/regular en más del 60% de la capa de rodadura por sobrepeso" },
+        { id:"s1_5", t:"S7.1 · Tiempos de espera y represamiento de más de 1.500 camiones pesados en vía pública" },
+        { id:"s1_6", t:"S7.2 · Estacionamiento informal sobre calzadas de la Av. Ciudad de Cali y Cra 80" },
+        { id:"s1_7", t:"S7.3 · Reducción de la capacidad operativa y caída de velocidad en arterias principales" },
       ],
       rel: [
-        { from:"s1_1", to:"s1_5", pol:"+" }, { from:"s1_5", to:"s1_6", pol:"+" }, { from:"s1_2", to:"s1_7", pol:"+" },
+        { from:"s1_1", to:"s1_5", pol:"+" }, { from:"s1_2", to:"s1_5", pol:"+" }, { from:"s1_3", to:"s1_5", pol:"+" },
+        { from:"s1_4", to:"s1_7", pol:"+" }, { from:"s1_5", to:"s1_6", pol:"+" }, { from:"s1_6", to:"s1_7", pol:"+" },
         { from:"s1_7", to:"s1_5", loop:true, pol:"+" },
       ],
-      loopNote: "El trancón retrasa el ingreso de la flota que sigue llegando, alargando la fila.",
+      loopNote: "La llegada nocturna y los portones a 90° crean represamiento, ocupando carriles e interrumpiendo el tráfico principal.",
       loopType: "R",
     },
     n2: {
       nodes: [
-        { id:"s2_1", t:"C3.1 · Conexiones erradas en la red pluvial que vierten aguas servidas sin tratamiento" },
-        { id:"s2_2", t:"C3.2 · Arrastre pluvial de aceites, hidrocarburos y lixiviados depositados en el asfalto" },
-        { id:"s2_3", t:"K3.1 · Caudal de entrada hídrica (L/s) y variaciones en la profundidad de lámina de agua" },
-        { id:"s2_4", t:"K3.2 · Arrastre de sedimentos medido por Sólidos Suspendidos Totales (SST, mg/L) y turbiedad (11 a 13 UNT)" },
-        { id:"s2_5", t:"S3.1 · Carga contaminante diaria (kg/día = concentración × caudal)" },
-        { id:"s2_6", t:"S3.2 · Elevación de la demanda bioquímica/química de oxígeno (DBO₅ y DQO 106–197 mg/L; relación 0,17–0,27)" },
-        { id:"s2_7", t:"S3.3 · Proceso de eutrofización por nitrógeno y fósforo, multiplicando la biomasa de buchón" },
-        { id:"s2_8", t:"S3.4 · Caída del Oxígeno Disuelto (OD) y anoxia del cuerpo hídrico" },
+        { id:"s2_1", t:"C3.1 · Conexiones erradas y puntos de vertimiento sin tratamiento previo (puntos/km²)" },
+        { id:"s2_2", t:"C3.2 · Aporte de lixiviados, grasas y aceites de la operación comercial (mg/L)" },
+        { id:"s2_3", t:"K3.1 · Caudal de entrada al humedal y profundidad de lámina de agua" },
+        { id:"s2_4", t:"K3.2 · Sólidos suspendidos totales (SST) y turbiedad (11–13 UNT)" },
+        { id:"s2_5", t:"S3.1 · Carga contaminante diaria (concentración × caudal, kg/día)" },
+        { id:"s2_6", t:"S3.2 · DBO₅ y DQO (106–197 mg/L, relación 0,17–0,27)" },
+        { id:"s2_7", t:"S3.3 · Eutrofización (DBO₅ + DQO + nitrógeno + fósforo)" },
+        { id:"s2_8", t:"S3.4 · Agotamiento del oxígeno disuelto (OD) y pérdida de dinamismo ecológico" },
       ],
       rel: [
         { from:"s2_1", to:"s2_5", pol:"+" }, { from:"s2_2", to:"s2_5", pol:"+" }, { from:"s2_3", to:"s2_5", pol:"+" },
         { from:"s2_4", to:"s2_5", pol:"+" }, { from:"s2_5", to:"s2_6", pol:"+" }, { from:"s2_6", to:"s2_7", pol:"+" },
         { from:"s2_7", to:"s2_8", pol:"-" }, { from:"s2_8", to:"s2_7", loop:true, pol:"+" },
       ],
-      loopNote: "La biomasa descompuesta agota el Oxígeno Disuelto (OD), acelerando la pudrición hídrica.",
+      loopNote: "La proliferación de biomasa agota el oxígeno disuelto (OD), acelerando la descomposición hídrica.",
       loopType: "R",
     },
     n3: {
       nodes: [
-        { id:"s3_1", t:"C1.1 · Asignación del rol de acopio alimentario regional a un predio urbano de 42 hectáreas (PRM Corabastos)" },
-        { id:"s3_2", t:"C1.2 · Ausencia de plataformas logísticas / puertos secos de filtrado en accesos periféricos a Bogotá" },
-        { id:"s3_3", t:"K1.1 · Volumen anual de alimentos movilizados (Entrada_alimentos = 5,41 a 5,77 millones de ton/año)" },
-        { id:"s3_4", t:"K1.2 · Flujo vehicular entrante e indicador de eficiencia (Entrada_vehiculos = 3,86 millones veh/año; Carga_media = 1,40 t/veh)" },
-        { id:"s3_5", t:"S1.1 · Formación de economías de aglomeración y comercios satélites perimetrales" },
-        { id:"s3_6", t:"S1.2 · Atracción masiva de viajes de abastecimiento urbano e intermunicipal" },
+        { id:"s3_1", t:"C1.1 · Asignación de la función de acopio alimentario regional a un predio urbano continuo de 42 hectáreas" },
+        { id:"s3_2", t:"C1.2 · Entrada de alimentos movilizados (5,41 a 5,77 millones de toneladas/año)" },
+        { id:"s3_3", t:"K1.2 · Entrada de vehículos comerciales (3,86 millones de veh/año)" },
+        { id:"s3_4", t:"K1.1 · Carga media por vehículo de transporte comercial (1,40 t/veh)" },
+        { id:"s3_5", t:"S1.1 · Formación de economías de aglomeración e hipercomercialización perimetral" },
+        { id:"s3_6", t:"S1.2 · Atracción de viajes de abastecimiento urbano e intermunicipal y saturación de la trama barrial" },
       ],
       rel: [
-        { from:"s3_1", to:"s3_3", pol:"+" }, { from:"s3_2", to:"s3_6", pol:"+" }, { from:"s3_3", to:"s3_5", pol:"+" },
-        { from:"s3_4", to:"s3_5", pol:"+" }, { from:"s3_5", to:"s3_6", pol:"+" }, { from:"s3_6", to:"s3_3", loop:true, pol:"+" },
+        { from:"s3_1", to:"s3_2", pol:"+" }, { from:"s3_2", to:"s3_3", pol:"+" }, { from:"s3_3", to:"s3_4", pol:"+" },
+        { from:"s3_2", to:"s3_5", pol:"+" }, { from:"s3_5", to:"s3_6", pol:"+" }, { from:"s3_6", to:"s3_2", loop:true, pol:"+" },
       ],
-      loopNote: "A mayor comercio satélite, más compradores regionales llegan, lo que exige ingresar un mayor volumen alimentario a la central.",
+      loopNote: "A mayor volumen de alimentos, mayor atracción de viajes comerciales, lo que refuerza la concentración en la central.",
       loopType: "R",
     },
     n4: {
       nodes: [
-        { id:"s4_1", t:"C4.1 · Licenciamiento acelerado de edificación residencial en altura (VIS)" },
-        { id:"s4_2", t:"C4.2 · Rezago en la ampliación de colectores matrices sanitarios" },
-        { id:"s4_3", t:"K4.1 · Tuberías y vías barriales proyectadas originalmente para casas de 1 y 2 pisos" },
-        { id:"s4_4", t:"K4.2 · Presión microbiológica medida por coliformes totales y fecales (NMP/100 ml)" },
-        { id:"s4_5", t:"S4.1 · Aumento exponencial de la densidad poblacional residencial por hectárea" },
-        { id:"s4_6", t:"S4.2 · Fricción de tráfico por cruce de carros particulares de residentes con camiones pesados" },
-        { id:"s4_7", t:"S4.3 · Rebose de colectores sanitarios en días de precipitación alta" },
+        { id:"s4_1", t:"C4.1 · Ritmo acelerado de edificación de vivienda colectiva en altura (VIS)" },
+        { id:"s4_2", t:"C4.2 · Presión sobre las redes matrices de acueducto y alcantarillado sin ampliación proporcional" },
+        { id:"s4_3", t:"K4.1 · Capacidad instalada de la infraestructura sanitaria y trazado vial barrial" },
+        { id:"s4_4", t:"K4.2 · Contaminación microbiológica (coliformes fecales y totales, NMP/100 ml)" },
+        { id:"s4_5", t:"S4.1 · Aumento de la densidad poblacional en sectores residenciales aledaños" },
+        { id:"s4_6", t:"S4.2 · Fricción entre el tráfico vehicular residencial y el transporte pesado de carga" },
       ],
       rel: [
-        { from:"s4_1", to:"s4_5", pol:"+" }, { from:"s4_5", to:"s4_3", pol:"+" }, { from:"s4_3", to:"s4_7", pol:"+" },
-        { from:"s4_5", to:"s4_6", pol:"+" }, { from:"s4_5", to:"s4_2", pol:"+" }, { from:"s4_2", to:"s4_1", loop:true, pol:"+" },
+        { from:"s4_1", to:"s4_5", pol:"+" }, { from:"s4_5", to:"s4_2", pol:"+" }, { from:"s4_3", to:"s4_2", pol:"+" },
+        { from:"s4_2", to:"s4_4", pol:"+" }, { from:"s4_5", to:"s4_6", pol:"+" },
       ],
-      loopNote: "La demanda habitacional motiva la emisión de más licencias en el sector.",
+      loopNote: "La edificación en altura incrementa la densidad de habitantes, saturando las redes sanitarias y generando fricción vial con la carga pesada.",
       loopType: "R",
     },
     n5: {
       nodes: [
-        { id:"s5_1", t:"C6.1 · Capacidad limitada de parqueaderos internos frente a la flota de camiones entrante" },
-        { id:"s5_2", t:"C6.2 · Traslado de las maniobras de descarga, pesaje y empaque a las aceras del barrio" },
-        { id:"s5_3", t:"K6.1 · Andenes angostos (menores a 1,5 m) sin barreras de protección" },
-        { id:"s5_4", t:"K6.2 · Elevado flujo peatonal (más de 207.000 peatones semanales)" },
-        { id:"s5_5", t:"S6.1 · Ocupación no autorizada de aceras con puestos informales, guacales y \"pucheros\"" },
-        { id:"s5_6", t:"S6.2 · Reducción del ancho efectivo de circulación peatonal barrial" },
-        { id:"s5_7", t:"S6.3 · Desplazamiento del peatón hacia la calzada vehicular compartiendo carril con camiones" },
+        { id:"s5_1", t:"C6.1 · Saturación de la capacidad de parqueo e infraestructura interna en la central mayorista" },
+        { id:"s5_2", t:"C6.2 · Traslado de maniobras de transferencia de mercancías y empaque hacia las calles del barrio" },
+        { id:"s5_3", t:"K6.1 · Franjas peatonales reducidas (andenes inferiores a 1,5 m de ancho)" },
+        { id:"s5_4", t:"K6.2 · Elevado flujo de peatones (más de 207.000 peatones semanales)" },
+        { id:"s5_5", t:"S6.1 · Proliferación de ventas informales y acopio temporal de guacales (\"pucheros\") en vía pública" },
+        { id:"s5_6", t:"S6.2 · Reducción de la franja efectiva de circulación y conflicto de uso entre peatones y carga pesada" },
       ],
       rel: [
-        { from:"s5_1", to:"s5_2", pol:"+" }, { from:"s5_2", to:"s5_5", pol:"+" }, { from:"s5_5", to:"s5_6", pol:"+" },
-        { from:"s5_6", to:"s5_7", pol:"+" }, { from:"s5_7", to:"s5_4", pol:"+" }, { from:"s5_4", to:"s5_5", loop:true, pol:"+" },
+        { from:"s5_1", to:"s5_2", pol:"+" }, { from:"s5_2", to:"s5_5", pol:"+" }, { from:"s5_3", to:"s5_6", pol:"+" },
+        { from:"s5_4", to:"s5_6", pol:"+" }, { from:"s5_5", to:"s5_6", pol:"+" }, { from:"s5_6", to:"s5_2", loop:true, pol:"+" },
       ],
-      loopNote: "Cuanta más gente camina por la calzada, mayor es la atracción para instalar nuevos puestos informales.",
+      loopNote: "Al llenarse los parqueaderos internos, la carga sale a las aceras, atrayendo informales y obligando al peatón a caminar por la calle.",
       loopType: "R",
     },
     n6: {
       nodes: [
-        { id:"s6_1", t:"C2.1 · Generación de residuos sólidos no aprovechables (5.440 t/año; intensidad 0,001004 t residuo/t alimento)" },
-        { id:"s6_2", t:"C2.2 · Asignación de la franja de amortiguación ambiental como área de trabajo y acopio de guacales" },
-        { id:"s6_3", t:"K2.1 · Proximidad física inmediata entre las 42 hectáreas comerciales y la ronda del Humedal El Burro" },
-        { id:"s6_4", t:"K2.2 · Saturación hídrica por profundidad reducida del nivel freático de la sabana" },
-        { id:"s6_5", t:"S2.1 · Disposición no controlada de escombros, madera y materia orgánica en la ronda" },
-        { id:"s6_6", t:"S2.2 · Compactación mecánica del suelo biológico con pérdida de porosidad" },
-        { id:"s6_7", t:"S2.3 · Destrucción de la cobertura vegetal nativa y pérdida de la capacidad de infiltración" },
+        { id:"s6_1", t:"C2.1 · Generación de residuos sólidos no aprovechables (5.440 a 5.796 t/año)" },
+        { id:"s6_2", t:"C2.2 · Intensidad de generación de residuo por tonelada de alimento (0,001004 t residuo/t alimento)" },
+        { id:"s6_3", t:"K2.1 · Colindancia física entre el predio comercial y la franja de amortiguación del humedal" },
+        { id:"s6_4", t:"K2.2 · Profundidad del nivel freático que mantiene el suelo saturado" },
+        { id:"s6_5", t:"S2.1 · Disposición no controlada de residuos sólidos y escombros en bordes ambientales" },
+        { id:"s6_6", t:"S2.2 · Compactación de suelos biológicos adyacentes a cuerpos de agua" },
+        { id:"s6_7", t:"S2.3 · Deterioro de la cobertura vegetal nativa y pérdida de la capacidad de absorción natural" },
       ],
       rel: [
-        { from:"s6_1", to:"s6_5", pol:"+" }, { from:"s6_3", to:"s6_5", pol:"+" }, { from:"s6_5", to:"s6_6", pol:"+" },
-        { from:"s6_6", to:"s6_7", pol:"+" }, { from:"s6_7", to:"s6_2", pol:"+" }, { from:"s6_2", to:"s6_6", loop:true, pol:"+" },
+        { from:"s6_2", to:"s6_1", pol:"+" }, { from:"s6_1", to:"s6_5", pol:"+" }, { from:"s6_3", to:"s6_5", pol:"+" },
+        { from:"s6_5", to:"s6_6", pol:"+" }, { from:"s6_4", to:"s6_6", pol:"+" }, { from:"s6_6", to:"s6_7", pol:"+" },
+        { from:"s6_7", to:"s6_6", loop:true, pol:"+" },
       ],
-      loopNote: "Al desaparecer la barrera vegetal, los camiones aprovechan para invadir y pisar la tierra, aumentando la compactación.",
+      loopNote: "La pérdida de vegetación favorece la invasión vehicular, destruyendo la porosidad de la tierra.",
       loopType: "R",
     },
     n7: {
       nodes: [
-        { id:"s7_1", t:"C5.1 · Brecha entre las determinantes del POT y las dinámicas reales del mercado comercial" },
-        { id:"s7_2", t:"C5.2 · Autonomía del reglamento interno comercial dentro de las 42 hectáreas frente a la norma distrital" },
-        { id:"s7_3", t:"K5.1 · Muro de cerramiento perimetral opaco que delimita la propiedad privada del suelo público" },
-        { id:"s7_4", t:"K5.2 · Ausencia de una autoridad unificada con capacidad de sanción en los portones" },
-        { id:"s7_5", t:"S5.1 · Consolidación de actividades informales y acopio no regulado en el espacio público" },
-        { id:"s7_6", t:"S5.2 · Pérdida de efectividad en los controles institucionales distritales" },
+        { id:"s7_1", t:"C5.1 · Brecha entre las determinantes del POT y las dinámicas reales de uso del suelo comercial" },
+        { id:"s7_2", t:"C5.2 · Coexistencia de regímenes normativos entre regulación pública distrital y administración privada" },
+        { id:"s7_3", t:"K5.1 · Rigidez de los instrumentos normativos distritales frente a la autoorganización local" },
+        { id:"s7_4", t:"K5.2 · Delimitación física mediante muro perimetral opaco" },
+        { id:"s7_5", t:"S5.1 · Consolidación de dinámicas informales al margen de controles institucionales" },
+        { id:"s7_6", t:"S5.2 · Pérdida de eficacia en los mecanismos institucionales de regulación territorial" },
       ],
       rel: [
-        { from:"s7_1", to:"s7_2", pol:"+" }, { from:"s7_2", to:"s7_3", pol:"+" }, { from:"s7_4", to:"s7_5", pol:"+" },
-        { from:"s7_5", to:"s7_6", pol:"+" }, { from:"s7_6", to:"s7_1", loop:true, pol:"+" },
+        { from:"s7_1", to:"s7_2", pol:"+" }, { from:"s7_3", to:"s7_2", pol:"+" }, { from:"s7_4", to:"s7_5", pol:"+" },
+        { from:"s7_2", to:"s7_5", pol:"+" }, { from:"s7_5", to:"s7_6", pol:"+" }, { from:"s7_6", to:"s7_1", loop:true, pol:"+" },
       ],
-      loopNote: "El caos en vía pública supera la inspección oficial, reforzando la inoperancia del POT.",
+      loopNote: "La distancia entre el POT y la norma privada fomenta la informalidad, reduciendo la autoridad pública.",
       loopType: "R",
     },
   };
@@ -395,20 +387,12 @@
   });
 
   const INTER_NETWORK_REL = [
-    { from:"s3_5", to:"s1_1", pol:"+", verbo:"P1→P7: mover más de 5,4 millones de toneladas anuales de alimentos atrae más de 3,8 millones de viajes de camiones, desbordando la malla vial", inter:true },
-    { from:"s1_4", to:"s5_1", pol:"+", verbo:"P7→P6: al represarse más de 1.500 camiones esperando turno, las maniobras de descarga se desplazan hacia los andenes", inter:true },
-    { from:"s5_4", to:"s6_4", pol:"+", verbo:"P6→P2: el vertimiento de basuras y el parqueo pesado en aceras invade la franja de amortiguación del humedal", inter:true },
-    { from:"s6_7", to:"s2_2", pol:"+", verbo:"P2→P3: sin la barrera vegetal, la lluvia arrastra aceites y sedimentos desde el asfalto hacia el humedal", inter:true },
-    { from:"s2_7", to:"s4_5", pol:"-", verbo:"P3→P4: el colapso ambiental y los malos olores reducen la habitabilidad de los nuevos proyectos residenciales", inter:true },
-    { from:"s4_6", to:"s1_5", pol:"+", verbo:"P4→P7: los autos de las nuevas torres compiten por el mismo espacio con las tractomulas en calles angostas", inter:true },
-    { from:"s7_6", to:"s3_1", pol:"+", verbo:"P5→P1: la falta de articulación entre el POT y el reglamento privado permite que el mercado siga expandiéndose", inter:true },
-    { from:"s7_4", to:"s5_5", pol:"+", verbo:"P5→P6: el vacío de autoridad en los portones dificulta el control del comercio informal y el acopio de guacales", inter:true },
-    { from:"s1_5", to:"s2_2", pol:"+", verbo:"P7→P3: el parqueo de tractomulas con motores encendidos deja goteos de grasas que la escorrentía conduce al humedal", inter:true },
-    { from:"s4_7", to:"s2_1", pol:"+", verbo:"P4→P3: la sobrecarga poblacional sobre tuberías antiguas genera conexiones erradas y reboses hacia el humedal", inter:true },
-    { from:"s3_5", to:"s6_1", pol:"+", verbo:"P1→P2: la alta producción de desechos orgánicos de la central presiona los bordes de la franja ambiental", inter:true },
-    { from:"s3_6", to:"s2_1", pol:"+", verbo:"P1→P3: el volumen de vertimientos y lavado de la operación comercial aporta carga contaminante al cuerpo hídrico", inter:true },
-    { from:"s3_5", to:"s5_1", pol:"+", verbo:"P1→P6: la saturación interna de la central desplaza el parqueo y las maniobras de cargue hacia las calles del barrio", inter:true },
-    { from:"s7_4", to:"s1_1", pol:"+", verbo:"P5→P7: la falta de una autoridad unificada en los portones impide ordenar los horarios de ingreso, agravando el represamiento", inter:true },
+    { from:"s3_5", to:"s1_1", pol:"+", verbo:"Nivel 1 (P1→P7): el volumen de más de 5,4 millones de toneladas de alimentos al año presiona la capacidad vial", inter:true },
+    { from:"s1_5", to:"s5_2", pol:"+", verbo:"Nivel 1 (P7→P6): el represamiento de más de 1.500 camiones desplaza la operación hacia vías y andenes", inter:true },
+    { from:"s5_5", to:"s6_5", pol:"+", verbo:"Nivel 1 (P6→P2): el parqueo en vía y el acopio informal deterioran la zona de amortiguación", inter:true },
+    { from:"s6_7", to:"s2_2", pol:"+", verbo:"Nivel 1 (P2→P3): la pérdida de absorción en el suelo canaliza lixiviados y escorrentía hacia el humedal", inter:true },
+    { from:"s2_7", to:"s4_1", pol:"-", verbo:"Nivel 1 (P3→P4): la pérdida de calidad ambiental degrada el entorno habitacional", inter:true },
+    { from:"s7_6", to:"s3_1", pol:"+", verbo:"Nivel 1 (P5→P1): la falta de regulación integrada perpetúa el crecimiento del mercado sin mitigación", inter:true },
   ];
 
   const gooLayer = document.getElementById("gooLayer");
@@ -743,13 +727,13 @@
   };
 
   const SAVED_MACRO_POSITIONS = {
-    "n1": { x: 559.2, y: 330.2, t: "P7 · Sobrecarga de la malla vial" },
-    "n2": { x: 194.4, y: 427.0, t: "P3 · Eutrofización hídrica" },
-    "n3": { x: 1089.6, y: 523.0, t: "P1 · Concentración del mercado mayorista" },
-    "n4": { x: 620.8, y: 572.6, t: "P4 · Densificación residencial en altura" },
-    "n5": { x: 866.4, y: 199.8, t: "P6 · Interferencia en el espacio público" },
-    "n6": { x: 273.6, y: 165.4, t: "P2 · Degradación de suelos" },
-    "n7": { x: 1220.0, y: 251.0, t: "P5 · Inoperancia del ordenamiento" },
+    "n1": { x: 1105.8, y: 485.3, r: 124.4, t: "Colapso de la red vial local y arterial" },
+    "n2": { x: 136.9, y: 534.2, r: 116.4, t: "Contaminación de la red hídrica" },
+    "n3": { x: 678.2, y: 301.3, r: 176.9, t: "Concentración del mercado mayorista" },
+    "n4": { x: 467.6, y: 774.2, r: 132.4, t: "Sobrecarga por densificación en altura" },
+    "n5": { x: 1407.1, y: 264.9, r: 140.4, t: "Interferencia en el espacio público" },
+    "n6": { x: 178.7, y: 248.9, r: 108.4, t: "Acumulación de residuos y transporte pesado" },
+    "n7": { x: 1180.4, y: 789.3, r: 140.4, t: "Inoperancia del ordenamiento oficial" },
   };
 
   function resizeIndividualNode(id, delta) {
@@ -869,16 +853,15 @@
       });
     }
     nodePos = best;
-
-    // Seguro contra nodos sin posicion: en la vista completa (muchos
-    // nodos + muchas relaciones inter-red) el layout de fuerzas puede
-    // dejar algun nodo puntual sin entrada en "best" y esto rompia toda
-    // la vista (pantalla en blanco). Se le da una posicion de reserva a
-    // cualquier nodo que falte, sin tocar el resto del layout.
+    
+    // Bugfix: aseguremonos que TODO nodo tenga una posicion asignada (incluso si fallaron las fuerzas)
+    const step = (Math.PI * 2) / Math.max(1, nodes.length);
     nodes.forEach((n, i) => {
-      if (!nodePos[n.id]) {
-        const step = (Math.PI * 2) / Math.max(1, nodes.length);
-        nodePos[n.id] = { x: cx + spread * Math.cos(i * step), y: cy + spread * Math.sin(i * step) };
+      if (!nodePos[n.id] || isNaN(nodePos[n.id].x) || isNaN(nodePos[n.id].y)) {
+        nodePos[n.id] = {
+          x: cx + spread * Math.cos(i * step),
+          y: cy + spread * Math.sin(i * step)
+        };
       }
     });
 

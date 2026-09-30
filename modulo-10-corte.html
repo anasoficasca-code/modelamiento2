@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+<head><script>
+window.onerror = function(m, u, l, c, e) {
+    fetch('http://localhost:9999/?err=' + encodeURIComponent(m + ' at line ' + l + ' col ' + c));
+};
+window.addEventListener('unhandledrejection', function(e) {
+    fetch('http://localhost:9999/?err=' + encodeURIComponent('Promise rejection: ' + (e.reason ? e.reason.message || e.reason : 'unknown')));
+});
+</script>
+<script>
+window.onerror = function(msg, url, line) { alert("JS Error: " + msg + " at line " + line); };
+window.addEventListener("unhandledrejection", function(e) { alert("Promise Error: " + (e.reason ? e.reason.message || e.reason : "unknown")); });
+</script>
+
 <meta charset="UTF-8">
 <script src="rapot-v2.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -199,7 +211,47 @@
         <a href="red-residuos-organicos.html" class="icon-nav-item" title="Red de problemáticas"><i class="fa-solid fa-diagram-project"></i></a>
         <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
       </nav>
-    <div id="natClimatePanel" style="margin-top:16px; padding-top:14px; border-top:1px dashed rgba(0,0,0,.1); font-family:'Segoe UI',sans-serif;">
+    </aside>
+  <main class="main">
+    <div id="sceneWrap">
+      <canvas id="sceneCanvas"></canvas>
+      <div id="axoContextFade" style="display:none; position:absolute; inset:0; z-index:7; background:rgba(255,255,255,.38); pointer-events:none;"></div>
+    </div>
+
+    <!-- Fondo solido detras de la escala/axonometria activa: al achicarla
+         o moverla con el zoom/arrastre, esto tapa la axonometria inicial
+         de abajo para que nunca se vea "el fondo" ni se transparente
+         nada. Ocupa el mismo recuadro que la escala (izquierda: ancho de
+         convenciones; abajo: alto del corte), por debajo de ella. -->
+    <div id="axoBackdrop" style="display:none;"></div>
+
+    <!-- Panel de convenciones (reemplaza la antigua etiqueta de escala) -->
+    <aside id="legendPanel" style="display:none; position:absolute; top:0; left:0; bottom:0; width:200px; z-index:400; background:rgba(255,255,255,.96); backdrop-filter:blur(10px); border-right:1px solid rgba(0,0,0,.08); padding:70px 16px 16px; overflow-y:auto; font-family:'Segoe UI',sans-serif;">
+      <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:12px;">Convenciones</div>
+      <div style="display:flex; flex-direction:column; gap:12px; font-size:11.5px; color:#1e293b;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <i style="width:26px; height:26px; border-radius:6px; flex:none; background-image:url(corte-burro-referencia.png); background-repeat:no-repeat; background-size:2600px 1838px; background-position:-1417px -1511px; background-color:#eef2f5;"></i>
+          Pato
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <i style="width:26px; height:26px; border-radius:6px; flex:none; background-image:url(corte-burro-referencia.png); background-repeat:no-repeat; background-size:1891px 1336px; background-position:-1250px -1028px; background-color:#eef2f5;"></i>
+          Garza
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <i style="width:26px; height:26px; border-radius:50%; flex:none; background:radial-gradient(circle at 35% 30%, #bfe9e6, #3fa7ac 55%, #1f6e73 100%);"></i>
+          Agua
+        </div>
+      </div>
+      <div id="legendActiveLayer" style="margin-top:16px; padding:10px 12px; border-radius:8px; background:#f1f5f9; font-size:11px; color:#0f172a; display:none;">
+        <div style="font-weight:800; text-transform:uppercase; letter-spacing:.05em; font-size:9.5px; color:#64748b; margin-bottom:4px;">Capa activa</div>
+        <div id="legendActiveLayerText"></div>
+        <div id="legendAgentsContainer"></div>
+      </div>
+
+      <!-- Zoom y posicion de la axonometria/escala -->
+      <!-- Cota de Inundacion Anual, ahora dentro de Convenciones (no
+           flotando sobre la axonometria) -->
+      <div id="natClimatePanel" style="display:none; margin-top:16px; padding-top:14px; border-top:1px dashed rgba(0,0,0,.1); font-family:'Segoe UI',sans-serif;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <span style="font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#2a856a;"><i class="fa-solid fa-droplet"></i> Cota de Inundación Anual</span>
           <span id="natMesLabel" style="font-size:11.5px; font-weight:800; color:#111418; background:#eef4f1; padding:2px 7px; border-radius:6px;">Abril</span>
@@ -224,7 +276,7 @@
           ▶ Reproducir año completo
         </button>
       </div>
-<div id="cultCapa1Panel" class="cult-control-panel" style="display:none; font-family:'Segoe UI',sans-serif; margin-top:16px;">
+    <div id="cultCapa1Panel" class="cult-control-panel" style="display:none; font-family:'Segoe UI',sans-serif; margin-top:16px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
           <span style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#a21caf;"><i class="fa-solid fa-clock-rotate-left"></i> Memoria Histórica (1950–2024)</span>
           <span id="cultYearLabel" style="font-size:12px; font-weight:800; color:#fff; background:#a21caf; padding:2px 8px; border-radius:6px;">1956</span>
@@ -268,51 +320,6 @@
         </div>
       </div>
     </aside>
-  <main class="main">
-    <div id="sceneWrap">
-      <canvas id="sceneCanvas"></canvas>
-      <div id="axoContextFade" style="display:none; position:absolute; inset:0; z-index:7; background:rgba(255,255,255,.38); pointer-events:none;"></div>
-    </div>
-
-    <!-- Fondo solido detras de la escala/axonometria activa: al achicarla
-         o moverla con el zoom/arrastre, esto tapa la axonometria inicial
-         de abajo para que nunca se vea "el fondo" ni se transparente
-         nada. Ocupa el mismo recuadro que la escala (izquierda: ancho de
-         convenciones; abajo: alto del corte), por debajo de ella. -->
-    <div id="axoBackdrop" style="display:none;"></div>
-
-    <!-- Panel de convenciones (reemplaza la antigua etiqueta de escala) -->
-    <aside id="legendPanel" style="display:none; position:absolute; top:0; left:0; bottom:0; width:200px; z-index:400; background:rgba(255,255,255,.96); backdrop-filter:blur(10px); border-right:1px solid rgba(0,0,0,.08); padding:70px 16px 16px; overflow-y:auto; font-family:'Segoe UI',sans-serif;">
-      <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:12px;">Convenciones</div>
-      <div style="display:flex; flex-direction:column; gap:12px; font-size:11.5px; color:#1e293b;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <i style="width:26px; height:26px; border-radius:6px; flex:none; background-image:url(corte-burro-referencia.png); background-repeat:no-repeat; background-size:2600px 1838px; background-position:-1417px -1511px; background-color:#eef2f5;"></i>
-          Pato
-        </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <i style="width:26px; height:26px; border-radius:6px; flex:none; background-image:url(corte-burro-referencia.png); background-repeat:no-repeat; background-size:1891px 1336px; background-position:-1250px -1028px; background-color:#eef2f5;"></i>
-          Garza
-        </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <i style="width:26px; height:26px; border-radius:50%; flex:none; background:radial-gradient(circle at 35% 30%, #bfe9e6, #3fa7ac 55%, #1f6e73 100%);"></i>
-          Agua
-        </div>
-      </div>
-      <div style="margin-top:22px; padding-top:14px; border-top:1px dashed rgba(0,0,0,.1); font-size:10.5px; color:#64748b; line-height:1.5;">
-        Arriba: axonometría en vivo del territorio.<br>Abajo: el mismo territorio, cortado a la altura del humedal.
-      </div>
-      <div id="legendActiveLayer" style="margin-top:16px; padding:10px 12px; border-radius:8px; background:#f1f5f9; font-size:11px; color:#0f172a; display:none;">
-        <div style="font-weight:800; text-transform:uppercase; letter-spacing:.05em; font-size:9.5px; color:#64748b; margin-bottom:4px;">Capa activa</div>
-        <div id="legendActiveLayerText">—</div>
-      </div>
-
-      <!-- Zoom y posicion de la axonometria/escala -- se puede agrandar,
-           achicar y arrastrar por toda la pantalla; las coordenadas
-           resultantes se muestran aqui para copiar. -->
-      <!-- Cota de Inundacion Anual, ahora dentro de Convenciones (no
-           flotando sobre la axonometria) -->
-      
-    </aside>
 
     <!-- Editor de la organizacion: ya no hay sliders de tamaño (todo
          quedo fijo por decision de la usuaria); solo queda el zoom de la
@@ -347,17 +354,16 @@
     <!-- Corte: vista en seccion del mismo territorio, cortando por el humedal -->
     <div id="sectionWrap" style="display:none; position:absolute; left:0; right:0; bottom:0; height:16%; min-height:150px; z-index:400; border-top:1px solid rgba(0,0,0,.12); background:#eef2f5;">
       <canvas id="sectionCanvas" style="width:100%; height:100%; display:block; cursor:grab;"></canvas>
-      <button type="button" id="sectionPenBtn" style="position:absolute; bottom:8px; right:14px; z-index:16; background:rgba(10,12,14,.85); color:#fff; font-size:10.5px; padding:5px 9px; border-radius:6px; border:1px solid rgba(255,255,255,.2); cursor:pointer;">✏️ Dibujar polígono</button>
-      <svg id="sectionPenSvg" style="display:none; position:absolute; inset:0; z-index:15; pointer-events:none;"></svg>
-      <textarea id="sectionPenCoordsOutput" style="display:none; position:absolute; bottom:44px; left:14px; z-index:16; width:280px; height:120px; font-size:10px; background:rgba(10,12,14,.92); color:#fff; border:1px solid rgba(255,255,255,.2); border-radius:6px; padding:8px;"></textarea>
       <!-- Controles independientes para el corte inferior -->
       <div id="botControls" style="display:none; position:absolute; right:10px; top:10px; width:220px; background:rgba(255,255,255,0.9); padding:10px; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.15); font-family:'Segoe UI',sans-serif; font-size:11px; color:#333; z-index:10;">
         <div style="font-weight:600; margin-bottom:8px; border-bottom:1px solid #ccc; padding-bottom:4px;">Coordenadas de la vista</div>
-        <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
-          <label style="margin-right:auto;">Zoom del corte</label>
-          <button type="button" id="corteZoomOut" style="width:24px; height:24px; border-radius:5px; border:1px solid #ccc; background:#fff; font-size:14px; font-weight:700; cursor:pointer;">−</button>
-          <button type="button" id="corteZoomIn" style="width:24px; height:24px; border-radius:5px; border:1px solid #ccc; background:#fff; font-size:14px; font-weight:700; cursor:pointer;">+</button>
-        </div>
+<div style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+  <span>Zoom: <span id="sectionZoomVal">1.00</span></span>
+  <div>
+    <button type="button" id="btnZoomOutSec" style="padding:2px 8px; cursor:pointer; background:#fff; border:1px solid #ccc; border-radius:4px;">-</button>
+    <button type="button" id="btnZoomInSec" style="padding:2px 8px; cursor:pointer; background:#fff; border:1px solid #ccc; border-radius:4px;">+</button>
+  </div>
+</div>
         <div class="rotate-row" style="display:none; justify-content:space-between; align-items:center; margin-bottom:4px;">
           <label>Rotaci&oacute;n <span id="botRotVal">58&deg;</span></label>
           <input type="range" id="botRot" min="0" max="179" value="143" step="1" style="width:100px;">
@@ -390,17 +396,17 @@
         <textarea id="botBoxOutput" rows="9" spellcheck="false" readonly style="width:100%; margin-top:4px; font-size:10px; box-sizing:border-box; background:#f8f9fa; border:1px solid #ccc;"></textarea>
       </div>
       <span style="position:absolute; top:8px; left:14px; font:700 10.5px 'Segoe UI',sans-serif; color:#475569; letter-spacing:.04em; text-transform:uppercase; pointer-events:none;">Corte — Humedal El Burro</span>
-      <button type="button" id="sectionFullscreenBtn" style="position:absolute; top:6px; right:14px; z-index:6; font:600 10.5px 'Segoe UI',sans-serif; color:#475569; background:rgba(255,255,255,.9); border:1px solid rgba(0,0,0,.15); border-radius:6px; padding:4px 10px; cursor:pointer;">⛶ Pantalla completa</button>
-      <button type="button" id="sectionDownloadBtn" style="position:absolute; top:6px; right:150px; z-index:6; font:600 10.5px 'Segoe UI',sans-serif; color:#fff; background:#0369a1; border:1px solid rgba(0,0,0,.15); border-radius:6px; padding:4px 10px; cursor:pointer;">⬇ Descargar imagen HD</button>
+      
+      
       <!-- Controls: rotar y enderezar -->
-      <div style="display:none; position:absolute; bottom:8px; left:14px; align-items:center; gap:8px; z-index:5;">
+      <div style="display:none;">
         <label style="font:600 10px 'Segoe UI',sans-serif; color:#475569;">Rotación</label>
         <input type="range" id="sectionRot" min="0" max="360" value="54" step="1" style="width:80px; accent-color:#24c8bd;">
         <span id="sectionRotVal" style="font:600 10px 'Segoe UI',sans-serif; color:#111418; min-width:28px;">54°</span>
         <button id="sectionStraightenBtn" style="padding:4px 8px; border-radius:6px; border:1px solid rgba(0,0,0,.15); background:#fff; font:600 10px 'Segoe UI',sans-serif; color:#111418; cursor:pointer;">Enderezar</button>
       </div>
       <!-- Coordenadas del corte -->
-      <textarea id="sectionCoordsOutput" readonly style="position:absolute; top:28px; right:10px; width:200px; height:72px; font:9.5px monospace; background:rgba(255,255,255,.92); color:#111418; border:1px solid rgba(0,0,0,.12); border-radius:6px; padding:5px; resize:none; pointer-events:none;"></textarea>
+      <textarea id="sectionCoordsOutput" style="display:none;" readonly style="position:absolute; top:28px; right:10px; width:200px; height:72px; font:9.5px monospace; background:rgba(255,255,255,.92); color:#111418; border:1px solid rgba(0,0,0,.12); border-radius:6px; padding:5px; resize:none; pointer-events:none;"></textarea>
     </div>
 
     <div class="hud-title">
@@ -568,9 +574,7 @@
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA NATURAL (4 CAPAS ARQUITECTÓNICAS) -->
     <div id="naturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:380; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
-      <div id="natLayerContext" style="position:absolute; top:50%; left:50%; width:min(96vw, 1400px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -46%); transition:opacity 1.2s ease; pointer-events:none;">
-        <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="natContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
-      </div>
+      
       <!-- Barra superior / volver y controles de animación -->
       <div style="position:absolute; top:16px; left:26px; z-index:322; display:flex; align-items:center; gap:12px;">
         <button type="button" id="natExplodeBack" style="display:flex; align-items:center; gap:8px; padding:7px 14px; border-radius:20px; border:1px solid rgba(0,0,0,.15); background:#ffffff; color:#1a1d20; font-size:12px; font-weight:600; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,.06);">
@@ -652,7 +656,7 @@
 
         <!-- Capa Base inferior: Contexto existente / Corte base -->
         <div id="natLayerBase" class="nat-sublayer" data-exploded-top="70%" style="position:absolute; top:50%; left:50%; width:min(82vw, 900px); aspect-ratio:16/9; z-index:2; opacity:1; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="natBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="natBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
           <!-- Etiqueta temática lateral exterior al rombo -->
           <div class="nat-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(100,116,139,.2);">Base</span>
@@ -665,9 +669,7 @@
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA CULTURAL Y SOCIO-URBANA (4 CAPAS DE SIMULACIÓN) -->
     <div id="culturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:380; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
-      <div id="culLayerContext" style="position:absolute; top:50%; left:50%; width:min(96vw, 1400px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -46%); transition:opacity 1.2s ease; pointer-events:none;">
-        <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="culContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
-      </div>
+      
       <!-- Barra superior / volver y controles de animación -->
       <div style="position:absolute; top:16px; left:26px; z-index:322; display:flex; align-items:center; gap:12px;">
         <button type="button" id="cultExplodeBack" style="display:flex; align-items:center; gap:8px; padding:7px 14px; border-radius:20px; border:1px solid rgba(0,0,0,.15); background:#ffffff; color:#1a1d20; font-size:12px; font-weight:600; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,.06);">
@@ -755,7 +757,7 @@
 
         <!-- Capa Base inferior -->
         <div id="cultLayerBase" class="cult-sublayer" data-exploded-top="70%" style="position:absolute; top:50%; left:50%; width:min(82vw, 900px); aspect-ratio:16/9; z-index:2; opacity:1; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="cultBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="cultBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
           <div class="cult-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(100,116,139,.2);">Base</span>
             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">EXISTING FEATURES</div>
@@ -767,9 +769,7 @@
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA TECNOLÓGICA (2 CAPAS DE SIMULACIÓN) -->
     <div id="techExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:380; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
-      <div id="techLayerContext" style="position:absolute; top:50%; left:50%; width:min(96vw, 1400px); aspect-ratio:16/9; z-index:1; opacity:0; transform:translate(-50%, -46%); transition:opacity 1.2s ease; pointer-events:none;">
-        <div style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); position:relative;"><img id="techContextImg" style="width:100%; height:100%; object-fit:fill; opacity:0.28;"></div>
-      </div>
+      
       <!-- Barra superior / volver y controles de animación -->
       <div style="position:absolute; top:16px; left:26px; z-index:322; display:flex; align-items:center; gap:12px;">
         <button type="button" id="techExplodeBack" style="display:flex; align-items:center; gap:8px; padding:7px 14px; border-radius:20px; border:1px solid rgba(0,0,0,.15); background:#ffffff; color:#1a1d20; font-size:12px; font-weight:600; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,.06);">
@@ -843,7 +843,7 @@
 
         <!-- Capa Base inferior -->
         <div id="techLayerBase" class="tech-sublayer" data-exploded-top="72%" style="position:absolute; top:50%; left:50%; width:min(82vw, 900px); aspect-ratio:16/9; z-index:2; opacity:1; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
-          <div class="sublayer-diamond" style="width:100%; height:100%; cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="techBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
+          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="techBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
           <div class="tech-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">
             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(100,116,139,.2);">Base</span>
             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">EXISTING FEATURES</div>
@@ -857,6 +857,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-10-corte.js"></script>
+<script src="modulo-10-corte.js?v=1008"></script>
+<div id="tagCoordsBox" style="position:fixed; top:20px; right:20px; background:#fff; border:2px solid #000; padding:10px; z-index:9999; font-family:monospace; display:none;"></div>
 </body>
 </html>

@@ -77,7 +77,7 @@
   // en la posicion real del Humedal El Burro -- no se mueve con la caja
   // de seccion interactiva de arriba, es su propio corte permanente. ----
   const sectionCanvas2 = document.getElementById("sectionCanvas");
-  const sectionCamera = new THREE.PerspectiveCamera(55, 1, 1, 5000);
+  const sectionCamera = new THREE.PerspectiveCamera(16, 1, 1, 5000);
   let sectionRenderer = null, sectionCutZ = null, sectionControls = null;
   if (sectionCanvas2) {
     sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas2, antialias: true, alpha: true });
@@ -121,104 +121,6 @@
     sectionCamera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resizeSectionView);
-
-  // Zoom +/- del corte: cambia sectionCamera.zoom (sin tocar el tamaño
-  // del panel), reflejado de inmediato en el cuadro de coordenadas.
-  const corteZoomIn = document.getElementById("corteZoomIn");
-
-  // ---- Dibujar poligonos dentro del panel del corte (igual que en la
-  // axonometria principal, pero con la camara del corte). ----
-  const SVGNS2 = "http://www.w3.org/2000/svg";
-  let sectionPenActive = false;
-  let sectionPenPoints = [];
-  let sectionDraggingPenIdx = null;
-  const sectionPenSvg = document.getElementById("sectionPenSvg");
-  const sectionPenCoordsOutput = document.getElementById("sectionPenCoordsOutput");
-  const sectionPenNdc = new THREE.Vector2();
-  const sectionPenRaycaster = new THREE.Raycaster();
-  function sectionScreenToGround(clientX, clientY) {
-    const rect = sectionCanvas2.getBoundingClientRect();
-    sectionPenNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    sectionPenNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    sectionPenRaycaster.setFromCamera(sectionPenNdc, sectionCamera);
-    const dir = sectionPenRaycaster.ray.direction, origin = sectionPenRaycaster.ray.origin;
-    const t = (0 - origin.y) / dir.y;
-    const hit = origin.clone().add(dir.clone().multiplyScalar(t));
-    return fromScene(hit.x, hit.z);
-  }
-  function sectionRedrawPenSvg() {
-    sectionPenSvg.innerHTML = "";
-    if (sectionPenPoints.length === 0) return;
-    if (sectionPenPoints.length >= 2) {
-      const pts = sectionPenPoints.map(p => `${p.sx},${p.sy}`).join(" ");
-      const poly = document.createElementNS(SVGNS2, "polygon");
-      poly.setAttribute("points", pts);
-      poly.setAttribute("fill", "rgba(10,10,10,0.35)");
-      poly.setAttribute("stroke", "#0a0a0a");
-      poly.setAttribute("stroke-width", "2.5");
-      sectionPenSvg.appendChild(poly);
-    }
-    sectionPenPoints.forEach((p, idx) => {
-      const c = document.createElementNS(SVGNS2, "circle");
-      c.setAttribute("cx", p.sx); c.setAttribute("cy", p.sy); c.setAttribute("r", "5");
-      c.setAttribute("fill", "#0a0a0a");
-      c.style.pointerEvents = "auto";
-      c.style.cursor = "move";
-      c.addEventListener("pointerdown", (ev) => { ev.stopPropagation(); sectionDraggingPenIdx = idx; });
-      sectionPenSvg.appendChild(c);
-    });
-  }
-  function sectionUpdatePenOutput() {
-    if (sectionPenPoints.length === 0) { sectionPenCoordsOutput.style.display = "none"; return; }
-    sectionPenCoordsOutput.style.display = "block";
-    sectionPenCoordsOutput.value = sectionPenPoints.map((p, i) =>
-      `Punto ${i + 1}: local x:${p.x.toFixed(1)} y:${p.y.toFixed(1)}` +
-      (typeof localToLat === "function" ? `  (lat ${localToLat(p.y).toFixed(6)}, lng ${localToLng(p.x).toFixed(6)})` : "")
-    ).join("\n");
-  }
-  document.getElementById("sectionPenBtn").addEventListener("click", (e) => {
-    e.stopPropagation();
-    sectionPenActive = !sectionPenActive;
-    const btn = document.getElementById("sectionPenBtn");
-    btn.textContent = sectionPenActive ? "✏️ Dibujando… (clic para terminar)" : "✏️ Dibujar polígono";
-    btn.style.background = sectionPenActive ? "rgba(255,45,85,.85)" : "rgba(10,12,14,.85)";
-    sectionPenSvg.style.display = sectionPenActive ? "block" : "none";
-    if (sectionControls) sectionControls.enabled = !sectionPenActive;
-    if (!sectionPenActive) { sectionPenPoints.length = 0; sectionRedrawPenSvg(); sectionPenCoordsOutput.style.display = "none"; }
-  });
-  let justDraggedSectionPen = false;
-  window.addEventListener("pointerup", () => {
-    if (sectionDraggingPenIdx !== null) justDraggedSectionPen = true;
-    sectionDraggingPenIdx = null;
-  });
-  window.addEventListener("pointermove", (e) => {
-    if (sectionDraggingPenIdx === null) return;
-    const rect = sectionPenSvg.getBoundingClientRect();
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-    const pt3d = sectionScreenToGround(e.clientX, e.clientY);
-    sectionPenPoints[sectionDraggingPenIdx] = { sx, sy, x: pt3d.x, y: pt3d.y };
-    sectionRedrawPenSvg();
-    sectionUpdatePenOutput();
-  });
-  window.addEventListener("click", (e) => {
-    if (!sectionPenActive) return;
-    if (justDraggedSectionPen) { justDraggedSectionPen = false; return; }
-    if (!e.target.closest("#sectionWrap")) return;
-    const pt3d = sectionScreenToGround(e.clientX, e.clientY);
-    const svgRect = sectionPenSvg.getBoundingClientRect();
-    sectionPenPoints.push({ sx: e.clientX - svgRect.left, sy: e.clientY - svgRect.top, x: pt3d.x, y: pt3d.y });
-    sectionRedrawPenSvg();
-    sectionUpdatePenOutput();
-  });
-  const corteZoomOut = document.getElementById("corteZoomOut");
-  function bumpCorteZoom(delta) {
-    if (!sectionCamera) return;
-    sectionCamera.zoom = Math.max(0.3, Math.min(6, sectionCamera.zoom + delta));
-    sectionCamera.updateProjectionMatrix();
-    if (typeof updateBotBox === "function") updateBotBox();
-  }
-  if (corteZoomIn) corteZoomIn.addEventListener("click", (e) => { e.stopPropagation(); bumpCorteZoom(0.2); });
-  if (corteZoomOut) corteZoomOut.addEventListener("click", (e) => { e.stopPropagation(); bumpCorteZoom(-0.2); });
 
   // ---- Corte dinamico: ilustracion animada del perfil del humedal,
   // en el mismo estilo del corte de referencia (siluetas planas: tierra,
@@ -394,7 +296,6 @@
   const layoutAxoHVal = document.getElementById("layoutAxoHVal");
   const layoutCorteHVal = document.getElementById("layoutCorteHVal");
   const layoutCoordsOutput = document.getElementById("layoutCoordsOutput");
-  // Encaja las escalas (Natural/Cultural/Tecnologica) dentro del panel en
   // ---- Texto con el numero/titulo de la capa activa, DENTRO de
   // convenciones (a la izquierda de la axonometria) -- movible con
   // flechitas, con coordenadas para copiar. ----
@@ -434,8 +335,8 @@
   function fitEscalaOverlays() {
     const layoutEditorEl = document.getElementById("layoutEditor");
     if (layoutEditorEl) layoutEditorEl.style.display = "block";
-    const legendW = (document.getElementById("layoutLegendW") || {}).value || 200;
-    const corteH = (document.getElementById("layoutCorteH") || {}).value || 25;
+    const legendW = 200;
+    const corteH = 16;
     // A pedido de la usuaria: sin fondo solido, sin cuadro visible --
     // la escala flota libre, sin recuadro detras.
     ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
@@ -585,34 +486,17 @@
   // Tamano visible (mitad de la altura del encuadre, en unidades de la
   // escena) para la proyeccion ortogonal — se ajusta al cargar la red.
   let viewSize = 260;
-  let axoZoomFactor = 1;
   function resize() {
     const w = wrap.clientWidth, h = wrap.clientHeight;
     renderer.setSize(w, h, false);
     const aspect = w / h;
-    const vs = viewSize * axoZoomFactor;
-    camera.left = -vs * aspect;
-    camera.right = vs * aspect;
-    camera.top = vs;
-    camera.bottom = -vs;
+    camera.left = -viewSize * aspect;
+    camera.right = viewSize * aspect;
+    camera.top = viewSize;
+    camera.bottom = -viewSize;
     camera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resize);
-  // Zoom +/- de la axonometria: se agrega ACA (mismo alcance que
-  // resize/camera/axoZoomFactor) -- un intento anterior quedo en otra
-  // parte del archivo sin acceso real a estas variables y no hacia nada.
-  const axoZoomIn = document.getElementById("axoZoomIn");
-  const axoZoomOut = document.getElementById("axoZoomOut");
-  function bumpAxoZoom(mult) {
-    axoZoomFactor = Math.max(0.3, Math.min(3, axoZoomFactor * mult));
-    resize();
-    const val = document.getElementById("axoZoomVal");
-    if (val) val.textContent = Math.round(100 / axoZoomFactor) + "%";
-    const out = document.getElementById("axoCoordsOutput");
-    if (out) out.value = `// === ZOOM AXONOMETRÍA ===\nconst AXO_ZOOM = ${axoZoomFactor.toFixed(2)};`;
-  }
-  if (axoZoomIn) axoZoomIn.addEventListener("click", (e) => { e.stopPropagation(); bumpAxoZoom(0.9); });
-  if (axoZoomOut) axoZoomOut.addEventListener("click", (e) => { e.stopPropagation(); bumpAxoZoom(1 / 0.9); });
 
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   canvas.addEventListener("contextmenu", (e) => e.preventDefault()); // sin esto, el navegador abre su menu contextual con el clic derecho en vez de dejarlo mover (panear) la vista
@@ -783,7 +667,7 @@
       // las vias que se cruzan en una interseccion no quedan EXACTAMENTE
       // coplanares (evita z-fighting). El rango es minusculo para que no
       // se note como un "escalon" entre una via y la siguiente.
-      const yJitter = 0.35 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.05; // un poco mas alto (antes 0.03) para que no se vea "inundada" en el corte
+      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.05;
       const n = pts.length;
       if (n < 2) return;
       const scenePts = pts.map(p => toScene(p[0], p[1]));
@@ -1028,13 +912,35 @@
     treeMesh = mesh;
 
     treeInstanceData = new Array(trees.length);
+    const colorAlimento1 = new THREE.Color(0xff5fa8); // Cerezo
+    const colorAlimento2 = new THREE.Color(0xb06bff); // Sauco
+    const colorDescanso = new THREE.Color(0x25d0a0);  // Urapan
+    const colorNormal = new THREE.Color(0xffffff);
+    
+    // InstancedBufferAttribute needed to apply instanceColor
+    const colors = new Float32Array(trees.length * 3);
+    for (let i = 0; i < trees.length; i++) {
+       colors[i*3] = 1; colors[i*3+1] = 1; colors[i*3+2] = 1;
+    }
+    mesh.instanceColor = new THREE.InstancedBufferAttribute(colors, 3);
+    
     trees.forEach((t, i) => {
-      const [x, y, hMeters, , code] = t;
+      const [x, y, hMeters, especieStr, code] = t;
       const p = toScene(x, y);
       const h = Math.max(0.3, hMeters * SCALE);
       const w = h * (1.1 + (hash2(code) % 20) / 100 - 0.1);
       treeInstanceData[i] = { x: p.x, z: p.z, w, h };
+      
+      let c = colorNormal;
+      if (especieStr) {
+        const lower = especieStr.toLowerCase();
+        if (lower.includes("fresno") || lower.includes("urapan") || lower.includes("urap")) c = colorDescanso;
+        else if (lower.includes("cerezo") || lower.includes("capul")) c = colorAlimento1;
+        else if (lower.includes("sauco") || lower.includes("saco") || lower.includes("saúco")) c = colorAlimento2;
+      }
+      mesh.setColorAt(i, c);
     });
+    mesh.instanceColor.needsUpdate = true;
     sceneRoot.add(mesh);
     treeMeshes = [{ mesh, data: trees }];
     rebuildBirds(); // ahora que ya hay datos reales de arboles, se reconstruyen las mirlas con sus atractores correctos
@@ -1204,7 +1110,13 @@
   function sampleAttractorTrees(trees) {
     const porEspecie = {};
     trees.forEach(t => {
-      const meta = BIRD_TREE_SPECIES[t[3]]; // el codigo de especie va en el indice 3 (verificado con datos reales: 9250 coincidencias de 119886 arboles); mi "correccion" anterior a indice 4 (el codigo numerico de identificacion, no la especie) estaba mal
+      let meta = null;
+      if (t[3]) {
+          const lower = t[3].toLowerCase();
+          if (lower.includes("fresno") || lower.includes("urapan") || lower.includes("urap")) meta = BIRD_TREE_SPECIES["Urapán, Fresno"] || { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 };
+          else if (lower.includes("cerezo") || lower.includes("capul")) meta = BIRD_TREE_SPECIES["Cerezo, capuli"] || { key: "capuli", color: 0xff5fa8, weight: 0.76, base: 200 };
+          else if (lower.includes("sauco") || lower.includes("saco") || lower.includes("saúco")) meta = BIRD_TREE_SPECIES["Sauco"] || { key: "sauco", color: 0xb06bff, weight: 1.0, base: 260 };
+      }
       if (meta) (porEspecie[meta.key] || (porEspecie[meta.key] = [])).push({ x: t[0], y: t[1], meta });
     });
     const out = [];
@@ -1842,7 +1754,7 @@
       sceneExtentW = w; sceneExtentH = h;
       if (typeof updateSectionBox === "function") updateSectionBox();
       rebuildFilteredGeometry();
-      viewSize = Math.max(w, h) * 0.125; // un poco mas de zoom todavia (antes 0.135)
+      viewSize = Math.max(w, h) * 0.135; // mas zoom (antes 0.155) para que se vea mas grande en el recuadro reducido del panel
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
@@ -2009,7 +1921,7 @@
   let mainBurroMesh = null, mainBurroMes = 0, mainBurroLast = 0, mainBurroPlaying = true;
   const MESES_TXT = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const mainBurroPanel = document.createElement("div");
-  mainBurroPanel.style.cssText = "margin-bottom:18px; padding-bottom:16px; border-bottom:1px dashed rgba(0,0,0,.12); font-family:'Segoe UI',sans-serif; color:#0f172a;";
+  mainBurroPanel.style.cssText = "position:absolute; bottom:18px; right:18px; z-index:12; width:230px; font-family:'Segoe UI',sans-serif; color:#0f172a; background:rgba(255,255,255,.94); backdrop-filter:blur(8px); border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,.12);";
   mainBurroPanel.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
       <span style="font:700 11px 'Segoe UI',sans-serif;">Humedal El Burro</span>
@@ -2035,11 +1947,7 @@
       <button type="button" id="mainBurroPlayBtn" style="font-size:10px; font-weight:700; color:#0369a1; background:#eaf4fb; border:1px solid rgba(3,105,161,.25); border-radius:6px; padding:3px 8px; cursor:pointer;">⏸ Pausar</button>
     </div>
   `;
-  (() => {
-    const lp = document.getElementById("legendPanel");
-    if (lp) lp.insertBefore(mainBurroPanel, lp.firstChild);
-    else document.body.appendChild(mainBurroPanel);
-  })();
+  (document.getElementById("sceneWrap") || document.body).appendChild(mainBurroPanel);
   const mainBurroSlider = mainBurroPanel.querySelector("#mainBurroSlider");
   const mainBurroPlayBtn = mainBurroPanel.querySelector("#mainBurroPlayBtn");
   const mainBurroMesLbl = mainBurroPanel.querySelector("#mainBurroMesLbl");
@@ -2651,7 +2559,10 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     const legendActiveLayerText = document.getElementById("legendActiveLayerText");
     if (legendActiveLayer && legendActiveLayerText) {
       legendActiveLayer.style.display = "block";
-      legendActiveLayerText.textContent = `${explodeStep}/12 · ${layer.name}` + (layer.live ? "" : " (en construcción)");
+      const txt = `${explodeStep}/12 \u2014 ${layer.name}` + (layer.live ? "" : " (en construcción)");
+      legendActiveLayerText.textContent = txt;
+      if (typeof updateAgentsLegend === "function") updateAgentsLegend(txt);
+      else if (window.updateAgentsLegend) window.updateAgentsLegend(txt);
     }
     if (explodeStep === 1) { if (mainBurroMesh) riseAndSettle(mainBurroMesh, 18); }
     else if (explodeStep === 3) { if (birdsGroup) riseAndSettle(birdsGroup, 26); }
@@ -2751,7 +2662,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   });
   document.getElementById("explodeClose").addEventListener("click", () => {
     explodeOverlay.style.display = "none";
-    document.getElementById("sceneWrap").style.display = "block";
+    // document.getElementById("sceneWrap").style.display = "block";
     explodeLayers.forEach(el => { el.style.opacity = "0"; el.style.transform = "scale(.05)"; });
     hideAllHandles();
   });
@@ -2930,6 +2841,12 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
       l.style.transform = "scale(1)"; l.style.opacity = "1"; l.style.visibility = "visible"; l.style.zIndex = "1"; l.style.position = "relative"; l.style.top = ""; l.style.left = ""; l.style.width = "";
     });
     zoomedLayer = null;
+    const p = document.getElementById("escalaZoomPanel");
+    if (p) p.style.display = "none";
+    const l = document.getElementById("legendActiveLayer");
+    if (l) l.style.display = "none";
+    const lp = document.getElementById("legendPanel");
+    if (lp) lp.style.display = "none";
   }
   document.querySelectorAll(".explode-layer").forEach((layerEl) => {
     const clip = layerEl.querySelector(".explode-clip");
@@ -3155,7 +3072,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
       const sy = Math.min(1, (radY * 1.25) / rad, (H / 2 - 2) / (rad * 1.25)); // elipse que se desvanece ANTES del borde del cuadro
       t.globalCompositeOperation = "destination-in";
       t.save(); t.translate(ccx, ccy); t.scale(1, sy);
-      const g = t.createRadialGradient(0, 0, rad * 0.7, 0, 0, rad * 1.25);
+      const g = t.createRadialGradient(0, 0, rad * 0.4, 0, 0, rad * 2.8);
       g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)");
       t.fillStyle = g; t.fillRect(-W, -H / sy, W * 2, (H / sy) * 2); t.restore();
       c.globalAlpha = 0.48; c.drawImage(tmp, 0, 0);
@@ -3180,12 +3097,17 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     scene.background = origBg;
     if (axoBorderMesh) axoBorderMesh.visible = borderVis;
     if (mainBurroMesh) mainBurroMesh.visible = burroVisPrev;
+    // Restore full city geometry for the main live view
+    if (rawBuildingsData) buildBuildings(rawBuildingsData, null);
+    if (rawEdgesData) buildRoads(rawEdgesData, null);
+    rebuildFilteredGeometry(); // Re-apply section box if active
     return off.toDataURL("image/png");
   }
 
   // ---- OFFSET real de un poligono: el borde se desplaza hacia afuera
   // (d > 0) la MISMA distancia en todos lados, en metros. Asi el agua
   // crece como una cota de inundacion, sin correrse ni deformarse. ----
+
   function offsetPoly(pts, d) {
     const n = pts.length; if (n < 3 || !d) return pts.map(p => [p[0], p[1]]);
     let area = 0; for (let i = 0; i < n; i++) { const a = pts[i], b = pts[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; }
@@ -3204,6 +3126,16 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     return out;
   }
   function openNaturalExplode() {
+    const lp = document.getElementById("legendPanel");
+    if (lp) lp.style.display = "block";
+    const cp = document.getElementById("natClimatePanel");
+    if (cp) cp.style.display = "block";
+    const c1 = document.getElementById("cultCapa1Panel");
+    if (c1) c1.style.display = "none";
+    const t4 = document.getElementById("techCapa4Panel");
+    if (t4) t4.style.display = "none";
+    const sw = document.getElementById("sceneWrap");
+    if (sw) sw.style.display = "none";
     if (!natOverlay) return;
 
     // Sincronizar dimensiones exactas del lienzo de capa
@@ -3346,6 +3278,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   // 10: Integración total (todas las capas asentadas en la base simulando en conjunto)
 
   function updateNaturalLayersStep(animated = true) {
+    if (typeof syncFloatLabelText === "function") syncFloatLabelText();
     const sublayers = [
       document.getElementById("natLayerWater"),
       document.getElementById("natLayer2"),
@@ -3519,9 +3452,13 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   }
 
   function closeNaturalExplode() {
+    const p = document.getElementById("escalaZoomPanel");
+    if (p) p.style.display = "none";
+    const l = document.getElementById("legendActiveLayer");
+    if (l) l.style.display = "none";
     if (!natOverlay) return;
     const sceneWrapRestore = document.getElementById("sceneWrap");
-    if (sceneWrapRestore) sceneWrapRestore.style.display = "block"; // volver a la vista 3D en vivo (antes solo lo hacia openTechExplode, por eso Natural y Cultural se quedaban en blanco)
+    // if (sceneWrapRestore) sceneWrapRestore.style.display = "block"; // volver a la vista 3D en vivo (antes solo lo hacia openTechExplode, por eso Natural y Cultural se quedaban en blanco)
     if (natWaterAnimFrame) { cancelAnimationFrame(natWaterAnimFrame); natWaterAnimFrame = null; }
     const sublayers = natOverlay.querySelectorAll(".nat-sublayer");
     sublayers.forEach(l => {
@@ -3735,6 +3672,16 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   let techTime = 0;
   
   function openTechExplode() {
+    const lp = document.getElementById("legendPanel");
+    if (lp) lp.style.display = "block";
+    const cp = document.getElementById("natClimatePanel");
+    if (cp) cp.style.display = "none";
+    const c1 = document.getElementById("cultCapa1Panel");
+    if (c1) c1.style.display = "none";
+    const t4 = document.getElementById("techCapa4Panel");
+    if (t4) t4.style.display = "block";
+    const sw = document.getElementById("sceneWrap");
+    if (sw) sw.style.display = "none";
     if (!techOverlay) return;
     if (!noiseMesh && typeof rebuildNoiseGround === "function") rebuildNoiseGround(); // se asegura que el mapa de ruido exista, por si el usuario nunca movio la caja de seccion ni toco "Mostrar ruido" antes de entrar aqui
 
@@ -3757,6 +3704,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     const origVehCount = vehInstanced ? vehInstanced.count : 0;
 
     const origBg = scene.background;
+    scene.background = new THREE.Color(0xffffff);
 
     // 1. CAPA BASE (Sin ruido, sin carros)
     if (noiseMesh) noiseMesh.visible = false;
@@ -3764,6 +3712,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
 
+    renderer.render(scene, camera);
     const fotoBase = captureBaseWithContext(); // mismo contexto clarito + area de estudio que en Natural
 
     // Captura de CONTEXTO (camara alejada), igual que en Escala natural,
@@ -3937,7 +3886,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
       techExplodeStep = 0;
       updateTechLayersStep(false);
       closeTechExplode();
-      document.getElementById("sceneWrap").style.display = "block"; // Return to live 3D
+      // document.getElementById("sceneWrap").style.display = "block"; // Return to live 3D
       return;
     }
     updateTechLayersStep(true);
@@ -4000,9 +3949,13 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   }
 
   function closeTechExplode() {
+    const p = document.getElementById("escalaZoomPanel");
+    if (p) p.style.display = "none";
+    const l = document.getElementById("legendActiveLayer");
+    if (l) l.style.display = "none";
     if (!techOverlay) return;
     const sceneWrapRestore2 = document.getElementById("sceneWrap");
-    if (sceneWrapRestore2) sceneWrapRestore2.style.display = "block";
+    // if (sceneWrapRestore2) sceneWrapRestore2.style.display = "block";
     if (techAnimFrame) { cancelAnimationFrame(techAnimFrame); techAnimFrame = null; }
     techLiveViewSize = null; // apaga el espejo en vivo de carros/ruido
 
@@ -5376,6 +5329,16 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   let isSotElevated = false;
 
   function openCulturalExplode() {
+    const lp = document.getElementById("legendPanel");
+    if (lp) lp.style.display = "block";
+    const cp = document.getElementById("natClimatePanel");
+    if (cp) cp.style.display = "none";
+    const c1 = document.getElementById("cultCapa1Panel");
+    if (c1) c1.style.display = "block";
+    const t4 = document.getElementById("techCapa4Panel");
+    if (t4) t4.style.display = "none";
+    const sw = document.getElementById("sceneWrap");
+    if (sw) sw.style.display = "none";
     if (!cultOverlay) return;
 
     const targetW = 960, targetH = 540;
@@ -5395,12 +5358,14 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     const origVehVis = vehInstanced ? vehInstanced.visible : false;
     const origVehCount = vehInstanced ? vehInstanced.count : 0;
     const origBg = scene.background;
+    scene.background = new THREE.Color(0xffffff);
 
     if (noiseMesh) noiseMesh.visible = false;
     if (birdsGroup) birdsGroup.visible = false;
     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
     if (roadMat) roadMat.color.set(0x9099a3);
 
+    renderer.render(scene, camera);
     const fotoBase = captureBaseWithContext(); // mismo contexto clarito + area de estudio que en Natural
 
     // Captura de CONTEXTO (camara alejada), igual que en Escala natural.
@@ -5461,9 +5426,13 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   }
 
   function closeCulturalExplode() {
+    const p = document.getElementById("escalaZoomPanel");
+    if (p) p.style.display = "none";
+    const l = document.getElementById("legendActiveLayer");
+    if (l) l.style.display = "none";
     if (!cultOverlay) return;
     const sceneWrapRestore3 = document.getElementById("sceneWrap");
-    if (sceneWrapRestore3) sceneWrapRestore3.style.display = "block";
+    // if (sceneWrapRestore3) sceneWrapRestore3.style.display = "block";
     if (cultAnimFrame) { cancelAnimationFrame(cultAnimFrame); cultAnimFrame = null; }
     if (cultHistPlaying) stopCultHistory();
 
@@ -5493,6 +5462,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   if (cultBackBtn) cultBackBtn.addEventListener("click", closeCulturalExplode);
 
   function updateCulturalLayersStep(animated = true) {
+    if (typeof syncFloatLabelText === "function") syncFloatLabelText();
     const sublayers = [cultLayer1, cultLayer2, cultLayer3, cultLayer4];
     const panels = [cultCapa1Panel, cultCapa2Panel, cultCapa3Panel, cultCapa4Panel];
     const tags = cultOverlay.querySelectorAll(".cult-layer-tag");
@@ -6512,3 +6482,75 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   })();
 })();
 
+
+
+
+
+const btnZoomOutSec = document.getElementById("btnZoomOutSec");
+const btnZoomInSec = document.getElementById("btnZoomInSec");
+
+if (btnZoomOutSec && btnZoomInSec && typeof sectionCamera !== 'undefined') {
+    btnZoomOutSec.addEventListener("click", () => {
+        sectionCamera.fov = Math.min(100, sectionCamera.fov + 2);
+        sectionCamera.updateProjectionMatrix();
+    });
+    btnZoomInSec.addEventListener("click", () => {
+        sectionCamera.fov = Math.max(2, sectionCamera.fov - 2);
+        sectionCamera.updateProjectionMatrix();
+    });
+}
+
+const tags = document.querySelectorAll(".tech-layer-tag");
+const tagOut = document.getElementById("tagCoordsBox");
+
+function updateTagCoords() {
+    if(!tagOut) return;
+    tagOut.style.display = "block";
+    let out = "<b>COORDENADAS:</b><br>";
+    tags.forEach((t, i) => {
+        out += `Capa ${i}: left: ${t.style.left}, top: ${t.style.top}<br>`;
+    });
+    tagOut.innerHTML = out;
+}
+
+tags.forEach((t, i) => {
+    if(!t.style.left) t.style.left = "240px";
+    if(!t.style.top) t.style.top = "50%";
+    
+    const panel = document.createElement("div");
+    panel.style.position = "absolute";
+    panel.style.left = "-60px";
+    panel.style.top = "0px";
+    panel.style.background = "#fff";
+    panel.style.border = "1px solid #000";
+    panel.style.padding = "2px";
+    panel.style.display = "grid";
+    panel.style.gridTemplateColumns = "1fr 1fr 1fr";
+    panel.style.gap = "2px";
+    panel.style.pointerEvents = "auto";
+    panel.style.zIndex = "9999";
+    
+    t.style.pointerEvents = "auto";
+    
+    const btnUp = document.createElement("button"); btnUp.textContent = "↑";
+    const btnDown = document.createElement("button"); btnDown.textContent = "↓";
+    const btnLeft = document.createElement("button"); btnLeft.textContent = "←";
+    const btnRight = document.createElement("button"); btnRight.textContent = "→";
+    
+    btnUp.onclick = (e) => { e.stopPropagation(); let top = parseFloat(t.style.top) || 50; t.style.top = (top - 1) + "%"; updateTagCoords(); };
+    btnDown.onclick = (e) => { e.stopPropagation(); let top = parseFloat(t.style.top) || 50; t.style.top = (top + 1) + "%"; updateTagCoords(); };
+    btnLeft.onclick = (e) => { e.stopPropagation(); let left = parseFloat(t.style.left) || 240; t.style.left = (left - 5) + "px"; updateTagCoords(); };
+    btnRight.onclick = (e) => { e.stopPropagation(); let left = parseFloat(t.style.left) || 240; t.style.left = (left + 5) + "px"; updateTagCoords(); };
+    
+    panel.appendChild(document.createElement("div"));
+    panel.appendChild(btnUp);
+    panel.appendChild(document.createElement("div"));
+    panel.appendChild(btnLeft);
+    panel.appendChild(document.createElement("div"));
+    panel.appendChild(btnRight);
+    panel.appendChild(document.createElement("div"));
+    panel.appendChild(btnDown);
+    panel.appendChild(document.createElement("div"));
+    
+    t.appendChild(panel);
+});
