@@ -96,7 +96,7 @@
       if (typeof updateBotBox === 'function') updateBotBox();
       sectionRenderer.localClippingEnabled = false;
       sectionRenderer.clippingPlanes = botClipPlanesArr;
-      sectionCamera.position.set(163.0, 6.8, -21.2);
+      sectionCamera.position.set(142.6, 9.5, -6.0);
       sectionCamera.up.set(0, 1, 0);
       sectionCamera.lookAt(182.4, 4.2, -35.7);
       sectionCamera.fov = 12; // solo se agranda el contenido (mas zoom), el tamaño del panel no se toca
