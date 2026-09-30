@@ -195,7 +195,7 @@
         const h = w * (1697 / 1200);
         const el = document.createElement("div");
         el.className = "dynSprite";
-        el.style.cssText = `position:absolute; width:${w}px; height:${h}px; background-image:url(assets/garza_volando.png); background-repeat:no-repeat; background-size:100% 100%; pointer-events:none; will-change:transform; z-index:6;`;
+        el.style.cssText = `position:absolute; width:${w}px; height:${h}px; background-image:url(assets/garza_volando.png); background-repeat:no-repeat; background-size:100% 100%; pointer-events:none; will-change:transform; transform-origin:50% 78%; z-index:6;`;
         const baseX = (topRect.left - stageRect.left) + topRect.width * 0.42;
         const baseY = (topRect.top - stageRect.top) - h * 0.65; // un poco mas arriba del recuadro
         el.style.left = baseX + "px";
@@ -281,8 +281,15 @@
           const k = smooth(t); // 0 -> 1 a lo largo de todo el ciclo
           const x = FAR * Math.cos(k * Math.PI); // FAR -> -FAR suavemente
           const dive = Math.sin(k * Math.PI) * 34; // baja en el medio del recorrido
-          const flap = 1 - Math.abs(Math.sin(tSec * 7 + h.phase)) * 0.12;
-          h.el.style.transform = `translate(${x}px, ${dive}px) scaleY(${flap})`;
+          // Aleteo real: como la imagen ya tiene las alas bien abiertas,
+          // el batido se simula con una compresion vertical fuerte
+          // anclada abajo (transform-origin en el cuerpo/patas), asi las
+          // puntas de las alas son las que mas se mueven -- y una leve
+          // rotacion para que no se vea como un simple "aplastón".
+          const wingCycle = tSec * 6.5 + h.phase;
+          const flap = 1 - (Math.sin(wingCycle) * 0.5 + 0.5) * 0.45; // entre 0.55 y 1.0
+          const tilt = Math.sin(wingCycle) * 4; // grados, leve vaiven
+          h.el.style.transform = `translate(${x}px, ${dive}px) rotate(${tilt}deg) scaleY(${flap})`;
         });
       }
 
@@ -355,6 +362,10 @@
     if (label && legendActiveLayerText) legendActiveLayerText.textContent = label.textContent.trim() + (btnText ? " — " + btnText.textContent.trim() : "");
     updateDynamicLegend();
     syncSceneToLayer();
+    // El contexto se ve difuminado detras, tal como se veia antes,
+    // ajustado al recuadro chico de la axonometria.
+    const axoContextFadeEl = document.getElementById("axoContextFade");
+    if (axoContextFadeEl) axoContextFadeEl.style.display = "block";
   }
   // ---- El corte comparte la misma escena 3D que la axonometria, asi que
   // para que "se vea lo mismo" alla abajo, se refleja el estado real de
