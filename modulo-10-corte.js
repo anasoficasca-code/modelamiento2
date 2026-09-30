@@ -77,7 +77,7 @@
   // en la posicion real del Humedal El Burro -- no se mueve con la caja
   // de seccion interactiva de arriba, es su propio corte permanente. ----
   const sectionCanvas2 = document.getElementById("sectionCanvas");
-  const sectionCamera = new THREE.PerspectiveCamera(35, 1, 1, 5000);
+  const sectionCamera = new THREE.PerspectiveCamera(16, 1, 1, 5000);
   let sectionRenderer = null, sectionCutZ = null, sectionControls = null;
   if (sectionCanvas2) {
     sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas2, antialias: true, alpha: true });
@@ -304,7 +304,7 @@
   // transform ADICIONAL sobre el contenido, encima del encuadre base
   // (fitEscalaOverlays), para poder agrandar/achicar y mover sin romper
   // el encaje inicial. ----
-  let escalaScale = 1.20, escalaOffX = 60, escalaOffY = 20;
+  let escalaScale = 1.20, escalaOffX = 40, escalaOffY = -20;
   function applyEscalaTransform() {
     ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
       const el = document.getElementById(id);
@@ -401,49 +401,36 @@ const ESCALA_TRANSFORM = {
     }
     
     function updateAgentsLegend(txt) {
-const c = document.getElementById("legendAgentsContainer");
-if (!c) return;
-let html = `<div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">`;
+      const c = document.getElementById("legendAgentsContainer");
+      if (!c) return;
+      const lower = txt.toLowerCase();
+      let html = `<div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">`;
 
-let showWater = false, showVeg = false, showBirds = false;
+      if (lower.includes("agua") || lower.includes("hídrica") || lower.includes("lluvias") || lower.includes("natural") || lower.includes("cultural") || lower.includes("tecnológica")) {
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:16px; border-radius:50%; background:url('assets/textura_agua.jpg') center/cover; border:1px solid #0284c7; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Agua (Humedal y Río)</span></div>`;
+      } 
+      if (lower.includes("vegetal") || lower.includes("florística") || lower.includes("cobertura") || lower.includes("árboles") || lower.includes("natural")) {
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#b06bff; border:1px solid #7c3aed;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Saúco (Alimento)</span></div>`;
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#ff5fa8; border:1px solid #db2777;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Capulí / Cerezo</span></div>`;
+        html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#25d0a0; border:1px solid #059669;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Urapán / Fresno (Descanso)</span></div>`;
+      }
+      if (lower.includes("fauna") || lower.includes("aves") || lower.includes("mirlas") || lower.includes("natural")) {
+        html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/pato.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Pato (Boreal)</span></div>`;
+        html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/garza.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Garza (Llanos)</span></div>`;
+        html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/tingua.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Tingua (Endémica)</span></div>`;
+      }
+      if (lower.includes("cultural") || lower.includes("histórica") || lower.includes("tecnológica")) {
+          // If the user clicks base or overview without specific layer, show everything relevant
+          if (!html.includes("Pato") && !html.includes("Agua")) {
+            html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/pato.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Aves (Avistamiento)</span></div>`;
+            html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:16px; border-radius:50%; background:url('assets/textura_agua.jpg') center/cover; border:1px solid #0284c7; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Cuerpo de Agua</span></div>`;
+          }
+      }
 
-if (typeof natExplodeStep !== 'undefined') {
-    if (natExplodeStep === 0 || natExplodeStep >= 9) {
-        showWater = true; showVeg = true; showBirds = true;
-    } else if (natExplodeStep === 1 || natExplodeStep === 2) {
-        showWater = true;
-    } else if (natExplodeStep === 3 || natExplodeStep === 4) {
-        showVeg = true;
-    } else if (natExplodeStep === 5 || natExplodeStep === 6) {
-        showBirds = true;
-    } else if (natExplodeStep === 7 || natExplodeStep === 8) {
-        showBirds = true;
+      html += `</div>`;
+      c.innerHTML = html;
     }
-}
-
-const lower = txt.toLowerCase();
-if (lower.includes("tecnol") || lower.includes("cultural") || lower.includes("lluvias")) {
-    showWater = true; showBirds = true; showVeg = false;
-}
-
-if (showWater) {
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:16px; height:16px; border-radius:50%; background:url('assets/textura_agua.jpg') center/cover; border:1px solid #0284c7; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Agua (Humedal y R\u00edo)</span></div>`;
-}
-if (showVeg) {
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#b06bff; border:1px solid #7c3aed;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Sa\u00faco (Alimento)</span></div>`;
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#ff5fa8; border:1px solid #db2777;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Capul\u00ed / Cerezo</span></div>`;
-    html += `<div style="display:flex; align-items:center; gap:8px;"><div style="width:12px; height:12px; border-radius:50%; background:#25d0a0; border:1px solid #059669;"></div> <span style="font-size:11px; font-weight:600; color:#334155;">Urap\u00e1n / Fresno</span></div>`;
-}
-if (showBirds) {
-    html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/pato.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Pato (Boreal)</span></div>`;
-    html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/garza.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Garza (Llanos)</span></div>`;
-    html += `<div style="display:flex; align-items:center; gap:8px;"><img src="assets/tingua.png" style="width:18px; height:18px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"> <span style="font-size:11px; font-weight:600; color:#334155;">Tingua (End\u00e9mica)</span></div>`;
-}
-
-html += `</div>`;
-c.innerHTML = html;
-}
-syncLegendFromEscala();
+    syncLegendFromEscala();
     const escalaZoomPanel = document.getElementById("escalaZoomPanel");
     if (escalaZoomPanel) escalaZoomPanel.style.display = "block";
     applyEscalaTransform();
@@ -723,7 +710,7 @@ syncLegendFromEscala();
       for (let i = 0; i < pts.length - 1; i++) {
         const a = toScene(pts[i][0], pts[i][1]);
         const b = toScene(pts[i + 1][0], pts[i + 1][1]);
-        positions.push(a.x, 0.05, a.z, b.x, 0.05, b.z);
+        positions.push(a.x, 0, a.z, b.x, 0, b.z);
       }
     });
     const geo = new THREE.BufferGeometry();
@@ -749,7 +736,7 @@ syncLegendFromEscala();
       // las vias que se cruzan en una interseccion no quedan EXACTAMENTE
       // coplanares (evita z-fighting). El rango es minusculo para que no
       // se note como un "escalon" entre una via y la siguiente.
-      const yJitter = 0.06 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.05;
+      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.05;
       const n = pts.length;
       if (n < 2) return;
       const scenePts = pts.map(p => toScene(p[0], p[1]));
@@ -6563,44 +6550,3 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   applyEscalaTransform();
 })();
 
-
-
-// Restored zoom listeners
-const fovSlider = document.getElementById("fovSlider");
-if (fovSlider) {
-    fovSlider.addEventListener("input", (e) => {
-        const v = parseInt(e.target.value);
-        if(document.getElementById("valFov")) document.getElementById("valFov").textContent = v;
-        if(typeof sectionCamera !== 'undefined' && sectionCamera) {
-            sectionCamera.fov = v;
-            sectionCamera.updateProjectionMatrix();
-        }
-    });
-}
-const scaleSlider = document.getElementById("scaleSlider");
-if (scaleSlider) {
-    scaleSlider.addEventListener("input", (e) => {
-        const v = parseFloat(e.target.value);
-        if(document.getElementById("valScale")) document.getElementById("valScale").textContent = v.toFixed(1);
-        escalaScale = v;
-        applyEscalaTransform();
-    });
-}
-const offXSlider = document.getElementById("offXSlider");
-if (offXSlider) {
-    offXSlider.addEventListener("input", (e) => {
-        const v = parseInt(e.target.value);
-        if(document.getElementById("valOffX")) document.getElementById("valOffX").textContent = v;
-        escalaOffX = v;
-        applyEscalaTransform();
-    });
-}
-const offYSlider = document.getElementById("offYSlider");
-if (offYSlider) {
-    offYSlider.addEventListener("input", (e) => {
-        const v = parseInt(e.target.value);
-        if(document.getElementById("valOffY")) document.getElementById("valOffY").textContent = v;
-        escalaOffY = v;
-        applyEscalaTransform();
-    });
-}
