@@ -201,7 +201,7 @@
         el.style.left = baseX + "px";
         el.style.top = baseY + "px";
         stage.appendChild(el);
-        herons = [{ el, phase: 0, cyc: 11 }];
+        herons = [{ el, phase: 0, cyc: 17 }];
       }
 
       // curva suave (sin saltos de velocidad en los quiebres del recorrido)
@@ -281,14 +281,17 @@
           const k = smooth(t); // 0 -> 1 a lo largo de todo el ciclo
           const x = FAR * Math.cos(k * Math.PI); // FAR -> -FAR suavemente
           const dive = Math.sin(k * Math.PI) * 34; // baja en el medio del recorrido
-          // Aleteo real: como la imagen ya tiene las alas bien abiertas,
-          // el batido se simula con una compresion vertical fuerte
-          // anclada abajo (transform-origin en el cuerpo/patas), asi las
-          // puntas de las alas son las que mas se mueven -- y una leve
-          // rotacion para que no se vea como un simple "aplastón".
-          const wingCycle = tSec * 6.5 + h.phase;
-          const flap = 1 - (Math.sin(wingCycle) * 0.5 + 0.5) * 0.45; // entre 0.55 y 1.0
-          const tilt = Math.sin(wingCycle) * 4; // grados, leve vaiven
+          // Aleteo tipo stop-motion: en vez de interpolar suave entre
+          // posiciones, se salta entre POCAS poses fijas (4 por ciclo de
+          // aleteo) y se mantiene cada una un instante, como fotogramas --
+          // y todo el vuelo va mas lento en general.
+          const flapPeriod = 1.1; // segundos por ciclo de aleteo (lento)
+          const frameCount = 4;
+          const framePhase = Math.floor(((tSec + h.phase) / flapPeriod) * frameCount) % frameCount;
+          const flapPoses = [1.0, 0.78, 0.6, 0.78]; // abierta -> a medio cerrar -> mas cerrada -> a medio abrir
+          const tiltPoses = [0, -2, 0, 2];
+          const flap = flapPoses[framePhase];
+          const tilt = tiltPoses[framePhase];
           h.el.style.transform = `translate(${x}px, ${dive}px) rotate(${tilt}deg) scaleY(${flap})`;
         });
       }
