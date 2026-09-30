@@ -6554,36 +6554,34 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
 
 
 
-// Zoom logic (using FOV)
 const btnZoomOutSec = document.getElementById("btnZoomOutSec");
 const btnZoomInSec = document.getElementById("btnZoomInSec");
+
 if (btnZoomOutSec && btnZoomInSec && typeof sectionCamera !== 'undefined') {
     btnZoomOutSec.addEventListener("click", () => {
         sectionCamera.fov = Math.min(100, sectionCamera.fov + 2);
         sectionCamera.updateProjectionMatrix();
-        console.log("FOV:", sectionCamera.fov);
     });
     btnZoomInSec.addEventListener("click", () => {
         sectionCamera.fov = Math.max(2, sectionCamera.fov - 2);
         sectionCamera.updateProjectionMatrix();
-        console.log("FOV:", sectionCamera.fov);
     });
 }
 
-// Tags arrows logic
 const tags = document.querySelectorAll(".tech-layer-tag");
-const tagOut = document.getElementById("tagCoordsOut");
+const tagOut = document.getElementById("tagCoordsBox");
 
 function updateTagCoords() {
-    let out = "";
+    if(!tagOut) return;
+    tagOut.style.display = "block";
+    let out = "<b>COORDENADAS:</b><br>";
     tags.forEach((t, i) => {
-        out += `Tag ${i}: left: ${t.style.left}, top: ${t.style.top}\n`;
+        out += `Capa ${i}: left: ${t.style.left}, top: ${t.style.top}<br>`;
     });
-    if(tagOut) tagOut.value = out;
+    tagOut.innerHTML = out;
 }
 
 tags.forEach((t, i) => {
-    // Force initial absolute values if not set
     if(!t.style.left) t.style.left = "240px";
     if(!t.style.top) t.style.top = "50%";
     
@@ -6600,7 +6598,7 @@ tags.forEach((t, i) => {
     panel.style.pointerEvents = "auto";
     panel.style.zIndex = "9999";
     
-    t.style.pointerEvents = "auto"; // ensure we can click
+    t.style.pointerEvents = "auto";
     
     const btnUp = document.createElement("button"); btnUp.textContent = "↑";
     const btnDown = document.createElement("button"); btnDown.textContent = "↓";
@@ -6609,8 +6607,8 @@ tags.forEach((t, i) => {
     
     btnUp.onclick = (e) => { e.stopPropagation(); let top = parseFloat(t.style.top) || 50; t.style.top = (top - 1) + "%"; updateTagCoords(); };
     btnDown.onclick = (e) => { e.stopPropagation(); let top = parseFloat(t.style.top) || 50; t.style.top = (top + 1) + "%"; updateTagCoords(); };
-    btnLeft.onclick = (e) => { e.stopPropagation(); let left = parseFloat(t.style.left) || 240; t.style.left = (left - 10) + "px"; updateTagCoords(); };
-    btnRight.onclick = (e) => { e.stopPropagation(); let left = parseFloat(t.style.left) || 240; t.style.left = (left + 10) + "px"; updateTagCoords(); };
+    btnLeft.onclick = (e) => { e.stopPropagation(); let left = parseFloat(t.style.left) || 240; t.style.left = (left - 5) + "px"; updateTagCoords(); };
+    btnRight.onclick = (e) => { e.stopPropagation(); let left = parseFloat(t.style.left) || 240; t.style.left = (left + 5) + "px"; updateTagCoords(); };
     
     panel.appendChild(document.createElement("div"));
     panel.appendChild(btnUp);
@@ -6624,4 +6622,3 @@ tags.forEach((t, i) => {
     
     t.appendChild(panel);
 });
-setTimeout(updateTagCoords, 500);
