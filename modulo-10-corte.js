@@ -377,7 +377,11 @@
   function syncSceneToLayer() {
     const step = typeof natExplodeStep !== "undefined" ? natExplodeStep : 0;
     const birdStep = (step === 5 || step === 6 || step === 7 || step === 8);
+    const waterStep = (step === 1 || step === 2);
     if (typeof birdsGroup !== "undefined" && birdsGroup) birdsGroup.visible = birdStep;
+    // Capa 1 (agua): solo se ve el agua creciendo, sin carros ni ruido.
+    if (typeof vehInstanced !== "undefined" && vehInstanced) vehInstanced.visible = !waterStep && step > 0;
+    if (typeof noiseMesh !== "undefined" && noiseMesh) noiseMesh.visible = !waterStep && step > 0 && (typeof noiseOn === "undefined" || noiseOn);
   }
   // ---- Convenciones dinamicas: cambian segun la capa que se este
   // mostrando -- solo los agentes/elementos que realmente aparecen en
