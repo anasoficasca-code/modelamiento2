@@ -580,7 +580,7 @@
   function fitEscalaOverlays() {
     const layoutEditorEl = document.getElementById("layoutEditor");
     if (layoutEditorEl) layoutEditorEl.style.display = "block";
-    const legendW = 200;
+    const legendW = 0; // Agentes ya no se muestra, se recupera todo el ancho
     const corteH = 16;
     // A pedido de la usuaria: sin fondo solido, sin cuadro visible --
     // la escala flota libre, sin recuadro detras.
@@ -1601,98 +1601,64 @@
   // levantados del suelo, con un material azul semi-transparente. ----
   let waterTexRef = null; // referencia para animar el desplazamiento de la textura (efecto de agua en movimiento)
   let waterBumpRef = null; // capa de relieve (bump), animada a otra velocidad para el efecto de oleaje
-  // ---- Usos del suelo (GeoPackage Usos_Kennedy): carga diferida, un
-  // solo mesh por color (108k poligonos triangulados y agrupados por
-  // categoria, no un objeto por lote -- clave para que no se tranque). ----
+  // ---- Usos del suelo (GeoPackage Usos_Kennedy): colorea los EDIFICIOS
+  // reales (no el piso) segun su uso_principal real, ya asignado por
+  // union espacial en Python (kennedy_buildings_uso.json, mismo orden
+  // que kennedy_buildings.json). Un solo mesh por color, reutilizando
+  // los datos de edificios que ya estan cargados. ----
   const USOS_COLORS = {
     "Residencial": 0xf4d35e, "Comercio": 0xe63946, "Vias": 0x6b7280,
     "Espacio publico": 0x52b788, "Suelo protegido": 0x1b4332,
     "Dotacional": 0x457b9d, "Sin edificar": 0xd4c5a9, "Industrial": 0x7b2d8e,
     "Parqueadero": 0x495057, "Recreacional": 0x8ac926, "Otros": 0xadb5bd
   };
-  let usosSueloGroup = null, usosSueloData = null, usosSueloLoading = false;
-  // Lee el formato binario propio (generado en Python): encabezado con
-  // nombre de cada categoria + cantidad de floats, seguido de los
-  // vertices en float32 ya triangulados -- se leen como VISTAS directas
-  // sobre el buffer (sin copiar nada), por eso es practicamente instantaneo.
-  function parseUsosSueloBin(buf) {
-    const dv = new DataView(buf);
-    let offset = 0;
-    const n = dv.getUint32(offset, true); offset += 4;
-    const metas = [];
-    for (let i = 0; i < n; i++) {
-      const nameLen = dv.getUint16(offset, true); offset += 2;
-      const nameBytes = new Uint8Array(buf, offset, nameLen); offset += nameLen;
-      const name = new TextDecoder("utf-8").decode(nameBytes);
-      const count = dv.getUint32(offset, true); offset += 4;
-      metas.push({ name, count });
-    }
-    const data = {};
-    metas.forEach(m => {
-      // offset puede no ser multiplo de 4 por los nombres de largo
-      // variable en el encabezado -- Float32Array exige alineacion, asi
-      // que se copia ese tramo a un buffer nuevo (ya alineado) con slice.
-      data[m.name] = new Float32Array(buf.slice(offset, offset + m.count * 4));
-      offset += m.count * 4;
-    });
-    return data;
-  }
-  function buildUsosSueloMeshes(data) {
-    // data ya viene pre-triangulado desde Python (mapbox earcut) -- aqui
-    // solo se proyecta cada vertice a la escena y se arma el buffer, sin
-    // triangular nada en el navegador (eso era lo lento).
+  let usosSueloGroup = null, usosSueloLoading = false;
+  function buildUsosSueloBuildings(usoArray) {
     const t0 = performance.now();
-    usosSueloGroup = new THREE.Group();
-    Object.keys(data).forEach(categoria => {
-      const flat = data[categoria];
-      if (!flat || !flat.length) return;
-      const colorHex = USOS_COLORS[categoria] !== undefined ? USOS_COLORS[categoria] : USOS_COLORS["Otros"];
-      const positions = new Float32Array((flat.length / 2) * 3);
-      for (let i = 0, j = 0; i < flat.length; i += 2, j += 3) {
-        const p = toScene(flat[i], flat[i + 1]);
-        positions[j] = p.x; positions[j + 1] = 0.08; positions[j + 2] = p.z;
+    const porColor = {}; // colorHex -> array plano de posiciones [x,y,z,...]
+    rawBuildingsData.forEach((b, i) => {
+      const uso = usoArray[i];
+      if (!uso) return; // edificio sin uso asignado (fuera del poligono mas cercano) -- no se pinta
+      const colorHex = USOS_COLORS[uso] !== undefined ? USOS_COLORS[uso] : USOS_COLORS["Otros"];
+      if (!porColor[colorHex]) porColor[colorHex] = [];
+      const pts = b.pts.map(p => toScene(p[0], p[1]));
+      const h = b.h * SCALE;
+      if (pts.length < 4) return;
+      const arr = porColor[colorHex];
+      for (let k = 0; k < pts.length - 1; k++) {
+        const a = pts[k], c = pts[k + 1];
+        arr.push(a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z,
+                  a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z);
       }
+    });
+    usosSueloGroup = new THREE.Group();
+    Object.keys(porColor).forEach(colorHex => {
+      const positions = porColor[colorHex];
+      if (!positions.length) return;
       const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      // MeshBasicMaterial no usa normales para nada (no reacciona a la
-      // luz) -- calcularlas aqui era trabajo desperdiciado y pesado para
-      // ~750.000 vertices sin ningun beneficio visual.
-      const mat = new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide, transparent: true, opacity: 0.82, clippingPlanes: sectionClipPlanesArr });
-      const mesh = new THREE.Mesh(geo, mat);
-      usosSueloGroup.add(mesh);
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      const mat = new THREE.MeshBasicMaterial({ color: parseInt(colorHex), side: THREE.DoubleSide });
+      usosSueloGroup.add(new THREE.Mesh(geo, mat));
     });
     sceneRoot.add(usosSueloGroup);
-    console.log("[usos del suelo] mallas armadas en", Math.round(performance.now() - t0), "ms");
+    console.log("[usos del suelo] edificios coloreados en", Math.round(performance.now() - t0), "ms");
   }
   function toggleUsosSuelo() {
-    const legend = document.getElementById("usosSueloLegend");
-    const loadingEl = document.getElementById("usosSueloLoading");
     const btn = document.getElementById("usosSueloBtn");
     if (usosSueloGroup) {
       usosSueloGroup.visible = !usosSueloGroup.visible;
-      if (legend) legend.style.display = usosSueloGroup.visible ? "block" : "none";
       if (btn) btn.style.background = usosSueloGroup.visible ? "rgba(0,0,0,.08)" : "";
       return;
     }
-    if (usosSueloLoading) return;
+    if (usosSueloLoading || !rawBuildingsData) return;
     usosSueloLoading = true;
-    if (legend) legend.style.display = "block";
-    if (loadingEl) loadingEl.textContent = "Cargando usos del suelo…";
-    const tFetch0 = performance.now();
-    fetch("./assets/kennedy_usos_suelo.bin").then(r => r.arrayBuffer()).then(buf => {
-      console.log("[usos del suelo] descarga binaria:", Math.round(performance.now() - tFetch0), "ms");
-      const tParse0 = performance.now();
-      const data = parseUsosSueloBin(buf);
-      console.log("[usos del suelo] lectura del binario:", Math.round(performance.now() - tParse0), "ms");
-      usosSueloData = data;
-      buildUsosSueloMeshes(data);
+    fetch("./assets/kennedy_buildings_uso.json").then(r => r.json()).then(usoArray => {
+      buildUsosSueloBuildings(usoArray);
       usosSueloLoading = false;
-      if (loadingEl) loadingEl.textContent = "";
       if (btn) btn.style.background = "rgba(0,0,0,.08)";
     }).catch(err => {
       console.error("[usos del suelo] ERROR:", err);
       usosSueloLoading = false;
-      if (loadingEl) loadingEl.textContent = "No se pudo cargar.";
     });
   }
   const usosSueloBtn = document.getElementById("usosSueloBtn");
@@ -2926,9 +2892,9 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     // convenciones a la izquierda, corte abajo, y la escala ocupando
     // arriba a la derecha, mas chica, en vez de pantalla completa.
     if (penActive) return; // mientras se dibuja el poligono, no se dispara la explosion
-    const legendPanelEl = document.getElementById("legendPanel");
     const sectionWrapEl = document.getElementById("sectionWrap");
-    if (legendPanelEl) legendPanelEl.style.display = "block";
+    // A pedido de la usuaria: el panel de Agentes/Convenciones ya no se
+    // muestra (ocupaba demasiado espacio en pantalla).
     if (sectionWrapEl) sectionWrapEl.style.display = "block";
     fitEscalaOverlays();
     resizeSectionView();

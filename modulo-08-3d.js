@@ -423,7 +423,7 @@
     // para las 120 mil instancias.
     const planeGeo = makePlaneGeometry();
     const mat = new THREE.MeshStandardMaterial({
-      map: treeTex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.95,
+      map: treeTex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.95, vertexColors: true,
     });
     const mesh = new THREE.InstancedMesh(planeGeo, mat, trees.length);
     mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(trees.length * 3), 3);
