@@ -1611,10 +1611,34 @@
     "Parqueadero": 0x495057, "Recreacional": 0x8ac926, "Otros": 0xadb5bd
   };
   let usosSueloGroup = null, usosSueloData = null, usosSueloLoading = false;
+  // Lee el formato binario propio (generado en Python): encabezado con
+  // nombre de cada categoria + cantidad de floats, seguido de los
+  // vertices en float32 ya triangulados -- se leen como VISTAS directas
+  // sobre el buffer (sin copiar nada), por eso es practicamente instantaneo.
+  function parseUsosSueloBin(buf) {
+    const dv = new DataView(buf);
+    let offset = 0;
+    const n = dv.getUint32(offset, true); offset += 4;
+    const metas = [];
+    for (let i = 0; i < n; i++) {
+      const nameLen = dv.getUint16(offset, true); offset += 2;
+      const nameBytes = new Uint8Array(buf, offset, nameLen); offset += nameLen;
+      const name = new TextDecoder("utf-8").decode(nameBytes);
+      const count = dv.getUint32(offset, true); offset += 4;
+      metas.push({ name, count });
+    }
+    const data = {};
+    metas.forEach(m => {
+      data[m.name] = new Float32Array(buf, offset, m.count);
+      offset += m.count * 4;
+    });
+    return data;
+  }
   function buildUsosSueloMeshes(data) {
     // data ya viene pre-triangulado desde Python (mapbox earcut) -- aqui
     // solo se proyecta cada vertice a la escena y se arma el buffer, sin
     // triangular nada en el navegador (eso era lo lento).
+    const t0 = performance.now();
     usosSueloGroup = new THREE.Group();
     Object.keys(data).forEach(categoria => {
       const flat = data[categoria];
@@ -1627,12 +1651,15 @@
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      geo.computeVertexNormals();
+      // MeshBasicMaterial no usa normales para nada (no reacciona a la
+      // luz) -- calcularlas aqui era trabajo desperdiciado y pesado para
+      // ~750.000 vertices sin ningun beneficio visual.
       const mat = new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide, transparent: true, opacity: 0.82, clippingPlanes: sectionClipPlanesArr });
       const mesh = new THREE.Mesh(geo, mat);
       usosSueloGroup.add(mesh);
     });
     sceneRoot.add(usosSueloGroup);
+    console.log("[usos del suelo] mallas armadas en", Math.round(performance.now() - t0), "ms");
   }
   function toggleUsosSuelo() {
     const legend = document.getElementById("usosSueloLegend");
@@ -1648,7 +1675,12 @@
     usosSueloLoading = true;
     if (legend) legend.style.display = "block";
     if (loadingEl) loadingEl.textContent = "Cargando usos del suelo…";
-    fetch("./assets/kennedy_usos_suelo.json").then(r => r.json()).then(data => {
+    const tFetch0 = performance.now();
+    fetch("./assets/kennedy_usos_suelo.bin").then(r => r.arrayBuffer()).then(buf => {
+      console.log("[usos del suelo] descarga binaria:", Math.round(performance.now() - tFetch0), "ms");
+      const tParse0 = performance.now();
+      const data = parseUsosSueloBin(buf);
+      console.log("[usos del suelo] lectura del binario:", Math.round(performance.now() - tParse0), "ms");
       usosSueloData = data;
       buildUsosSueloMeshes(data);
       usosSueloLoading = false;
