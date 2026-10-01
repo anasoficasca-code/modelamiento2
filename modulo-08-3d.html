@@ -200,6 +200,25 @@
     <div class="view-buttons">
       <button type="button" id="viewReset">Restablecer vista axonométrica</button>
       <button type="button" id="perspToggle">📐 Ver en perspectiva</button>
+      <button type="button" id="usosSueloBtn">🗺️ Ver plano de usos</button>
+    </div>
+
+    <div id="usosSueloLegend" style="display:none; position:absolute; bottom:18px; left:18px; z-index:12; width:210px; background:rgba(255,255,255,.96); border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:12px 14px; box-shadow:0 8px 24px rgba(0,0,0,.12); font-family:'Segoe UI',sans-serif;">
+      <div style="font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:8px;">Usos del suelo</div>
+      <div style="display:flex; flex-direction:column; gap:6px; font-size:11px; color:#1e293b;">
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#f4d35e; flex:none;"></i> Residencial</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#e63946; flex:none;"></i> Comercio</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#6b7280; flex:none;"></i> Vías</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#52b788; flex:none;"></i> Espacio público</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#1b4332; flex:none;"></i> Suelo protegido</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#457b9d; flex:none;"></i> Dotacional</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#d4c5a9; flex:none;"></i> Sin edificar</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#7b2d8e; flex:none;"></i> Industrial</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#495057; flex:none;"></i> Parqueadero</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#8ac926; flex:none;"></i> Recreacional</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#adb5bd; flex:none;"></i> Otros</div>
+      </div>
+      <div id="usosSueloLoading" style="margin-top:8px; font-size:10px; color:#94a3b8;"></div>
     </div>
 
     <!-- Boton del corte arriba a la derecha -->
@@ -215,7 +234,7 @@
         <span id="sectionRotVal" style="font:600 10px 'Segoe UI',sans-serif; color:var(--ink); min-width:28px;">54°</span>
         <button id="sectionStraightenBtn" style="padding:4px 8px; border-radius:6px; border:1px solid var(--panel-border); background:var(--panel); font:600 10px 'Segoe UI',sans-serif; color:var(--ink); cursor:pointer;">Enderezar</button>
       </div>
-      <textarea id="sectionCoordsOutput" readonly style="position:absolute; top:28px; right:10px; width:210px; height:76px; font:9.5px monospace; background:rgba(255,255,255,.06); color:var(--ink); border:1px solid var(--panel-border); border-radius:6px; padding:5px; resize:none; pointer-events:none;"></textarea>
+      <textarea id="sectionCoordsOutput" readonly style="display:none; position:absolute; top:28px; right:10px; width:210px; height:76px; font:9.5px monospace; background:rgba(255,255,255,.06); color:var(--ink); border:1px solid var(--panel-border); border-radius:6px; padding:5px; resize:none; pointer-events:none;"></textarea>
     </div>
 
     <div class="rotate-panel" id="rotatePanel">
@@ -250,7 +269,7 @@
       </div>
     </div>
 
-    <div class="legend">
+    <div class="legend" style="display:none;">
       <span><i style="background:#e2635a"></i> Vehículo</span>
       <span><i style="background:#b7babd"></i> Vía</span>
       <span><i style="background:#ffffff"></i> Edificio</span>
