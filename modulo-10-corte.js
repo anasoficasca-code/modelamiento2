@@ -536,7 +536,6 @@
       rows += legendRow(legendDotIcon("#0ea5e9"), "Río Tunjuelo");
       rows += legendRow(legendDotIcon("#7dd3fc", true), "Humedal El Burro");
       rows += legendRow(legendDotIcon("#7dd3fc", true), "Humedal La Vaca");
-      rows += legendRow(legendDotIcon("#f97316", true), "Especies invasoras (Kikuyo, Enea, Junquera)");
     } else if (step === 3 || step === 4) {
       // Capa 2: Cobertura vegetal -- los 3 colores de arboles (sin el
       // nombre del color entre parentesis, ya se ve en el icono)
@@ -544,6 +543,7 @@
       rows += legendRow(legendDotIcon("#ff5fa8", true), "Capulí");
       rows += legendRow(legendDotIcon("#a3e635", true), "Urapán");
       rows += legendRow(`<i style="width:20px; height:20px; flex:none; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M2 14 Q8 6 12 12 Q16 6 22 14 Q16 11 12 15 Q8 11 2 14 Z" fill="#1c1c1c"/></svg></i>`, "Mirlas");
+      rows += legendRow(legendDotIcon("#f97316", true), "Especies invasoras (Kikuyo, Enea, Junquera)");
     } else if (step === 5 || step === 6) {
       // Capa 3: tingua y garza (el pato va en la Capa 4, es la que llega
       // en epoca de migracion)
@@ -2041,7 +2041,7 @@
     // elevacion, que es el angulo que pidio para este modulo).
     camera.position.set(-389.40, 559.68, 542.58);
     controls.target.set(218.76, -53.06, -86.62);
-    camera.zoom = 1.65;
+    camera.zoom = 1.95;
     camera.updateProjectionMatrix();
     // Centrar en el area de estudio (caja de seccion) con el mismo angulo,
     // y ajustar el zoom para que el rombo completo quepa sin cortarse.
@@ -2054,7 +2054,7 @@
         controls.target.set((x0 + x1) / 2, controls.target.y, (z0 + z1) / 2);
         camera.position.copy(controls.target).add(off);
         camera.lookAt(controls.target);
-        camera.zoom = 1.65; // tamaño grande original (el ajuste automatico la dejaba diminuta)
+        camera.zoom = 1.95; // tamaño grande original (el ajuste automatico la dejaba diminuta)
         camera.updateProjectionMatrix(); camera.updateMatrixWorld();
         const v = new THREE.Vector3(); let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
         [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].forEach(([x, z]) => [-6, 0, 8].forEach(yy => { v.set(x, yy, z).project(camera); mnx = Math.min(mnx, v.x); mxx = Math.max(mxx, v.x); mny = Math.min(mny, v.y); mxy = Math.max(mxy, v.y); }));
@@ -4746,26 +4746,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
         }
       });
     }
-
-    // Especies invasoras (Kikuyo, Enea, Junquera) -- puntitos naranjas
-    // chiquitos dispersos dentro del espejo de agua.
-    if (burro && burro.pts && burro.pts.length > 3) {
-      const cx2 = burro.pts.reduce((s, p) => s + p[0], 0) / burro.pts.length;
-      const cy2 = burro.pts.reduce((s, p) => s + p[1], 0) / burro.pts.length;
-      let seed = 7;
-      function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
-      for (let i = 0; i < 22; i++) {
-        const ang = rnd() * Math.PI * 2, rad = rnd() * 0.75;
-        const px = cx2 + Math.cos(ang) * rad * (burro.pts[0][0] - cx2) * expansionFactor;
-        const py = cy2 + Math.sin(ang) * rad * (burro.pts[0][1] - cy2) * expansionFactor;
-        const pt2 = projectPoint(px, py);
-        if (!pt2.inFront) continue;
-        ctx.beginPath();
-        ctx.arc(pt2.x, pt2.y, 1.1, 0, Math.PI * 2);
-        ctx.fillStyle = "#f97316";
-        ctx.fill();
-      }
-    }
   }
 
   // ============================================================
@@ -4912,6 +4892,25 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
         ctx.lineWidth = 1.1;
         ctx.strokeStyle = isDrySeason ? "rgba(140, 110, 65, 0.65)" : "rgba(95, 115, 75, 0.65)";
         ctx.stroke();
+
+        // Especies invasoras (Kikuyo, Enea, Junquera) -- puntitos naranjas
+        // chiquitos, DENTRO del vector real del humedal (no de la franja
+        // ampliada).
+        let seed = 7;
+        function rndInv() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+        for (let i = 0; i < 22; i++) {
+          const ang = rndInv() * Math.PI * 2, rad = rndInv() * 0.78;
+          const idx = Math.floor(rndInv() * burro.pts.length);
+          const refP = burro.pts[idx];
+          const px = cx + Math.cos(ang) * rad * (refP[0] - cx);
+          const py = cy + Math.sin(ang) * rad * (refP[1] - cy);
+          const ptInv = projectPoint(px, py);
+          if (!ptInv.inFront) continue;
+          ctx.beginPath();
+          ctx.arc(ptInv.x, ptInv.y, 1.0, 0, Math.PI * 2);
+          ctx.fillStyle = "#f97316";
+          ctx.fill();
+        }
       }
     }
 
