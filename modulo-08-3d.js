@@ -516,9 +516,12 @@
   noiseBufCanvas.width = NOISE_BUF_W; noiseBufCanvas.height = NOISE_BUF_H;
   const noiseBufCtx = noiseBufCanvas.getContext("2d", { willReadFrequently: true });
   let noiseFieldImg = null; // se reusa para que las mirlas lean el mismo campo real
-  // ---- Usos del suelo (GeoPackage Usos_Kennedy, 108.674 lotes reales) --
-  // mismo archivo binario pre-triangulado del modulo 10 (misma convencion
-  // de coordenadas locales, SIN necesidad de convertir nada de nuevo). ----
+  // ---- Usos del suelo (Shapefile Usos_kennedy, 50.878 lotes reales,
+  // EPSG:4686 convertido a la proyeccion local) -- pinta el EDIFICIO
+  // COMPLETO (paredes + techo), no el piso, segun el uso real asignado
+  // por union espacial en Python (centroide del edificio contra el lote
+  // que lo contiene), guardado en kennedy_buildings_uso.json en el mismo
+  // orden que kennedy_buildings.json. ----
   const USOS_COLORS = {
     "Residencial": 0xf4d35e, "Comercio": 0xe63946, "Vias": 0x6b7280,
     "Espacio publico": 0x52b788, "Suelo protegido": 0x1b4332,
@@ -526,39 +529,37 @@
     "Parqueadero": 0x495057, "Recreacional": 0x8ac926, "Otros": 0xadb5bd
   };
   let usosSueloGroup = null, usosSueloLoading = false;
-  function parseUsosSueloBin(buf) {
-    const dv = new DataView(buf);
-    let offset = 0;
-    const n = dv.getUint32(offset, true); offset += 4;
-    const metas = [];
-    for (let i = 0; i < n; i++) {
-      const nameLen = dv.getUint16(offset, true); offset += 2;
-      const nameBytes = new Uint8Array(buf, offset, nameLen); offset += nameLen;
-      const name = new TextDecoder("utf-8").decode(nameBytes);
-      const count = dv.getUint32(offset, true); offset += 4;
-      metas.push({ name, count });
-    }
-    const data = {};
-    metas.forEach(m => {
-      data[m.name] = new Float32Array(buf.slice(offset, offset + m.count * 4));
-      offset += m.count * 4;
-    });
-    return data;
-  }
-  function buildUsosSueloMeshes(data) {
-    usosSueloGroup = new THREE.Group();
-    Object.keys(data).forEach(categoria => {
-      const flat = data[categoria];
-      if (!flat || !flat.length) return;
-      const colorHex = USOS_COLORS[categoria] !== undefined ? USOS_COLORS[categoria] : USOS_COLORS["Otros"];
-      const positions = new Float32Array((flat.length / 2) * 3);
-      for (let i = 0, j = 0; i < flat.length; i += 2, j += 3) {
-        const p = toScene(flat[i], flat[i + 1]);
-        positions[j] = p.x; positions[j + 1] = 0.08; positions[j + 2] = p.z;
+  function buildUsosSueloBuildings(buildingsArr, usoArr) {
+    const porColor = {}; // colorHex -> array plano de posiciones [x,y,z,...]
+    buildingsArr.forEach((b, i) => {
+      const uso = usoArr[i];
+      if (!uso) return; // edificio sin uso asignado -- no se pinta
+      const colorHex = USOS_COLORS[uso] !== undefined ? USOS_COLORS[uso] : USOS_COLORS["Otros"];
+      if (!porColor[colorHex]) porColor[colorHex] = [];
+      const pts = b.pts.map(p => toScene(p[0], p[1]));
+      const h = b.h * SCALE;
+      if (pts.length < 4) return;
+      const arr = porColor[colorHex];
+      for (let k = 0; k < pts.length - 1; k++) {
+        const a = pts[k], c = pts[k + 1];
+        // Paredes (dos triangulos por segmento)
+        arr.push(a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z,
+                  a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z);
       }
+      // Techo: abanico de triangulos desde el primer punto (edificios
+      // catastrales son casi siempre convexos o casi-convexos)
+      for (let k = 1; k < pts.length - 2; k++) {
+        arr.push(pts[0].x, h, pts[0].z, pts[k].x, h, pts[k].z, pts[k + 1].x, h, pts[k + 1].z);
+      }
+    });
+    usosSueloGroup = new THREE.Group();
+    Object.keys(porColor).forEach(colorHex => {
+      const positions = porColor[colorHex];
+      if (!positions.length) return;
       const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      const mat = new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide, transparent: true, opacity: 0.82 });
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      geo.computeVertexNormals();
+      const mat = new THREE.MeshStandardMaterial({ color: parseInt(colorHex), side: THREE.DoubleSide, roughness: 0.85, metalness: 0.02 });
       usosSueloGroup.add(new THREE.Mesh(geo, mat));
     });
     sceneRoot.add(usosSueloGroup);
@@ -577,9 +578,11 @@
     usosSueloLoading = true;
     if (legend) legend.style.display = "block";
     if (loadingEl) loadingEl.textContent = "Cargando usos del suelo…";
-    fetch("./assets/kennedy_usos_suelo.bin").then(r => r.arrayBuffer()).then(buf => {
-      const data = parseUsosSueloBin(buf);
-      buildUsosSueloMeshes(data);
+    Promise.all([
+      fetch(BUILDINGS_URL).then(r => r.json()),
+      fetch("./assets/kennedy_buildings_uso.json").then(r => r.json())
+    ]).then(([buildingsArr, usoArr]) => {
+      buildUsosSueloBuildings(buildingsArr, usoArr);
       usosSueloLoading = false;
       if (loadingEl) loadingEl.textContent = "";
       if (btn) btn.style.background = "rgba(0,0,0,.08)";
