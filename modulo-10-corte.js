@@ -376,9 +376,8 @@
   // territorio, sin animacion de explosion -- solo se prenden/apagan). ----
   function syncSceneToLayer() {
     const step = typeof natExplodeStep !== "undefined" ? natExplodeStep : 0;
-    if (typeof birdsGroup !== "undefined" && birdsGroup) birdsGroup.visible = (step === 5 || step === 6);
-    if (typeof roadMat !== "undefined" && roadMat) roadMat.color.set(step === 7 || step === 8 ? 0x24c8bd : 0xb7babd);
-    if (typeof vehInstanced !== "undefined" && vehInstanced) vehInstanced.visible = (step === 7 || step === 8);
+    const birdStep = (step === 5 || step === 6 || step === 7 || step === 8);
+    if (typeof birdsGroup !== "undefined" && birdsGroup) birdsGroup.visible = birdStep;
   }
   // ---- Convenciones dinamicas: cambian segun la capa que se este
   // mostrando -- solo los agentes/elementos que realmente aparecen en
@@ -386,8 +385,8 @@
   function legendRow(iconHTML, label) {
     return `<div style="display:flex; align-items:center; gap:10px;">${iconHTML}<span>${label}</span></div>`;
   }
-  function legendImgIcon(size, bgX, bgY) {
-    return `<i style="width:26px; height:26px; border-radius:6px; flex:none; background-image:url(corte-burro-referencia.png); background-repeat:no-repeat; background-size:${size}; background-position:${bgX} ${bgY}; background-color:#eef2f5;"></i>`;
+  function legendImgIcon(src) {
+    return `<i style="width:26px; height:26px; border-radius:6px; flex:none; background-image:url(${src}); background-repeat:no-repeat; background-size:contain; background-position:center; background-color:#eef2f5;"></i>`;
   }
   function legendDotIcon(color, round) {
     return `<i style="width:16px; height:${round ? 16 : 6}px; border-radius:${round ? "50%" : "3px"}; flex:none; background:${color};"></i>`;
@@ -401,20 +400,26 @@
       // Capa 1: Sistema Hidrico -- todo lo que hace parte de esa simulacion
       rows += legendRow(legendDotIcon("#0284c7"), "Río Bogotá");
       rows += legendRow(legendDotIcon("#38bdf8"), "Río Fucha");
-      rows += legendRow(legendDotIcon("#7dd3fc", true), "Humedal El Burro / La Vaca");
+      rows += legendRow(legendDotIcon("#64748b"), "Canal Castilla");
+      rows += legendRow(legendDotIcon("#94a3b8"), "Canal de Los Ángeles");
+      rows += legendRow(legendDotIcon("#0ea5e9"), "Río Tunjuelo");
+      rows += legendRow(legendDotIcon("#7dd3fc", true), "Humedal El Burro");
+      rows += legendRow(legendDotIcon("#7dd3fc", true), "Humedal La Vaca");
     } else if (step === 3 || step === 4) {
-      // Capa 2: Cobertura vegetal -- los 3 colores de arboles
-      rows += legendRow(legendDotIcon("#b06bff", true), "Saúco (morado)");
-      rows += legendRow(legendDotIcon("#ff5fa8", true), "Capulí (rosado)");
-      rows += legendRow(legendDotIcon("#a3e635", true), "Urapán (verde lima)");
+      // Capa 2: Cobertura vegetal -- los 3 colores de arboles (sin el
+      // nombre del color entre parentesis, ya se ve en el icono)
+      rows += legendRow(legendDotIcon("#b06bff", true), "Saúco");
+      rows += legendRow(legendDotIcon("#ff5fa8", true), "Capulí");
+      rows += legendRow(legendDotIcon("#a3e635", true), "Urapán");
     } else if (step === 5 || step === 6) {
-      // Capa 3: Aves -- solo las que aparecen en esta capa
-      rows += legendRow(legendImgIcon("2600px 1838px", "-1417px", "-1511px"), "Pato");
-      rows += legendRow(legendImgIcon("1891px 1336px", "-1250px", "-1028px"), "Garza");
+      // Capa 3: Agentes bioticos -- solo tingua y garza, imagenes reales
+      rows += legendRow(legendImgIcon("assets/tingua.png"), "Tingua");
+      rows += legendRow(legendImgIcon("assets/garza.png"), "Garza");
     } else if (step === 7 || step === 8) {
-      // Capa 4: Conectividad vial
-      rows += legendRow(legendDotIcon("#7a838d"), "Vías y malla vial");
-      rows += legendRow(legendDotIcon("#e2635a", true), "Vehículos en movimiento");
+      // Capa 4: no se ve vias/vehiculos en esta capa -- tambien son
+      // tingua y garza
+      rows += legendRow(legendImgIcon("assets/tingua.png"), "Tingua");
+      rows += legendRow(legendImgIcon("assets/garza.png"), "Garza");
     } else {
       // Vista base / sin capa especifica: contexto general
       rows += legendRow(legendDotIcon("#7a838d"), "Vías y malla vial");
@@ -5355,7 +5360,7 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
           if (m > 12) m = 1;
           natMesSlider.value = String(m);
           renderAllNaturalSublayers();
-        }, 2200);
+        }, 3400);
       } else {
         stopNatPlayYear();
       }
