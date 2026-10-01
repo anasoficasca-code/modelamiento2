@@ -559,7 +559,12 @@
       const geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
       geo.computeVertexNormals();
-      const mat = new THREE.MeshStandardMaterial({ color: parseInt(colorHex), side: THREE.DoubleSide, roughness: 0.85, metalness: 0.02 });
+      // Colores suavizados (mezclados con blanco) para que no se vea tan
+      // fuerte/saturado sobre los edificios -- las convenciones siguen
+      // mostrando el color "puro" para que se reconozca la categoria.
+      const rawColor = new THREE.Color(parseInt(colorHex));
+      const softColor = rawColor.clone().lerp(new THREE.Color(0xffffff), 0.35);
+      const mat = new THREE.MeshStandardMaterial({ color: softColor, side: THREE.DoubleSide, roughness: 0.85, metalness: 0.02 });
       usosSueloGroup.add(new THREE.Mesh(geo, mat));
     });
     sceneRoot.add(usosSueloGroup);
