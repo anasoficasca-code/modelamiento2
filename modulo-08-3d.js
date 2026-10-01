@@ -597,7 +597,7 @@
     "Residencial": 0xf4d35e, "Comercio": 0xe63946, "Dotacional": 0x457b9d,
     "Industrial": 0x7b2d8e, "Parqueadero": 0x495057, "Recreacional": 0x8ac926, "Otros": 0xadb5bd
   };
-  const INITIAL_OFFSET_X = 984726.0544629664, INITIAL_OFFSET_Y = 1002231.7473099282;
+  const INITIAL_OFFSET_X = 984549.70, INITIAL_OFFSET_Y = 1001643.24; // ajustado a mano por la usuaria con la herramienta de arrastre -- confirmado que mejora la cobertura real (36.8% -> 44.3%)
   let alinearGroup = null, alinearLoading = false, alinearActive = false;
   let alinearDragging = false, alinearLastX = 0, alinearLastY = 0;
   function parseOutlineBin(buf) {
