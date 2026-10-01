@@ -1629,7 +1629,10 @@
     }
     const data = {};
     metas.forEach(m => {
-      data[m.name] = new Float32Array(buf, offset, m.count);
+      // offset puede no ser multiplo de 4 por los nombres de largo
+      // variable en el encabezado -- Float32Array exige alineacion, asi
+      // que se copia ese tramo a un buffer nuevo (ya alineado) con slice.
+      data[m.name] = new Float32Array(buf.slice(offset, offset + m.count * 4));
       offset += m.count * 4;
     });
     return data;
@@ -1687,6 +1690,7 @@
       if (loadingEl) loadingEl.textContent = "";
       if (btn) btn.style.background = "rgba(0,0,0,.08)";
     }).catch(err => {
+      console.error("[usos del suelo] ERROR:", err);
       usosSueloLoading = false;
       if (loadingEl) loadingEl.textContent = "No se pudo cargar.";
     });
