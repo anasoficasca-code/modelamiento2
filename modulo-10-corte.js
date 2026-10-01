@@ -1601,68 +1601,6 @@
   // levantados del suelo, con un material azul semi-transparente. ----
   let waterTexRef = null; // referencia para animar el desplazamiento de la textura (efecto de agua en movimiento)
   let waterBumpRef = null; // capa de relieve (bump), animada a otra velocidad para el efecto de oleaje
-  // ---- Usos del suelo (GeoPackage Usos_Kennedy): colorea los EDIFICIOS
-  // reales (no el piso) segun su uso_principal real, ya asignado por
-  // union espacial en Python (kennedy_buildings_uso.json, mismo orden
-  // que kennedy_buildings.json). Un solo mesh por color, reutilizando
-  // los datos de edificios que ya estan cargados. ----
-  const USOS_COLORS = {
-    "Residencial": 0xf4d35e, "Comercio": 0xe63946, "Vias": 0x6b7280,
-    "Espacio publico": 0x52b788, "Suelo protegido": 0x1b4332,
-    "Dotacional": 0x457b9d, "Sin edificar": 0xd4c5a9, "Industrial": 0x7b2d8e,
-    "Parqueadero": 0x495057, "Recreacional": 0x8ac926, "Otros": 0xadb5bd
-  };
-  let usosSueloGroup = null, usosSueloLoading = false;
-  function buildUsosSueloBuildings(usoArray) {
-    const t0 = performance.now();
-    const porColor = {}; // colorHex -> array plano de posiciones [x,y,z,...]
-    rawBuildingsData.forEach((b, i) => {
-      const uso = usoArray[i];
-      if (!uso) return; // edificio sin uso asignado (fuera del poligono mas cercano) -- no se pinta
-      const colorHex = USOS_COLORS[uso] !== undefined ? USOS_COLORS[uso] : USOS_COLORS["Otros"];
-      if (!porColor[colorHex]) porColor[colorHex] = [];
-      const pts = b.pts.map(p => toScene(p[0], p[1]));
-      const h = b.h * SCALE;
-      if (pts.length < 4) return;
-      const arr = porColor[colorHex];
-      for (let k = 0; k < pts.length - 1; k++) {
-        const a = pts[k], c = pts[k + 1];
-        arr.push(a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z,
-                  a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z);
-      }
-    });
-    usosSueloGroup = new THREE.Group();
-    Object.keys(porColor).forEach(colorHex => {
-      const positions = porColor[colorHex];
-      if (!positions.length) return;
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-      const mat = new THREE.MeshBasicMaterial({ color: parseInt(colorHex), side: THREE.DoubleSide });
-      usosSueloGroup.add(new THREE.Mesh(geo, mat));
-    });
-    sceneRoot.add(usosSueloGroup);
-    console.log("[usos del suelo] edificios coloreados en", Math.round(performance.now() - t0), "ms");
-  }
-  function toggleUsosSuelo() {
-    const btn = document.getElementById("usosSueloBtn");
-    if (usosSueloGroup) {
-      usosSueloGroup.visible = !usosSueloGroup.visible;
-      if (btn) btn.style.background = usosSueloGroup.visible ? "rgba(0,0,0,.08)" : "";
-      return;
-    }
-    if (usosSueloLoading || !rawBuildingsData) return;
-    usosSueloLoading = true;
-    fetch("./assets/kennedy_buildings_uso.json").then(r => r.json()).then(usoArray => {
-      buildUsosSueloBuildings(usoArray);
-      usosSueloLoading = false;
-      if (btn) btn.style.background = "rgba(0,0,0,.08)";
-    }).catch(err => {
-      console.error("[usos del suelo] ERROR:", err);
-      usosSueloLoading = false;
-    });
-  }
-  const usosSueloBtn = document.getElementById("usosSueloBtn");
-  if (usosSueloBtn) usosSueloBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleUsosSuelo(); });
 
   function buildWaterBodies(bodies) {
     const positions = [];
@@ -2062,7 +2000,7 @@
       sceneExtentW = w; sceneExtentH = h;
       if (typeof updateSectionBox === "function") updateSectionBox();
       rebuildFilteredGeometry();
-      viewSize = Math.max(w, h) * 0.145; // axonometria un poco mas grande (antes 0.165)
+      viewSize = Math.max(w, h) * 0.135; // restaurado al valor original
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
@@ -2104,7 +2042,7 @@
     // elevacion, que es el angulo que pidio para este modulo).
     camera.position.set(-389.40, 559.68, 542.58);
     controls.target.set(218.76, -53.06, -86.62);
-    camera.zoom = 1.95;
+    camera.zoom = 1.65;
     camera.updateProjectionMatrix();
     // Centrar en el area de estudio (caja de seccion) con el mismo angulo,
     // y ajustar el zoom para que el rombo completo quepa sin cortarse.
@@ -2117,7 +2055,7 @@
         controls.target.set((x0 + x1) / 2, controls.target.y, (z0 + z1) / 2);
         camera.position.copy(controls.target).add(off);
         camera.lookAt(controls.target);
-        camera.zoom = 1.95; // tamaño grande original (el ajuste automatico la dejaba diminuta)
+        camera.zoom = 1.65; // tamaño original
         camera.updateProjectionMatrix(); camera.updateMatrixWorld();
         const v = new THREE.Vector3(); let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
         [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].forEach(([x, z]) => [-6, 0, 8].forEach(yy => { v.set(x, yy, z).project(camera); mnx = Math.min(mnx, v.x); mxx = Math.max(mxx, v.x); mny = Math.min(mny, v.y); mxy = Math.max(mxy, v.y); }));
