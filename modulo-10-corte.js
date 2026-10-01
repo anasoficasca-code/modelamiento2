@@ -4709,15 +4709,22 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
         ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
         ctx.fill();
 
-        // Copa del árbol en tonos naturales sobrios
+        // Copa del árbol coloreada por especie (para ubicarlos en el
+        // mapa): Saúco morado, Capulí rosa, Urapán verde lima -- mismos
+        // colores que en Agentes, para que se puedan ubicar en la capa.
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
-        if (esp.includes("Sauco") || esp.includes("Aliso")) {
-          ctx.fillStyle = "#557a55"; // Verde aliso cenizo
+        const espLower = esp.toLowerCase();
+        if (espLower.includes("sauco") || espLower.includes("saúco")) {
+          ctx.fillStyle = "#b06bff"; // Saúco -- morado
+        } else if (espLower.includes("cerezo") || espLower.includes("capul")) {
+          ctx.fillStyle = "#ff5fa8"; // Capulí -- rosa
+        } else if (espLower.includes("urapan") || espLower.includes("urapán") || espLower.includes("fresno")) {
+          ctx.fillStyle = "#a3e635"; // Urapán -- verde lima
         } else if (esp.includes("Chilco") || esp.includes("Tinto")) {
-          ctx.fillStyle = "#4a684b"; // Matorral nativo sobrio
+          ctx.fillStyle = "#4a684b"; // Matorral nativo sobrio (otras especies)
         } else {
-          ctx.fillStyle = "#5d7356"; // Arbóreo estándar
+          ctx.fillStyle = "#5d7356"; // Arbóreo estándar (otras especies)
         }
         ctx.fill();
         ctx.lineWidth = 0.6;
