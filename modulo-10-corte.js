@@ -1601,6 +1601,74 @@
   // levantados del suelo, con un material azul semi-transparente. ----
   let waterTexRef = null; // referencia para animar el desplazamiento de la textura (efecto de agua en movimiento)
   let waterBumpRef = null; // capa de relieve (bump), animada a otra velocidad para el efecto de oleaje
+  // ---- Usos del suelo (GeoPackage Usos_Kennedy): carga diferida, un
+  // solo mesh por color (108k poligonos triangulados y agrupados por
+  // categoria, no un objeto por lote -- clave para que no se tranque). ----
+  const USOS_COLORS = {
+    "Residencial": 0xf4d35e, "Comercio": 0xe63946, "Vias": 0x6b7280,
+    "Espacio publico": 0x52b788, "Suelo protegido": 0x1b4332,
+    "Dotacional": 0x457b9d, "Sin edificar": 0xd4c5a9, "Industrial": 0x7b2d8e,
+    "Parqueadero": 0x495057, "Recreacional": 0x8ac926, "Otros": 0xadb5bd
+  };
+  let usosSueloGroup = null, usosSueloData = null, usosSueloLoading = false;
+  function buildUsosSueloMeshes(data) {
+    const porColor = {};
+    data.forEach(f => {
+      const colorHex = USOS_COLORS[f.u] !== undefined ? USOS_COLORS[f.u] : USOS_COLORS["Otros"];
+      if (!porColor[colorHex]) porColor[colorHex] = [];
+      f.p.forEach(ring => {
+        const scenePts = ring.map(p => toScene(p[0], p[1]));
+        if (scenePts.length < 3) return;
+        const pts2d = scenePts.map(p => new THREE.Vector2(p.x, p.z));
+        let tris;
+        try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
+        catch (e) { tris = []; }
+        tris.forEach(([a, b, c]) => {
+          [a, b, c].forEach(idx => porColor[colorHex].push(scenePts[idx].x, 0.08, scenePts[idx].z));
+        });
+      });
+    });
+    usosSueloGroup = new THREE.Group();
+    Object.keys(porColor).forEach(colorHex => {
+      const positions = porColor[colorHex];
+      if (!positions.length) return;
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      geo.computeVertexNormals();
+      const mat = new THREE.MeshBasicMaterial({ color: parseInt(colorHex), side: THREE.DoubleSide, transparent: true, opacity: 0.82, clippingPlanes: sectionClipPlanesArr });
+      const mesh = new THREE.Mesh(geo, mat);
+      usosSueloGroup.add(mesh);
+    });
+    sceneRoot.add(usosSueloGroup);
+  }
+  function toggleUsosSuelo() {
+    const legend = document.getElementById("usosSueloLegend");
+    const loadingEl = document.getElementById("usosSueloLoading");
+    const btn = document.getElementById("usosSueloBtn");
+    if (usosSueloGroup) {
+      usosSueloGroup.visible = !usosSueloGroup.visible;
+      if (legend) legend.style.display = usosSueloGroup.visible ? "block" : "none";
+      if (btn) btn.style.background = usosSueloGroup.visible ? "rgba(0,0,0,.08)" : "";
+      return;
+    }
+    if (usosSueloLoading) return;
+    usosSueloLoading = true;
+    if (legend) legend.style.display = "block";
+    if (loadingEl) loadingEl.textContent = "Cargando usos del suelo…";
+    fetch("./assets/kennedy_usos_suelo.json").then(r => r.json()).then(data => {
+      usosSueloData = data;
+      buildUsosSueloMeshes(data);
+      usosSueloLoading = false;
+      if (loadingEl) loadingEl.textContent = "";
+      if (btn) btn.style.background = "rgba(0,0,0,.08)";
+    }).catch(err => {
+      usosSueloLoading = false;
+      if (loadingEl) loadingEl.textContent = "No se pudo cargar.";
+    });
+  }
+  const usosSueloBtn = document.getElementById("usosSueloBtn");
+  if (usosSueloBtn) usosSueloBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleUsosSuelo(); });
+
   function buildWaterBodies(bodies) {
     const positions = [];
     const uvs = [];
