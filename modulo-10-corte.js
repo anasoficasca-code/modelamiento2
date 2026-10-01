@@ -202,6 +202,20 @@
         el.style.top = baseY + "px";
         stage.appendChild(el);
         herons = [{ el, phase: 0, cyc: 17 }];
+
+        // Tingua -- misma idea (recorte real, entra volando desde afuera),
+        // pero camina/anda mas bajo, cerca del agua del recuadro.
+        const tw = topRect.width * 0.16;
+        const th = tw * (200 / 166);
+        const tEl = document.createElement("div");
+        tEl.className = "dynSprite";
+        tEl.style.cssText = `position:absolute; width:${tw}px; height:${th}px; background-image:url(assets/tingua.png); background-repeat:no-repeat; background-size:100% 100%; pointer-events:none; will-change:transform; z-index:6;`;
+        const tBaseX = (topRect.left - stageRect.left) + topRect.width * 0.58;
+        const tBaseY = (topRect.top - stageRect.top) + topRect.height * 0.62;
+        tEl.style.left = tBaseX + "px";
+        tEl.style.top = tBaseY + "px";
+        stage.appendChild(tEl);
+        herons.push({ el: tEl, phase: 6, cyc: 14, isTingua: true });
       }
 
       // curva suave (sin saltos de velocidad en los quiebres del recorrido)
@@ -274,6 +288,16 @@
         });
         herons.forEach(h => {
           const t = ((tSec + h.phase) % h.cyc) / h.cyc;
+          if (h.isTingua) {
+            // La tingua entra caminando/nadando desde afuera, mas bajo y
+            // sin el vuelo en arco de la garza -- vaiven horizontal simple.
+            const FARW = 420;
+            const k2 = smooth(t);
+            const xw = FARW * Math.cos(k2 * Math.PI);
+            const bob = Math.sin(tSec * 5 + h.phase) * 2.5;
+            h.el.style.transform = `translate(${xw}px, ${bob}px) scaleX(${Math.cos(k2 * Math.PI) < 0 ? -1 : 1})`;
+            return;
+          }
           // un solo arco continuo y suave: entra desde muy afuera,
           // desciende como si fuera a pescar, y vuelve a subir y salir --
           // sin tramos "congelados" para que se sienta vivo todo el rato.
@@ -376,8 +400,11 @@
   // territorio, sin animacion de explosion -- solo se prenden/apagan). ----
   function syncSceneToLayer() {
     const step = typeof natExplodeStep !== "undefined" ? natExplodeStep : 0;
-    const birdStep = (step === 5 || step === 6 || step === 7 || step === 8);
-    if (typeof birdsGroup !== "undefined" && birdsGroup) birdsGroup.visible = birdStep;
+    // Las mirlas (birdsGroup) ya estan programadas para ir a los arboles
+    // de Sauco/Capuli/Urapan (BIRD_TREE_SPECIES) -- van en la Capa 2
+    // (vegetacion), no en la de aves.
+    const mirlaStep = (step === 3 || step === 4);
+    if (typeof birdsGroup !== "undefined" && birdsGroup) birdsGroup.visible = mirlaStep;
     // Ninguna de las capas de la escala natural muestra realmente
     // vehiculos ni ruido en su axonometria -- se ocultan siempre aqui,
     // solo se ve lo que efectivamente aparece en cada capa.
@@ -416,6 +443,7 @@
       rows += legendRow(legendDotIcon("#b06bff", true), "Saúco");
       rows += legendRow(legendDotIcon("#ff5fa8", true), "Capulí");
       rows += legendRow(legendDotIcon("#a3e635", true), "Urapán");
+      rows += legendRow(legendDotIcon("#1c1c1c", true), "Mirlas");
     } else if (step === 5 || step === 6) {
       // Capa 3: Agentes bioticos -- solo tingua y garza, imagenes reales
       rows += legendRow(legendImgIcon("assets/tingua.png"), "Tingua");
