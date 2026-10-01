@@ -398,6 +398,57 @@
   // para que "se vea lo mismo" alla abajo, se refleja el estado real de
   // cada capa en los objetos reales de la escena (ya asentados en el
   // territorio, sin animacion de explosion -- solo se prenden/apagan). ----
+  // ---- Aves reales (garza/tingua/pato) dentro del CORTE PRINCIPAL (no
+  // el de "Corte dinamico"), para que se vea lo mismo que esta activo en
+  // la axonometria. Entran caminando/volando desde afuera del recuadro. ----
+  let sectionBirdsBuilt = false, sectionBirdsRaf = null;
+  function buildSectionBirds() {
+    if (sectionBirdsBuilt) return;
+    const stage = document.getElementById("sectionBirdStage");
+    if (!stage) return;
+    sectionBirdsBuilt = true;
+    function sprite(src, wPct, wOverH) {
+      const el = document.createElement("div");
+      el.className = "sectionBirdSprite";
+      el.style.cssText = `position:absolute; width:${wPct}%; height:auto; aspect-ratio:${wOverH}; background-image:url(${src}); background-repeat:no-repeat; background-size:100% 100%; pointer-events:none; display:none;`;
+      stage.appendChild(el);
+      return el;
+    }
+    const garzaEl = sprite("assets/garza.png", 4, 79/200);
+    garzaEl.style.top = "10%"; garzaEl.style.left = "40%";
+    const tinguaEl = sprite("assets/tingua.png", 5, 166/200);
+    tinguaEl.style.top = "55%"; tinguaEl.style.left = "55%";
+    const patoEl = sprite("assets/pato.png", 6, 1024/767);
+    patoEl.style.top = "60%"; patoEl.style.left = "25%";
+
+    function smoothS(k) { return k * k * (3 - 2 * k); }
+    const start = performance.now();
+    function loop(now) {
+      const tSec = (now - start) / 1000;
+      [garzaEl, tinguaEl, patoEl].forEach((el, i) => {
+        if (el.style.display === "none") return;
+        const cyc = 12 + i * 2, phase = i * 4;
+        const t = ((tSec + phase) % cyc) / cyc;
+        const k = smoothS(t);
+        const FAR = 260;
+        const x = FAR * Math.cos(k * Math.PI);
+        const bob = Math.sin(tSec * 4 + phase) * 2;
+        el.style.transform = `translate(${x}px, ${bob}px) scaleX(${Math.cos(k * Math.PI) < 0 ? -1 : 1})`;
+      });
+      sectionBirdsRaf = requestAnimationFrame(loop);
+    }
+    sectionBirdsRaf = requestAnimationFrame(loop);
+    stage.__garza = garzaEl; stage.__tingua = tinguaEl; stage.__pato = patoEl;
+  }
+  function syncSectionBirdsToLayer(step) {
+    buildSectionBirds();
+    const stage = document.getElementById("sectionBirdStage");
+    if (!stage || !stage.__garza) return;
+    const aveStep = (step === 5 || step === 6 || step === 7 || step === 8);
+    stage.__garza.style.display = aveStep ? "block" : "none";
+    stage.__tingua.style.display = aveStep ? "block" : "none";
+    stage.__pato.style.display = aveStep ? "block" : "none";
+  }
   function syncSceneToLayer() {
     const step = typeof natExplodeStep !== "undefined" ? natExplodeStep : 0;
     // Las mirlas (birdsGroup) ya estan programadas para ir a los arboles
@@ -410,6 +461,7 @@
     // solo se ve lo que efectivamente aparece en cada capa.
     if (typeof vehInstanced !== "undefined" && vehInstanced) vehInstanced.visible = false;
     if (typeof noiseMesh !== "undefined" && noiseMesh) noiseMesh.visible = false;
+    syncSectionBirdsToLayer(step);
   }
   // ---- Convenciones dinamicas: cambian segun la capa que se este
   // mostrando -- solo los agentes/elementos que realmente aparecen en
@@ -419,6 +471,9 @@
   }
   function legendImgIcon(src) {
     return `<i style="width:26px; height:26px; border-radius:6px; flex:none; background-image:url(${src}); background-repeat:no-repeat; background-size:contain; background-position:center; background-color:#eef2f5;"></i>`;
+  }
+  function legendImgIcon2(src, size, pos) {
+    return `<i style="width:26px; height:26px; border-radius:6px; flex:none; background-image:url(${src}); background-repeat:no-repeat; background-size:${size}; background-position:${pos}; background-color:#eef2f5;"></i>`;
   }
   function legendDotIcon(color, round) {
     return `<i style="width:16px; height:${round ? 16 : 6}px; border-radius:${round ? "50%" : "3px"}; flex:none; background:${color};"></i>`;
@@ -443,16 +498,18 @@
       rows += legendRow(legendDotIcon("#b06bff", true), "Saúco");
       rows += legendRow(legendDotIcon("#ff5fa8", true), "Capulí");
       rows += legendRow(legendDotIcon("#a3e635", true), "Urapán");
-      rows += legendRow(legendDotIcon("#1c1c1c", true), "Mirlas");
+      rows += legendRow(legendImgIcon2("corte-burro-referencia.png", "1261px 891px", "-803px -689px"), "Mirlas");
     } else if (step === 5 || step === 6) {
-      // Capa 3: Agentes bioticos -- solo tingua y garza, imagenes reales
+      // Capa 3: Agentes bioticos -- tingua, garza y pato, imagenes reales
       rows += legendRow(legendImgIcon("assets/tingua.png"), "Tingua");
       rows += legendRow(legendImgIcon("assets/garza.png"), "Garza");
+      rows += legendRow(legendImgIcon("assets/pato.png"), "Pato");
     } else if (step === 7 || step === 8) {
       // Capa 4: no se ve vias/vehiculos en esta capa -- tambien son
-      // tingua y garza
+      // tingua, garza y pato
       rows += legendRow(legendImgIcon("assets/tingua.png"), "Tingua");
       rows += legendRow(legendImgIcon("assets/garza.png"), "Garza");
+      rows += legendRow(legendImgIcon("assets/pato.png"), "Pato");
     } else {
       // Vista base / sin capa especifica: contexto general
       rows += legendRow(legendDotIcon("#7a838d"), "Vías y malla vial");

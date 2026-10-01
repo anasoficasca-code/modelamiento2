@@ -320,6 +320,7 @@ window.addEventListener("unhandledrejection", function(e) { alert("Promise Error
     <!-- Corte: vista en seccion del mismo territorio, cortando por el humedal -->
     <div id="sectionWrap" style="display:none; position:absolute; left:0; right:0; bottom:0; height:16%; min-height:150px; z-index:400; border-top:1px solid rgba(0,0,0,.12); background:#eef2f5;">
       <canvas id="sectionCanvas" style="width:100%; height:100%; display:block; cursor:grab;"></canvas>
+      <div id="sectionBirdStage" style="position:absolute; inset:0; z-index:8; overflow:hidden; pointer-events:none;"></div>
       <!-- Controles independientes para el corte inferior -->
       <div id="botControls" style="display:none; position:absolute; right:10px; top:10px; width:220px; background:rgba(255,255,255,0.9); padding:10px; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.15); font-family:'Segoe UI',sans-serif; font-size:11px; color:#333; z-index:10;">
         <div style="font-weight:600; margin-bottom:8px; border-bottom:1px solid #ccc; padding-bottom:4px;">Coordenadas de la vista</div>
@@ -544,7 +545,7 @@ window.addEventListener("unhandledrejection", function(e) { alert("Promise Error
 
     <!-- OVERLAY SUB-EXPLOSIÓN: ESCALA NATURAL (4 CAPAS ARQUITECTÓNICAS) -->
     <div id="naturalExplodeOverlay" style="position:absolute; left:0; top:0; right:0; bottom:0; z-index:380; background:#ffffff; display:none; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
-      <div id="natContextFade" style="position:absolute; inset:0; z-index:3; background:radial-gradient(ellipse at center, transparent 15%, rgba(255,255,255,0.55) 50%, rgba(255,255,255,0.97) 85%); pointer-events:none;"></div>
+      <div id="natContextFade" style="position:absolute; inset:0; z-index:3; background:radial-gradient(ellipse at center, transparent 8%, rgba(255,255,255,0.65) 35%, rgba(255,255,255,0.99) 65%); pointer-events:none;"></div>
       
       <!-- Barra superior / volver y controles de animación -->
       <div style="position:absolute; top:16px; left:26px; z-index:322; display:flex; align-items:center; gap:12px;">
