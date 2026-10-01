@@ -589,6 +589,122 @@
       if (loadingEl) loadingEl.textContent = "No se pudo cargar.";
     });
   }
+  // ---- Herramienta de alineacion manual: el plano de usos (solo
+  // contornos, sin triangular -- mucho mas liviano) se puede arrastrar
+  // con el mouse sobre el piso, y se muestran las coordenadas finales
+  // para fijar el desplazamiento correcto de una vez. ----
+  const USOS_OUTLINE_COLORS = {
+    "Residencial": 0xf4d35e, "Comercio": 0xe63946, "Dotacional": 0x457b9d,
+    "Industrial": 0x7b2d8e, "Parqueadero": 0x495057, "Recreacional": 0x8ac926, "Otros": 0xadb5bd
+  };
+  const INITIAL_OFFSET_X = 984726.0544629664, INITIAL_OFFSET_Y = 1002231.7473099282;
+  let alinearGroup = null, alinearLoading = false, alinearActive = false;
+  let alinearDragging = false, alinearLastX = 0, alinearLastY = 0;
+  function parseOutlineBin(buf) {
+    const dv = new DataView(buf);
+    let offset = 0;
+    const n = dv.getUint32(offset, true); offset += 4;
+    const metas = [];
+    for (let i = 0; i < n; i++) {
+      const nameLen = dv.getUint16(offset, true); offset += 2;
+      const nameBytes = new Uint8Array(buf, offset, nameLen); offset += nameLen;
+      const name = new TextDecoder("utf-8").decode(nameBytes);
+      const count = dv.getUint32(offset, true); offset += 4;
+      metas.push({ name, count });
+    }
+    const data = {};
+    metas.forEach(m => {
+      data[m.name] = new Float32Array(buf.slice(offset, offset + m.count * 4));
+      offset += m.count * 4;
+    });
+    return data;
+  }
+  function buildAlinearLines(data) {
+    alinearGroup = new THREE.Group();
+    Object.keys(data).forEach(categoria => {
+      const flat = data[categoria];
+      if (!flat || !flat.length) return;
+      const colorHex = USOS_OUTLINE_COLORS[categoria] !== undefined ? USOS_OUTLINE_COLORS[categoria] : 0xadb5bd;
+      const positions = new Float32Array((flat.length / 2) * 3);
+      for (let i = 0, j = 0; i < flat.length; i += 2, j += 3) {
+        const p = toScene(flat[i] - INITIAL_OFFSET_X, flat[i + 1] - INITIAL_OFFSET_Y);
+        positions[j] = p.x; positions[j + 1] = 0.15; positions[j + 2] = p.z;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      const mat = new THREE.LineBasicMaterial({ color: colorHex });
+      alinearGroup.add(new THREE.LineSegments(geo, mat));
+    });
+    sceneRoot.add(alinearGroup);
+    updateAlinearCoordsOutput();
+  }
+  function updateAlinearCoordsOutput() {
+    const out = document.getElementById("alinearPlanoCoords");
+    if (!out || !alinearGroup) return;
+    const finalOffsetX = INITIAL_OFFSET_X - alinearGroup.position.x / SCALE;
+    const finalOffsetY = INITIAL_OFFSET_Y + alinearGroup.position.z / SCALE;
+    out.value = `OFFSET_X: ${finalOffsetX.toFixed(2)}\nOFFSET_Y: ${finalOffsetY.toFixed(2)}\n(movido: ${alinearGroup.position.x.toFixed(1)}, ${alinearGroup.position.z.toFixed(1)} en escena)`;
+  }
+  function toggleAlinearPlano() {
+    const panel = document.getElementById("alinearPlanoPanel");
+    const btn = document.getElementById("alinearPlanoBtn");
+    if (alinearGroup) {
+      alinearActive = !alinearActive;
+      alinearGroup.visible = alinearActive;
+      if (panel) panel.style.display = alinearActive ? "block" : "none";
+      if (btn) btn.style.background = alinearActive ? "rgba(0,0,0,.08)" : "";
+      return;
+    }
+    if (alinearLoading) return;
+    alinearLoading = true;
+    fetch("./assets/kennedy_usos_outline.bin").then(r => r.arrayBuffer()).then(buf => {
+      const data = parseOutlineBin(buf);
+      buildAlinearLines(data);
+      alinearActive = true;
+      alinearLoading = false;
+      if (panel) panel.style.display = "block";
+      if (btn) btn.style.background = "rgba(0,0,0,.08)";
+    }).catch(err => { console.error("[alinear plano]", err); alinearLoading = false; });
+  }
+  const alinearPlanoBtn = document.getElementById("alinearPlanoBtn");
+  if (alinearPlanoBtn) alinearPlanoBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleAlinearPlano(); });
+  const alinearPlanoCopyBtn = document.getElementById("alinearPlanoCopy");
+  if (alinearPlanoCopyBtn) alinearPlanoCopyBtn.addEventListener("click", () => {
+    const out = document.getElementById("alinearPlanoCoords");
+    if (out) { out.select(); document.execCommand("copy"); }
+  });
+  // Arrastre: clic izquierdo + mover, SOLO mientras el modo esta activo --
+  // asi no interfiere con la orbita normal de la camara (que usa el mismo
+  // boton). Se mueve el grupo en el plano X/Z (piso), no en altura.
+  renderer.domElement.addEventListener("pointerdown", (e) => {
+    if (!alinearActive || !alinearGroup || e.button !== 0) return;
+    alinearDragging = true;
+    alinearLastX = e.clientX; alinearLastY = e.clientY;
+    e.stopImmediatePropagation();
+  }, true);
+  window.addEventListener("pointermove", (e) => {
+    if (!alinearDragging || !alinearGroup) return;
+    const dx = e.clientX - alinearLastX, dy = e.clientY - alinearLastY;
+    alinearLastX = e.clientX; alinearLastY = e.clientY;
+    // factor exacto: unidades de escena por pixel, segun el frustum
+    // ortografico actual (top-bottom) y el alto real del canvas.
+    const rect = renderer.domElement.getBoundingClientRect();
+    const unitsPerPixel = (camera.top - camera.bottom) / rect.height;
+    // Se proyectan los ejes derecha/arriba de la CAMARA sobre el piso
+    // (X/Z), para que arrastrar siga al mouse sin importar el angulo u
+    // orbita actual de la vista (no solo cuando mira derecho hacia abajo).
+    const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+    camRight.y = 0; camUp.y = 0;
+    camRight.normalize(); camUp.normalize();
+    const moveX = dx * unitsPerPixel, moveY = -dy * unitsPerPixel;
+    alinearGroup.position.x += camRight.x * moveX + camUp.x * moveY;
+    alinearGroup.position.z += camRight.z * moveX + camUp.z * moveY;
+    updateAlinearCoordsOutput();
+    e.stopPropagation();
+  }, true);
+  window.addEventListener("pointerup", () => { alinearDragging = false; });
+
   const usosSueloBtn = document.getElementById("usosSueloBtn");
   if (usosSueloBtn) usosSueloBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleUsosSuelo(); });
 
