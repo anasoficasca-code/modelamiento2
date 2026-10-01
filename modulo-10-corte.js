@@ -1612,30 +1612,23 @@
   };
   let usosSueloGroup = null, usosSueloData = null, usosSueloLoading = false;
   function buildUsosSueloMeshes(data) {
-    const porColor = {};
-    data.forEach(f => {
-      const colorHex = USOS_COLORS[f.u] !== undefined ? USOS_COLORS[f.u] : USOS_COLORS["Otros"];
-      if (!porColor[colorHex]) porColor[colorHex] = [];
-      f.p.forEach(ring => {
-        const scenePts = ring.map(p => toScene(p[0], p[1]));
-        if (scenePts.length < 3) return;
-        const pts2d = scenePts.map(p => new THREE.Vector2(p.x, p.z));
-        let tris;
-        try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
-        catch (e) { tris = []; }
-        tris.forEach(([a, b, c]) => {
-          [a, b, c].forEach(idx => porColor[colorHex].push(scenePts[idx].x, 0.08, scenePts[idx].z));
-        });
-      });
-    });
+    // data ya viene pre-triangulado desde Python (mapbox earcut) -- aqui
+    // solo se proyecta cada vertice a la escena y se arma el buffer, sin
+    // triangular nada en el navegador (eso era lo lento).
     usosSueloGroup = new THREE.Group();
-    Object.keys(porColor).forEach(colorHex => {
-      const positions = porColor[colorHex];
-      if (!positions.length) return;
+    Object.keys(data).forEach(categoria => {
+      const flat = data[categoria];
+      if (!flat || !flat.length) return;
+      const colorHex = USOS_COLORS[categoria] !== undefined ? USOS_COLORS[categoria] : USOS_COLORS["Otros"];
+      const positions = new Float32Array((flat.length / 2) * 3);
+      for (let i = 0, j = 0; i < flat.length; i += 2, j += 3) {
+        const p = toScene(flat[i], flat[i + 1]);
+        positions[j] = p.x; positions[j + 1] = 0.08; positions[j + 2] = p.z;
+      }
       const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
       geo.computeVertexNormals();
-      const mat = new THREE.MeshBasicMaterial({ color: parseInt(colorHex), side: THREE.DoubleSide, transparent: true, opacity: 0.82, clippingPlanes: sectionClipPlanesArr });
+      const mat = new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide, transparent: true, opacity: 0.82, clippingPlanes: sectionClipPlanesArr });
       const mesh = new THREE.Mesh(geo, mat);
       usosSueloGroup.add(mesh);
     });
