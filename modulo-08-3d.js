@@ -421,36 +421,26 @@
     // mirar siempre hacia la camara (ver updateTreeBillboards), y como
     // la camara es ortografica y esta fija a 45°, un solo angulo sirve
     // para las 120 mil instancias.
+    // NOTA: se quito el tenido por especie (vertexColors + instanceColor)
+    // que se habia agregado -- producia arboles en negro solido en vez
+    // del color real de la foto. Vuelve a la version simple de antes.
     const planeGeo = makePlaneGeometry();
     const mat = new THREE.MeshStandardMaterial({
-      map: treeTex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.95, vertexColors: true,
+      map: treeTex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.95,
     });
     const mesh = new THREE.InstancedMesh(planeGeo, mat, trees.length);
-    mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(trees.length * 3), 3);
     mesh.castShadow = false;
     treeMesh = mesh;
 
     treeInstanceData = new Array(trees.length);
-    const colorAlimento1 = new THREE.Color(0xff5fa8); // Cerezo
-    const colorAlimento2 = new THREE.Color(0xb06bff); // Sauco
-    const colorDescanso = new THREE.Color(0x25d0a0);  // Urapan
-    const colorNormal = new THREE.Color(0xffffff);
-    
+
     trees.forEach((t, i) => {
-      const [x, y, hMeters, especieStr, code] = t;
+      const [x, y, hMeters, , code] = t;
       const p = toScene(x, y);
       const h = Math.max(0.3, hMeters * SCALE);
       const w = h * (1.1 + (hash2(code) % 20) / 100 - 0.1);
       treeInstanceData[i] = { x: p.x, z: p.z, w, h };
-      
-      let c = colorNormal;
-      if (especieStr.includes("Sauco")) c = colorAlimento2;
-      else if (especieStr.includes("capuli")) c = colorAlimento1;
-      else if (especieStr.includes("Fresno") || especieStr.includes("Urap")) c = colorDescanso;
-      
-      mesh.setColorAt(i, c);
     });
-    mesh.instanceColor.needsUpdate = true;
     sceneRoot.add(mesh);
     treeMeshes = [{ mesh, data: trees }];
     updateTreeBillboards();
@@ -531,9 +521,11 @@
   let usosSueloGroup = null, usosSueloLoading = false;
   function buildUsosSueloBuildings(buildingsArr, usoArr) {
     const porColor = {}; // colorHex -> array plano de posiciones [x,y,z,...]
+    const TALL_THRESHOLD_M = 15; // a partir de esta altura real (metros), si no tiene uso asignado por el plano, se asume Residencial (torres de vivienda son las mas altas en Kennedy)
     buildingsArr.forEach((b, i) => {
-      const uso = usoArr[i];
-      if (!uso) return; // edificio sin uso asignado -- no se pinta
+      let uso = usoArr[i];
+      if (!uso && b.h >= TALL_THRESHOLD_M) uso = "Residencial";
+      if (!uso) return; // edificio bajo sin uso asignado -- no se pinta
       const colorHex = USOS_COLORS[uso] !== undefined ? USOS_COLORS[uso] : USOS_COLORS["Otros"];
       if (!porColor[colorHex]) porColor[colorHex] = [];
       const pts = b.pts.map(p => toScene(p[0], p[1]));
