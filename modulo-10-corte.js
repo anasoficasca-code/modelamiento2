@@ -398,10 +398,13 @@
   // para que "se vea lo mismo" alla abajo, se refleja el estado real de
   // cada capa en los objetos reales de la escena (ya asentados en el
   // territorio, sin animacion de explosion -- solo se prenden/apagan). ----
-  // ---- Aves reales (garza/tingua/pato) dentro del CORTE PRINCIPAL (no
-  // el de "Corte dinamico"), para que se vea lo mismo que esta activo en
-  // la axonometria. Entran caminando/volando desde afuera del recuadro. ----
-  let sectionBirdsBuilt = false, sectionBirdsRaf = null;
+  // ---- Aves reales (garza/tingua/pato) dentro del CORTE PRINCIPAL,
+  // sincronizadas con lo que pasa en la axonometria: Capa 3 (tinguas en
+  // el centro del humedal, garzas llegan volando desde la izquierda y se
+  // posan en el centro, las tinguas se corren al borde) y Capa 4 (se
+  // suma el pato, que llega volando desde la derecha -- migracion desde
+  // Norteamerica). Tamanos chicos, nada de aves gigantes. ----
+  let sectionBirdsBuilt = false, sectionBirdsRaf = null, sectionBirdStep = 0;
   function buildSectionBirds() {
     if (sectionBirdsBuilt) return;
     const stage = document.getElementById("sectionBirdStage");
@@ -414,27 +417,46 @@
       stage.appendChild(el);
       return el;
     }
-    const garzaEl = sprite("assets/garza.png", 4, 79/200);
-    garzaEl.style.top = "10%"; garzaEl.style.left = "40%";
-    const tinguaEl = sprite("assets/tingua.png", 5, 166/200);
-    tinguaEl.style.top = "55%"; tinguaEl.style.left = "55%";
-    const patoEl = sprite("assets/pato.png", 6, 1024/767);
-    patoEl.style.top = "60%"; patoEl.style.left = "25%";
+    // Tamanos pequenos, pegados a la franja del humedal en el corte.
+    const garzaEl = sprite("assets/garza.png", 2.6, 79/200);
+    const tinguaEl = sprite("assets/tingua.png", 3.0, 166/200);
+    const patoEl = sprite("assets/pato.png", 3.4, 1024/767);
+    [garzaEl, tinguaEl, patoEl].forEach(el => { el.style.top = "52%"; el.style.left = "50%"; });
 
     function smoothS(k) { return k * k * (3 - 2 * k); }
     const start = performance.now();
     function loop(now) {
       const tSec = (now - start) / 1000;
-      [garzaEl, tinguaEl, patoEl].forEach((el, i) => {
-        if (el.style.display === "none") return;
-        const cyc = 12 + i * 2, phase = i * 4;
-        const t = ((tSec + phase) % cyc) / cyc;
-        const k = smoothS(t);
-        const FAR = 260;
-        const x = FAR * Math.cos(k * Math.PI);
-        const bob = Math.sin(tSec * 4 + phase) * 2;
-        el.style.transform = `translate(${x}px, ${bob}px) scaleX(${Math.cos(k * Math.PI) < 0 ? -1 : 1})`;
-      });
+      const step = sectionBirdStep;
+      // --- Garza: en capa 3 y 4 entra desde la IZQUIERDA y se posa en el
+      // centro (donde esta el humedal) ---
+      if (garzaEl.style.display !== "none") {
+        const cyc = 10, t = (tSec % cyc) / cyc, k = smoothS(Math.min(1, t / 0.4));
+        const FROM = -180; // izquierda, afuera del recuadro
+        const x = FROM * (1 - k); // llega y se queda en 0 (centro)
+        const bob = Math.sin(tSec * 3) * 1.5;
+        garzaEl.style.transform = `translate(${x}px, ${bob}px)`;
+      }
+      // --- Pato: solo capa 4, entra desde la DERECHA (migra desde
+      // Norteamerica) y tambien se posa en el centro ---
+      if (patoEl.style.display !== "none") {
+        const cyc = 11, t = (tSec % cyc) / cyc, k = smoothS(Math.min(1, t / 0.4));
+        const FROM = 200; // derecha, afuera del recuadro
+        const x = FROM * (1 - k);
+        const bob = Math.sin(tSec * 3.4 + 2) * 1.5;
+        patoEl.style.transform = `translate(${x}px, ${bob}px) scaleX(-1)`;
+      }
+      // --- Tingua: empieza en el centro (ya estaba ahi en capa 3) y se
+      // corre hacia el borde del humedal una vez llega la garza ---
+      if (tinguaEl.style.display !== "none") {
+        const toEdge = step >= 5; // desde que entra a la capa de aves
+        const targetX = toEdge ? -70 : 0;
+        const cyc = 9, t = (tSec % cyc) / cyc;
+        const settle = Math.min(1, tSec / 3); // se corre una sola vez, suave, al entrar
+        const x = targetX * smoothS(settle);
+        const bob = Math.sin(tSec * 2.6 + 1) * 1.2;
+        tinguaEl.style.transform = `translate(${x}px, ${bob}px)`;
+      }
       sectionBirdsRaf = requestAnimationFrame(loop);
     }
     sectionBirdsRaf = requestAnimationFrame(loop);
@@ -442,12 +464,14 @@
   }
   function syncSectionBirdsToLayer(step) {
     buildSectionBirds();
+    sectionBirdStep = step;
     const stage = document.getElementById("sectionBirdStage");
     if (!stage || !stage.__garza) return;
-    const aveStep = (step === 5 || step === 6 || step === 7 || step === 8);
-    stage.__garza.style.display = aveStep ? "block" : "none";
-    stage.__tingua.style.display = aveStep ? "block" : "none";
-    stage.__pato.style.display = aveStep ? "block" : "none";
+    const capa3 = (step === 5 || step === 6);
+    const capa4 = (step === 7 || step === 8);
+    stage.__tingua.style.display = (capa3 || capa4) ? "block" : "none";
+    stage.__garza.style.display = (capa3 || capa4) ? "block" : "none";
+    stage.__pato.style.display = capa4 ? "block" : "none";
   }
   function syncSceneToLayer() {
     const step = typeof natExplodeStep !== "undefined" ? natExplodeStep : 0;
@@ -456,6 +480,8 @@
     // (vegetacion), no en la de aves.
     const mirlaStep = (step === 3 || step === 4);
     if (typeof birdsGroup !== "undefined" && birdsGroup) birdsGroup.visible = mirlaStep;
+    if (mirlaStep) { if (typeof startNatMirlaAnim === "function") startNatMirlaAnim(); }
+    else { if (typeof stopNatMirlaAnim === "function") stopNatMirlaAnim(); }
     // Ninguna de las capas de la escala natural muestra realmente
     // vehiculos ni ruido en su axonometria -- se ocultan siempre aqui,
     // solo se ve lo que efectivamente aparece en cada capa.
@@ -500,13 +526,12 @@
       rows += legendRow(legendDotIcon("#a3e635", true), "Urapán");
       rows += legendRow(legendImgIcon2("corte-burro-referencia.png", "1261px 891px", "-803px -689px"), "Mirlas");
     } else if (step === 5 || step === 6) {
-      // Capa 3: Agentes bioticos -- tingua, garza y pato, imagenes reales
+      // Capa 3: tingua y garza (el pato va en la Capa 4, es la que llega
+      // en epoca de migracion)
       rows += legendRow(legendImgIcon("assets/tingua.png"), "Tingua");
       rows += legendRow(legendImgIcon("assets/garza.png"), "Garza");
-      rows += legendRow(legendImgIcon("assets/pato.png"), "Pato");
     } else if (step === 7 || step === 8) {
-      // Capa 4: no se ve vias/vehiculos en esta capa -- tambien son
-      // tingua, garza y pato
+      // Capa 4: tingua, garza y pato (migracion desde Norteamerica)
       rows += legendRow(legendImgIcon("assets/tingua.png"), "Tingua");
       rows += legendRow(legendImgIcon("assets/garza.png"), "Garza");
       rows += legendRow(legendImgIcon("assets/pato.png"), "Pato");
@@ -1955,7 +1980,7 @@
       sceneExtentW = w; sceneExtentH = h;
       if (typeof updateSectionBox === "function") updateSectionBox();
       rebuildFilteredGeometry();
-      viewSize = Math.max(w, h) * 0.135; // mas zoom (antes 0.155) para que se vea mas grande en el recuadro reducido del panel
+      viewSize = Math.max(w, h) * 0.165; // un poco mas de contexto alrededor del diamante, para que el difuminado tenga espacio sin tocar el area de estudio
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
@@ -4708,7 +4733,65 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
   // CAPA 2: Estratificación Vegetal y Cobertura Florística
   // Tonos realistas: Verde salvia, verde oliva desaturado, ocre terroso para Typha y copas de árboles con volumen sombreado
   // ============================================================
+  // ---- Mirlas dibujadas EN LA PROPIA AXONOMETRIA de la Capa 2 (antes
+  // solo se veian en el corte 3D) -- vuelan entre los arboles de color
+  // (Sauco/Capuli/Urapan) que ya se identifican al dibujar la capa. ----
+  let natMirlaTreePts = [];
+  let natMirlaBirds = null, natMirlaRaf = null;
+  function startNatMirlaAnim() {
+    const canvas = document.getElementById("natMirlaCanvas");
+    if (!canvas) return;
+    if (natMirlaRaf) cancelAnimationFrame(natMirlaRaf);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    function resize() {
+      const r = canvas.getBoundingClientRect();
+      canvas.width = Math.round((r.width || 720) * dpr);
+      canvas.height = Math.round((r.height || 405) * dpr);
+    }
+    resize();
+    const ctx = canvas.getContext("2d");
+    if (!natMirlaBirds || natMirlaBirds.length === 0) {
+      natMirlaBirds = Array.from({ length: 5 }, (_, i) => ({ from: i, to: i, t: 1, dur: 2.5 + Math.random() * 2, phase: Math.random() * 5 }));
+    }
+    const start = performance.now();
+    function pickTargets() {
+      if (natMirlaTreePts.length < 2) return;
+      natMirlaBirds.forEach(b => {
+        b.fromPt = natMirlaTreePts[Math.floor(Math.random() * natMirlaTreePts.length)];
+        b.toPt = natMirlaTreePts[Math.floor(Math.random() * natMirlaTreePts.length)];
+      });
+    }
+    pickTargets();
+    function loop(now) {
+      const tSec = (now - start) / 1000;
+      ctx.resetTransform(); ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (natMirlaTreePts.length >= 2) {
+        natMirlaBirds.forEach(b => {
+          if (!b.fromPt || !b.toPt) { b.fromPt = natMirlaTreePts[0]; b.toPt = natMirlaTreePts[1 % natMirlaTreePts.length]; }
+          let t = ((tSec + b.phase) % (b.dur * 2)) / b.dur;
+          let k; if (t < 1) { k = t; } else { k = 2 - t; } // va y vuelve
+          const ks = k * k * (3 - 2 * k);
+          const x = b.fromPt.x + (b.toPt.x - b.fromPt.x) * ks;
+          const y = b.fromPt.y + (b.toPt.y - b.fromPt.y) * ks - Math.sin(ks * Math.PI) * 14; // arco al volar
+          ctx.beginPath();
+          ctx.ellipse(x, y, 3.2, 1.8, 0, 0, Math.PI * 2);
+          ctx.fillStyle = "#1c1c1c";
+          ctx.fill();
+        });
+      }
+      natMirlaRaf = requestAnimationFrame(loop);
+    }
+    natMirlaRaf = requestAnimationFrame(loop);
+  }
+  function stopNatMirlaAnim() {
+    if (natMirlaRaf) cancelAnimationFrame(natMirlaRaf);
+    natMirlaRaf = null;
+    const canvas = document.getElementById("natMirlaCanvas");
+    if (canvas) { const ctx = canvas.getContext("2d"); ctx.clearRect(0, 0, canvas.width, canvas.height); }
+  }
   function renderNaturalVegLayer(mesNum) {
+    natMirlaTreePts = [];
     if (!natVegCanvas) return;
     const rect = natVegCanvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -4820,6 +4903,11 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
         ctx.lineWidth = 0.6;
         ctx.strokeStyle = "rgba(255,255,255,0.7)";
         ctx.stroke();
+        // Se guarda la posicion en pantalla para que las mirlas (abajo)
+        // sepan a que arboles volar, igual que en el corte 3D.
+        if (espLower.includes("sauco") || espLower.includes("saúco") || espLower.includes("cerezo") || espLower.includes("capul") || espLower.includes("urapan") || espLower.includes("urapán") || espLower.includes("fresno")) {
+          natMirlaTreePts.push({ x: pt.x, y: pt.y });
+        }
       });
     }
 
