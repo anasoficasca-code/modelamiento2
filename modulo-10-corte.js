@@ -413,66 +413,84 @@
     function sprite(src, wPct, wOverH) {
       const el = document.createElement("div");
       el.className = "sectionBirdSprite";
-      el.style.cssText = `position:absolute; width:${wPct}%; height:auto; aspect-ratio:${wOverH}; background-image:url(${src}); background-repeat:no-repeat; background-size:100% 100%; pointer-events:none; display:none;`;
+      // mix-blend-mode:multiply quita el fondo blanco de las fotos.
+      el.style.cssText = `position:absolute; width:${wPct}%; height:auto; aspect-ratio:${wOverH}; background-image:url(${src}); background-repeat:no-repeat; background-size:100% 100%; pointer-events:none; display:none; mix-blend-mode:multiply;`;
       stage.appendChild(el);
       return el;
     }
-    // Tamanos pequenos, pegados a la franja del humedal en el corte.
-    const garzaEl = sprite("assets/garza.png", 2.6, 79/200);
-    const tinguaEl = sprite("assets/tingua.png", 3.0, 166/200);
-    const patoEl = sprite("assets/pato.png", 3.4, 1024/767);
-    [garzaEl, tinguaEl, patoEl].forEach(el => { el.style.top = "52%"; el.style.left = "50%"; });
-
     function smoothS(k) { return k * k * (3 - 2 * k); }
+
+    // Varias tinguas, ya en el centro del humedal desde el principio.
+    const tinguas = Array.from({ length: 3 }, (_, i) => {
+      const el = sprite("assets/tingua.png", 2.2, 166/200);
+      el.style.top = "54%"; el.style.left = (46 + i * 4) + "%";
+      return { el, baseLeft: 46 + i * 4, phase: i * 2, toEdge: false };
+    });
+    // Varias garzas, entran volando desde la izquierda, se posan justo
+    // sobre la linea del agua (no debajo).
+    const garzas = Array.from({ length: 2 }, (_, i) => {
+      const el = sprite("assets/garza.png", 1.8, 79/200);
+      el.style.top = "48%"; el.style.left = "50%";
+      return { el, phase: i * 3, dur: 9 + i * 1.5, offsetX: i * 6 - 3 };
+    });
+    // Pato: entra volando desde ARRIBA del corte, aleteando, hasta el
+    // centro del humedal (migracion desde Norteamerica).
+    const patoEl = sprite("assets/pato.png", 2.6, 1024/767);
+    patoEl.style.top = "50%"; patoEl.style.left = "50%";
+
     const start = performance.now();
     function loop(now) {
       const tSec = (now - start) / 1000;
-      const step = sectionBirdStep;
-      // --- Garza: en capa 3 y 4 entra desde la IZQUIERDA y se posa en el
-      // centro (donde esta el humedal) ---
-      if (garzaEl.style.display !== "none") {
-        const cyc = 10, t = (tSec % cyc) / cyc, k = smoothS(Math.min(1, t / 0.4));
-        const FROM = -180; // izquierda, afuera del recuadro
-        const x = FROM * (1 - k); // llega y se queda en 0 (centro)
-        const bob = Math.sin(tSec * 3) * 1.5;
-        garzaEl.style.transform = `translate(${x}px, ${bob}px)`;
-      }
-      // --- Pato: solo capa 4, entra desde la DERECHA (migra desde
-      // Norteamerica) y tambien se posa en el centro ---
+      const garzasLlegaron = garzas.some(g => {
+        const t = (tSec + g.phase) % g.dur;
+        return t > g.dur * 0.35; // ya aterrizo
+      });
+      garzas.forEach(g => {
+        if (g.el.style.display === "none") return;
+        const t = ((tSec + g.phase) % g.dur) / g.dur;
+        const k = smoothS(Math.min(1, t / 0.35));
+        const FROM = -200;
+        const x = FROM * (1 - k) + g.offsetX;
+        const dip = Math.sin(Math.min(1, t / 0.35) * Math.PI) * -6; // llega por arriba y se posa EN la linea
+        const flying = t < 0.35;
+        const flap = flying ? (1 - Math.abs(Math.sin(tSec * 9 + g.phase)) * 0.3) : 1;
+        g.el.style.transform = `translate(${x}px, ${dip}px) scaleY(${flap})`;
+      });
+      tinguas.forEach(tg => {
+        if (tg.el.style.display === "none") return;
+        // cuando llegan las garzas, las tinguas se corren a los bordes
+        const targetOffset = garzasLlegaron ? (tg.baseLeft < 50 ? -14 : 14) : 0;
+        if (tg._cur === undefined) tg._cur = 0;
+        tg._cur += (targetOffset - tg._cur) * 0.02; // se corren suave, una sola vez
+        const bob = Math.sin(tSec * 2.4 + tg.phase) * 1.2;
+        tg.el.style.transform = `translate(${tg._cur}px, ${bob}px)`;
+      });
       if (patoEl.style.display !== "none") {
-        const cyc = 11, t = (tSec % cyc) / cyc, k = smoothS(Math.min(1, t / 0.4));
-        const FROM = 200; // derecha, afuera del recuadro
-        const x = FROM * (1 - k);
-        const bob = Math.sin(tSec * 3.4 + 2) * 1.5;
-        patoEl.style.transform = `translate(${x}px, ${bob}px) scaleX(-1)`;
-      }
-      // --- Tingua: empieza en el centro (ya estaba ahi en capa 3) y se
-      // corre hacia el borde del humedal una vez llega la garza ---
-      if (tinguaEl.style.display !== "none") {
-        const toEdge = step >= 5; // desde que entra a la capa de aves
-        const targetX = toEdge ? -70 : 0;
-        const cyc = 9, t = (tSec % cyc) / cyc;
-        const settle = Math.min(1, tSec / 3); // se corre una sola vez, suave, al entrar
-        const x = targetX * smoothS(settle);
-        const bob = Math.sin(tSec * 2.6 + 1) * 1.2;
-        tinguaEl.style.transform = `translate(${x}px, ${bob}px)`;
+        const cyc = 12, t = (tSec % cyc) / cyc, k = smoothS(Math.min(1, t / 0.4));
+        const FROMY = -140; // arriba del corte
+        const y = FROMY * (1 - k);
+        const flying = t < 0.4;
+        const flap = flying ? (1 - Math.abs(Math.sin(tSec * 11)) * 0.35) : 1;
+        patoEl.style.transform = `translate(0, ${y}px) scaleY(${flap})`;
       }
       sectionBirdsRaf = requestAnimationFrame(loop);
     }
     sectionBirdsRaf = requestAnimationFrame(loop);
-    stage.__garza = garzaEl; stage.__tingua = tinguaEl; stage.__pato = patoEl;
+    stage.__tinguas = tinguas; stage.__garzas = garzas; stage.__pato = patoEl;
   }
   function syncSectionBirdsToLayer(step) {
     buildSectionBirds();
     sectionBirdStep = step;
     const stage = document.getElementById("sectionBirdStage");
-    if (!stage || !stage.__garza) return;
+    if (!stage || !stage.__tinguas) return;
     const capa3 = (step === 5 || step === 6);
     const capa4 = (step === 7 || step === 8);
-    stage.__tingua.style.display = (capa3 || capa4) ? "block" : "none";
-    stage.__garza.style.display = (capa3 || capa4) ? "block" : "none";
+    const dispBirds = (capa3 || capa4) ? "block" : "none";
+    stage.__tinguas.forEach(tg => tg.el.style.display = dispBirds);
+    stage.__garzas.forEach(g => g.el.style.display = dispBirds);
     stage.__pato.style.display = capa4 ? "block" : "none";
   }
+
   function syncSceneToLayer() {
     const step = typeof natExplodeStep !== "undefined" ? natExplodeStep : 0;
     // Las mirlas (birdsGroup) ya estan programadas para ir a los arboles
@@ -518,13 +536,14 @@
       rows += legendRow(legendDotIcon("#0ea5e9"), "Río Tunjuelo");
       rows += legendRow(legendDotIcon("#7dd3fc", true), "Humedal El Burro");
       rows += legendRow(legendDotIcon("#7dd3fc", true), "Humedal La Vaca");
+      rows += legendRow(legendDotIcon("#f97316", true), "Especies invasoras (Kikuyo, Enea, Junquera)");
     } else if (step === 3 || step === 4) {
       // Capa 2: Cobertura vegetal -- los 3 colores de arboles (sin el
       // nombre del color entre parentesis, ya se ve en el icono)
       rows += legendRow(legendDotIcon("#b06bff", true), "Saúco");
       rows += legendRow(legendDotIcon("#ff5fa8", true), "Capulí");
       rows += legendRow(legendDotIcon("#a3e635", true), "Urapán");
-      rows += legendRow(legendImgIcon2("corte-burro-referencia.png", "1261px 891px", "-803px -689px"), "Mirlas");
+      rows += legendRow(`<i style="width:20px; height:20px; flex:none; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M2 14 Q8 6 12 12 Q16 6 22 14 Q16 11 12 15 Q8 11 2 14 Z" fill="#1c1c1c"/></svg></i>`, "Mirlas");
     } else if (step === 5 || step === 6) {
       // Capa 3: tingua y garza (el pato va en la Capa 4, es la que llega
       // en epoca de migracion)
@@ -1980,7 +1999,7 @@
       sceneExtentW = w; sceneExtentH = h;
       if (typeof updateSectionBox === "function") updateSectionBox();
       rebuildFilteredGeometry();
-      viewSize = Math.max(w, h) * 0.165; // un poco mas de contexto alrededor del diamante, para que el difuminado tenga espacio sin tocar el area de estudio
+      viewSize = Math.max(w, h) * 0.145; // axonometria un poco mas grande (antes 0.165)
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
@@ -4727,6 +4746,26 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
         }
       });
     }
+
+    // Especies invasoras (Kikuyo, Enea, Junquera) -- puntitos naranjas
+    // chiquitos dispersos dentro del espejo de agua.
+    if (burro && burro.pts && burro.pts.length > 3) {
+      const cx2 = burro.pts.reduce((s, p) => s + p[0], 0) / burro.pts.length;
+      const cy2 = burro.pts.reduce((s, p) => s + p[1], 0) / burro.pts.length;
+      let seed = 7;
+      function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+      for (let i = 0; i < 22; i++) {
+        const ang = rnd() * Math.PI * 2, rad = rnd() * 0.75;
+        const px = cx2 + Math.cos(ang) * rad * (burro.pts[0][0] - cx2) * expansionFactor;
+        const py = cy2 + Math.sin(ang) * rad * (burro.pts[0][1] - cy2) * expansionFactor;
+        const pt2 = projectPoint(px, py);
+        if (!pt2.inFront) continue;
+        ctx.beginPath();
+        ctx.arc(pt2.x, pt2.y, 1.1, 0, Math.PI * 2);
+        ctx.fillStyle = "#f97316";
+        ctx.fill();
+      }
+    }
   }
 
   // ============================================================
@@ -4751,31 +4790,42 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
     resize();
     const ctx = canvas.getContext("2d");
     if (!natMirlaBirds || natMirlaBirds.length === 0) {
-      natMirlaBirds = Array.from({ length: 5 }, (_, i) => ({ from: i, to: i, t: 1, dur: 2.5 + Math.random() * 2, phase: Math.random() * 5 }));
+      natMirlaBirds = Array.from({ length: 5 }, (_, i) => ({ dur: 5 + Math.random() * 2, phase: Math.random() * 6 }));
     }
     const start = performance.now();
-    function pickTargets() {
-      if (natMirlaTreePts.length < 2) return;
-      natMirlaBirds.forEach(b => {
-        b.fromPt = natMirlaTreePts[Math.floor(Math.random() * natMirlaTreePts.length)];
-        b.toPt = natMirlaTreePts[Math.floor(Math.random() * natMirlaTreePts.length)];
-      });
-    }
-    pickTargets();
+    function smoothK(k) { return k * k * (3 - 2 * k); }
     function loop(now) {
       const tSec = (now - start) / 1000;
       ctx.resetTransform(); ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (natMirlaTreePts.length >= 2) {
-        natMirlaBirds.forEach(b => {
-          if (!b.fromPt || !b.toPt) { b.fromPt = natMirlaTreePts[0]; b.toPt = natMirlaTreePts[1 % natMirlaTreePts.length]; }
-          let t = ((tSec + b.phase) % (b.dur * 2)) / b.dur;
-          let k; if (t < 1) { k = t; } else { k = 2 - t; } // va y vuelve
-          const ks = k * k * (3 - 2 * k);
-          const x = b.fromPt.x + (b.toPt.x - b.fromPt.x) * ks;
-          const y = b.fromPt.y + (b.toPt.y - b.fromPt.y) * ks - Math.sin(ks * Math.PI) * 14; // arco al volar
+        natMirlaBirds.forEach((b, i) => {
+          const t = ((tSec + b.phase) % b.dur) / b.dur;
+          // Llega al arbol (0-30%), se queda posada (30-70%), sale (70-100%)
+          const cycleIdx = Math.floor((tSec + b.phase) / b.dur);
+          if (b._cycleIdx !== cycleIdx || !b.fromPt) {
+            b._cycleIdx = cycleIdx;
+            b.fromPt = natMirlaTreePts[Math.floor(Math.random() * natMirlaTreePts.length)];
+            b.toPt = natMirlaTreePts[Math.floor(Math.random() * natMirlaTreePts.length)];
+          }
+          let x, y, flapping;
+          if (t < 0.3) {
+            const k = smoothK(t / 0.3);
+            x = b.fromPt.x + (b.toPt.x - b.fromPt.x) * k;
+            y = b.fromPt.y + (b.toPt.y - b.fromPt.y) * k - Math.sin(k * Math.PI) * 10;
+            flapping = true;
+          } else if (t < 0.7) {
+            x = b.toPt.x; y = b.toPt.y; flapping = false; // posada quieta
+          } else {
+            const k = smoothK((t - 0.7) / 0.3);
+            x = b.toPt.x; y = b.toPt.y - k * 12; // se eleva y desaparece
+            flapping = true;
+          }
+          const s = flapping ? (1 - Math.abs(Math.sin(tSec * 10 + i)) * 0.3) : 1;
           ctx.beginPath();
-          ctx.ellipse(x, y, 3.2, 1.8, 0, 0, Math.PI * 2);
+          ctx.moveTo(x - 3.2, y);
+          ctx.quadraticCurveTo(x, y - 2.6 * s, x + 3.2, y);
+          ctx.quadraticCurveTo(x, y - 0.8 * s, x - 3.2, y);
           ctx.fillStyle = "#1c1c1c";
           ctx.fill();
         });
