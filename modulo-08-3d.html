@@ -239,6 +239,17 @@
       <button type="button" id="alinearPlanoCopy" style="width:100%; margin-top:6px; padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:11px; font-weight:700; cursor:pointer;">📋 Copiar coordenadas</button>
     </div>
 
+    <div id="closurePanel" style="position:absolute; top:60px; left:18px; z-index:12; width:300px; background:rgba(17,20,24,.94); border:1px solid #1b2550; border-radius:10px; padding:12px 14px; box-shadow:0 8px 24px rgba(0,0,0,.3); font-family:'Segoe UI',sans-serif; color:#cbd3dc;">
+      <div style="font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#6b7aa8; margin-bottom:6px;">Vehículos</div>
+      <div style="font-size:9.5px; color:#8b96a5; line-height:1.4; margin-bottom:10px;">Modelo ilustrativo/conceptual — no es una re-simulación real de SUMO (este sitio no tiene un servidor que pueda correr SUMO en vivo). Multiplica visualmente los vehículos ya grabados y desvía a los que pasarían por la vía cerrada.</div>
+      <label style="display:block; font-size:10.5px; margin-bottom:4px;">Cerrar vía crítica:</label>
+      <select id="closureSelect" style="width:100%; margin-bottom:8px; padding:5px; border-radius:6px; background:#0b0c0f; color:#e8ecf1; border:1px solid rgba(255,255,255,.15); font-size:11px;">
+        <option value="">— Ninguna (modelo base) —</option>
+      </select>
+      <button type="button" id="closureBtn" style="width:100%; padding:7px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:11px; font-weight:700; cursor:pointer;">Cerrar</button>
+      <div id="closureStatus" style="margin-top:8px; font-size:10px; color:#94a3b8;">Sin cambios — mostrando el modelo base.</div>
+    </div>
+
     <div id="dispersionPanel" style="display:none; position:absolute; bottom:18px; left:18px; z-index:12; width:260px; background:rgba(255,255,255,.96); border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:12px 14px; box-shadow:0 8px 24px rgba(0,0,0,.12); font-family:'Segoe UI',sans-serif; color:#1e293b;">
       <div style="font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:6px;">Dispersión del comercio</div>
       <div style="font-size:10.5px; color:#475569; line-height:1.4; margin-bottom:10px;">Al dispersar el comercio (como Corabastos) en vez de tenerlo concentrado en un solo punto, los carros ya no convergen todos ahí — el tráfico y el ruido alrededor de esa zona bajan.</div>

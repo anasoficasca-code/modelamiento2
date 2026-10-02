@@ -1272,7 +1272,7 @@
     "Urapán, Fresno": { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 },
   };
   const BIRD_VISION = 38, BIRD_ARRIVE = 1.4, BIRD_WIND = 1.5, BIRD_MAX_SPEED = 4.2; // vision ampliada (antes 14): con 780 arboles repartidos en toda la ciudad, un campo visual chico hacia que muchas mirlas nunca encontraran ningun arbol cerca y parecieran "no atraerse" a nada
-  const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2; let BIRD_COUNT = 90; // 90 de inicio (antes 60), ajustable luego con el slider
+  const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 9.5; let BIRD_COUNT = 90; // 90 de inicio (antes 60), ajustable luego con el slider -- K_REP subido de 4.2 a 9.5 para que el escape del ruido se note mucho mas fuerte y claro
   const REFUGE_X = 3600, REFUGE_Y = 1000, REFUGE_R = 220; // esquina noroeste real del area de Kennedy
   let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null, allTreesData = null, birdsSnappedToTrees = false;
   let noiseEdgesRaw = null; // se reusan los mismos datos reales de ruido ya cargados
@@ -2032,6 +2032,7 @@
   const dummy = new THREE.Object3D();
 
   let timesteps = [];
+  let netEdges = null; // segmentos reales de la red vial (kennedy_net.json), para el cierre de vias
   let playing = false;
   let currentTime = 0;
   let speed = 2;
@@ -2047,12 +2048,217 @@
     return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
   }
 
+  // =====================================================================
+  // CIERRE DE VIA CON RERUTEO REAL (portado del modulo 2D, modulo-08-sumo.js)
+  // IMPORTANTE: modelo ilustrativo/conceptual, no una re-simulacion SUMO
+  // real -- multiplica/desvia visualmente los MISMOS vehiculos grabados,
+  // pero el desvio en si SI es un camino real por Dijkstra sobre las
+  // calles existentes (kennedy_net.json), no un empujon visual al lado.
+  // =====================================================================
+  let closedEdgeIdx = null;
+  let detourMap = new Map();
+  const CLOSURE_CANDIDATES = [
+    { edgeIdx: 9847, label: "Vía crítica 1 (mayor tránsito registrado)" },
+    { edgeIdx: 11268, label: "Vía crítica 2" },
+    { edgeIdx: 8260, label: "Vía crítica 3" },
+    { edgeIdx: 9919, label: "Vía crítica 4" },
+    { edgeIdx: 10240, label: "Vía crítica 5" },
+    { edgeIdx: 9449, label: "Vía crítica 6" },
+  ];
+
+  // ---- UI de cierre de via: llenar el dropdown y manejar el boton
+  // "Cerrar" -- calcula el reruteo real (Dijkstra) sobre la red vial ya
+  // cargada y aplica el desvio a los vehiculos que pasarian cerca. ----
+  const closureSelect = document.getElementById("closureSelect");
+  if (closureSelect) {
+    CLOSURE_CANDIDATES.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = String(c.edgeIdx);
+      opt.textContent = c.label;
+      closureSelect.appendChild(opt);
+    });
+  }
+  const closureBtn = document.getElementById("closureBtn");
+  const closureStatus = document.getElementById("closureStatus");
+  if (closureBtn) closureBtn.addEventListener("click", () => {
+    const val = closureSelect ? closureSelect.value : "";
+    if (!val) {
+      closedEdgeIdx = null;
+      detourMap = new Map();
+      if (closureStatus) closureStatus.textContent = "Sin cambios — mostrando el modelo base.";
+      return;
+    }
+    if (!netEdges || !timesteps.length) {
+      if (closureStatus) closureStatus.textContent = "Todavía se está cargando la red vial, intenta de nuevo en un momento.";
+      return;
+    }
+    closedEdgeIdx = Number(val);
+    if (closureStatus) closureStatus.textContent = "Calculando desvíos reales por las calles vecinas…";
+    // El calculo de Dijkstra puede tardar un poco con muchos vehiculos --
+    // se corre despues de pintar el mensaje, para que no se sienta trabado.
+    setTimeout(() => {
+      computeRealDetours(closedEdgeIdx);
+      if (closureStatus) {
+        const label = CLOSURE_CANDIDATES.find(c => c.edgeIdx === closedEdgeIdx)?.label || "";
+        closureStatus.textContent = `${label}: cerrada. ${detourMap.size} vehículo(s) desviados por calles reales vecinas.`;
+      }
+    }, 30);
+  });
+
+  function distToSegment(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay;
+    const len2 = dx * dx + dy * dy;
+    let t = len2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    const cx = ax + t * dx, cy = ay + t * dy;
+    return Math.hypot(px - cx, py - cy);
+  }
+  function buildLocalGraphAround(closedIdx, radiusM) {
+    const closedPts = netEdges[closedIdx][1];
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    closedPts.forEach(([x, y]) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); });
+    minX -= radiusM; maxX += radiusM; minY -= radiusM; maxY += radiusM;
+    const nodes = new Map(); const adj = new Map();
+    const SNAP_M = 22;
+    const nodeKey = (x, y) => Math.round(x / SNAP_M) + "," + Math.round(y / SNAP_M);
+    const addNode = (x, y) => { const k = nodeKey(x, y); if (!nodes.has(k)) nodes.set(k, { x, y }); return k; };
+    const addEdgeBidir = (k1, k2, dist) => {
+      if (k1 === k2) return;
+      if (!adj.has(k1)) adj.set(k1, []);
+      if (!adj.has(k2)) adj.set(k2, []);
+      adj.get(k1).push({ to: k2, dist });
+      adj.get(k2).push({ to: k1, dist });
+    };
+    netEdges.forEach(([, pts], edgeIdx) => {
+      if (edgeIdx === closedIdx) return;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+        const inside = (ax >= minX && ax <= maxX && ay >= minY && ay <= maxY) || (bx >= minX && bx <= maxX && by >= minY && by <= maxY);
+        if (!inside) continue;
+        const dist = Math.hypot(bx - ax, by - ay);
+        if (dist > 0) addEdgeBidir(addNode(ax, ay), addNode(bx, by), dist);
+      }
+    });
+    return { nodes, adj, nodeKey };
+  }
+  function findNearestGraphNode(graph, x, y) {
+    let best = null, bestD = Infinity;
+    graph.nodes.forEach((p, key) => {
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (d < bestD) { bestD = d; best = key; }
+    });
+    return best;
+  }
+  function dijkstraPath(graph, startKey, endKey) {
+    const dist = new Map([[startKey, 0]]);
+    const prev = new Map();
+    const visited = new Set();
+    const heap = [[0, startKey]];
+    const heapPush = (item) => {
+      heap.push(item);
+      let i = heap.length - 1;
+      while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }
+    };
+    const heapPop = () => {
+      const top = heap[0]; const last = heap.pop();
+      if (heap.length) {
+        heap[0] = last; let i = 0;
+        while (true) {
+          let l = 2 * i + 1, r = 2 * i + 2, s = i;
+          if (l < heap.length && heap[l][0] < heap[s][0]) s = l;
+          if (r < heap.length && heap[r][0] < heap[s][0]) s = r;
+          if (s === i) break;
+          [heap[s], heap[i]] = [heap[i], heap[s]]; i = s;
+        }
+      }
+      return top;
+    };
+    while (heap.length) {
+      const [d, u] = heapPop();
+      if (visited.has(u)) continue;
+      visited.add(u);
+      if (u === endKey) break;
+      (graph.adj.get(u) || []).forEach(({ to, dist: w }) => {
+        const nd = d + w;
+        if (nd < (dist.get(to) ?? Infinity)) { dist.set(to, nd); prev.set(to, u); heapPush([nd, to]); }
+      });
+    }
+    if (!dist.has(endKey)) return null;
+    const path = []; let cur = endKey;
+    while (cur !== undefined) { path.push(graph.nodes.get(cur)); if (cur === startKey) break; cur = prev.get(cur); }
+    return path.reverse();
+  }
+  const DETOUR_THRESHOLD_M = 45, DETOUR_MAX_VEHICLES = 180;
+  function computeRealDetours(closedIdx) {
+    detourMap = new Map();
+    if (!netEdges || !timesteps.length) return;
+    const graph = buildLocalGraphAround(closedIdx, 900);
+    const closedPts = netEdges[closedIdx][1];
+    const near = new Map();
+    timesteps.forEach((step) => {
+      step.vehicles.forEach((v) => {
+        let minD = Infinity;
+        for (let i = 0; i < closedPts.length - 1; i++) {
+          const d = distToSegment(v.x, v.y, closedPts[i][0], closedPts[i][1], closedPts[i + 1][0], closedPts[i + 1][1]);
+          if (d < minD) minD = d;
+        }
+        if (minD < DETOUR_THRESHOLD_M) {
+          if (!near.has(v.id)) near.set(v.id, []);
+          near.get(v.id).push({ time: step.time, x: v.x, y: v.y });
+        }
+      });
+    });
+    let count = 0;
+    for (const [id, samples] of near) {
+      if (count >= DETOUR_MAX_VEHICLES) break;
+      samples.sort((a, b) => a.time - b.time);
+      const first = samples[0], last = samples[samples.length - 1];
+      const entryStart = findNearestGraphNode(graph, first.x, first.y);
+      const exitEnd = findNearestGraphNode(graph, last.x, last.y);
+      if (!entryStart || !exitEnd || entryStart === exitEnd) continue;
+      const path = dijkstraPath(graph, entryStart, exitEnd);
+      if (!path || path.length < 2) continue;
+      let totalDist = 0;
+      for (let i = 0; i < path.length - 1; i++) totalDist += Math.hypot(path[i + 1].x - path[i].x, path[i + 1].y - path[i].y);
+      detourMap.set(id, { fromTime: first.time, toTime: last.time, path, totalDist });
+      count++;
+    }
+  }
+  function detourPositionAt(detour, t) {
+    const span = detour.toTime - detour.fromTime || 1;
+    const frac = Math.max(0, Math.min(1, (t - detour.fromTime) / span));
+    const targetDist = frac * detour.totalDist;
+    let acc = 0;
+    for (let i = 0; i < detour.path.length - 1; i++) {
+      const a = detour.path[i], b = detour.path[i + 1];
+      const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+      if (acc + segLen >= targetDist) {
+        const segFrac = segLen > 0 ? (targetDist - acc) / segLen : 0;
+        return { x: a.x + (b.x - a.x) * segFrac, y: a.y + (b.y - a.y) * segFrac };
+      }
+      acc += segLen;
+    }
+    const lastP = detour.path[detour.path.length - 1];
+    return { x: lastP.x, y: lastP.y };
+  }
+  function applyClosureDetour(baseVehicles, t) {
+    if (closedEdgeIdx == null || !detourMap.size) return baseVehicles;
+    return baseVehicles.map((v) => {
+      const detour = detourMap.get(v.id);
+      if (detour && t >= detour.fromTime && t <= detour.toTime) {
+        const p = detourPositionAt(detour, t);
+        return { id: v.id, x: p.x, y: p.y };
+      }
+      return v;
+    });
+  }
+
   let lastAngle = {}; // rumbo persistente por vehiculo, para no perderlo cuando esta detenido
   function vehiclesAtTime(t) {
     if (!timesteps.length) return [];
-    if (t <= timesteps[0].time) return timesteps[0].vehicles.map(v => ({ id: v.id, x: v.x, y: v.y }));
+    if (t <= timesteps[0].time) return applyClosureDetour(timesteps[0].vehicles.map(v => ({ id: v.id, x: v.x, y: v.y })), t);
     const last = timesteps[timesteps.length - 1];
-    if (t >= last.time) return last.vehicles.map(v => ({ id: v.id, x: v.x, y: v.y }));
+    if (t >= last.time) return applyClosureDetour(last.vehicles.map(v => ({ id: v.id, x: v.x, y: v.y })), t);
     let lo = 0, hi = timesteps.length - 1;
     while (hi - lo > 1) {
       const mid = (lo + hi) >> 1;
@@ -2061,7 +2267,7 @@
     const a = timesteps[lo], b = timesteps[hi];
     const frac = (t - a.time) / (b.time - a.time || 1);
     const bMap = {}; b.vehicles.forEach(v => bMap[v.id] = v);
-    return a.vehicles.map(v => {
+    const interpolated = a.vehicles.map(v => {
       const bv = bMap[v.id];
       if (!bv) return { id: v.id, x: v.x, y: v.y };
       // El rumbo se calcula con el DESPLAZAMIENTO REAL entre 2 pasos de
@@ -2076,6 +2282,7 @@
       if (Math.hypot(dx, dz) > 0.05) lastAngle[v.id] = Math.atan2(dx, dz);
       return { id: v.id, x: v.x + (bv.x - v.x) * frac, y: v.y + (bv.y - v.y) * frac };
     });
+    return applyClosureDetour(interpolated, t);
   }
 
   function renderVehiclesAt(t) {
@@ -2121,6 +2328,7 @@
   fetch(NET_URL)
     .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + NET_URL); return r.json(); })
     .then(data => {
+      netEdges = data.edges; // se guarda para el cierre de vias con reruteo real (Dijkstra)
       netCenter = { x: (data.bbox[0] + data.bbox[2]) / 2, y: (data.bbox[1] + data.bbox[3]) / 2 };
       buildGround(data.bbox);
       buildNoiseGround(data.bbox);
