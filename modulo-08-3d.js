@@ -471,7 +471,8 @@
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + TREES_URL); return r.json(); })
       .then(data => {
         buildTrees(data);
-        birdTreesGrid = buildBirdTreeGrid(sampleAttractorTrees(data));
+        allTreesData = data;
+        birdTreesGrid = buildBirdTreeGrid(sampleAttractorTrees(data, 0));
       })
       .catch(err => console.warn("No se pudieron cargar los árboles:", err));
   }
@@ -1104,12 +1105,13 @@
     "Urapán, Fresno": { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 },
   };
   const BIRD_VISION = 14, BIRD_ARRIVE = 1.4, BIRD_WIND = 1.5, BIRD_MAX_SPEED = 4.2;
-  const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 50;
+  const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 60; // 60, igual que en la simulacion 2D (antes 50)
   const REFUGE_X = 3600, REFUGE_Y = 1000, REFUGE_R = 220; // esquina noroeste real del area de Kennedy
-  let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null;
+  let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null, allTreesData = null;
   let noiseEdgesRaw = null; // se reusan los mismos datos reales de ruido ya cargados
 
-  function sampleAttractorTrees(trees) {
+  function sampleAttractorTrees(trees, vegBoost) {
+    const factor = 1 + (vegBoost || 0) / 100; // igual formula que la simulacion 2D
     const porEspecie = {};
     trees.forEach(t => {
       const meta = BIRD_TREE_SPECIES[t[3]];
@@ -1119,10 +1121,39 @@
     Object.keys(porEspecie).forEach(k => {
       const lista = porEspecie[k];
       const meta = lista[0].meta;
-      const paso = Math.max(1, Math.floor(lista.length / meta.base));
+      const tope = Math.round(meta.base * factor);
+      const paso = Math.max(1, Math.floor(lista.length / tope));
       for (let i = 0; i < lista.length; i += paso) out.push(lista[i]);
     });
     return out;
+  }
+  function rebuildBirdTreesWithBoost(vegBoost) {
+    if (!allTreesData) return;
+    const attractors = sampleAttractorTrees(allTreesData, vegBoost);
+    birdTreesGrid = buildBirdTreeGrid(attractors);
+    const countEl = document.getElementById("bioVegCount");
+    if (countEl) countEl.textContent = attractors.length.toLocaleString("es-CO");
+  }
+  function setBirdCount(n) {
+    const target = Math.max(1, Math.round(n));
+    if (!birds.length || !birdsGroup) return;
+    const birdTexUpRef = birdTexUp, birdTexDownRef = birdTexDown;
+    while (birds.length > target) {
+      const b = birds.pop();
+      birdsGroup.remove(b.sprite);
+    }
+    while (birds.length < target) {
+      const refugeCount = Math.max(4, Math.round(target * 0.15));
+      const origen = birds.length < refugeCount ? "refugio" : (birds.length % 2 ? "humedal" : "oriente");
+      const b = makeBirdAgent(origen);
+      const spriteMat = new THREE.SpriteMaterial({ map: birdTexUpRef, transparent: true, alphaTest: 0.15, depthWrite: false, depthTest: false });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(9, 9, 1);
+      sprite.renderOrder = 999;
+      birdsGroup.add(sprite);
+      b.sprite = sprite;
+      birds.push(b);
+    }
   }
   const BIRD_CELL = 25; // metros reales por celda de la rejilla de arboles
   function buildBirdTreeGrid(attractors) {
@@ -1828,6 +1859,21 @@
     birdsGroup.visible = !birdsGroup.visible;
     e.target.classList.toggle("active", birdsGroup.visible);
     e.target.textContent = birdsGroup.visible ? "🐦 Ocultar mirlas" : "🐦 Mostrar mirlas";
+    const panel = document.getElementById("bioPanel");
+    if (panel) panel.style.display = birdsGroup.visible ? "block" : "none";
+    if (birdsGroup.visible) rebuildBirdTreesWithBoost(Number(document.getElementById("bioVegSlider")?.value || 0));
+  });
+  const bioBirdSlider = document.getElementById("bioBirdSlider");
+  const bioBirdCountVal = document.getElementById("bioBirdCountVal");
+  if (bioBirdSlider) bioBirdSlider.addEventListener("input", () => {
+    setBirdCount(Number(bioBirdSlider.value));
+    if (bioBirdCountVal) bioBirdCountVal.textContent = bioBirdSlider.value;
+  });
+  const bioVegSlider = document.getElementById("bioVegSlider");
+  const bioVegVal = document.getElementById("bioVegVal");
+  if (bioVegSlider) bioVegSlider.addEventListener("input", () => {
+    rebuildBirdTreesWithBoost(Number(bioVegSlider.value));
+    if (bioVegVal) bioVegVal.textContent = `+${bioVegSlider.value}%`;
   });
 
   // ---- Reloj climatico anual del Humedal El Burro ----
