@@ -224,6 +224,17 @@
       </div>
       <div style="margin-top:10px; padding-top:8px; border-top:1px dashed rgba(0,0,0,.12); font-size:10px; color:#64748b;">Clic en un edificio para cambiarle el color.</div>
       <div id="usosSueloLoading" style="margin-top:8px; font-size:10px; color:#94a3b8;"></div>
+      <div id="usosCorreccionesBox" style="display:none; margin-top:10px; padding-top:8px; border-top:1px dashed rgba(0,0,0,.12);">
+        <div style="font-size:10px; color:#64748b; margin-bottom:4px;">Código de correcciones (cópialo y pégamelo):</div>
+        <textarea id="usosCorreccionesOut" rows="2" readonly spellcheck="false" style="width:100%; font:10px monospace; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:5px; resize:vertical; color:#1e293b;"></textarea>
+        <button type="button" id="usosCorreccionesCopy" style="width:100%; margin-top:5px; padding:5px; border-radius:6px; border:1px solid #cbd5e1; background:#f8fafc; font-size:10.5px; cursor:pointer;">📋 Copiar</button>
+      </div>
+    </div>
+
+    <!-- Selector de color para un edificio individual, aparece junto al clic -->
+    <div id="buildingColorPicker" style="display:none; position:absolute; z-index:20; background:rgba(255,255,255,.98); border:1px solid rgba(0,0,0,.12); border-radius:10px; padding:8px; box-shadow:0 10px 30px rgba(0,0,0,.2); font-family:'Segoe UI',sans-serif;">
+      <div style="font-size:9.5px; font-weight:700; color:#64748b; margin-bottom:6px; text-transform:uppercase;">Color de este edificio</div>
+      <div id="buildingColorSwatches" style="display:grid; grid-template-columns:repeat(4,22px); gap:6px;"></div>
     </div>
 
     <!-- Boton del corte arriba a la derecha -->

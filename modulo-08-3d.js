@@ -519,50 +519,71 @@
     "Parqueadero": 0x495057, "Recreacional": 0x8ac926, "Otros": 0xadb5bd
   };
   let usosSueloGroup = null, usosSueloLoading = false;
+  // Mapas que permiten recolorear un edificio individual despues de
+  // construido: por cada vertice se guarda a que edificio pertenece
+  // (bldIndexAttr), y bldVertexRanges[i] = [startVertex, vertexCount]
+  // para poder reescribir solo esos colores sin rehacer todo el mesh.
+  let bldVertexRanges = null;
+  let usosColorAttr = null;
+  let usosGeo = null;
+  const manualColorOverrides = {}; // { buildingIndex: "#rrggbb" } -- correcciones manuales de la usuaria
+  function softenColor(hex) {
+    const c = new THREE.Color(hex);
+    return c.lerp(new THREE.Color(0xffffff), 0.35);
+  }
   function buildUsosSueloBuildings(buildingsArr, usoArr) {
-    const porColor = {}; // colorHex -> array plano de posiciones [x,y,z,...]
     const TALL_THRESHOLD_M = 15; // a partir de esta altura real (metros), si no tiene uso asignado por el plano, se asume Residencial (torres de vivienda son las mas altas en Kennedy)
+    const positions = [];
+    const colors = [];
+    bldVertexRanges = new Array(buildingsArr.length);
     buildingsArr.forEach((b, i) => {
       let uso = usoArr[i];
       if (!uso && b.h >= TALL_THRESHOLD_M) uso = "Residencial";
-      if (!uso) return; // edificio bajo sin uso asignado -- no se pinta
-      const colorHex = USOS_COLORS[uso] !== undefined ? USOS_COLORS[uso] : USOS_COLORS["Otros"];
-      if (!porColor[colorHex]) porColor[colorHex] = [];
+      if (manualColorOverrides[i]) {
+        // override manual: se usa tal cual, ya en formato #rrggbb
+      } else if (!uso) {
+        return; // edificio bajo sin uso asignado -- no se pinta
+      }
       const pts = b.pts.map(p => toScene(p[0], p[1]));
-      const h = b.h * SCALE;
       if (pts.length < 4) return;
-      const arr = porColor[colorHex];
+      const h = b.h * SCALE;
+      const colorHex = manualColorOverrides[i] || USOS_COLORS[uso] || USOS_COLORS["Otros"];
+      const soft = softenColor(colorHex);
+      const startVertex = positions.length / 3;
+
+      function pushTri(ax, ay, az, bx, by, bz, cx, cy, cz) {
+        positions.push(ax, ay, az, bx, by, bz, cx, cy, cz);
+        for (let n = 0; n < 3; n++) colors.push(soft.r, soft.g, soft.b);
+      }
+      // Paredes
       for (let k = 0; k < pts.length - 1; k++) {
         const a = pts[k], c = pts[k + 1];
-        // Paredes (dos triangulos por segmento)
-        arr.push(a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z,
-                  a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z);
+        pushTri(a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z);
+        pushTri(a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z);
       }
-      // Techo: abanico de triangulos desde el primer punto (edificios
-      // catastrales son casi siempre convexos o casi-convexos). Se sube
-      // un pelin (epsilon) sobre la altura real para evitar z-fighting
-      // con el techo real del edificio (competian por el mismo pixel y
-      // a veces ganaba el techo sin color).
+      // Techo: triangulacion real (ear-clipping), que si funciona con
+      // edificios en L/U/formas no convexas -- el abanico simple de antes
+      // dejaba huecos en esos casos y por eso algunos techos se veian sin
+      // color. Se sube un pelin (epsilon) para evitar z-fighting.
       const hRoof = h + 0.03;
-      for (let k = 1; k < pts.length - 2; k++) {
-        arr.push(pts[0].x, hRoof, pts[0].z, pts[k].x, hRoof, pts[k].z, pts[k + 1].x, hRoof, pts[k + 1].z);
-      }
+      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+      let tris = [];
+      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
+      tris.forEach(([ia, ib, ic]) => {
+        pushTri(pts[ia].x, hRoof, pts[ia].z, pts[ib].x, hRoof, pts[ib].z, pts[ic].x, hRoof, pts[ic].z);
+      });
+
+      const vertexCount = positions.length / 3 - startVertex;
+      bldVertexRanges[i] = [startVertex, vertexCount];
     });
+    usosGeo = new THREE.BufferGeometry();
+    usosGeo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    usosColorAttr = new THREE.Float32BufferAttribute(colors, 3);
+    usosGeo.setAttribute("color", usosColorAttr);
+    usosGeo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.85, metalness: 0.02 });
     usosSueloGroup = new THREE.Group();
-    Object.keys(porColor).forEach(colorHex => {
-      const positions = porColor[colorHex];
-      if (!positions.length) return;
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-      geo.computeVertexNormals();
-      // Colores suavizados (mezclados con blanco) para que no se vea tan
-      // fuerte/saturado sobre los edificios -- las convenciones siguen
-      // mostrando el color "puro" para que se reconozca la categoria.
-      const rawColor = new THREE.Color(parseInt(colorHex));
-      const softColor = rawColor.clone().lerp(new THREE.Color(0xffffff), 0.35);
-      const mat = new THREE.MeshStandardMaterial({ color: softColor, side: THREE.DoubleSide, roughness: 0.85, metalness: 0.02 });
-      usosSueloGroup.add(new THREE.Mesh(geo, mat));
-    });
+    usosSueloGroup.add(new THREE.Mesh(usosGeo, mat));
     sceneRoot.add(usosSueloGroup);
   }
   function toggleUsosSuelo() {
@@ -708,6 +729,83 @@
     e.stopPropagation();
   }, true);
   window.addEventListener("pointerup", () => { alinearDragging = false; });
+
+  // ---- Clic en un edificio individual para cambiarle el color a mano.
+  // Las correcciones se guardan en manualColorOverrides (por indice de
+  // edificio) y se exportan como un codigo de texto corto que la usuaria
+  // puede copiar y pegar de vuelta para dejarlas fijas de forma permanente. ----
+  function findBuildingIndexFromFace(faceIndex) {
+    if (!bldVertexRanges) return null;
+    const v0 = faceIndex * 3; // primer vertice de ese triangulo en la geometria no indexada
+    for (let i = 0; i < bldVertexRanges.length; i++) {
+      const r = bldVertexRanges[i];
+      if (!r) continue;
+      if (v0 >= r[0] && v0 < r[0] + r[1]) return i;
+    }
+    return null;
+  }
+  function recolorBuilding(buildingIndex, colorHex) {
+    manualColorOverrides[buildingIndex] = colorHex;
+    const range = bldVertexRanges[buildingIndex];
+    if (!range || !usosColorAttr) return;
+    const soft = softenColor(colorHex);
+    const [start, count] = range;
+    for (let v = start; v < start + count; v++) {
+      usosColorAttr.setXYZ(v, soft.r, soft.g, soft.b);
+    }
+    usosColorAttr.needsUpdate = true;
+    updateCorreccionesOutput();
+  }
+  function updateCorreccionesOutput() {
+    const box = document.getElementById("usosCorreccionesBox");
+    const out = document.getElementById("usosCorreccionesOut");
+    const keys = Object.keys(manualColorOverrides);
+    if (!out || !box) return;
+    if (keys.length === 0) { box.style.display = "none"; return; }
+    box.style.display = "block";
+    out.value = keys.map(k => `${k}:${manualColorOverrides[k]}`).join(";");
+  }
+  const usosCorreccionesCopyBtn = document.getElementById("usosCorreccionesCopy");
+  if (usosCorreccionesCopyBtn) usosCorreccionesCopyBtn.addEventListener("click", () => {
+    const out = document.getElementById("usosCorreccionesOut");
+    if (out) { out.select(); document.execCommand("copy"); }
+  });
+
+  const PICKER_COLORS = Object.keys(USOS_COLORS).map(k => USOS_COLORS[k]);
+  const colorPickerEl = document.getElementById("buildingColorPicker");
+  const swatchesEl = document.getElementById("buildingColorSwatches");
+  let pickerTargetBuilding = null;
+  if (swatchesEl) {
+    PICKER_COLORS.forEach(hex => {
+      const sw = document.createElement("div");
+      const hexStr = "#" + hex.toString(16).padStart(6, "0");
+      sw.style.cssText = `width:22px; height:22px; border-radius:5px; cursor:pointer; background:${hexStr}; border:1px solid rgba(0,0,0,.15);`;
+      sw.addEventListener("click", () => {
+        if (pickerTargetBuilding !== null) recolorBuilding(pickerTargetBuilding, hexStr);
+        colorPickerEl.style.display = "none";
+      });
+      swatchesEl.appendChild(sw);
+    });
+  }
+  const usosRaycaster = new THREE.Raycaster();
+  const usosPointerNDC = new THREE.Vector2();
+  renderer.domElement.addEventListener("click", (e) => {
+    if (!usosSueloGroup || !usosSueloGroup.visible || alinearActive) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    usosPointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    usosPointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    usosRaycaster.setFromCamera(usosPointerNDC, camera);
+    const hits = usosRaycaster.intersectObject(usosSueloGroup, true);
+    if (!hits.length) { if (colorPickerEl) colorPickerEl.style.display = "none"; return; }
+    const bIdx = findBuildingIndexFromFace(hits[0].faceIndex);
+    if (bIdx === null) return;
+    pickerTargetBuilding = bIdx;
+    if (colorPickerEl) {
+      colorPickerEl.style.left = e.clientX + "px";
+      colorPickerEl.style.top = e.clientY + "px";
+      colorPickerEl.style.display = "block";
+    }
+  });
 
   const usosSueloBtn = document.getElementById("usosSueloBtn");
   if (usosSueloBtn) usosSueloBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleUsosSuelo(); });
