@@ -141,7 +141,16 @@
   #noiseLegend.pop-in .noise-legend-row:nth-child(3){ animation-delay:.13s; }
   #noiseLegend.pop-in .noise-legend-row:nth-child(4){ animation-delay:.18s; }
   #noiseLegend.pop-in .noise-legend-row:nth-child(5){ animation-delay:.23s; }
-  #noiseLegend.pop-in .noise-legend-row:nth-child(6){ animation-delay:.28s; }  @keyframes legendPop {
+  #noiseLegend.pop-in .noise-legend-row:nth-child(6){ animation-delay:.28s; }
+  @keyframes panelPop {
+    0% { opacity: 0; transform: scale(0.85) translateY(-6px); }
+    60% { opacity: 1; transform: scale(1.03); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  #usosSueloLegend.pop-in, #bioPanel.pop-in {
+    animation: panelPop 0.3s cubic-bezier(.22,1.4,.4,1) forwards;
+  }
+  @keyframes legendPop {
     0% { opacity: 0; transform: scale(0.4) translateX(-10px); }
     60% { opacity: 1; transform: scale(1.12) translateX(0); }
     100% { opacity: 1; transform: scale(1) translateX(0); }
@@ -227,7 +236,7 @@
     <div class="view-buttons">
       <button type="button" id="viewReset">Restablecer vista axonométrica</button>
       <button type="button" id="perspToggle">📐 Ver en perspectiva</button>
-      <button type="button" id="usosSueloBtn">🗺️ Ver plano de usos</button>
+      <button type="button" id="usosSueloBtn" title="Ver plano de usos" style="width:34px; height:34px; border-radius:50%; padding:0; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fa-solid fa-map"></i></button>
       <button type="button" id="alinearPlanoBtn" style="display:none;">📍 Alinear plano (arrastrar)</button>
     </div>
 
@@ -303,7 +312,7 @@
 
     <div class="rotate-panel" id="rotatePanel">
       <div class="rotate-row rotate-buttons">
-        <button type="button" id="noiseToggle">🔊 Mostrar mapa de ruido</button>
+        <button type="button" id="noiseToggle" title="Mapa de ruido" style="width:34px; height:34px; border-radius:50%; padding:0; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fa-solid fa-volume-high"></i></button>
       </div>
       <div class="rotate-row rotate-buttons">
         <button type="button" id="noiseMuteBtn" title="Silenciar/activar sonido" style="flex:none; width:auto; padding:0 10px;"><i class="fa-solid fa-volume-high"></i></button>
@@ -321,7 +330,7 @@
         </div>
       </div>
       <div class="rotate-row rotate-buttons">
-        <button type="button" id="bioToggle">🐦 Mostrar mirlas</button>
+        <button type="button" id="bioToggle" title="Mirlas y árboles atractores" style="width:34px; height:34px; border-radius:50%; padding:0; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fa-solid fa-dove"></i></button>
       </div>
       <div id="bioPanel" style="display:none; margin-top:6px; padding:12px 12px 10px; border-top:1px solid var(--panel-border); background:#00052e; border-radius:8px; border:1px solid #1b2550; font-family:'Segoe UI',sans-serif; color:#cbd3dc;">
         <div style="font:700 10px/1 'IBM Plex Mono',monospace; letter-spacing:.07em; color:#6b7aa8; text-transform:uppercase; margin-bottom:8px;">Mirlas (Turdus fuscater) y árboles atractores</div>

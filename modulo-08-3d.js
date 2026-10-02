@@ -817,13 +817,16 @@
     const btn = document.getElementById("usosSueloBtn");
     if (usosSueloGroup) {
       usosSueloGroup.visible = !usosSueloGroup.visible;
-      if (legend) legend.style.display = usosSueloGroup.visible ? "block" : "none";
+      if (legend) {
+        legend.style.display = usosSueloGroup.visible ? "block" : "none";
+        if (usosSueloGroup.visible) { legend.classList.remove("pop-in"); void legend.offsetWidth; legend.classList.add("pop-in"); }
+      }
       if (btn) btn.style.background = usosSueloGroup.visible ? "rgba(0,0,0,.08)" : "";
       return;
     }
     if (usosSueloLoading) return;
     usosSueloLoading = true;
-    if (legend) legend.style.display = "block";
+    if (legend) { legend.style.display = "block"; legend.classList.add("pop-in"); }
     if (loadingEl) loadingEl.textContent = "Cargando usos del suelo…";
     cargarDatosUsos().then(([buildingsArr, usoArr]) => {
       if (!comercioCentroide) comercioCentroide = calcularCentroideComercial(buildingsArr, usoArr);
@@ -2444,7 +2447,7 @@
     if (!noiseMesh) return;
     noiseMesh.visible = !noiseMesh.visible;
     e.target.classList.toggle("active", noiseMesh.visible);
-    e.target.textContent = noiseMesh.visible ? "🔇 Ocultar mapa de ruido" : "🔊 Mostrar mapa de ruido";
+    e.target.innerHTML = noiseMesh.visible ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
     // mismo audio real de la simulacion 2D (sumo-traffic-ambience.mp3)
     if (noiseAmbienceAudio) {
       if (noiseMesh.visible) noiseAmbienceAudio.play().catch(() => {});
@@ -2466,9 +2469,12 @@
     if (!birdsGroup) return;
     birdsGroup.visible = !birdsGroup.visible;
     e.target.classList.toggle("active", birdsGroup.visible);
-    e.target.textContent = birdsGroup.visible ? "🐦 Ocultar mirlas" : "🐦 Mostrar mirlas";
+    e.target.innerHTML = birdsGroup.visible ? '<i class="fa-solid fa-dove" style="opacity:.45;"></i>' : '<i class="fa-solid fa-dove"></i>';
     const panel = document.getElementById("bioPanel");
-    if (panel) panel.style.display = birdsGroup.visible ? "block" : "none";
+    if (panel) {
+      panel.style.display = birdsGroup.visible ? "block" : "none";
+      if (birdsGroup.visible) { panel.classList.remove("pop-in"); void panel.offsetWidth; panel.classList.add("pop-in"); }
+    }
     if (birdsGroup.visible) {
       rebuildBirdTreesWithBoost(Number(document.getElementById("bioVegSlider")?.value || 0));
       // Las mirlas se crean antes de que los arboles atractores esten
