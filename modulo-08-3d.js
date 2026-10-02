@@ -1098,13 +1098,26 @@
   // zonas con mas de 60 dB(A) de ruido (usando el mismo indice real de
   // ruido ya cargado), con un grupo residente en un refugio fijo.
   // ============================================================
-  const HUMEDAL_X = 6017.9, HUMEDAL_Y = 1980.2; // centro de La Vaca -- solo como respaldo si El Burro aun no cargo
-  // La usuaria se refiere al Humedal EL BURRO (el foco real de todo el
-  // proyecto), no a La Vaca -- se usa el centro real de El Burro
-  // (elBurroCentro, calculado de su poligono real) en cuanto esta
-  // disponible, cayendo al punto de respaldo solo si todavia no carga.
+  const LA_VACA_X = 6017.9, LA_VACA_Y = 1980.2; // centro real de Humedal La Vaca
+  // Los DOS humedales reales deben tener dinamica de mirlas -- El Burro
+  // (centro real calculado de su poligono, elBurroCentro) y La Vaca
+  // (punto fijo). getHumedalCentro() elige uno al azar cada vez que se
+  // llama (para repartir mirlas y cobertura entre ambos, no solo uno).
   function getHumedalCentro() {
-    return (typeof elBurroCentro !== "undefined" && elBurroCentro) ? elBurroCentro : { x: HUMEDAL_X, y: HUMEDAL_Y };
+    const burro = (typeof elBurroCentro !== "undefined" && elBurroCentro) ? elBurroCentro : null;
+    const vaca = { x: LA_VACA_X, y: LA_VACA_Y };
+    if (!burro) return vaca;
+    return Math.random() < 0.5 ? burro : vaca;
+  }
+  // Para la concentracion de cobertura vegetal extra: distancia al MAS
+  // CERCANO de los dos humedales (no solo a uno), asi arboles cerca de
+  // cualquiera de los dos se priorizan.
+  function distAlHumedalMasCercano(x, y) {
+    const burro = (typeof elBurroCentro !== "undefined" && elBurroCentro) ? elBurroCentro : null;
+    const dVaca = (x - LA_VACA_X) ** 2 + (y - LA_VACA_Y) ** 2;
+    if (!burro) return dVaca;
+    const dBurro = (x - burro.x) ** 2 + (y - burro.y) ** 2;
+    return Math.min(dVaca, dBurro);
   }
   const BIRD_TREE_SPECIES = {
     "Sauco": { key: "sauco", color: 0xb06bff, weight: 1.0, base: 260 },
@@ -1114,7 +1127,7 @@
   const BIRD_VISION = 38, BIRD_ARRIVE = 1.4, BIRD_WIND = 1.5, BIRD_MAX_SPEED = 4.2; // vision ampliada (antes 14): con 780 arboles repartidos en toda la ciudad, un campo visual chico hacia que muchas mirlas nunca encontraran ningun arbol cerca y parecieran "no atraerse" a nada
   const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 60; // 60, igual que en la simulacion 2D (antes 50)
   const REFUGE_X = 3600, REFUGE_Y = 1000, REFUGE_R = 220; // esquina noroeste real del area de Kennedy
-  let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null, allTreesData = null;
+  let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null, allTreesData = null, birdsSnappedToTrees = false;
   let noiseEdgesRaw = null; // se reusan los mismos datos reales de ruido ya cargados
 
   function sampleAttractorTrees(trees, vegBoost) {
@@ -1150,7 +1163,7 @@
         const extraNecesarios = Math.max(0, topeTotal - topeBase);
         if (extraNecesarios > 0) {
           const candidatosCercaHumedal = lista
-            .map((t, i) => { const hc = getHumedalCentro(); return { t, i, d2: (t.x - hc.x) ** 2 + (t.y - hc.y) ** 2 }; })
+            .map((t, i) => ({ t, i, d2: distAlHumedalMasCercano(t.x, t.y) }))
             .filter(c => !usados.has(c.i))
             .sort((a, b) => a.d2 - b.d2)
             .slice(0, extraNecesarios);
@@ -1222,11 +1235,13 @@
       return activo;
     });
   }
+  let allAttractorsFlat = []; // lista plana (para elegir un arbol al azar al armar mirlas que ya nacen posadas)
   function rebuildBirdTreesWithBoost(vegBoost) {
     if (!allTreesData) return;
     const attractors = sampleAttractorTrees(allTreesData, vegBoost);
     birdTreesGrid = buildBirdTreeGrid(attractors);
     buildAttractorTreeMarkers(attractors);
+    allAttractorsFlat = attractors;
     const countEl = document.getElementById("bioVegCount");
     if (countEl) countEl.textContent = attractors.length.toLocaleString("es-CO");
   }
@@ -1319,6 +1334,21 @@
   }
   function makeBirdAgent(origen) {
     let x, y;
+    if (origen === "en_arbol" && allAttractorsFlat.length) {
+      // Ya esta posada en un arbol real desde el inicio -- para que al
+      // mirar al azar se vea de una vez la variedad de estados: unas ya
+      // en el arbol, otras llegando, otras saliendo.
+      const arbol = allAttractorsFlat[Math.floor(Math.random() * allAttractorsFlat.length)];
+      x = arbol.x; y = arbol.y;
+      const b = {
+        x, y, vx: 0, vy: 0, rest: 1 + Math.random() * 2, cooldown: 0,
+        restColor: arbol.meta.color, residente: false, estresada: false,
+        phase: Math.random() * 6.28, sprite: null,
+        landedAt: { x: arbol.x, y: arbol.y, arbolRef: arbol }, lastTree: arbol, targetTree: null,
+      };
+      litUpMarker(arbol);
+      return b;
+    }
     if (origen === "refugio") {
       const a = Math.random() * Math.PI * 2, r = Math.random() * REFUGE_R;
       x = REFUGE_X + Math.cos(a) * r; y = REFUGE_Y + Math.sin(a) * r;
@@ -2007,7 +2037,27 @@
     e.target.textContent = birdsGroup.visible ? "🐦 Ocultar mirlas" : "🐦 Mostrar mirlas";
     const panel = document.getElementById("bioPanel");
     if (panel) panel.style.display = birdsGroup.visible ? "block" : "none";
-    if (birdsGroup.visible) rebuildBirdTreesWithBoost(Number(document.getElementById("bioVegSlider")?.value || 0));
+    if (birdsGroup.visible) {
+      rebuildBirdTreesWithBoost(Number(document.getElementById("bioVegSlider")?.value || 0));
+      // Las mirlas se crean antes de que los arboles atractores esten
+      // listos, asi que ninguna pudo nacer "ya posada" -- apenas los
+      // arboles estan disponibles (primera vez que se abre el panel), se
+      // fuerza a una porcion de las mirlas YA EXISTENTES a aparecer de
+      // una vez posadas en un arbol real, para que se vea variedad de
+      // estados desde el primer instante (no solo con el tiempo).
+      if (allAttractorsFlat.length && !birdsSnappedToTrees) {
+        birdsSnappedToTrees = true;
+        birds.forEach((b, i) => {
+          if (b.residente || i % 4 !== 0) return; // 1 de cada 4, sin tocar las del refugio
+          const arbol = allAttractorsFlat[Math.floor(Math.random() * allAttractorsFlat.length)];
+          b.x = arbol.x; b.y = arbol.y; b.vx = 0; b.vy = 0;
+          b.rest = 1 + Math.random() * 2; b.restColor = arbol.meta.color;
+          b.landedAt = { x: arbol.x, y: arbol.y, arbolRef: arbol };
+          b.lastTree = arbol; b.targetTree = null;
+          litUpMarker(arbol);
+        });
+      }
+    }
     if (attractorMarkersGroup) attractorMarkersGroup.visible = birdsGroup.visible;
   });
   const bioBirdSlider = document.getElementById("bioBirdSlider");
