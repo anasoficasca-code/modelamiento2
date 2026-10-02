@@ -526,7 +526,46 @@
   let bldVertexRanges = null;
   let usosColorAttr = null;
   let usosGeo = null;
-  const manualColorOverrides = {}; // { buildingIndex: "#rrggbb" } -- correcciones manuales de la usuaria
+  // { buildingIndex: "#rrggbb" } -- correcciones manuales de la usuaria,
+  // pegadas desde el codigo que genera el panel de Usos del suelo.
+  const manualColorOverrides = {
+    359: "#f4d35e",
+    360: "#f4d35e",
+    375: "#f4d35e",
+    408: "#f4d35e",
+    85748: "#f4d35e",
+    132319: "#f4d35e",
+    132610: "#f4d35e",
+    137947: "#f4d35e",
+    157743: "#f4d35e",
+    160511: "#f4d35e",
+    172977: "#f4d35e",
+    179746: "#f4d35e",
+    195220: "#f4d35e",
+    199356: "#f4d35e",
+    199697: "#f4d35e",
+    199940: "#f4d35e",
+    201220: "#f4d35e",
+    201423: "#f4d35e",
+    203406: "#f4d35e",
+    205332: "#f4d35e",
+    213136: "#f4d35e",
+    225052: "#f4d35e",
+    227701: "#f4d35e",
+    235250: "#f4d35e",
+    235313: "#f4d35e",
+    235417: "#f4d35e",
+    235419: "#f4d35e",
+    235422: "#f4d35e",
+    235423: "#f4d35e",
+    235432: "#f4d35e",
+    235493: "#f4d35e",
+    235504: "#f4d35e",
+    236487: "#f4d35e",
+    236490: "#f4d35e",
+    236491: "#f4d35e",
+    236533: "#f4d35e",
+  };
   function softenColor(hex) {
     const c = new THREE.Color(hex);
     return c.lerp(new THREE.Color(0xffffff), 0.35);
