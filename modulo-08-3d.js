@@ -1127,10 +1127,45 @@
     });
     return out;
   }
+  // Marcadores de color SOBRE los arboles atractores reales (Sauco,
+  // Capuli, Urapan), para que se vea exactamente donde estan ubicados --
+  // sin tocar el material/textura del arbol real (eso ya causo el bug de
+  // los arboles en negro una vez, se deja intacto). Son discos pequenos
+  // flotando justo encima de la copa de cada arbol atractor.
+  let attractorMarkersGroup = null;
+  function buildAttractorTreeMarkers(attractors) {
+    if (attractorMarkersGroup) { sceneRoot.remove(attractorMarkersGroup); attractorMarkersGroup.geometry?.dispose(); }
+    const diskGeo = new THREE.CircleGeometry(2.2, 10);
+    diskGeo.rotateX(-Math.PI / 2);
+    const porColor = {};
+    attractors.forEach(a => {
+      const hex = a.meta.color;
+      if (!porColor[hex]) porColor[hex] = [];
+      porColor[hex].push(a);
+    });
+    attractorMarkersGroup = new THREE.Group();
+    Object.keys(porColor).forEach(hex => {
+      const lista = porColor[hex];
+      const mat = new THREE.MeshBasicMaterial({ color: parseInt(hex), side: THREE.DoubleSide, transparent: true, opacity: 0.85, depthWrite: false });
+      const inst = new THREE.InstancedMesh(diskGeo, mat, lista.length);
+      const dummy = new THREE.Object3D();
+      lista.forEach((a, i) => {
+        const p = toScene(a.x, a.y);
+        dummy.position.set(p.x, 6, p.z); // flotando sobre la copa del arbol
+        dummy.updateMatrix();
+        inst.setMatrixAt(i, dummy.matrix);
+      });
+      inst.instanceMatrix.needsUpdate = true;
+      attractorMarkersGroup.add(inst);
+    });
+    attractorMarkersGroup.visible = birdsGroup ? birdsGroup.visible : false;
+    sceneRoot.add(attractorMarkersGroup);
+  }
   function rebuildBirdTreesWithBoost(vegBoost) {
     if (!allTreesData) return;
     const attractors = sampleAttractorTrees(allTreesData, vegBoost);
     birdTreesGrid = buildBirdTreeGrid(attractors);
+    buildAttractorTreeMarkers(attractors);
     const countEl = document.getElementById("bioVegCount");
     if (countEl) countEl.textContent = attractors.length.toLocaleString("es-CO");
   }
@@ -1862,6 +1897,7 @@
     const panel = document.getElementById("bioPanel");
     if (panel) panel.style.display = birdsGroup.visible ? "block" : "none";
     if (birdsGroup.visible) rebuildBirdTreesWithBoost(Number(document.getElementById("bioVegSlider")?.value || 0));
+    if (attractorMarkersGroup) attractorMarkersGroup.visible = birdsGroup.visible;
   });
   const bioBirdSlider = document.getElementById("bioBirdSlider");
   const bioBirdCountVal = document.getElementById("bioBirdCountVal");
