@@ -1200,23 +1200,33 @@
     });
     return grid;
   }
-  function bestTreeNear(grid, x, y) {
+  function bestTreeNear(grid, x, y, excludeTree) {
     const r = BIRD_VISION * 10; // convertir de unidades de escena (SCALE=0.1) a metros reales
     const cx0 = Math.floor((x - r) / BIRD_CELL), cx1 = Math.floor((x + r) / BIRD_CELL);
     const cy0 = Math.floor((y - r) / BIRD_CELL), cy1 = Math.floor((y + r) / BIRD_CELL);
-    let best = null, bestScore = 0, bestDist = 0;
+    // En vez de SIEMPRE elegir el arbol de mejor puntaje (eso hacia que
+    // muchas mirlas cercanas entre si convergieran todas al mismo arbol,
+    // como si anduvieran en manada), se guardan varios candidatos buenos
+    // y se elige uno al azar entre ellos -- asi mirlas cercanas se
+    // reparten entre distintos arboles, no se apilan en uno solo.
+    const candidatos = [];
     for (let cx = cx0; cx <= cx1; cx++) for (let cy = cy0; cy <= cy1; cy++) {
       const celda = grid.get(cx + "," + cy);
       if (!celda) continue;
       celda.forEach(t => {
+        if (t === excludeTree) return;
         const dx = t.x - x, dy = t.y - y, d2 = dx * dx + dy * dy;
         if (d2 > r * r) return;
         const d = Math.sqrt(d2) || 0.001;
         const score = t.meta.weight / d;
-        if (score > bestScore) { bestScore = score; best = t; bestDist = d; }
+        candidatos.push({ arbol: t, dist: d, score });
       });
     }
-    return best ? { arbol: best, dist: bestDist } : null;
+    if (!candidatos.length) return null;
+    candidatos.sort((a, b) => b.score - a.score);
+    const top = candidatos.slice(0, Math.min(5, candidatos.length));
+    const elegido = top[Math.floor(Math.random() * top.length)];
+    return { arbol: elegido.arbol, dist: elegido.dist };
   }
 
   function makeBirdSprite(wingUp) {
@@ -1287,15 +1297,29 @@
       if (b.cooldown > 0) b.cooldown -= dt;
       b.vx -= BIRD_WIND * dt;
       b.vy += Math.sin(b.phase * 0.28) * 0.7 * dt;
-      const hallazgo = birdTreesGrid ? bestTreeNear(birdTreesGrid, b.x, b.y) : null;
-      if (hallazgo && b.cooldown <= 0) {
-        const { arbol, dist } = hallazgo;
-        const ux = (arbol.x - b.x) / dist, uy = (arbol.y - b.y) / dist;
+      // Cada mirla elige UN arbol y se compromete con el (no reevalua
+      // "el mejor cercano" en cada cuadro) -- las mirlas no andan en
+      // manada, cada una va por su cuenta a un destino propio, no todas
+      // convergen al mismo arbol top-score del area. Al llegar y
+      // descansar, se obliga a elegir un arbol DISTINTO al anterior la
+      // proxima vez, para que de verdad vaya variando de arbol en arbol.
+      if (!b.targetTree && birdTreesGrid) {
+        const hallazgo = bestTreeNear(birdTreesGrid, b.x, b.y, b.lastTree);
+        if (hallazgo) b.targetTree = hallazgo.arbol;
+      }
+      if (b.targetTree && b.cooldown <= 0) {
+        const arbol = b.targetTree;
+        const dx = arbol.x - b.x, dy = arbol.y - b.y;
+        const dist = Math.hypot(dx, dy) || 0.001;
+        const ux = dx / dist, uy = dy / dist;
         const esSauco = arbol.meta.key === "sauco";
         const fuerza = arbol.meta.weight * (esSauco ? 20 : 11);
         b.vx += ux * fuerza * dt; b.vy += uy * fuerza * dt;
         if (dist < BIRD_ARRIVE * 10) {
-          b.rest = 2 + Math.random(); b.restColor = arbol.meta.color; b.cooldown = 7; b.landedAt = { x: arbol.x, y: arbol.y };
+          b.rest = 2 + Math.random(); b.restColor = arbol.meta.color; b.cooldown = 7;
+          b.landedAt = { x: arbol.x, y: arbol.y };
+          b.lastTree = arbol; // para no repetir el mismo en la siguiente busqueda
+          b.targetTree = null;
         }
       }
       const sp = Math.hypot(b.vx, b.vy);
