@@ -1179,7 +1179,14 @@
     }
     while (birds.length < target) {
       const refugeCount = Math.max(4, Math.round(target * 0.15));
-      const origen = birds.length < refugeCount ? "refugio" : (birds.length % 2 ? "humedal" : "oriente");
+      let origen;
+      if (birds.length < refugeCount) origen = "refugio";
+      else {
+        const r2 = birds.length % 10;
+        if (r2 < 2) origen = "humedal";
+        else if (r2 < 3) origen = "oriente";
+        else origen = "disperso";
+      }
       const b = makeBirdAgent(origen);
       const spriteMat = new THREE.SpriteMaterial({ map: birdTexUpRef, transparent: true, alphaTest: 0.15, depthWrite: false, depthTest: false });
       const sprite = new THREE.Sprite(spriteMat);
@@ -1255,7 +1262,14 @@
       const a = Math.random() * Math.PI * 2, r = Math.random() * REFUGE_R;
       x = REFUGE_X + Math.cos(a) * r; y = REFUGE_Y + Math.sin(a) * r;
     } else if (origen === "humedal") {
-      x = HUMEDAL_X + (Math.random() - 0.5) * 200; y = HUMEDAL_Y + (Math.random() - 0.5) * 200;
+      // area mucho mas amplia alrededor del humedal, no un cuadrito
+      // chiquito -- para que no parezcan amontonadas ahi mismo.
+      x = HUMEDAL_X + (Math.random() - 0.5) * 1400; y = HUMEDAL_Y + (Math.random() - 0.5) * 1400;
+    } else if (origen === "disperso") {
+      // repartidas por TODA la zona de Kennedy, cada una ya volando por
+      // su cuenta en un punto distinto -- esto es lo que de verdad evita
+      // la apariencia de manada: no todas entrando por el mismo borde.
+      x = 500 + Math.random() * 10000; y = 300 + Math.random() * 6500;
     } else { // oriente: borde este real del area de Kennedy
       x = 10500 + Math.random() * 150; y = 500 + Math.random() * 5500;
     }
@@ -1347,7 +1361,17 @@
     const spriteMat = new THREE.SpriteMaterial({ map: birdTexUp, transparent: true, alphaTest: 0.15, depthWrite: false, depthTest: false });
     const refugeCount = Math.max(4, Math.round(BIRD_COUNT * 0.15));
     for (let i = 0; i < BIRD_COUNT; i++) {
-      const origen = i < refugeCount ? "refugio" : (i % 2 ? "humedal" : "oriente");
+      // La mayoria nace YA dispersa por toda la zona (no en manada en un
+      // solo punto); solo una porcion chica sale del refugio, humedal
+      // concreto, u oriente, para mantener esos origenes narrativos.
+      let origen;
+      if (i < refugeCount) origen = "refugio";
+      else {
+        const r2 = i % 10;
+        if (r2 < 2) origen = "humedal";
+        else if (r2 < 3) origen = "oriente";
+        else origen = "disperso";
+      }
       const b = makeBirdAgent(origen);
       const sprite = new THREE.Sprite(spriteMat.clone());
       sprite.scale.set(9, 9, 1); // mas grande que en modulo-10-corte (3.2): aqui se ve TODA la ciudad, no un sector acercado, y con el sprite chico no se alcanzaban a ver las mirlas
