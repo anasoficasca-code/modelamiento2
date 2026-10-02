@@ -859,7 +859,7 @@
     // que haya que arrastrar para inclinar la camara manualmente.
     camera.position.set(212.25, 475.68, 958.82);
     controls.target.set(144.45, 24.68, -5.88);
-    camera.zoom = 1.23;
+    camera.zoom = 1.55; // un poco mas de zoom que antes (1.23), se veia muy lejos
     viewSize = 190.0;
     resize();
     camera.updateProjectionMatrix();
@@ -1357,6 +1357,53 @@
     return 66; // Bolas con más conexiones quedan significativamente más grandes
   }
 
+  // Recalcula el grado (numero de conexiones activas) de cada nodo,
+  // ignorando al eliminado y a sus conexiones -- asi los nodos que
+  // quedan reflejan su conectividad REAL en este momento, no la
+  // original. Se llama despues de cada eliminacion.
+  function recomputeNodeDegreesLive() {
+    const deg = {};
+    Object.keys(SUBNETS).forEach(mid => {
+      SUBNETS[mid].nodes.forEach(n => { if (!deletedNodeIds.has(n.id)) deg[n.id] = 0; });
+    });
+    Object.keys(SUBNETS).forEach(mid => {
+      SUBNETS[mid].rel.forEach(r => {
+        if (deletedNodeIds.has(r.from) || deletedNodeIds.has(r.to)) return;
+        if (deg[r.from] !== undefined) deg[r.from]++;
+        if (deg[r.to] !== undefined) deg[r.to]++;
+      });
+    });
+    INTER_NETWORK_REL.forEach(r => {
+      if (deletedNodeIds.has(r.from) || deletedNodeIds.has(r.to)) return;
+      if (deg[r.from] !== undefined) deg[r.from]++;
+      if (deg[r.to] !== undefined) deg[r.to]++;
+    });
+    Object.keys(deg).forEach(id => { nodeDegrees[id] = deg[id]; });
+  }
+  // Aplica el nuevo diametro (segun el grado ya recalculado) al blob y a
+  // la etiqueta de un nodo que sigue vivo, sin recrear los elementos.
+  function resizeSubNodeLive(mid, nodeId) {
+    const subEls = allSubEls[mid];
+    if (!subEls || deletedNodeIds.has(nodeId)) return;
+    const blob = subEls.blobs[nodeId];
+    const label = subEls.labels[nodeId];
+    if (!blob) return;
+    const d = getSubNodeDiameter(nodeId);
+    const r = d / 2;
+    blob.style.width = d + "px"; blob.style.height = d + "px"; blob.style.margin = `-${r}px 0 0 -${r}px`;
+    if (label) {
+      const fontPx = 9.5, lineH = fontPx * 1.2;
+      let maxLines = Math.min(3, Math.max(2, Math.floor((d * 0.86) / lineH)));
+      let halfH = (maxLines * lineH) / 2;
+      while (halfH >= r * 0.9 && maxLines > 1) { maxLines--; halfH = (maxLines * lineH) / 2; }
+      const safeWidth = 2 * Math.sqrt(Math.max(0, r * r - halfH * halfH)) * 0.9;
+      const maxCharsPerLine = Math.max(5, Math.floor(safeWidth / (fontPx * 0.54)));
+      const n = allNodesById[nodeId];
+      if (n) label.dataset.fullHtml = wrapToFit(n.t || n.corto || "", maxCharsPerLine, maxLines);
+      label.style.width = safeWidth + "px";
+      label.style.height = (d * 0.86) + "px";
+    }
+  }
   function deleteNode(causeId) {
     deletedNodeIds.add(causeId);
     Object.keys(allSubEls).forEach(mid => {
@@ -1378,6 +1425,13 @@
         }
         return true;
       });
+    });
+    // El nodo eliminado ya no cuenta -- los que quedan (que estaban
+    // conectados a el) pierden una conexion, asi que se achican para
+    // reflejar su nueva conectividad real.
+    recomputeNodeDegreesLive();
+    Object.keys(allSubEls).forEach(mid => {
+      Object.keys(allSubEls[mid].blobs).forEach(nodeId => resizeSubNodeLive(mid, nodeId));
     });
     netPanel.classList.remove("open");
     updateNetPositions();
@@ -1629,7 +1683,11 @@
           const lbl = subEls.labels[n.id];
           lbl.style.left = p.x + "px"; lbl.style.top = p.y + "px";
           lbl.style.display = (p.visible && !isDeleted) ? "block" : "none";
-          const targetHtml = lbl.dataset.shortHtml || lbl.dataset.fullHtml; // el icono siempre va dentro de la bola, sin importar el zoom
+          // Con zoom cercano se revela el texto completo (fullHtml); de
+          // lejos solo el icono (shortHtml) -- antes el "||" hacia que
+          // el icono SIEMPRE ganara, sin importar el zoom, por eso el
+          // texto nunca aparecia al acercarse.
+          const targetHtml = (camera.zoom >= 2.4 ? lbl.dataset.fullHtml : lbl.dataset.shortHtml) || lbl.dataset.fullHtml || lbl.dataset.shortHtml;
           if (lbl.innerHTML !== targetHtml) {
             lbl.innerHTML = targetHtml;
           }
@@ -1871,7 +1929,7 @@
     POT_NODES.forEach(n => {
       const p = { x: sc(n.x, W, rect.width), y: sc(n.y, H, rect.height) };
       posPx[n.id] = p;
-      radiusPx[n.id] = 32 + (potDegree[n.id] || 0) * 5.5;
+      radiusPx[n.id] = 24 + (potDegree[n.id] || 0) * 7.5; // bolas un poco mas chicas en general (antes 32), diferencia de tamano por conexiones mas marcada (antes 5.5)
     });
 
     const ids = POT_NODES.map(n => n.id);

@@ -141,6 +141,11 @@
     text-align:center; line-height:1.2; pointer-events:auto; cursor:grab; user-select:none;
     display:flex; align-items:center; justify-content:center; overflow:hidden;
   }
+  /* Los iconos de FontAwesome traen un leve corrimiento vertical propio
+     de la fuente (linea base), que hacia que se vieran un poco mas
+     arriba o abajo del centro real de la bola -- se fuerza line-height:1
+     y se centra el glyph explicitamente. */
+  .net-label i{ line-height:1; display:inline-flex; align-items:center; justify-content:center; }
   .net-label:active{ cursor:grabbing; }
   #netPanel{
     position:absolute; top:0; right:0; bottom:0; z-index:20; width:min(360px,90vw);
