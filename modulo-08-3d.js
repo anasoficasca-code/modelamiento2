@@ -1104,14 +1104,15 @@
     "Cerezo, capuli": { key: "capuli", color: 0xff5fa8, weight: 0.76, base: 200 },
     "Urapán, Fresno": { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 },
   };
-  const BIRD_VISION = 14, BIRD_ARRIVE = 1.4, BIRD_WIND = 1.5, BIRD_MAX_SPEED = 4.2;
+  const BIRD_VISION = 38, BIRD_ARRIVE = 1.4, BIRD_WIND = 1.5, BIRD_MAX_SPEED = 4.2; // vision ampliada (antes 14): con 780 arboles repartidos en toda la ciudad, un campo visual chico hacia que muchas mirlas nunca encontraran ningun arbol cerca y parecieran "no atraerse" a nada
   const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 60; // 60, igual que en la simulacion 2D (antes 50)
   const REFUGE_X = 3600, REFUGE_Y = 1000, REFUGE_R = 220; // esquina noroeste real del area de Kennedy
   let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null, allTreesData = null;
   let noiseEdgesRaw = null; // se reusan los mismos datos reales de ruido ya cargados
 
   function sampleAttractorTrees(trees, vegBoost) {
-    const factor = 1 + (vegBoost || 0) / 100; // igual formula que la simulacion 2D
+    const boost = vegBoost || 0;
+    const factor = 1 + boost / 100; // igual formula que la simulacion 2D
     const porEspecie = {};
     trees.forEach(t => {
       const meta = BIRD_TREE_SPECIES[t[3]];
@@ -1121,9 +1122,34 @@
     Object.keys(porEspecie).forEach(k => {
       const lista = porEspecie[k];
       const meta = lista[0].meta;
-      const tope = Math.round(meta.base * factor);
-      const paso = Math.max(1, Math.floor(lista.length / tope));
-      for (let i = 0; i < lista.length; i += paso) out.push(lista[i]);
+      const topeBase = meta.base;
+      const pasoBase = Math.max(1, Math.floor(lista.length / topeBase));
+      const baseSample = [];
+      const usados = new Set();
+      for (let i = 0; i < lista.length; i += pasoBase) { baseSample.push(lista[i]); usados.add(i); }
+      if (boost <= 0) {
+        // reduccion: se achica la muestra base de siempre, repartida por
+        // toda la ciudad (una baja pareja no tiene por que ser solo cerca
+        // del humedal).
+        const topeReducido = Math.max(1, Math.round(topeBase * factor));
+        out.push(...baseSample.slice(0, topeReducido));
+      } else {
+        // aumento: los arboles EXTRA se toman de los mas cercanos al
+        // humedal (de los que no estaban ya en la muestra base), tal
+        // como se pidio -- asi mas cobertura vegetal se nota alrededor
+        // del humedal, no repartida parejo por toda la ciudad.
+        out.push(...baseSample);
+        const topeTotal = Math.round(topeBase * factor);
+        const extraNecesarios = Math.max(0, topeTotal - topeBase);
+        if (extraNecesarios > 0) {
+          const candidatosCercaHumedal = lista
+            .map((t, i) => ({ t, i, d2: (t.x - HUMEDAL_X) ** 2 + (t.y - HUMEDAL_Y) ** 2 }))
+            .filter(c => !usados.has(c.i))
+            .sort((a, b) => a.d2 - b.d2)
+            .slice(0, extraNecesarios);
+          candidatosCercaHumedal.forEach(c => out.push(c.t));
+        }
+      }
     });
     return out;
   }
@@ -1197,7 +1223,7 @@
       birds.push(b);
     }
   }
-  const BIRD_CELL = 25; // metros reales por celda de la rejilla de arboles
+  const BIRD_CELL = 60; // metros reales por celda (subido junto con BIRD_VISION, para que la busqueda siga revisando una cantidad de celdas razonable)
   function buildBirdTreeGrid(attractors) {
     const grid = new Map();
     attractors.forEach(t => {
