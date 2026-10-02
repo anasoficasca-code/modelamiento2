@@ -654,21 +654,67 @@
   }
   function buildUsosSueloBuildings(buildingsArr, usoArr) {
     const TALL_THRESHOLD_M = 15; // a partir de esta altura real (metros), si no tiene uso asignado por el plano, se asume Residencial (torres de vivienda son las mas altas en Kennedy)
+    const NEARBY_RADIUS_M = 60; // radio para considerar "cerca de lo pintado"
+    const CELL_M = 40; // tamano de celda de la cuadrícula espacial (en metros reales)
     const positions = [];
     const colors = [];
     bldVertexRanges = new Array(buildingsArr.length);
+
+    // --- Paso 1: centro de cada edificio + saber cuales ya tienen color
+    // (uso real, alto, o correccion manual) para armar una cuadricula
+    // espacial de edificios YA pintados. ---
+    const centers = new Array(buildingsArr.length);
+    const grid = new Map(); // "gx,gy" -> [indices de edificios pintados]
+    function cellKey(gx, gy) { return gx + "," + gy; }
+    buildingsArr.forEach((b, i) => {
+      const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length;
+      const cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
+      centers[i] = [cx, cy];
+      let uso = usoArr[i];
+      if (!uso && b.h >= TALL_THRESHOLD_M) uso = "Residencial";
+      const painted = !!manualColorOverrides[i] || !!uso;
+      if (painted) {
+        const gx = Math.floor(cx / CELL_M), gy = Math.floor(cy / CELL_M);
+        const key = cellKey(gx, gy);
+        if (!grid.has(key)) grid.set(key, []);
+        grid.get(key).push(i);
+      }
+    });
+    function isNearPainted(cx, cy) {
+      const gx = Math.floor(cx / CELL_M), gy = Math.floor(cy / CELL_M);
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          const bucket = grid.get(cellKey(gx + dx, gy + dy));
+          if (!bucket) continue;
+          for (const j of bucket) {
+            const [px, py] = centers[j];
+            const d2 = (px - cx) * (px - cx) + (py - cy) * (py - cy);
+            if (d2 <= NEARBY_RADIUS_M * NEARBY_RADIUS_M) return true;
+          }
+        }
+      }
+      return false;
+    }
+    const UNPAINTED_NEARBY_COLOR = 0xff0000; // rojo -- "falta uso, pero esta en la zona de estudio"
+
     buildingsArr.forEach((b, i) => {
       let uso = usoArr[i];
       if (!uso && b.h >= TALL_THRESHOLD_M) uso = "Residencial";
+      let forcedRed = false;
       if (manualColorOverrides[i]) {
         // override manual: se usa tal cual, ya en formato #rrggbb
       } else if (!uso) {
-        return; // edificio bajo sin uso asignado -- no se pinta
+        // sin uso asignado: solo se pinta de rojo si esta cerca de
+        // edificios que SI tienen color (zona de estudio); si esta
+        // lejos y aislado, se deja sin pintar (blanco), tal como se pidio.
+        const [cx, cy] = centers[i];
+        if (isNearPainted(cx, cy)) forcedRed = true;
+        else return;
       }
       const pts = b.pts.map(p => toScene(p[0], p[1]));
       if (pts.length < 4) return;
       const h = b.h * SCALE;
-      const colorHex = manualColorOverrides[i] || USOS_COLORS[uso] || USOS_COLORS["Otros"];
+      const colorHex = manualColorOverrides[i] || (forcedRed ? UNPAINTED_NEARBY_COLOR : USOS_COLORS[uso]) || USOS_COLORS["Otros"];
       const soft = softenColor(colorHex);
       const startVertex = positions.length / 3;
 
