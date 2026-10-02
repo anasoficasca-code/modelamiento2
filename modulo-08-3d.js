@@ -1125,7 +1125,7 @@
     "Urapán, Fresno": { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 },
   };
   const BIRD_VISION = 38, BIRD_ARRIVE = 1.4, BIRD_WIND = 1.5, BIRD_MAX_SPEED = 4.2; // vision ampliada (antes 14): con 780 arboles repartidos en toda la ciudad, un campo visual chico hacia que muchas mirlas nunca encontraran ningun arbol cerca y parecieran "no atraerse" a nada
-  const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 60; // 60, igual que en la simulacion 2D (antes 50)
+  const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2; let BIRD_COUNT = 90; // 90 de inicio (antes 60), ajustable luego con el slider
   const REFUGE_X = 3600, REFUGE_Y = 1000, REFUGE_R = 220; // esquina noroeste real del area de Kennedy
   let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null, allTreesData = null, birdsSnappedToTrees = false;
   let noiseEdgesRaw = null; // se reusan los mismos datos reales de ruido ya cargados
@@ -2060,17 +2060,35 @@
     }
     if (attractorMarkersGroup) attractorMarkersGroup.visible = birdsGroup.visible;
   });
+  // Las mirlas totales = lo que el usuario puso en su propio slider, MAS
+  // un extra que crece con la cobertura vegetal (mas arboles atractores
+  // -> mas mirlas tiene sentido que haya) -- por ahi 5 mirlas mas por
+  // cada 20% de aumento en la cobertura.
+  let birdBaseFromSlider = 90;
+  function extraMirlasPorCobertura(vegBoost) {
+    return vegBoost > 0 ? Math.round(vegBoost / 20) * 5 : 0;
+  }
+  function aplicarTotalMirlas(vegBoost) {
+    const total = Math.max(5, birdBaseFromSlider + extraMirlasPorCobertura(vegBoost));
+    setBirdCount(total);
+    const bioBirdSliderEl = document.getElementById("bioBirdSlider");
+    const bioBirdCountValEl = document.getElementById("bioBirdCountVal");
+    if (bioBirdSliderEl) bioBirdSliderEl.value = Math.min(200, total);
+    if (bioBirdCountValEl) bioBirdCountValEl.textContent = total;
+  }
   const bioBirdSlider = document.getElementById("bioBirdSlider");
   const bioBirdCountVal = document.getElementById("bioBirdCountVal");
   if (bioBirdSlider) bioBirdSlider.addEventListener("input", () => {
-    setBirdCount(Number(bioBirdSlider.value));
-    if (bioBirdCountVal) bioBirdCountVal.textContent = bioBirdSlider.value;
+    birdBaseFromSlider = Number(bioBirdSlider.value);
+    const vegBoostActual = Number(document.getElementById("bioVegSlider")?.value || 0);
+    aplicarTotalMirlas(vegBoostActual);
   });
   const bioVegSlider = document.getElementById("bioVegSlider");
   const bioVegVal = document.getElementById("bioVegVal");
   if (bioVegSlider) bioVegSlider.addEventListener("input", () => {
     rebuildBirdTreesWithBoost(Number(bioVegSlider.value));
     if (bioVegVal) bioVegVal.textContent = `+${bioVegSlider.value}%`;
+    aplicarTotalMirlas(Number(bioVegSlider.value));
   });
 
   // ---- Reloj climatico anual del Humedal El Burro ----
