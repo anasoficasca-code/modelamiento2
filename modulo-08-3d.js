@@ -1100,33 +1100,24 @@
     for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) >>> 0;
     return h;
   }
-  function toggleDispersionPanel() {
-    const panel = document.getElementById("dispersionPanel");
-    const btn = document.getElementById("dispersionBtn");
-    const statusEl = document.getElementById("dispersionStatus");
-    if (comercioCentroide) {
-      const showing = panel.style.display !== "block";
-      panel.style.display = showing ? "block" : "none";
-      if (btn) btn.style.background = showing ? "rgba(0,0,0,.08)" : "";
-      return;
-    }
-    if (dispersionLoading) return;
+  // La dispersion ya no tiene boton aparte -- el slider vive DENTRO del
+  // panel de Usos del Suelo, y se activa solo (calcula el centroide
+  // comercial) la primera vez que esa capa se muestra.
+  function asegurarCentroideComercial() {
+    if (comercioCentroide || dispersionLoading) return;
     dispersionLoading = true;
-    panel.style.display = "block";
-    if (statusEl) statusEl.textContent = "Ubicando el polo comercial principal…";
+    const statusEl = document.getElementById("dispersionStatus");
+    if (statusEl) statusEl.textContent = "Ubicando el polo comercial…";
     cargarDatosUsos().then(([buildingsArr, usoArr]) => {
       comercioCentroide = calcularCentroideComercial(buildingsArr, usoArr);
       dispersionLoading = false;
-      if (statusEl) statusEl.textContent = comercioCentroide ? "" : "No se encontro comercio para ubicar.";
-      if (btn) btn.style.background = "rgba(0,0,0,.08)";
+      if (statusEl) statusEl.textContent = "";
     }).catch(err => {
       console.error("[dispersion comercio]", err);
       dispersionLoading = false;
       if (statusEl) statusEl.textContent = "No se pudo cargar.";
     });
   }
-  const dispersionBtn = document.getElementById("dispersionBtn");
-  if (dispersionBtn) dispersionBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleDispersionPanel(); });
   const dispersionSlider = document.getElementById("dispersionSlider");
   const dispersionVal = document.getElementById("dispersionVal");
   if (dispersionSlider) dispersionSlider.addEventListener("input", () => {
@@ -2069,6 +2060,12 @@
   // ---- UI de cierre de via: llenar el dropdown y manejar el boton
   // "Cerrar" -- calcula el reruteo real (Dijkstra) sobre la red vial ya
   // cargada y aplica el desvio a los vehiculos que pasarian cerca. ----
+  const closureIconBtn = document.getElementById("closureIconBtn");
+  const closurePanelEl = document.getElementById("closurePanel");
+  if (closureIconBtn) closureIconBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    closurePanelEl.style.display = closurePanelEl.style.display === "block" ? "none" : "block";
+  });
   const closureSelect = document.getElementById("closureSelect");
   if (closureSelect) {
     CLOSURE_CANDIDATES.forEach(c => {

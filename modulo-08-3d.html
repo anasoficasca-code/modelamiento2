@@ -228,7 +228,6 @@
       <button type="button" id="viewReset">Restablecer vista axonométrica</button>
       <button type="button" id="perspToggle">📐 Ver en perspectiva</button>
       <button type="button" id="usosSueloBtn">🗺️ Ver plano de usos</button>
-      <button type="button" id="dispersionBtn">🏪 Dispersar comercio</button>
       <button type="button" id="alinearPlanoBtn" style="display:none;">📍 Alinear plano (arrastrar)</button>
     </div>
 
@@ -239,31 +238,20 @@
       <button type="button" id="alinearPlanoCopy" style="width:100%; margin-top:6px; padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:11px; font-weight:700; cursor:pointer;">📋 Copiar coordenadas</button>
     </div>
 
-    <div id="closurePanel" style="position:absolute; top:60px; left:18px; z-index:12; width:300px; background:rgba(17,20,24,.94); border:1px solid #1b2550; border-radius:10px; padding:12px 14px; box-shadow:0 8px 24px rgba(0,0,0,.3); font-family:'Segoe UI',sans-serif; color:#cbd3dc;">
-      <div style="font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#6b7aa8; margin-bottom:6px;">Vehículos</div>
-      <div style="font-size:9.5px; color:#8b96a5; line-height:1.4; margin-bottom:10px;">Modelo ilustrativo/conceptual — no es una re-simulación real de SUMO (este sitio no tiene un servidor que pueda correr SUMO en vivo). Multiplica visualmente los vehículos ya grabados y desvía a los que pasarían por la vía cerrada.</div>
-      <label style="display:block; font-size:10.5px; margin-bottom:4px;">Cerrar vía crítica:</label>
-      <select id="closureSelect" style="width:100%; margin-bottom:8px; padding:5px; border-radius:6px; background:#0b0c0f; color:#e8ecf1; border:1px solid rgba(255,255,255,.15); font-size:11px;">
-        <option value="">— Ninguna (modelo base) —</option>
-      </select>
-      <button type="button" id="closureBtn" style="width:100%; padding:7px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:11px; font-weight:700; cursor:pointer;">Cerrar</button>
-      <div id="closureStatus" style="margin-top:8px; font-size:10px; color:#94a3b8;">Sin cambios — mostrando el modelo base.</div>
+    <div id="closureWrap" style="position:absolute; top:18px; left:18px; z-index:12;">
+      <button type="button" id="closureIconBtn" title="Cerrar una vía crítica" style="width:34px; height:34px; border-radius:50%; border:1px solid rgba(0,0,0,.12); background:rgba(255,255,255,.96); box-shadow:0 4px 14px rgba(0,0,0,.18); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;">🚧</button>
+      <div id="closurePanel" style="display:none; margin-top:8px; width:240px; background:rgba(17,20,24,.96); border:1px solid #1b2550; border-radius:10px; padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,.3); font-family:'Segoe UI',sans-serif; color:#cbd3dc;">
+        <div style="font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#6b7aa8; margin-bottom:5px;">Cerrar vía crítica</div>
+        <div style="font-size:9px; color:#8b96a5; line-height:1.35; margin-bottom:7px;">Modelo ilustrativo — desvía por calles reales a los vehículos que pasarían por ahí.</div>
+        <select id="closureSelect" style="width:100%; margin-bottom:6px; padding:4px; border-radius:6px; background:#0b0c0f; color:#e8ecf1; border:1px solid rgba(255,255,255,.15); font-size:10.5px;">
+          <option value="">— Ninguna (modelo base) —</option>
+        </select>
+        <button type="button" id="closureBtn" style="width:100%; padding:5px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; font-size:10.5px; font-weight:700; cursor:pointer;">Cerrar</button>
+        <div id="closureStatus" style="margin-top:6px; font-size:9.5px; color:#94a3b8;">Sin cambios — modelo base.</div>
+      </div>
     </div>
 
-    <div id="dispersionPanel" style="display:none; position:absolute; bottom:18px; left:18px; z-index:12; width:260px; background:rgba(255,255,255,.96); border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:12px 14px; box-shadow:0 8px 24px rgba(0,0,0,.12); font-family:'Segoe UI',sans-serif; color:#1e293b;">
-      <div style="font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:6px;">Dispersión del comercio</div>
-      <div style="font-size:10.5px; color:#475569; line-height:1.4; margin-bottom:10px;">Al dispersar el comercio (como Corabastos) en vez de tenerlo concentrado en un solo punto, los carros ya no convergen todos ahí — el tráfico y el ruido alrededor de esa zona bajan.</div>
-      <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
-        <span>Concentración comercial</span><span id="dispersionVal" style="color:#0369a1; font-weight:700;">100% (base)</span>
-      </div>
-      <input type="range" id="dispersionSlider" min="0" max="100" value="100" step="5" style="width:100%; margin-bottom:6px;">
-      <div style="display:flex; justify-content:space-between; font-size:9.5px; color:#94a3b8;">
-        <span>0% disperso</span><span>100% concentrado (modelo base)</span>
-      </div>
-      <div id="dispersionStatus" style="margin-top:8px; font-size:10px; color:#94a3b8;"></div>
-    </div>
-
-    <div id="usosSueloLegend" style="display:none; position:absolute; bottom:18px; left:18px; z-index:12; width:210px; background:rgba(255,255,255,.96); border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:12px 14px; box-shadow:0 8px 24px rgba(0,0,0,.12); font-family:'Segoe UI',sans-serif;">
+    <div id="usosSueloLegend" style="display:none; position:absolute; bottom:18px; left:18px; z-index:12; width:230px; background:rgba(255,255,255,.96); border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:12px 14px; box-shadow:0 8px 24px rgba(0,0,0,.12); font-family:'Segoe UI',sans-serif;">
       <div style="font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:8px;">Usos del suelo</div>
       <div style="display:flex; flex-direction:column; gap:6px; font-size:11px; color:#1e293b;">
         <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#f9e7a6; flex:none;"></i> Residencial</div>
@@ -280,6 +268,14 @@
         <div style="font-size:10px; color:#64748b; margin-bottom:4px;">Código de correcciones (cópialo y pégamelo):</div>
         <textarea id="usosCorreccionesOut" rows="2" readonly spellcheck="false" style="width:100%; font:10px monospace; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:5px; resize:vertical; color:#1e293b;"></textarea>
         <button type="button" id="usosCorreccionesCopy" style="width:100%; margin-top:5px; padding:5px; border-radius:6px; border:1px solid #cbd5e1; background:#f8fafc; font-size:10.5px; cursor:pointer;">📋 Copiar</button>
+      </div>
+      <div style="margin-top:10px; padding-top:9px; border-top:1px dashed rgba(0,0,0,.12);">
+        <div style="font-size:10px; font-weight:700; color:#64748b; margin-bottom:4px;">Dispersión del comercio</div>
+        <div style="display:flex; justify-content:space-between; font-size:10.5px; margin-bottom:3px;">
+          <span>Concentración</span><span id="dispersionVal" style="color:#0369a1; font-weight:700;">100% (base)</span>
+        </div>
+        <input type="range" id="dispersionSlider" min="0" max="100" value="100" step="5" style="width:100%;">
+        <div id="dispersionStatus" style="margin-top:4px; font-size:9px; color:#94a3b8;"></div>
       </div>
     </div>
 
