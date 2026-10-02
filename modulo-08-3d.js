@@ -507,6 +507,7 @@
   noiseBufCanvas.width = NOISE_BUF_W; noiseBufCanvas.height = NOISE_BUF_H;
   const noiseBufCtx = noiseBufCanvas.getContext("2d", { willReadFrequently: true });
   let noiseFieldImg = null; // se reusa para que las mirlas lean el mismo campo real
+  let noiseIntensityField = null; // intensidad 0..1 real, SEPARADA del color visual
   // ---- Usos del suelo (Shapefile Usos_kennedy, 50.878 lotes reales,
   // EPSG:4686 convertido a la proyeccion local) -- pinta el EDIFICIO
   // COMPLETO (paredes + techo), no el piso, segun el uso real asignado
@@ -750,7 +751,7 @@
         } else if (uso && polosDispersos.length) {
           for (const polo of polosDispersos) {
             const d2 = (cx - polo.x) ** 2 + (cy - polo.y) ** 2;
-            if (d2 < (comercioRadioM * 0.6) ** 2 && h1 < (1 - dispersionFactor) * 0.35) {
+            if (d2 < (comercioRadioM * 1.1) ** 2 && h1 < (1 - dispersionFactor) * 0.6) {
               uso = "Comercio"; // comercio nuevo aparece aqui
               break;
             }
@@ -1186,10 +1187,21 @@
     noiseBufCtx.globalCompositeOperation = "source-over";
     const img = noiseBufCtx.getImageData(0, 0, NOISE_BUF_W, NOISE_BUF_H);
     const data = img.data;
-    for (let i = 0; i < data.length; i += 4) {
+    // Intensidad REAL (0..1) guardada aparte, independiente del color
+    // visual -- antes las mirlas trataban de adivinar el ruido por el
+    // brillo del color pintado, y al cambiar la paleta a tonos oliva
+    // (todos con un brillo muy parecido entre si) esa adivinanza dejo de
+    // funcionar bien, haciendo que casi todo se sintiera "ruidoso" por
+    // igual. Con esto, cambiar los colores del mapa nunca vuelve a
+    // romper el comportamiento real de las mirlas.
+    if (!noiseIntensityField || noiseIntensityField.length !== NOISE_BUF_W * NOISE_BUF_H) {
+      noiseIntensityField = new Float32Array(NOISE_BUF_W * NOISE_BUF_H);
+    }
+    for (let i = 0, p = 0; i < data.length; i += 4, p++) {
       const intensity = data[i + 3] / 255;
-      if (intensity < 0.02) { data[i + 3] = 0; continue; }
+      if (intensity < 0.02) { data[i + 3] = 0; noiseIntensityField[p] = 0; continue; }
       const t = Math.min(1, Math.pow(intensity, 2.4));
+      noiseIntensityField[p] = t;
       const [r, g, b] = noiseColorAt(t);
       data[i] = r; data[i + 1] = g; data[i + 2] = b;
       data[i + 3] = Math.round(NOISE_ALPHA * 255); // alpha SIEMPRE el mismo, solo cambia el color
@@ -1205,18 +1217,13 @@
   // donde estan los carros DE VERDAD en este instante, no un valor fijo.
   const NOISE_DB_BASE = 40, NOISE_DB_SPAN = 52;
   function noiseDbAt(x, y) {
-    if (!noiseFieldImg || !noiseGroundW) return NOISE_DB_BASE;
+    if (!noiseIntensityField || !noiseGroundW) return NOISE_DB_BASE;
     const bx = Math.floor(((x - noiseOriginX) / noiseGroundW) * NOISE_BUF_W);
     const by = Math.floor(NOISE_BUF_H - ((y - noiseOriginY) / noiseGroundH) * NOISE_BUF_H);
     if (bx < 0 || by < 0 || bx >= NOISE_BUF_W || by >= NOISE_BUF_H) return NOISE_DB_BASE;
-    const idx = (by * NOISE_BUF_W + bx) * 4;
-    const raw = noiseFieldImg.data[idx + 3] / 255; // el alpha ya no sirve de intensidad (quedo fijo); se usa el brillo del color en su lugar
-    const bright = (noiseFieldImg.data[idx] + noiseFieldImg.data[idx + 1] + noiseFieldImg.data[idx + 2]) / (3 * 255);
-    if (raw < 0.01) return NOISE_DB_BASE;
-    // mientras mas cerca de rojo (stop final), mas alto: se aproxima con
-    // la distancia de color a "amarillo claro" (stop inicial, ruido bajo).
-    const t = 1 - bright; // aprox: colores mas oscuros/rojos = mas ruido
-    return NOISE_DB_BASE + NOISE_DB_SPAN * Math.max(0, Math.min(1, t * 1.6));
+    const t = noiseIntensityField[by * NOISE_BUF_W + bx] || 0; // intensidad REAL, ya no se adivina por el color
+    if (t < 0.01) return NOISE_DB_BASE;
+    return NOISE_DB_BASE + NOISE_DB_SPAN * t;
   }
   function noiseEscapeDir(x, y) {
     const paso = (noiseGroundW / NOISE_BUF_W) * 3;
@@ -1782,7 +1789,47 @@
       const scale = 1 + d.expansion_pct / 100 * 0.6;
       d.area_ha = elBurroBaseAreaHa * scale * scale;
     }
+    actualizarLluvia(mes);
     return d;
+  }
+  // ---- Lluvia: se ve SOLO en los meses reales de temporada de lluvias
+  // en Bogota (patron bimodal real: marzo-mayo y octubre-noviembre); en
+  // temporada seca no se muestra nada. ----
+  const MESES_LLUVIA = [3, 4, 5, 10, 11];
+  let rainPoints = null, rainVelocities = null, rainActive = false, lastRainTs = 0;
+  function buildRain() {
+    if (rainPoints || !sceneExtentW || !sceneExtentH) return;
+    const COUNT = 2200;
+    const positions = new Float32Array(COUNT * 3);
+    rainVelocities = new Float32Array(COUNT);
+    for (let i = 0; i < COUNT; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * sceneExtentW * 1.3;
+      positions[i * 3 + 1] = Math.random() * 90 + 5;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * sceneExtentH * 1.3;
+      rainVelocities[i] = 55 + Math.random() * 35;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({ color: 0xaecbe8, size: 0.35, transparent: true, opacity: 0.55, depthWrite: false });
+    rainPoints = new THREE.Points(geo, mat);
+    rainPoints.visible = false;
+    rainPoints.renderOrder = 998;
+    sceneRoot.add(rainPoints);
+  }
+  function updateRain(dt) {
+    if (!rainActive || !rainPoints) return;
+    const pos = rainPoints.geometry.attributes.position;
+    for (let i = 0; i < rainVelocities.length; i++) {
+      let y = pos.getY(i) - rainVelocities[i] * dt;
+      if (y < 0) y = 85 + Math.random() * 10;
+      pos.setY(i, y);
+    }
+    pos.needsUpdate = true;
+  }
+  function actualizarLluvia(mes) {
+    buildRain();
+    rainActive = MESES_LLUVIA.includes(mes);
+    if (rainPoints) rainPoints.visible = rainActive;
   }
 
   function loadWaterBodies() {
@@ -2684,6 +2731,9 @@
     }
     updateBirds(now);
     updateAttractorMarkerGlow(now);
+    const rainDt = lastRainTs ? Math.min(0.05, (now - lastRainTs) / 1000) : 0;
+    lastRainTs = now;
+    updateRain(rainDt);
     controls.update();
     renderer.render(scene, camera);
   }
