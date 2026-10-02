@@ -1098,7 +1098,14 @@
   // zonas con mas de 60 dB(A) de ruido (usando el mismo indice real de
   // ruido ya cargado), con un grupo residente en un refugio fijo.
   // ============================================================
-  const HUMEDAL_X = 6017.9, HUMEDAL_Y = 1980.2; // centro real del Humedal La Vaca
+  const HUMEDAL_X = 6017.9, HUMEDAL_Y = 1980.2; // centro de La Vaca -- solo como respaldo si El Burro aun no cargo
+  // La usuaria se refiere al Humedal EL BURRO (el foco real de todo el
+  // proyecto), no a La Vaca -- se usa el centro real de El Burro
+  // (elBurroCentro, calculado de su poligono real) en cuanto esta
+  // disponible, cayendo al punto de respaldo solo si todavia no carga.
+  function getHumedalCentro() {
+    return (typeof elBurroCentro !== "undefined" && elBurroCentro) ? elBurroCentro : { x: HUMEDAL_X, y: HUMEDAL_Y };
+  }
   const BIRD_TREE_SPECIES = {
     "Sauco": { key: "sauco", color: 0xb06bff, weight: 1.0, base: 260 },
     "Cerezo, capuli": { key: "capuli", color: 0xff5fa8, weight: 0.76, base: 200 },
@@ -1143,7 +1150,7 @@
         const extraNecesarios = Math.max(0, topeTotal - topeBase);
         if (extraNecesarios > 0) {
           const candidatosCercaHumedal = lista
-            .map((t, i) => ({ t, i, d2: (t.x - HUMEDAL_X) ** 2 + (t.y - HUMEDAL_Y) ** 2 }))
+            .map((t, i) => { const hc = getHumedalCentro(); return { t, i, d2: (t.x - hc.x) ** 2 + (t.y - hc.y) ** 2 }; })
             .filter(c => !usados.has(c.i))
             .sort((a, b) => a.d2 - b.d2)
             .slice(0, extraNecesarios);
@@ -1159,7 +1166,7 @@
   // los arboles en negro una vez, se deja intacto). Son discos pequenos
   // flotando justo encima de la copa de cada arbol atractor.
   let attractorMarkersGroup = null;
-  const MARKER_BASE_R = 0.9; // mas chico que antes (2.2) -- se pidio que no sean tan grandes
+  const MARKER_BASE_R = 1.4; // un poco mas grande que el ultimo ajuste (0.9), seguia siendo muy chico
   function buildAttractorTreeMarkers(attractors) {
     if (attractorMarkersGroup) { sceneRoot.remove(attractorMarkersGroup); attractorMarkersGroup.geometry?.dispose(); }
     const diskGeo = new THREE.CircleGeometry(MARKER_BASE_R, 10);
@@ -1318,7 +1325,8 @@
     } else if (origen === "humedal") {
       // area mucho mas amplia alrededor del humedal, no un cuadrito
       // chiquito -- para que no parezcan amontonadas ahi mismo.
-      x = HUMEDAL_X + (Math.random() - 0.5) * 1400; y = HUMEDAL_Y + (Math.random() - 0.5) * 1400;
+      const hc = getHumedalCentro();
+      x = hc.x + (Math.random() - 0.5) * 1400; y = hc.y + (Math.random() - 0.5) * 1400;
     } else if (origen === "disperso") {
       // repartidas por TODA la zona de Kennedy, cada una ya volando por
       // su cuenta en un punto distinto -- esto es lo que de verdad evita
