@@ -733,6 +733,30 @@
     buildingsArr.forEach((b, i) => {
       let uso = usoArr[i];
       if (!uso && b.h >= TALL_THRESHOLD_M) uso = "Residencial";
+      // Dispersion comercial: si el slider esta por debajo de 100%, el
+      // plano de usos TAMBIEN se ve distinto -- algunos edificios de
+      // Comercio cerca del polo original dejan de serlo (se reparte el
+      // comercio), y aparecen edificios de Comercio nuevos cerca de los
+      // polos dispersos, para que se vea de verdad "ya no es Corabastos
+      // centralizado, hay varios puntos de comercio".
+      if (comercioCentroide && dispersionFactor < 1 && centers[i]) {
+        const [cx, cy] = centers[i];
+        const h1 = hashVehId("b" + i) / 4294967295;
+        if (uso === "Comercio") {
+          const d2 = (cx - comercioCentroide.x) ** 2 + (cy - comercioCentroide.y) ** 2;
+          if (d2 < comercioRadioM * comercioRadioM && h1 > dispersionFactor) {
+            uso = "Otros"; // este ya no es comercio -- se repartio
+          }
+        } else if (uso && polosDispersos.length) {
+          for (const polo of polosDispersos) {
+            const d2 = (cx - polo.x) ** 2 + (cy - polo.y) ** 2;
+            if (d2 < (comercioRadioM * 0.6) ** 2 && h1 < (1 - dispersionFactor) * 0.35) {
+              uso = "Comercio"; // comercio nuevo aparece aqui
+              break;
+            }
+          }
+        }
+      }
       let forcedRed = false;
       if (manualColorOverrides[i]) {
         // override manual: se usa tal cual, ya en formato #rrggbb
@@ -800,10 +824,8 @@
     usosSueloLoading = true;
     if (legend) legend.style.display = "block";
     if (loadingEl) loadingEl.textContent = "Cargando usos del suelo…";
-    Promise.all([
-      fetch(BUILDINGS_URL).then(r => r.json()),
-      fetch("./assets/kennedy_buildings_uso.json").then(r => r.json())
-    ]).then(([buildingsArr, usoArr]) => {
+    cargarDatosUsos().then(([buildingsArr, usoArr]) => {
+      if (!comercioCentroide) comercioCentroide = calcularCentroideComercial(buildingsArr, usoArr);
       buildUsosSueloBuildings(buildingsArr, usoArr);
       usosSueloLoading = false;
       if (loadingEl) loadingEl.textContent = "";
@@ -812,6 +834,29 @@
       console.error("[usos del suelo]", err);
       usosSueloLoading = false;
       if (loadingEl) loadingEl.textContent = "No se pudo cargar.";
+    });
+  }
+  // Los dos edificios/usos (JSON) se comparten entre el plano de usos y
+  // la dispersion comercial -- se piden una sola vez, no por separado.
+  let datosUsosPromise = null;
+  function cargarDatosUsos() {
+    if (!datosUsosPromise) {
+      datosUsosPromise = Promise.all([
+        fetch(BUILDINGS_URL).then(r => r.json()),
+        fetch("./assets/kennedy_buildings_uso.json").then(r => r.json())
+      ]);
+    }
+    return datosUsosPromise;
+  }
+  // Si el plano de usos ya esta construido y se mueve el slider de
+  // dispersion, se reconstruye en vivo para que se vea el comercio
+  // repartiendose de verdad, no solo el efecto en el ruido.
+  function reconstruirUsosSiVisible() {
+    if (!usosSueloGroup || !usosSueloGroup.visible) return;
+    cargarDatosUsos().then(([buildingsArr, usoArr]) => {
+      sceneRoot.remove(usosSueloGroup);
+      usosGeo?.dispose();
+      buildUsosSueloBuildings(buildingsArr, usoArr);
     });
   }
   // ---- Herramienta de alineacion manual: el plano de usos (solo
@@ -1069,10 +1114,7 @@
     dispersionLoading = true;
     panel.style.display = "block";
     if (statusEl) statusEl.textContent = "Ubicando el polo comercial principal…";
-    Promise.all([
-      fetch(BUILDINGS_URL).then(r => r.json()),
-      fetch("./assets/kennedy_buildings_uso.json").then(r => r.json())
-    ]).then(([buildingsArr, usoArr]) => {
+    cargarDatosUsos().then(([buildingsArr, usoArr]) => {
       comercioCentroide = calcularCentroideComercial(buildingsArr, usoArr);
       dispersionLoading = false;
       if (statusEl) statusEl.textContent = comercioCentroide ? "" : "No se encontro comercio para ubicar.";
@@ -1091,6 +1133,7 @@
     const v = Number(dispersionSlider.value);
     dispersionFactor = v / 100;
     if (dispersionVal) dispersionVal.textContent = v === 100 ? "100% (base)" : `${v}%`;
+    reconstruirUsosSiVisible();
   });
 
   function buildNoiseGround(bbox) {
