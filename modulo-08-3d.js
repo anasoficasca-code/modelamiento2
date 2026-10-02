@@ -539,9 +539,13 @@
                   a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z);
       }
       // Techo: abanico de triangulos desde el primer punto (edificios
-      // catastrales son casi siempre convexos o casi-convexos)
+      // catastrales son casi siempre convexos o casi-convexos). Se sube
+      // un pelin (epsilon) sobre la altura real para evitar z-fighting
+      // con el techo real del edificio (competian por el mismo pixel y
+      // a veces ganaba el techo sin color).
+      const hRoof = h + 0.03;
       for (let k = 1; k < pts.length - 2; k++) {
-        arr.push(pts[0].x, h, pts[0].z, pts[k].x, h, pts[k].z, pts[k + 1].x, h, pts[k + 1].z);
+        arr.push(pts[0].x, hRoof, pts[0].z, pts[k].x, hRoof, pts[k].z, pts[k + 1].x, hRoof, pts[k + 1].z);
       }
     });
     usosSueloGroup = new THREE.Group();

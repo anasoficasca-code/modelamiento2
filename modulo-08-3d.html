@@ -201,7 +201,7 @@
       <button type="button" id="viewReset">Restablecer vista axonométrica</button>
       <button type="button" id="perspToggle">📐 Ver en perspectiva</button>
       <button type="button" id="usosSueloBtn">🗺️ Ver plano de usos</button>
-      <button type="button" id="alinearPlanoBtn">📍 Alinear plano (arrastrar)</button>
+      <button type="button" id="alinearPlanoBtn" style="display:none;">📍 Alinear plano (arrastrar)</button>
     </div>
 
     <div id="alinearPlanoPanel" style="display:none; position:absolute; bottom:18px; right:18px; z-index:12; width:260px; background:rgba(17,20,24,.94); border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:12px 14px; box-shadow:0 8px 24px rgba(0,0,0,.3); font-family:'Segoe UI',sans-serif; color:#e8ecf1;">
@@ -214,18 +214,15 @@
     <div id="usosSueloLegend" style="display:none; position:absolute; bottom:18px; left:18px; z-index:12; width:210px; background:rgba(255,255,255,.96); border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:12px 14px; box-shadow:0 8px 24px rgba(0,0,0,.12); font-family:'Segoe UI',sans-serif;">
       <div style="font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:8px;">Usos del suelo</div>
       <div style="display:flex; flex-direction:column; gap:6px; font-size:11px; color:#1e293b;">
-        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#f4d35e; flex:none;"></i> Residencial</div>
-        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#e63946; flex:none;"></i> Comercio</div>
-        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#6b7280; flex:none;"></i> Vías</div>
-        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#52b788; flex:none;"></i> Espacio público</div>
-        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#1b4332; flex:none;"></i> Suelo protegido</div>
-        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#457b9d; flex:none;"></i> Dotacional</div>
-        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#d4c5a9; flex:none;"></i> Sin edificar</div>
-        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#7b2d8e; flex:none;"></i> Industrial</div>
-        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#495057; flex:none;"></i> Parqueadero</div>
-        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#8ac926; flex:none;"></i> Recreacional</div>
-        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#adb5bd; flex:none;"></i> Otros</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#f9e7a6; flex:none;"></i> Residencial</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#f19299; flex:none;"></i> Comercio</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#99b6c9; flex:none;"></i> Dotacional</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#b68cc1; flex:none;"></i> Industrial</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#9b9fa3; flex:none;"></i> Parqueadero</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#bfe188; flex:none;"></i> Recreacional</div>
+        <div style="display:flex; align-items:center; gap:8px;"><i style="width:13px; height:13px; border-radius:3px; background:#d2d6db; flex:none;"></i> Otros</div>
       </div>
+      <div style="margin-top:10px; padding-top:8px; border-top:1px dashed rgba(0,0,0,.12); font-size:10px; color:#64748b;">Clic en un edificio para cambiarle el color.</div>
       <div id="usosSueloLoading" style="margin-top:8px; font-size:10px; color:#94a3b8;"></div>
     </div>
 
