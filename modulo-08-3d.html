@@ -129,6 +129,33 @@
   .tree-info-kind{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-dim); margin:0 0 4px; }
   .tree-info h3{ font-size:14px; margin:0 26px 6px 0; color:var(--ink); }
   .tree-info p#treeInfoDetails{ font-size:12px; color:var(--ink-dim); margin:0; line-height:1.5; }
+  @keyframes noisePop {
+    0% { opacity:0; transform:scale(0.5) translateY(6px); }
+    60% { opacity:1; transform:scale(1.12) translateY(0); }
+    100% { opacity:1; transform:scale(1) translateY(0); }
+  }
+  #noiseLegend.pop-in { animation: noisePop .28s ease-out both; }
+  #noiseLegend.pop-in .noise-legend-row { opacity:0; animation: noisePop .32s ease-out forwards; }
+  #noiseLegend.pop-in .noise-legend-row:nth-child(1){ animation-delay:.03s; }
+  #noiseLegend.pop-in .noise-legend-row:nth-child(2){ animation-delay:.08s; }
+  #noiseLegend.pop-in .noise-legend-row:nth-child(3){ animation-delay:.13s; }
+  #noiseLegend.pop-in .noise-legend-row:nth-child(4){ animation-delay:.18s; }
+  #noiseLegend.pop-in .noise-legend-row:nth-child(5){ animation-delay:.23s; }
+  #noiseLegend.pop-in .noise-legend-row:nth-child(6){ animation-delay:.28s; }  @keyframes legendPop {
+    0% { opacity: 0; transform: scale(0.4) translateX(-10px); }
+    60% { opacity: 1; transform: scale(1.12) translateX(0); }
+    100% { opacity: 1; transform: scale(1) translateX(0); }
+  }
+  .noise-legend-row { opacity: 0; }
+  #noiseLegend.pop-in .noise-legend-row {
+    animation: legendPop 0.42s cubic-bezier(.22,1.4,.4,1) forwards;
+  }
+  #noiseLegend.pop-in .noise-legend-row:nth-child(1) { animation-delay: 0.02s; }
+  #noiseLegend.pop-in .noise-legend-row:nth-child(2) { animation-delay: 0.08s; }
+  #noiseLegend.pop-in .noise-legend-row:nth-child(3) { animation-delay: 0.14s; }
+  #noiseLegend.pop-in .noise-legend-row:nth-child(4) { animation-delay: 0.20s; }
+  #noiseLegend.pop-in .noise-legend-row:nth-child(5) { animation-delay: 0.26s; }
+  #noiseLegend.pop-in .noise-legend-row:nth-child(6) { animation-delay: 0.32s; }
 </style>
 </head>
 <body>
@@ -256,6 +283,21 @@
     <div class="rotate-panel" id="rotatePanel">
       <div class="rotate-row rotate-buttons">
         <button type="button" id="noiseToggle">🔊 Mostrar mapa de ruido</button>
+      </div>
+      <div class="rotate-row rotate-buttons">
+        <button type="button" id="noiseMuteBtn" title="Silenciar/activar sonido" style="flex:none; width:auto; padding:0 10px;"><i class="fa-solid fa-volume-high"></i></button>
+      </div>
+      <audio id="noiseAmbienceAudio" src="./assets/sumo-traffic-ambience.mp3" loop preload="auto"></audio>
+      <div id="noiseLegend" style="display:none; margin-top:6px; padding:10px 12px; border-radius:8px; background:#00052e; border:1px solid #1b2550; font-family:'Segoe UI',sans-serif;">
+        <div style="font:700 10px/1 'IBM Plex Mono',monospace; letter-spacing:.07em; color:#6b7aa8; text-transform:uppercase; margin-bottom:8px;">Nivel de ruido</div>
+        <div style="display:flex; flex-direction:column; gap:5px;">
+          <div class="noise-legend-row" style="display:flex; align-items:center; gap:7px; font-size:10.5px; color:#cbd3dc;"><i style="width:14px; height:14px; border-radius:3px; background:rgb(117,114,85); flex:none;"></i> &lt; 50 dB(A)</div>
+          <div class="noise-legend-row" style="display:flex; align-items:center; gap:7px; font-size:10.5px; color:#cbd3dc;"><i style="width:14px; height:14px; border-radius:3px; background:rgb(117,104,42); flex:none;"></i> 50 – 60</div>
+          <div class="noise-legend-row" style="display:flex; align-items:center; gap:7px; font-size:10.5px; color:#cbd3dc;"><i style="width:14px; height:14px; border-radius:3px; background:rgb(117,85,42); flex:none;"></i> 60 – 70</div>
+          <div class="noise-legend-row" style="display:flex; align-items:center; gap:7px; font-size:10.5px; color:#cbd3dc;"><i style="width:14px; height:14px; border-radius:3px; background:rgb(113,62,10); flex:none;"></i> 70 – 80</div>
+          <div class="noise-legend-row" style="display:flex; align-items:center; gap:7px; font-size:10.5px; color:#cbd3dc;"><i style="width:14px; height:14px; border-radius:3px; background:rgb(107,41,20); flex:none;"></i> 80 – 90</div>
+          <div class="noise-legend-row" style="display:flex; align-items:center; gap:7px; font-size:10.5px; color:#cbd3dc;"><i style="width:14px; height:14px; border-radius:3px; background:rgb(99,30,30); flex:none;"></i> &gt; 90 dB(A)</div>
+        </div>
       </div>
       <div class="rotate-row rotate-buttons">
         <button type="button" id="bioToggle">🐦 Mostrar mirlas</button>

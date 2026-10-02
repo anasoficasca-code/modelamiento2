@@ -1485,7 +1485,17 @@
       const p = toScene(b.x, b.y);
       const bat = Math.sin(b.phase) * (b.rest > 0 ? 0.15 : 0.3);
       b.sprite.position.set(p.x, 3.2 + bat, p.z);
-      b.sprite.material.color.set(b.estresada ? 0xff6b4d : 0xffffff);
+      // Roja y clara cuando el ruido la estresa (formula Frep=-K*(Lruido-60)
+      // ya aplicada en updateBirdAgent) -- antes era un naranja tenue, se
+      // pidio que sea rojo de verdad para que se note el estres.
+      b.sprite.material.color.set(b.estresada ? 0xff2020 : 0xffffff);
+      // Se "voltea" (espejo horizontal) segun hacia donde esta yendo
+      // ahora mismo, para que se note visualmente el giro al escapar del
+      // ruido (antes siempre miraba para el mismo lado sin importar el
+      // rumbo real).
+      const dirSign = b.vx >= 0 ? 1 : -1;
+      const sB = 9 * dirSign;
+      if (b.sprite.scale.x !== sB) b.sprite.scale.x = sB;
       const nuevaTex = Math.sin(b.phase) > 0 ? birdTexUp : birdTexDown;
       if (b.sprite.material.map !== nuevaTex) { b.sprite.material.map = nuevaTex; b.sprite.material.needsUpdate = true; }
     });
@@ -2024,11 +2034,34 @@
   document.getElementById("viewReset").addEventListener("click", () => setAxonometricView(400));
 
   // ---- Rotacion manual del mapa completo (X/Y/Z), para que el usuario
+  const noiseAmbienceAudio = document.getElementById("noiseAmbienceAudio");
+  const noiseMuteBtn = document.getElementById("noiseMuteBtn");
+  if (noiseMuteBtn) noiseMuteBtn.addEventListener("click", () => {
+    if (!noiseAmbienceAudio) return;
+    noiseAmbienceAudio.muted = !noiseAmbienceAudio.muted;
+    noiseMuteBtn.innerHTML = noiseAmbienceAudio.muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+  });
   document.getElementById("noiseToggle").addEventListener("click", (e) => {
     if (!noiseMesh) return;
     noiseMesh.visible = !noiseMesh.visible;
     e.target.classList.toggle("active", noiseMesh.visible);
     e.target.textContent = noiseMesh.visible ? "🔇 Ocultar mapa de ruido" : "🔊 Mostrar mapa de ruido";
+    // mismo audio real de la simulacion 2D (sumo-traffic-ambience.mp3)
+    if (noiseAmbienceAudio) {
+      if (noiseMesh.visible) noiseAmbienceAudio.play().catch(() => {});
+      else noiseAmbienceAudio.pause();
+    }
+    const legend = document.getElementById("noiseLegend");
+    if (legend) {
+      if (noiseMesh.visible) {
+        legend.style.display = "block";
+        legend.classList.remove("pop-in"); void legend.offsetWidth; // reinicia la animacion cada vez
+        legend.classList.add("pop-in");
+      } else {
+        legend.style.display = "none";
+        legend.classList.remove("pop-in");
+      }
+    }
   });
   document.getElementById("bioToggle").addEventListener("click", (e) => {
     if (!birdsGroup) return;
