@@ -1244,7 +1244,7 @@
       const b = makeBirdAgent(origen);
       const spriteMat = new THREE.SpriteMaterial({ map: birdTexUpRef, transparent: true, alphaTest: 0.15, depthWrite: false, depthTest: false });
       const sprite = new THREE.Sprite(spriteMat);
-      sprite.scale.set(40, 40, 1);
+      sprite.scale.set(9, 9, 1);
       sprite.renderOrder = 999;
       birdsGroup.add(sprite);
       b.sprite = sprite;
@@ -1291,35 +1291,23 @@
   }
 
   function makeBirdSprite(wingUp) {
-    const c = document.createElement("canvas"); c.width = 64; c.height = 64;
+    const c = document.createElement("canvas"); c.width = 48; c.height = 48;
     const ctx = c.getContext("2d");
-    ctx.translate(32, 32);
-    // Icono de pajarito bien visible: color rojo/magenta muy saturado
-    // (nada que ver con el mapa real, imposible de confundir con calles,
-    // techos, agua o vegetacion) mas un halo blanco alrededor para que
-    // resalte incluso sobre fondos oscuros. Antes era casi negro y se
-    // perdia contra el mapa -- por eso no se veian las mirlas.
-    const wingY = wingUp ? -12 : 8;
-    function wingPath() {
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.quadraticCurveTo(-11, wingY * 0.4, -21, wingY);
-      ctx.quadraticCurveTo(-11, 1.5, 0, 3);
-      ctx.quadraticCurveTo(11, 1.5, 21, wingY);
-      ctx.quadraticCurveTo(11, wingY * 0.4, 0, 0);
-      ctx.closePath();
-    }
-    // Halo blanco (silueta un poco mas grande, dibujada primero)
-    ctx.save();
-    ctx.scale(1.28, 1.28);
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
-    wingPath(); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0, 1.3, 4.5, 2.6, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-    // Cuerpo rojo brillante encima
-    ctx.fillStyle = "#ff2d55";
-    wingPath(); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0, 1.3, 4.5, 2.6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.translate(24, 24);
+    // Icono simple de pajarito volando (silueta de un solo color solido,
+    // sin trazos claros ni fondo) - igual diseño que en modulo-10-corte,
+    // con 2 alas que suben o bajan segun "wingUp" para dar aleteo.
+    ctx.fillStyle = "#1a1c22";
+    const wingY = wingUp ? -9 : 6;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-8, wingY * 0.4, -16, wingY);
+    ctx.quadraticCurveTo(-8, 1, 0, 2);
+    ctx.quadraticCurveTo(8, 1, 16, wingY);
+    ctx.quadraticCurveTo(8, wingY * 0.4, 0, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 1, 3.4, 2, 0, 0, Math.PI * 2); ctx.fill();
     return new THREE.CanvasTexture(c);
   }
   function makeBirdAgent(origen) {
@@ -1441,7 +1429,7 @@
       }
       const b = makeBirdAgent(origen);
       const sprite = new THREE.Sprite(spriteMat.clone());
-      sprite.scale.set(40, 40, 1); // mas grande que en modulo-10-corte (3.2): aqui se ve TODA la ciudad, no un sector acercado, y con el sprite chico no se alcanzaban a ver las mirlas
+      sprite.scale.set(9, 9, 1); // mas grande que en modulo-10-corte (3.2): aqui se ve TODA la ciudad, no un sector acercado, y con el sprite chico no se alcanzaban a ver las mirlas
       sprite.renderOrder = 999;
       birdsGroup.add(sprite);
       b.sprite = sprite;
