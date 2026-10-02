@@ -1010,6 +1010,89 @@
   const usosSueloBtn = document.getElementById("usosSueloBtn");
   if (usosSueloBtn) usosSueloBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleUsosSuelo(); });
 
+  // ---- Dispersion del comercio: al bajar la "concentracion comercial",
+  // se reduce la intensidad del ruido/trafico especificamente en el
+  // radio del polo comercial principal real (centroide de los edificios
+  // de uso Comercio, que en Kennedy cae cerca de Corabastos) -- como si
+  // esos carros ya no convergieran todos ahi porque el comercio esta mas
+  // repartido. Es un modelo conceptual (igual que el resto de esta
+  // simulacion, que ya se aclara que no es SUMO real), no un recalculo
+  // de rutas, pero el efecto visual en el mapa de ruido es real: se nota
+  // menos rojo alrededor de ese punto.
+  // dispersionFactor: 1 = comercio concentrado en un solo polo (modelo
+  // base), 0 = totalmente repartido entre varios polos nuevos. No es
+  // solo bajar la intensidad del ruido -- los vehiculos que iban hacia
+  // el polo original de verdad se REDIRIGEN (cambia el punto donde
+  // aportan ruido) hacia los polos dispersos, asi el trancon baja en el
+  // punto original PORQUE los carros ya no van todos ahi, no porque se
+  // les reste intensidad artificialmente.
+  let comercioCentroide = null, comercioRadioM = 550, dispersionFactor = 1;
+  let polosDispersos = [];
+  let dispersionLoading = false;
+  function calcularCentroideComercial(buildingsArr, usoArr) {
+    let sx = 0, sy = 0, n = 0;
+    buildingsArr.forEach((b, i) => {
+      if (usoArr[i] !== "Comercio") return;
+      const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length;
+      const cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
+      sx += cx; sy += cy; n++;
+    });
+    if (!n) return null;
+    const centro = { x: sx / n, y: sy / n };
+    // 4 polos nuevos alrededor del original, a una distancia razonable
+    // (unas 15-18 cuadras), dentro del area real de Kennedy.
+    const DIST_M = 2200;
+    const angulos = [Math.PI * 0.15, Math.PI * 0.85, Math.PI * 1.35, Math.PI * 1.85];
+    polosDispersos = angulos.map(a => ({
+      x: Math.min(10400, Math.max(600, centro.x + Math.cos(a) * DIST_M)),
+      y: Math.min(6300, Math.max(400, centro.y + Math.sin(a) * DIST_M)),
+    }));
+    return centro;
+  }
+  function hashVehId(id) {
+    let h = 0;
+    const s = String(id);
+    for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) >>> 0;
+    return h;
+  }
+  function toggleDispersionPanel() {
+    const panel = document.getElementById("dispersionPanel");
+    const btn = document.getElementById("dispersionBtn");
+    const statusEl = document.getElementById("dispersionStatus");
+    if (comercioCentroide) {
+      const showing = panel.style.display !== "block";
+      panel.style.display = showing ? "block" : "none";
+      if (btn) btn.style.background = showing ? "rgba(0,0,0,.08)" : "";
+      return;
+    }
+    if (dispersionLoading) return;
+    dispersionLoading = true;
+    panel.style.display = "block";
+    if (statusEl) statusEl.textContent = "Ubicando el polo comercial principal…";
+    Promise.all([
+      fetch(BUILDINGS_URL).then(r => r.json()),
+      fetch("./assets/kennedy_buildings_uso.json").then(r => r.json())
+    ]).then(([buildingsArr, usoArr]) => {
+      comercioCentroide = calcularCentroideComercial(buildingsArr, usoArr);
+      dispersionLoading = false;
+      if (statusEl) statusEl.textContent = comercioCentroide ? "" : "No se encontro comercio para ubicar.";
+      if (btn) btn.style.background = "rgba(0,0,0,.08)";
+    }).catch(err => {
+      console.error("[dispersion comercio]", err);
+      dispersionLoading = false;
+      if (statusEl) statusEl.textContent = "No se pudo cargar.";
+    });
+  }
+  const dispersionBtn = document.getElementById("dispersionBtn");
+  if (dispersionBtn) dispersionBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleDispersionPanel(); });
+  const dispersionSlider = document.getElementById("dispersionSlider");
+  const dispersionVal = document.getElementById("dispersionVal");
+  if (dispersionSlider) dispersionSlider.addEventListener("input", () => {
+    const v = Number(dispersionSlider.value);
+    dispersionFactor = v / 100;
+    if (dispersionVal) dispersionVal.textContent = v === 100 ? "100% (base)" : `${v}%`;
+  });
+
   function buildNoiseGround(bbox) {
     noiseOriginX = bbox[0]; noiseOriginY = bbox[1];
     noiseGroundW = bbox[2] - bbox[0]; noiseGroundH = bbox[3] - bbox[1];
@@ -1038,7 +1121,28 @@
     const sx = NOISE_BUF_W / noiseGroundW, sy = NOISE_BUF_H / noiseGroundH;
     const blobR = NOISE_VEH_RADIUS_M * sx;
     vehicles.forEach(v => {
-      const bx = (v.x - noiseOriginX) * sx, by = NOISE_BUF_H - (v.y - noiseOriginY) * sy;
+      // Si el comercio se dispersa (dispersionFactor < 1): un vehiculo
+      // que esta dentro del radio del polo original, con probabilidad
+      // (1-dispersionFactor) -- fija por vehiculo (por su id), no
+      // parpadeando cuadro a cuadro -- aporta su ruido en uno de los
+      // polos dispersos EN VEZ DEL original. Es una redireccion real de
+      // a donde "va" ese trafico, no solo restarle intensidad.
+      let wx = v.x, wy = v.y;
+      if (comercioCentroide && dispersionFactor < 1 && polosDispersos.length) {
+        const d2 = (v.x - comercioCentroide.x) ** 2 + (v.y - comercioCentroide.y) ** 2;
+        if (d2 < comercioRadioM * comercioRadioM) {
+          const h = hashVehId(v.id) / 4294967295; // 0..1 estable para este vehiculo
+          if (h > dispersionFactor) {
+            const polo = polosDispersos[hashVehId(v.id + "_p") % polosDispersos.length];
+            // se posiciona cerca del polo disperso (con un poco de
+            // variacion por vehiculo para no apilarlos en un punto exacto)
+            const jx = (hashVehId(v.id + "_jx") % 200) - 100;
+            const jy = (hashVehId(v.id + "_jy") % 200) - 100;
+            wx = polo.x + jx; wy = polo.y + jy;
+          }
+        }
+      }
+      const bx = (wx - noiseOriginX) * sx, by = NOISE_BUF_H - (wy - noiseOriginY) * sy;
       const grad = noiseBufCtx.createRadialGradient(bx, by, 0, bx, by, blobR);
       grad.addColorStop(0, "rgba(255,255,255,0.9)");
       grad.addColorStop(1, "rgba(255,255,255,0)");
