@@ -695,7 +695,7 @@
       }
       return false;
     }
-    const UNPAINTED_NEARBY_COLOR = 0xff0000; // rojo -- "falta uso, pero esta en la zona de estudio"
+    const UNPAINTED_NEARBY_COLOR = USOS_COLORS["Comercio"]; // mismo rojo exacto de las convenciones (#e63946), no uno nuevo
 
     buildingsArr.forEach((b, i) => {
       let uso = usoArr[i];
