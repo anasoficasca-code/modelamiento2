@@ -24,7 +24,13 @@
   const wrap = document.getElementById("sceneWrap");
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xffffff);
-  scene.fog = new THREE.Fog(0xffffff, 900, 3200);
+  // antes la niebla llegaba a 3200, pero la camara (OrthographicCamera,
+  // far=2000) deja de dibujar todo despues de 2000 -- los objetos se
+  // cortaban de golpe ANTES de que la niebla alcanzara a desvanecerlos
+  // del todo a blanco, por eso se veia "cortado" en vez de difuminado.
+  // Ahora la niebla termina de cerrar a blanco bien antes del limite real
+  // de la camara (1900 de 2000), asegurando un desvanecido completo.
+  scene.fog = new THREE.Fog(0xffffff, 700, 1900);
   // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
   // se agrega a este grupo, no directamente a la escena, para poder
   // rotarlo entero en X/Y/Z con los controles manuales de orientacion.
