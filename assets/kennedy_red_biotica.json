@@ -1,0 +1,641 @@
+{
+ "nodes": [
+  {
+   "id": "Ancyloxypha melanoneura",
+   "common": "Saltarinas",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Taraxacum officinale",
+   "common": "Taraxacum officinale",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Duranta mutisii",
+   "common": "Duranta mutisii",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Apis mellifera",
+   "common": "Abeja de la miel",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Coriandrum sativum",
+   "common": "Coriandrum sativum",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Cucurbita pepo",
+   "common": "Cucurbita pepo",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Physalis peruviana",
+   "common": "Physalis peruviana",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Raphanus raphanistrum",
+   "common": "Raphanus raphanistrum",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Trifolium pratense",
+   "common": "Trifolium pratense",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Asemosyrphus",
+   "common": "Mosca de la flor",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Abatia parviflora",
+   "common": "Abatia parviflora",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Leucanthemum vulgare",
+   "common": "Leucanthemum vulgare",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Butorides striata",
+   "common": "Garcita estriada",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Rattus rattus",
+   "common": "Rattus rattus",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Colibri coruscans",
+   "common": "Colibrí chillón",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Hibiscus rosa-sinensis",
+   "common": "Hibiscus rosa-sinensis",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Dione glycera",
+   "common": "Pasionaria andina",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Pelargonium",
+   "common": "Pelargonium",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Eristalinus taeniops",
+   "common": "Mosca tigre",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Sambucus nigra",
+   "common": "Sambucus nigra",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Baccharis latifolia",
+   "common": "Baccharis latifolia",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Harmonia axyridis",
+   "common": "Mariquita",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Tecoma stans",
+   "common": "Tecoma stans",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Leptophobia aripa",
+   "common": "Mariposa de la col",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Tanacetum parthenium",
+   "common": "Tanacetum parthenium",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Mimus gilvus",
+   "common": "Mirla blanca",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Oiketicus",
+   "common": "Cargapalitos",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Salix",
+   "common": "Salix",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Palpada pusilla",
+   "common": "Mosca de la flor",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Prunus serotina",
+   "common": "Prunus serotina",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Penthetria neonigrita",
+   "common": "Mosca",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Piranga olivacea",
+   "common": "Piranga alinegra",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Syzygium paniculatum",
+   "common": "Syzygium paniculatum",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Piranga rubra",
+   "common": "Piranga roja",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Spinus psaltria",
+   "common": "Jilguero",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Sturnella magna",
+   "common": "Chirlobirlo",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Scarabaeidae",
+   "common": "Scarabaeidae",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Syrphidae",
+   "common": "Mosca de la flor",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Thraupis episcopus",
+   "common": "Azulejo",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Toxomerus",
+   "common": "Mosca de la flor",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Bidens latifolia",
+   "common": "Bidens latifolia",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Turdus fuscater",
+   "common": "Mirla",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Cotoneaster pannosus",
+   "common": "Cotoneaster pannosus",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Turdus fuscater gigas",
+   "common": "Mirla patinaranja",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Eucalyptus globulus",
+   "common": "Eucalyptus globulus",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Tyrannus melancholicus",
+   "common": "Sirirí",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Vanessa carye",
+   "common": "Dama de dos ojos",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Lantana camara",
+   "common": "Lantana camara",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  }
+ ],
+ "links": [
+  {
+   "source": "Ancyloxypha melanoneura",
+   "target": "Taraxacum officinale",
+   "tipo": "Visita floral",
+   "zona": "Humedal El Burro",
+   "detalle": "Consume la flor de: Taraxacum officinale"
+  },
+  {
+   "source": "Ancyloxypha melanoneura",
+   "target": "Duranta mutisii",
+   "tipo": "Visita floral",
+   "zona": "Humedal El Burro",
+   "detalle": "Consume la flor de: Duranta mutisii"
+  },
+  {
+   "source": "Apis mellifera",
+   "target": "Coriandrum sativum",
+   "tipo": "Visita floral",
+   "zona": "Huerta Monterrey",
+   "detalle": "Consume la flor de: Coriandrum sativum L."
+  },
+  {
+   "source": "Apis mellifera",
+   "target": "Cucurbita pepo",
+   "tipo": "Visita floral",
+   "zona": "Humedal de Techo",
+   "detalle": "Consume el polen de: Cucurbita pepo"
+  },
+  {
+   "source": "Apis mellifera",
+   "target": "Physalis peruviana",
+   "tipo": "Visita floral",
+   "zona": "Humedal de Techo",
+   "detalle": "Consumo flor de: Physalis peruviana"
+  },
+  {
+   "source": "Apis mellifera",
+   "target": "Cucurbita pepo",
+   "tipo": "Visita floral",
+   "zona": "Humedal de Techo",
+   "detalle": "Consume el néctar de: Curcubita pepo"
+  },
+  {
+   "source": "Apis mellifera",
+   "target": "Raphanus raphanistrum",
+   "tipo": "Visita floral",
+   "zona": "Humedal de Techo",
+   "detalle": "Consume el néctar de: Raphanus raphanistrum"
+  },
+  {
+   "source": "Apis mellifera",
+   "target": "Trifolium pratense",
+   "tipo": "Visita floral",
+   "zona": "Humedal de Techo",
+   "detalle": "Consume la flor de: Trifolium pratense"
+  },
+  {
+   "source": "Asemosyrphus",
+   "target": "Abatia parviflora",
+   "tipo": "Visita floral",
+   "zona": "Humedal El Burro",
+   "detalle": "Consume la flor de: Abatia parviflora"
+  },
+  {
+   "source": "Asemosyrphus",
+   "target": "Leucanthemum vulgare",
+   "tipo": "Visita floral",
+   "zona": "Humedal El Burro",
+   "detalle": "Consume la flor de: Leucanthemum vulgare"
+  },
+  {
+   "source": "Butorides striata",
+   "target": "Rattus rattus",
+   "tipo": "Depredación",
+   "zona": "Humedal de Techo",
+   "detalle": "Consumo general de: Rattus rattus"
+  },
+  {
+   "source": "Colibri coruscans",
+   "target": "Hibiscus rosa-sinensis",
+   "tipo": "Visita floral",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Consume el néctar de: Hibiscus rosa-sinensis"
+  },
+  {
+   "source": "Dione glycera",
+   "target": "Pelargonium",
+   "tipo": "Visita floral",
+   "zona": "Huerta Monterrey",
+   "detalle": "Consume el néctar de: Pelargonium"
+  },
+  {
+   "source": "Eristalinus taeniops",
+   "target": "Sambucus nigra",
+   "tipo": "Visita floral",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Consume néctar de: Sambucus nigra"
+  },
+  {
+   "source": "Eristalinus taeniops",
+   "target": "Baccharis latifolia",
+   "tipo": "Visita floral",
+   "zona": "Humedal El Burro",
+   "detalle": "Consume la flor de: Baccharis latifolia"
+  },
+  {
+   "source": "Harmonia axyridis",
+   "target": "Tecoma stans",
+   "tipo": "Visita floral",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Interactúa con la flor de: Tecoma stans"
+  },
+  {
+   "source": "Leptophobia aripa",
+   "target": "Tanacetum parthenium",
+   "tipo": "Visita floral",
+   "zona": "Huerta Monterrey",
+   "detalle": "Consume néctar de: Tanacetum parthenium"
+  },
+  {
+   "source": "Mimus gilvus",
+   "target": "Sambucus nigra",
+   "tipo": "Herbivoría (frugivoría)",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Consume el fruto de: Sambucus nigra"
+  },
+  {
+   "source": "Oiketicus",
+   "target": "Salix",
+   "tipo": "Herbivoría",
+   "zona": "Humedal El Burro",
+   "detalle": "Consumo de: Salix"
+  },
+  {
+   "source": "Palpada pusilla",
+   "target": "Prunus serotina",
+   "tipo": "Visita floral",
+   "zona": "Humedal El Burro",
+   "detalle": "Consume la flor de: Prunus serotina"
+  },
+  {
+   "source": "Penthetria neonigrita",
+   "target": "Baccharis latifolia",
+   "tipo": "Visita floral",
+   "zona": "Humedal El Burro",
+   "detalle": "Consume la flor de: Baccharis latifolia"
+  },
+  {
+   "source": "Piranga olivacea",
+   "target": "Syzygium paniculatum",
+   "tipo": "Herbivoría (frugivoría)",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Consume el fruto de: Syzygium paniculatum"
+  },
+  {
+   "source": "Piranga rubra",
+   "target": "Syzygium paniculatum",
+   "tipo": "Herbivoría (frugivoría)",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Consume el fruto de: Syzygium paniculatum"
+  },
+  {
+   "source": "Piranga rubra",
+   "target": "Syzygium paniculatum",
+   "tipo": "Herbivoría (frugivoría)",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Consume el fruto de: Syzygium paniculatum"
+  },
+  {
+   "source": "Piranga rubra",
+   "target": "Prunus serotina",
+   "tipo": "Herbivoría (frugivoría)",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Consume fruto de: Prunus serotina"
+  },
+  {
+   "source": "Spinus psaltria",
+   "target": "Taraxacum officinale",
+   "tipo": "Herbivoría (frugivoría)",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Consume la semilla de: Taraxacum officionale"
+  },
+  {
+   "source": "Sturnella magna",
+   "target": "Scarabaeidae",
+   "tipo": "Depredación",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Consume de: Scarabaeidae"
+  },
+  {
+   "source": "Syrphidae",
+   "target": "Raphanus raphanistrum",
+   "tipo": "Visita floral",
+   "zona": "Humedal El Burro",
+   "detalle": "Consume la flor de: Raphanus raphanistrum"
+  },
+  {
+   "source": "Thraupis episcopus",
+   "target": "Sambucus nigra",
+   "tipo": "Herbivoría (frugivoría)",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Consume el fruto de: Sambucus nigra"
+  },
+  {
+   "source": "Toxomerus",
+   "target": "Bidens latifolia",
+   "tipo": "Visita floral",
+   "zona": "Humedal de Techo",
+   "detalle": "Consume la flor de: Bidens latifolia"
+  },
+  {
+   "source": "Toxomerus",
+   "target": "Taraxacum officinale",
+   "tipo": "Visita floral",
+   "zona": "Humedal de Techo",
+   "detalle": "Consume la flor de: Taraxacum officinale"
+  },
+  {
+   "source": "Turdus fuscater",
+   "target": "Cotoneaster pannosus",
+   "tipo": "Visita floral",
+   "zona": "Humedal El Burro",
+   "detalle": "Consume la flor de: Cotoneaster pannosus"
+  },
+  {
+   "source": "Turdus fuscater gigas",
+   "target": "Eucalyptus globulus",
+   "tipo": "Depredación",
+   "zona": "Huerta Monterrey",
+   "detalle": "Consumo general de: Eucalyptus globulus"
+  },
+  {
+   "source": "Tyrannus melancholicus",
+   "target": "Sambucus nigra",
+   "tipo": "Herbivoría (frugivoría)",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Consume el fruto de: Sambucus nigra"
+  },
+  {
+   "source": "Vanessa carye",
+   "target": "Lantana camara",
+   "tipo": "Visita floral",
+   "zona": "Corredor La Magdalena",
+   "detalle": "Consume flor de: Lantana camara"
+  }
+ ]
+}

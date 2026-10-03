@@ -358,10 +358,33 @@ body {
 .swatch-e1 { background: #5cd6d1; } .swatch-e2 { background: #ef9f54; } .swatch-e3 { background: #fac47b; } .swatch-e4 { background: #fb8d84; }
 
 /* NETWORK CANVAS + ZOOM */
-.network-body { display: flex; gap: 20px; align-items: stretch; }
-.network-canvas { position: relative; flex: 1; min-width: 0; align-self: flex-start; border-radius: 12px; overflow: hidden; }
+.network-body {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 20px !important;
+  width: 100% !important;
+}
+.network-canvas-col {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+}
+.network-sidebar {
+  width: 320px !important;
+  min-width: 290px !important;
+  max-width: 340px !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  position: sticky !important;
+  top: 20px !important;
+}
+.network-sidebar > .network-legend.compact { max-width: none; }
+.network-canvas { position: relative; width: 100%; min-width: 0; border-radius: 12px; overflow: hidden; }
 #networkViz {
-  width: 100%; height: 780px; background: #05070a;
+  width: 100%; height: 860px; background: #05070a;
   border: 1px solid var(--border);
   display: block;
   transform-origin: 50% 50%;
@@ -392,11 +415,16 @@ body {
 .map-scale i { font-size: 13px; color: var(--text-dim); transform: rotate(-45deg); }
 .map-scale-bar { display: flex; gap: 14px; font-size: 9.5px; font-weight: 600; letter-spacing: 0.3px; border-top: 1.5px solid var(--text-faint); padding-top: 3px; }
 
-.network-sidebar { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
-
 .network-legend {
-  width: 100%; background: #111111; border: 1px solid var(--border-soft); border-radius: 10px;
-  padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 14px; align-self: flex-start;
+  width: 100% !important;
+  background: #111111;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  align-items: stretch !important;
 }
 .legend-section-box {
   border: 1px solid rgba(92, 214, 209, 0.35); border-radius: 10px;
@@ -487,8 +515,8 @@ body {
 .ods-node.node-off .node-ring, .ods-node.node-off .node-dot, .ods-node.node-off .node-dot-ring { opacity: 0.15 !important; }
 .ods-node.node-off .node-inner { opacity: 0.28; }
 .ods-node { transition: opacity .2s; }
-.ods-node.node-focus-dim { opacity: 0.12; }
-.ods-node.node-apagado { opacity: 0.32; filter: grayscale(1); transition: opacity .35s ease, filter .35s ease; }
+.ods-node.node-focus-dim { opacity: 0.12 !important; }   /* !important: los nodos traen una animación de entrada que fija opacity:1 y sin esto el apagado no se veía */
+.ods-node.node-apagado { opacity: 0.15 !important; filter: grayscale(1); transition: opacity .35s ease, filter .35s ease; }
 .ods-node.node-apagado .node-ring { stroke-dasharray: 5 4; }
 .ods-node.node-focus-active .node-ring, .ods-node.node-selected .node-ring { filter: drop-shadow(0 0 8px #fff); }
 .ods-node.node-focus-active .node-dot, .ods-node.node-selected .node-dot { filter: drop-shadow(0 0 6px #fff); }
@@ -497,8 +525,8 @@ body {
 .edge-group { cursor: pointer; }
 .edge-group.hidden-edge { visibility: hidden; }
 .edge-group { transition: opacity .2s; }
-.edge-group.edge-focus-dim { opacity: 0.05; }
-.edge-group.edge-apagada { opacity: 0.08; transition: opacity .35s ease; }
+.edge-group.edge-focus-dim { opacity: 0.05 !important; }
+.edge-group.edge-apagada { opacity: 0.03 !important; transition: opacity .35s ease; }
 .ods-edge.edge-visual { fill: none; pointer-events: none; transition: opacity .15s, filter .15s; }
 .ods-edge.edge-hit { fill: none; stroke: transparent; stroke-width: 12; pointer-events: stroke; }
 .edge-group:hover .edge-visual { opacity: 1 !important; filter: drop-shadow(0 0 4px var(--edge-color)); }
@@ -955,17 +983,24 @@ footer span { color: var(--teal); }
 @media (max-width: 1200px) {
   .synergies-grid { grid-template-columns: 1fr; }
 }
-@media (max-width: 900px) {
-  .network-body { flex-direction: column; }
-  .network-sidebar { width: 100%; }
-  #networkViz { height: 460px; }
+@media (max-width: 800px) {
+  .network-body { flex-direction: column !important; }
+  .network-sidebar { width: 100% !important; max-width: none !important; }
+  .network-canvas-col { width: 100% !important; }
+  #networkViz { height: min(70vh, 560px); }
   .ods-insight-stats { grid-template-columns: repeat(2, 1fr); }
   .metrics-row { grid-template-columns: repeat(2, 1fr); }
   .network-footer-actions { flex-direction: column; }
 }
-@media (max-width: 768px) {
+@media (max-width: 1000px) {
+  /* En pantallas angostas la barra de iconos y el relleno se comen el ancho
+     que necesita la red: se esconde la barra y se reduce el relleno. */
   .sidebar { display: none; }
-  .main { padding: 16px 20px 40px; }
+  .main { padding: 14px 10px 40px; }
+  .network-canvas { border-radius: 8px; }
+  /* el relleno de la tarjeta de la red se comía 60 px de ancho */
+  .network-section { padding: 16px 10px; }
+  .network-body { gap: 12px; }
 }
 
 /* Trazo rosa calcado sobre la línea de la foto del plano de movilidad. */
@@ -2065,3 +2100,147 @@ footer span { color: var(--teal); }
   text-align: center;
   font-family: 'Courier New', monospace;
 }
+/* ==========================================================
+   Barra de la red: simulación de apagado + conclusiones
+   ========================================================== */
+.m2-red-toolbar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 8px;
+}
+.m2-red-toolbar-label {
+  font-size: 11px; font-weight: 700; color: #9fb0bd;
+  text-transform: uppercase; letter-spacing: .3px;
+}
+.m2-red-toolbar-info { font-size: 11.5px; color: var(--text-faint); flex: 1 1 100%; }
+.m2-btn-conclusiones.active { border-color: rgba(255,209,102,.55); background: rgba(255,209,102,.16); color: #ffd166; }
+
+/* Panel de conclusiones, sobre el lienzo de la red */
+.m2-conclusiones {
+  position: absolute; top: 12px; left: 12px; z-index: 21;
+  width: 390px; max-width: calc(100% - 24px); max-height: calc(100% - 24px); overflow-y: auto;
+  padding: 16px 18px 18px; border-radius: 14px;
+  background: rgba(9,11,15,0.97); border: 1px solid rgba(255,209,102,.28);
+  box-shadow: 0 18px 50px rgba(0,0,0,.65);
+  font-family: 'Inter', sans-serif; color: #cfd6dc;
+  animation: m2ConclIn .22s ease;
+}
+@keyframes m2ConclIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.m2-conclusiones[hidden] { display: none; }
+.m2-concl-cerrar {
+  position: absolute; top: 10px; right: 10px; width: 22px; height: 22px;
+  border: 0; border-radius: 6px; background: transparent; color: #9fb0bd; cursor: pointer; font-size: 15px;
+}
+.m2-concl-cerrar:hover { background: rgba(255,255,255,.12); color: #fff; }
+.m2-concl-kicker { font-size: 10px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: #ffd166; }
+.m2-conclusiones h3 { margin: 4px 26px 6px 0; font-size: 16px; line-height: 1.25; color: #f2f5f7; }
+.m2-concl-nota { margin: 0 0 12px; font-size: 10.5px; line-height: 1.45; color: #7d8794; font-style: italic; }
+
+.m2-concl-datos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
+.m2-concl-dato {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 4px; border-radius: 9px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+}
+.m2-concl-dato b { font-size: 16px; color: #f2f5f7; line-height: 1; }
+.m2-concl-dato span { font-size: 9px; text-align: center; color: #8fa0b0; line-height: 1.2; }
+
+.m2-concl-bloque { margin-bottom: 13px; }
+.m2-concl-bloque h4 { margin: 0 0 4px; font-size: 12px; line-height: 1.3; color: #ffd166; font-weight: 800; }
+.m2-concl-bloque p { margin: 0; font-size: 11.5px; line-height: 1.55; color: #c3ccd6; }
+.m2-concl-bloque b { color: #f2f5f7; }
+.m2-concl-bloque em { color: #9fb0bd; }
+
+.m2-concl-barras { margin-top: 9px; display: flex; flex-direction: column; gap: 5px; }
+.m2-concl-barra { display: grid; grid-template-columns: 8px 1fr 70px 20px; align-items: center; gap: 6px; }
+.m2-concl-punto { width: 8px; height: 8px; border-radius: 50%; }
+.m2-concl-barra-nom { font-size: 10px; color: #9fb0bd; line-height: 1.2; }
+.m2-concl-barra-track { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
+.m2-concl-barra-fill { display: block; height: 100%; border-radius: 3px; opacity: .85; }
+.m2-concl-barra-val { font-size: 10px; color: #dbe3ea; text-align: right; }
+
+.m2-concl-final {
+  margin-top: 4px; padding: 10px 12px; border-radius: 10px;
+  background: rgba(255,209,102,.09); border: 1px solid rgba(255,209,102,.26);
+  font-size: 11.5px; line-height: 1.55; color: #e6dcc4;
+}
+.m2-concl-final b { color: #ffd166; }
+
+/* Arrastre del lienzo de la red */
+#networkViz { cursor: grab; touch-action: none; }
+#networkViz.m2-arrastrando { cursor: grabbing; }
+
+/* ==========================================================
+   Resalte de las conexiones directas (doble clic en un nodo, o clic en
+   una línea): lo que entra en el foco se enciende, no solo se apaga el
+   resto.
+   ========================================================== */
+.edge-group.edge-focus-on .edge-visual {
+  opacity: 1 !important;
+  stroke-width: 4.2 !important;
+  filter: drop-shadow(0 0 7px var(--edge-color, #2fd4c8));
+}
+.ods-node.node-focus-on .node-ring {
+  stroke-width: 5;
+  filter: drop-shadow(0 0 10px currentColor);
+}
+.ods-node.node-focus-on { opacity: 1; }
+.edge-group, .ods-node { transition: opacity .2s ease; }
+
+/* ==========================================================
+   El zoom, dentro del tablero de la red
+   ========================================================== */
+.network-canvas > .network-controls {
+  /* La red quedó estática (sin zoom manual): los botones +/− ya no hacen
+     nada, así que se ocultan en vez de dejarlos ahí sin función. */
+  display: none;
+}
+.network-canvas > .network-controls .network-zoom-controls { pointer-events: auto; }
+@media (max-width: 760px) {
+  /* en pantalla angosta la pastilla se hace pequeña para no comerse la red */
+  .network-canvas > .network-controls { top: 8px; right: 8px; }
+  .network-canvas > .network-controls .network-zoom-controls { padding: 3px 5px; gap: 3px; }
+  .network-canvas > .network-controls .network-zoom-btn { width: 24px; height: 24px; font-size: 12px; }
+  .network-canvas > .network-controls .network-zoom-level { min-width: 34px; font-size: 10px; }
+}
+.network-canvas > .network-controls .network-zoom-controls {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(6,9,13,.88); border: 1px solid var(--border);
+  border-radius: 10px; padding: 5px 7px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.5);
+  backdrop-filter: blur(3px);
+}
+.network-canvas > .network-controls .network-zoom-btn {
+  width: 28px; height: 28px; border-radius: 7px; cursor: pointer;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14);
+  color: #dbe3ea; font-size: 14px; line-height: 1;
+}
+.network-canvas > .network-controls .network-zoom-btn:hover { background: rgba(255,255,255,.16); color: #fff; }
+.network-canvas > .network-controls .network-zoom-level {
+  min-width: 44px; text-align: center; font-size: 11.5px; color: #9fb0bd; font-variant-numeric: tabular-nums;
+}
+
+/* La red se queda "cerrada" hasta que entra en pantalla: ahí arrancan las
+   animaciones de aparición (bola por bola y después línea por línea). */
+.network-canvas:not(.red-armada) .ods-node-reveal,
+.network-canvas:not(.red-armada) .edge-group-reveal {
+  animation-play-state: paused;
+}
+
+/* ==========================================================
+   Ficha del nodo · por qué se conecta con cada uno
+   ========================================================== */
+.node-info-relaciones { margin: 12px 0 4px; display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
+.node-rel-titulo {
+  margin: 0 0 2px; font-size: 10px; font-weight: 800; letter-spacing: .4px;
+  text-transform: uppercase; color: #9fb0bd;
+}
+.node-rel-fila {
+  display: flex; flex-direction: column; gap: 3px; width: 100%; text-align: left; cursor: pointer;
+  padding: 7px 9px; border-radius: 8px; font-family: inherit;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+}
+.node-rel-fila:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.24); }
+.node-rel-nombre { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: #f2f5f7; }
+.node-rel-punto { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.node-rel-motivo { font-size: 10.5px; line-height: 1.4; color: #b9c3cd; }
+.node-rel-donde { font-size: 9.5px; letter-spacing: .3px; text-transform: uppercase; color: #8fa0b0; }

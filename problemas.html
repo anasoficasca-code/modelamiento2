@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Problemas · Kennedy — RAPOT</title>
+<meta name="description" content="Cuatro lecturas axonométricas del colapso operativo y logístico de Kennedy frente a la capacidad de soporte del territorio, en una sola pantalla.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@200;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#050308; --panel:#0c0a14; --panel2:#130f1f; --ice:#f4f2ff; --dim:#9a93ad;
+  --violet:#8052ff; --violet-dim:rgba(128,82,255,.15); --amber:#ffb829;
+  --font:'Geist',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --pad:clamp(20px,4vw,64px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--void);scroll-behavior:smooth}
+body{font-family:var(--font);font-weight:200;background:var(--void);color:var(--dim);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--violet);outline-offset:3px}
+.wrap{max-width:1400px;margin:0 auto;padding:0 var(--pad);width:100%}
+
+#cloud{position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block}
+
+/* ---------- nav ---------- */
+.nav{position:fixed;inset:0 0 auto 0;z-index:20;padding-top:env(safe-area-inset-top,0px);transition:background .3s ease}
+.nav.solid{background:rgba(5,3,8,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.nav-in{height:76px;display:flex;align-items:center;gap:20px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--ice);font-weight:500;font-size:16px}
+.brand svg{width:26px;height:26px}
+.back{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--dim);font-size:13px;border:1px solid rgba(244,242,255,.16);border-radius:999px;padding:9px 16px;transition:border-color .2s ease,color .2s ease}
+.back:hover{color:var(--ice);border-color:rgba(244,242,255,.4)}
+
+/* ---------- hero ---------- */
+.hero{position:relative;z-index:2;padding:110px 0 44px}
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.04em;color:var(--amber);opacity:0;animation:pv-rise .6s cubic-bezier(.22,1,.36,1) .05s forwards}
+.hero h1{margin-top:18px;font-weight:400;color:var(--ice);letter-spacing:-.03em;line-height:1.04;
+  font-size:clamp(2rem,4.6vw,3.6rem);max-width:20ch;opacity:0;animation:pv-rise .7s cubic-bezier(.22,1,.36,1) .14s forwards}
+.hero p{margin-top:18px;max-width:60ch;font-size:17px;font-weight:200;color:var(--dim);opacity:0;animation:pv-rise .7s cubic-bezier(.22,1,.36,1) .26s forwards}
+.scroll-hint{margin-top:36px;display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--dim);
+  opacity:0;animation:pv-rise .7s cubic-bezier(.22,1,.36,1) .36s forwards}
+.scroll-hint i{display:block;width:1px;height:38px;background:linear-gradient(var(--amber),transparent);animation:pv-drip 2.2s ease-in-out infinite}
+@keyframes pv-rise{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:translateY(0); } }
+@keyframes pv-drip{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* ---------- el hilo: rail vertical con un punto por escena ---------- */
+.thread{position:fixed;top:50%;right:26px;transform:translateY(-50%);z-index:15;display:flex;flex-direction:column;align-items:center;gap:0}
+.thread-line{position:absolute;top:14px;bottom:14px;left:50%;width:2px;background:rgba(244,242,255,.14);transform:translateX(-50%)}
+.thread-fill{position:absolute;top:14px;left:50%;width:2px;background:linear-gradient(var(--amber),var(--violet));transform:translateX(-50%);height:0%;transition:height .25s ease}
+.thread-dot{position:relative;z-index:1;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.thread-dot::before{content:"";width:9px;height:9px;border-radius:50%;background:rgba(244,242,255,.28);transition:all .25s cubic-bezier(.22,1,.36,1);box-shadow:0 0 0 0 transparent}
+.thread-dot:hover::before{background:rgba(244,242,255,.6);transform:scale(1.25)}
+.thread-dot.active::before{background:var(--c,var(--amber));transform:scale(1.5);box-shadow:0 0 16px 2px var(--c,var(--amber))}
+.thread-label{position:absolute;right:38px;top:50%;transform:translateY(-50%);white-space:nowrap;font:500 11px/1 var(--font);
+  letter-spacing:.04em;color:var(--ice);background:rgba(12,10,20,.92);border:1px solid rgba(244,242,255,.14);border-radius:6px;
+  padding:6px 10px;opacity:0;pointer-events:none;transition:opacity .18s ease}
+.thread-dot:hover .thread-label{opacity:1}
+@media (max-width:900px){ .thread{display:none} }
+
+/* ---------- secciones de escena (una por axonometria) ---------- */
+.scene-section{position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding-top:60px}
+.scene-head{position:relative;z-index:2;padding:0 var(--pad) 22px;opacity:0;transform:translateY(18px);
+  transition:opacity .6s cubic-bezier(.22,1,.36,1), transform .6s cubic-bezier(.22,1,.36,1)}
+.scene-section.in-view .scene-head{opacity:1;transform:translateY(0)}
+.scene-head-in{max-width:1400px;margin:0 auto;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.scene-head .n{font:500 12px/1 var(--font);letter-spacing:.14em;color:var(--c,var(--amber))}
+.scene-head h2{font-weight:400;font-size:clamp(1.5rem,3vw,2.3rem);letter-spacing:-.02em;color:var(--ice)}
+.scene-head p{flex:1 1 320px;font-size:14.5px;color:var(--dim);max-width:70ch}
+.scene-stage{position:relative;height:min(94vh,1040px);min-height:480px;margin:0 12px;border-radius:16px;overflow:hidden;
+  border:1px solid rgba(244,242,255,.1);box-shadow:0 40px 90px -30px rgba(0,0,0,.7);
+  opacity:0;transform:translateY(28px) scale(.98);
+  transition:opacity .7s cubic-bezier(.22,1,.36,1) .05s, transform .7s cubic-bezier(.22,1,.36,1) .05s, box-shadow .9s ease .1s}
+.scene-section.in-view .scene-stage{opacity:1;transform:translateY(0) scale(1);
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.7), 0 0 0 1px var(--c,var(--violet)), 0 0 70px -12px var(--c,var(--violet))}
+.scene-stage iframe{width:100%;height:100%;border:0;display:block;background:var(--panel)}
+.scene-stage .poster{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--panel);
+  font:500 12px/1 var(--font);letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+@media (max-width:860px){
+  .scene-section{padding-top:36px}
+  .scene-stage{margin:0 10px;height:min(80vh,700px)}
+  .scene-head{padding:0 16px 16px}
+}
+
+/* ---------- cierre ---------- */
+.closing{position:relative;z-index:2;padding:64px var(--pad) 88px}
+.closing .band{max-width:1400px;margin:0 auto;border-top:1px dashed rgba(244,242,255,.16);padding-top:32px;
+  display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+.closing p{max-width:52ch;font-size:14px}
+.closing a.ghost{font-size:13px;color:var(--ice);border-bottom:1px solid rgba(244,242,255,.4)}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .eyebrow,.hero h1,.hero p,.scroll-hint{animation:none;opacity:1}
+  .scroll-hint i{animation:none}
+  .scene-head,.scene-stage{transition:none;opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="v2.html" aria-label="RAPOT">
+      <svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="16" fill="none" stroke="#ffb829" stroke-opacity=".5" stroke-width="1.2"/><circle cx="17" cy="9" r="3" fill="#f4f2ff"/><circle cx="10" cy="21" r="3" fill="#f4f2ff"/><circle cx="24" cy="21" r="3" fill="#f4f2ff"/></svg>
+      RAPOT
+    </a>
+    <a class="back" href="v2.html">&larr; Volver</a>
+  </div>
+</header>
+
+<section class="hero">
+  <canvas id="cloud" aria-hidden="true"></canvas>
+  <div class="wrap" style="position:relative">
+    <p class="eyebrow">KENNEDY</p>
+    <h1>Un territorio que ya no alcanza a sostener su propio modelo de ocupación.</h1>
+    <p>Cuatro lecturas del mismo lugar, cada una desde su propio corte axonométrico. Baja para recorrerlas, una por una, a pantalla completa.</p>
+    <div class="scroll-hint"><i aria-hidden="true"></i>Baja para recorrer las cuatro escenas</div>
+  </div>
+</section>
+
+<main id="scenes"></main>
+
+<nav class="thread" id="thread" aria-label="Escenas">
+  <span class="thread-line"></span>
+  <span class="thread-fill" id="threadFill"></span>
+</nav>
+
+<section class="closing">
+  <div class="band">
+    <p>Estas cuatro escenas comparten el mismo territorio real de Kennedy — lo que cambia es el corte con el que se mira.</p>
+    <a class="ghost" href="v2.html#modulos">Ver el resto de los módulos &rarr;</a>
+  </div>
+</section>
+
+<script>
+(function(){
+'use strict';
+var SCENES = [
+  { c:'#8052ff', n:'01', t:'Simulación 3D de tránsito', href:'modulo-08-3d.html',
+    d:'El flujo vehicular corriendo en vivo sobre la malla vial real de Kennedy — arrastra para girar, rueda para zoom.' },
+  { c:'#ffb829', n:'02', t:'Corte axonométrico', href:'modulo-10-corte.html',
+    d:'Seis límites móviles: mueve cualquiera y el modelo del territorio se corta al instante para revelar lo que hay debajo.' },
+  { c:'#ffb829', n:'03', t:'Problemáticas de Kennedy', href:'modulo-12-problemas.html',
+    d:'La red causal completa sobre el mapa 3D real: cada burbuja es una causa, cada flecha una relación del POT en Kennedy.' },
+  { c:'#8052ff', n:'04', t:'Colapso operativo y logístico', href:'red-residuos-organicos.html',
+    d:'El modelo de ocupación de Kennedy frente a la capacidad real de soporte del territorio: toca una burbuja para revelar la red.' }
+];
+
+/* ================= construir las secciones y el hilo ================= */
+var scenesEl = document.getElementById('scenes');
+scenesEl.innerHTML = SCENES.map(function(s, i){
+  return '<section class="scene-section" id="scene-' + i + '" style="--c:' + s.c + '">' +
+    '<div class="scene-head"><div class="scene-head-in">' +
+      '<span class="n">' + s.n + ' / 04</span><h2>' + s.t + '</h2><p>' + s.d + '</p>' +
+    '</div></div>' +
+    '<div class="scene-stage" data-href="' + s.href + '" data-c="' + s.c.slice(1) + '">' +
+      '<div class="poster">Cargando…</div>' +
+    '</div>' +
+  '</section>';
+}).join('');
+
+var thread = document.getElementById('thread'), threadFill = document.getElementById('threadFill');
+SCENES.forEach(function(s, i){
+  var dot = document.createElement('a');
+  dot.href = '#scene-' + i;
+  dot.className = 'thread-dot';
+  dot.style.setProperty('--c', s.c);
+  dot.innerHTML = '<span class="thread-label">' + s.n + ' · ' + s.t + '</span>';
+  dot.addEventListener('click', function(e){
+    e.preventDefault();
+    document.getElementById('scene-' + i).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  thread.appendChild(dot);
+});
+var dots = [].slice.call(thread.querySelectorAll('.thread-dot'));
+
+/* ================= carga perezosa de cada escena (evita cargar los
+   5 modulos pesados de una sola vez) ================= */
+var stages = [].slice.call(document.querySelectorAll('.scene-stage'));
+var loadObserver = new IntersectionObserver(function(entries){
+  entries.forEach(function(entry){
+    if (!entry.isIntersecting) return;
+    var stage = entry.target;
+    if (stage.dataset.loaded) return;
+    stage.dataset.loaded = '1';
+    var iframe = document.createElement('iframe');
+    iframe.title = 'Escena axonométrica';
+    iframe.loading = 'eager';
+    iframe.src = stage.dataset.href + '?embed=1&c=' + stage.dataset.c;
+    iframe.addEventListener('load', function(){
+      var poster = stage.querySelector('.poster');
+      if (poster) poster.remove();
+    });
+    stage.appendChild(iframe);
+    loadObserver.unobserve(stage);
+  });
+}, { rootMargin: '650px 0px 650px 0px' });
+stages.forEach(function(s){ loadObserver.observe(s); });
+
+/* ================= hilo + entrada animada segun la seccion visible ================= */
+var sections = [].slice.call(document.querySelectorAll('.scene-section'));
+var viewObserver = new IntersectionObserver(function(entries){
+  entries.forEach(function(entry){
+    entry.target.classList.toggle('in-view', entry.isIntersecting);
+  });
+}, { threshold: 0.18 });
+sections.forEach(function(s){ viewObserver.observe(s); });
+
+function updateThread(){
+  var mid = window.innerHeight * 0.5, active = 0;
+  sections.forEach(function(s, i){
+    var r = s.getBoundingClientRect();
+    if (r.top < mid) active = i;
+  });
+  dots.forEach(function(d, i){ d.classList.toggle('active', i === active); });
+  var last = sections[sections.length - 1].getBoundingClientRect();
+  var first = sections[0].getBoundingClientRect();
+  var total = last.bottom - first.top;
+  var passed = Math.min(Math.max(mid - first.top, 0), total);
+  threadFill.style.height = (total > 0 ? (passed / total * 100) : 0) + '%';
+}
+window.addEventListener('scroll', updateThread, { passive: true });
+updateThread();
+
+/* ================= barra de navegacion solida al bajar ================= */
+var nav = document.getElementById('nav');
+function onScroll(){ nav.classList.toggle('solid', window.scrollY > 40); }
+window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
+/* ================= constelacion decorativa del hero (Dala) ================= */
+var canvas = document.getElementById('cloud'), ctx = canvas.getContext('2d');
+var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var W = 0, H = 0, DPR = Math.min(window.devicePixelRatio || 1, 2);
+var COLORS = ['#8052ff', '#ffb829', '#15846e', '#b79bff'];
+function resize(){
+  var r = canvas.getBoundingClientRect();
+  W = r.width; H = r.height;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize); resize();
+var N = W < 700 ? 90 : 170;
+var P = [];
+for (var i = 0; i < N; i++){
+  P.push({
+    x: Math.random(), y: Math.random(),
+    r: 1 + Math.random() * 2.2,
+    c: COLORS[(Math.random() * COLORS.length) | 0],
+    a: 0.25 + Math.random() * 0.55,
+    vx: (Math.random() - 0.5) * 0.00018,
+    vy: (Math.random() - 0.5) * 0.00012,
+    tri: Math.random() < 0.6
+  });
+}
+function drawTri(x, y, s, rot){
+  ctx.beginPath();
+  for (var k = 0; k < 3; k++){
+    var a = rot + k * (Math.PI * 2 / 3);
+    var px = x + Math.cos(a) * s, py = y + Math.sin(a) * s;
+    if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+var t = 0;
+var mouse = { x: -9999, y: -9999, active: false };
+canvas.addEventListener('pointermove', function(e){
+  var r = canvas.getBoundingClientRect();
+  mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.active = true;
+});
+canvas.addEventListener('pointerleave', function(){ mouse.active = false; mouse.x = -9999; mouse.y = -9999; });
+function frame_(){
+  t += reduce ? 0 : 1;
+  ctx.clearRect(0, 0, W, H);
+  P.forEach(function(p){
+    if (!reduce){
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < -0.05) p.x = 1.05; if (p.x > 1.05) p.x = -0.05;
+      if (p.y < -0.05) p.y = 1.05; if (p.y > 1.05) p.y = -0.05;
+    }
+    var px = p.x * W, py = p.y * H;
+    if (mouse.active){
+      var dx = px - mouse.x, dy = py - mouse.y, dist = Math.sqrt(dx*dx + dy*dy), rad = 130;
+      if (dist < rad && dist > 0.01){
+        var f = (1 - dist / rad) * 22;
+        px += (dx / dist) * f; py += (dy / dist) * f;
+      }
+    }
+    ctx.globalAlpha = p.a;
+    ctx.strokeStyle = p.c; ctx.fillStyle = p.c; ctx.lineWidth = 1;
+    if (p.tri){ drawTri(px, py, p.r * 2.2, t * 0.004 + px * 0.01); ctx.stroke(); }
+    else { ctx.beginPath(); ctx.arc(px, py, p.r, 0, Math.PI * 2); ctx.fill(); }
+  });
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(frame_);
+}
+requestAnimationFrame(frame_);
+
+/* si llegan con #modulo-xx.html (enlaces del catalogo completo en v2.html),
+   se traduce al indice de escena y se hace scroll directo ahi */
+var hash = (location.hash || '').replace('#', '');
+if (hash){
+  var idx = SCENES.findIndex(function(s){ return s.href === hash; });
+  if (idx >= 0){
+    setTimeout(function(){ document.getElementById('scene-' + idx).scrollIntoView({ block: 'start' }); }, 60);
+  }
+}
+})();
+</script>
+</body>
+</html>
