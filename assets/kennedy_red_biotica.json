@@ -38,7 +38,7 @@
   {
    "id": "Coriandrum sativum",
    "common": "Coriandrum sativum",
-   "kingdom": "Planta",
+   "kingdom": "Animal",
    "zonas": [
     "Huerta Monterrey"
    ]
@@ -95,7 +95,7 @@
   {
    "id": "Leucanthemum vulgare",
    "common": "Leucanthemum vulgare",
-   "kingdom": "Planta",
+   "kingdom": "Animal",
    "zonas": [
     "Humedal El Burro"
    ]
@@ -143,7 +143,7 @@
   {
    "id": "Pelargonium",
    "common": "Pelargonium",
-   "kingdom": "Planta",
+   "kingdom": "Animal",
    "zonas": [
     "Huerta Monterrey"
    ]
@@ -200,7 +200,7 @@
   {
    "id": "Tanacetum parthenium",
    "common": "Tanacetum parthenium",
-   "kingdom": "Planta",
+   "kingdom": "Animal",
    "zonas": [
     "Huerta Monterrey"
    ]
@@ -224,7 +224,7 @@
   {
    "id": "Salix",
    "common": "Salix",
-   "kingdom": "Planta",
+   "kingdom": "Animal",
    "zonas": [
     "Humedal El Burro"
    ]
@@ -329,7 +329,7 @@
   {
    "id": "Bidens latifolia",
    "common": "Bidens latifolia",
-   "kingdom": "Planta",
+   "kingdom": "Animal",
    "zonas": [
     "Humedal de Techo"
    ]

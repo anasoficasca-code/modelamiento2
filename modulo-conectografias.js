@@ -10,7 +10,10 @@
 (function () {
   const DATA_URL = "./assets/kennedy_red_biotica.json";
 
-  const KINGDOM_COLOR = { Animal: "#e8743b", Planta: "#5fb85c" };
+  const KINGDOM_COLOR = {
+    Animal: "#e8743b", Planta: "#5fb85c", Cromista: "#4a9fc7",
+    Bacteria: "#c7a24a", Hongo: "#9a6fb0", Protozoario: "#6fb09a",
+  };
   const TIPO_COLOR = {
     "Visita floral": "#c77dd1",
     "Herbivoría (frugivoría)": "#d4a24a",
