@@ -374,10 +374,11 @@
     sceneRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
   }
 
+  let cachedBuildingsData = null; // se reusa para Usos del Suelo/Dispersion, para no volver a bajar este archivo de 37MB otra vez
   function loadBuildings() {
     return fetch(BUILDINGS_URL)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + BUILDINGS_URL); return r.json(); })
-      .then(data => { buildBuildings(data); })
+      .then(data => { cachedBuildingsData = data; buildBuildings(data); })
       .catch(err => console.warn("No se pudieron cargar los edificios:", err));
   }
 
@@ -731,6 +732,7 @@
     }
     const UNPAINTED_NEARBY_COLOR = USOS_COLORS["Comercio"]; // mismo rojo exacto de las convenciones (#e63946), no uno nuevo
 
+    let _dbgQuitados = 0, _dbgNuevos = 0;
     buildingsArr.forEach((b, i) => {
       let uso = usoArr[i];
       if (!uso && b.h >= TALL_THRESHOLD_M) uso = "Residencial";
@@ -747,12 +749,14 @@
           const d2 = (cx - comercioCentroide.x) ** 2 + (cy - comercioCentroide.y) ** 2;
           if (d2 < comercioRadioM * comercioRadioM && h1 > dispersionFactor) {
             uso = "Otros"; // este ya no es comercio -- se repartio
+            _dbgQuitados++;
           }
         } else if (uso && polosDispersos.length) {
           for (const polo of polosDispersos) {
             const d2 = (cx - polo.x) ** 2 + (cy - polo.y) ** 2;
             if (d2 < (comercioRadioM * 1.1) ** 2 && h1 < (1 - dispersionFactor) * 0.6) {
               uso = "Comercio"; // comercio nuevo aparece aqui
+              _dbgNuevos++;
               break;
             }
           }
@@ -810,8 +814,10 @@
     usosSueloGroup = new THREE.Group();
     usosSueloGroup.add(new THREE.Mesh(usosGeo, mat));
     sceneRoot.add(usosSueloGroup);
+    console.log("[dispersion] factor:", dispersionFactor, "| centroide:", comercioCentroide, "| polos:", polosDispersos.length, "| quitados de Comercio:", _dbgQuitados, "| nuevos Comercio:", _dbgNuevos);
   }
   function toggleUsosSuelo() {
+    console.log("[usos] toggleUsosSuelo llamado, usosSueloGroup:", !!usosSueloGroup, "loading:", usosSueloLoading);
     const legend = document.getElementById("usosSueloLegend");
     const loadingEl = document.getElementById("usosSueloLoading");
     const btn = document.getElementById("usosSueloBtn");
