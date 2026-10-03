@@ -2048,7 +2048,7 @@
     // elevacion, que es el angulo que pidio para este modulo).
     camera.position.set(-389.40, 559.68, 542.58);
     controls.target.set(218.76, -53.06, -86.62);
-    camera.zoom = 1.65;
+    camera.zoom = 1.9;
     camera.updateProjectionMatrix();
     // Centrar en el area de estudio (caja de seccion) con el mismo angulo,
     // y ajustar el zoom para que el rombo completo quepa sin cortarse.
@@ -2061,7 +2061,7 @@
         controls.target.set((x0 + x1) / 2, controls.target.y, (z0 + z1) / 2);
         camera.position.copy(controls.target).add(off);
         camera.lookAt(controls.target);
-        camera.zoom = 1.65; // tamaño original
+        camera.zoom = 1.9; // tamaño original
         camera.updateProjectionMatrix(); camera.updateMatrixWorld();
         const v = new THREE.Vector3(); let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
         [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].forEach(([x, z]) => [-6, 0, 8].forEach(yy => { v.set(x, yy, z).project(camera); mnx = Math.min(mnx, v.x); mxx = Math.max(mxx, v.x); mny = Math.min(mny, v.y); mxy = Math.max(mxy, v.y); }));
@@ -2071,7 +2071,7 @@
         camera.position.add(shift); controls.target.add(shift);
         // si aun no cabe verticalmente, se reduce apenas el zoom (sin volverla diminuta)
         const span = Math.max((mxx - mnx) / 2, (mxy - mny) / 2);
-        if (span > 0.94) camera.zoom = 2.272 * 0.94 / span;
+        if (span > 0.94) camera.zoom = 2.6 * 0.94 / span;
         camera.updateProjectionMatrix();
       }
     } catch (e) { console.warn("No se pudo centrar la vista:", e); }
@@ -2223,6 +2223,7 @@
     if (mainBurroMesh) { sceneRoot.remove(mainBurroMesh); mainBurroMesh.geometry.dispose(); }
     mainBurroMesh = new THREE.Mesh(geo, waterMat); sceneRoot.add(mainBurroMesh);
     const lluvia = [3, 4, 5, 10, 11].includes(mainBurroMes);
+    setLluviaActiva(lluvia); // la deteccion de temporada ya existia, pero nunca se habia conectado a un efecto visual real -- se conecta aqui mismo, en la MISMA funcion que ya anima la expansion del humedal, para que lluvia y expansion corran siempre juntas, nunca una despues de la otra
     // area real (hectareas) del borde ya calculado arriba, en coordenadas reales (metros)
     let area2 = 0;
     for (let i = 0; i < realOffsetPts.length; i++) {
@@ -2247,6 +2248,66 @@
     mainBurroPlayBtn.textContent = mainBurroPlaying ? "⏸ Pausar" : "▶ Reproducir";
     if (mainBurroPlaying) mainBurroLast = 0;
   });
+  // ---- Lluvia real: se activa automaticamente en los meses de temporada
+  // de lluvias reales de Bogota (bimodal: marzo-mayo y octubre-noviembre),
+  // la MISMA logica que ya decidia el texto "Temporada de lluvias" --
+  // ahora tambien dispara una animacion de lluvia de verdad. Gotas como
+  // rayas alargadas (no puntos redondos, que se ven raros/artificiales),
+  // cayendo a distintas velocidades para dar sensacion de profundidad,
+  // visible tanto en la axonometria base como en la capa natural (ambas
+  // vistas renderizan el mismo "scene", asi que un solo sistema alcanza
+  // para las dos). ----
+  let lluviaGroup = null, lluviaVel = null, lluviaActiva = false, lluviaVisible = true;
+  function buildLluvia() {
+    if (lluviaGroup) return;
+    // Calibrado a la escala REAL de la escena (SCALE=0.1, ciudad de unos
+    // ~1070 unidades de ancho) -- la primera version uso un radio y un
+    // area de spawn pensados para una escena mucho mas grande, asi que
+    // las gotas eran casi invisibles (demasiado chicas y demasiado
+    // dispersas respecto a lo que la camara realmente encuadra).
+    const COUNT = 1200;
+    const RADIO = 650; // cubre el area visible real de la axonometria
+    const ALTO_MAX = 180, ALTO_MIN = 15;
+    const geo = new THREE.CylinderGeometry(0.4, 0.4, 7, 5, 1);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xbfe0f2, transparent: true, opacity: 0.5, depthWrite: false });
+    lluviaGroup = new THREE.InstancedMesh(geo, mat, COUNT);
+    lluviaVel = new Float32Array(COUNT);
+    const dummy = new THREE.Object3D();
+    for (let i = 0; i < COUNT; i++) {
+      dummy.position.set((Math.random() - 0.5) * RADIO * 2, Math.random() * (ALTO_MAX - ALTO_MIN) + ALTO_MIN, (Math.random() - 0.5) * RADIO * 2);
+      dummy.rotation.set(0.12, 0, 0.07); // ligera inclinacion, como viento leve -- cayendo perfectamente recto se ve artificial
+      dummy.updateMatrix();
+      lluviaGroup.setMatrixAt(i, dummy.matrix);
+      lluviaVel[i] = 55 + Math.random() * 40;
+    }
+    lluviaGroup.visible = false;
+    sceneRoot.add(lluviaGroup);
+  }
+  function setLluviaActiva(activa) {
+    lluviaActiva = activa;
+    if (activa) buildLluvia();
+    if (lluviaGroup) lluviaGroup.visible = activa && lluviaVisible;
+  }
+  const lluviaDummy = new THREE.Object3D();
+  function updateLluvia(dt) {
+    if (!lluviaActiva || !lluviaGroup || !lluviaGroup.visible) return;
+    for (let i = 0; i < lluviaVel.length; i++) {
+      lluviaGroup.getMatrixAt(i, lluviaDummy.matrix);
+      lluviaDummy.matrix.decompose(lluviaDummy.position, lluviaDummy.quaternion, lluviaDummy.scale);
+      lluviaDummy.position.y -= lluviaVel[i] * dt;
+      if (lluviaDummy.position.y < 15) {
+        lluviaDummy.position.y = 160 + Math.random() * 20;
+        lluviaDummy.position.x = (Math.random() - 0.5) * 1300;
+        lluviaDummy.position.z = (Math.random() - 0.5) * 1300;
+      }
+      lluviaDummy.rotation.set(0.12, 0, 0.07);
+      lluviaDummy.updateMatrix();
+      lluviaGroup.setMatrixAt(i, lluviaDummy.matrix);
+    }
+    lluviaGroup.instanceMatrix.needsUpdate = true;
+  }
+  let lluviaLastT = 0;
+
   function updateMainBurro(now) {
     if (!mainBurroPlaying) return;
     if (mainBurroLast && now - mainBurroLast < 2600) return;
@@ -2300,6 +2361,9 @@
     if ((noiseOn || birdOn) && timesteps.length) computeLiveNoiseField(vehiclesAtTime(currentTime), now); // fuera del "if playing": el ruido se sigue viendo aunque este en pausa
     if (birdOn) updateBirds(now);
     updateMainBurro(now); // crecimiento del humedal, siempre corriendo
+    const lluviaDt = lluviaLastT ? Math.min(0.05, (now - lluviaLastT) / 1000) : 0;
+    lluviaLastT = now;
+    updateLluvia(lluviaDt);
     // Lineas de borde de edificios: opacidad FIJA, no cambia con el zoom
     // (se pidio que no aparezcan/desaparezcan ni cambien de grosor al
     // acercar o alejar la camara).
