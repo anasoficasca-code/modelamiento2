@@ -1,16 +1,16 @@
 {
  "nodes": [
   {
-   "id": "Ancyloxypha melanoneura",
-   "common": "Saltarinas",
-   "kingdom": "Animal",
+   "id": "Abatia parviflora",
+   "common": "Velita",
+   "kingdom": "Planta",
    "zonas": [
     "Humedal El Burro"
    ]
   },
   {
-   "id": "Taraxacum officinale",
-   "common": "Taraxacum officinale",
+   "id": "Acacia decurrens",
+   "common": "Acacia",
    "kingdom": "Planta",
    "zonas": [
     "Corredor La Magdalena",
@@ -19,11 +19,52 @@
    ]
   },
   {
-   "id": "Duranta mutisii",
-   "common": "Duranta mutisii",
+   "id": "Acacia melanoxylon",
+   "common": "Acacia",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Acca sellowiana",
+   "common": "Feijoa",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Lejops mexicanus",
+   "common": "Mosca de la flor",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Alnus acuminata",
+   "common": "Aliso",
    "kingdom": "Planta",
    "zonas": [
     "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Ancyloxypha melanoneura",
+   "common": "Saltarinas",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Antrostomus carolinensis",
+   "common": "Chotacabrar",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
    ]
   },
   {
@@ -32,48 +73,33 @@
    "kingdom": "Animal",
    "zonas": [
     "Huerta Monterrey",
-    "Humedal de Techo"
-   ]
-  },
-  {
-   "id": "Coriandrum sativum",
-   "common": "Coriandrum sativum",
-   "kingdom": "Animal",
-   "zonas": [
-    "Huerta Monterrey"
-   ]
-  },
-  {
-   "id": "Cucurbita pepo",
-   "common": "Cucurbita pepo",
-   "kingdom": "Planta",
-   "zonas": [
-    "Humedal de Techo"
-   ]
-  },
-  {
-   "id": "Physalis peruviana",
-   "common": "Physalis peruviana",
-   "kingdom": "Planta",
-   "zonas": [
-    "Humedal de Techo"
-   ]
-  },
-  {
-   "id": "Raphanus raphanistrum",
-   "common": "Raphanus raphanistrum",
-   "kingdom": "Planta",
-   "zonas": [
     "Humedal El Burro",
     "Humedal de Techo"
    ]
   },
   {
-   "id": "Trifolium pratense",
-   "common": "Trifolium pratense",
+   "id": "Ardea alba",
+   "common": "Garza",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Piranga olivacea",
+   "common": "Piranga",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Capsicum annuum",
+   "common": "Aji",
    "kingdom": "Planta",
    "zonas": [
-    "Humedal de Techo"
+    "Huerta Monterrey"
    ]
   },
   {
@@ -85,19 +111,81 @@
    ]
   },
   {
-   "id": "Abatia parviflora",
-   "common": "Abatia parviflora",
+   "id": "Asio clamator",
+   "common": "Búho rayado",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Asio stygius",
+   "common": "Búho orejudo",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Atractus crassicaudatus",
+   "common": "Serpiente sabanera",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Baccharis latifolia",
+   "common": "Chilco",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Baccharis macrantha",
+   "common": "Chilco",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Bidens laevis",
+   "common": "Botoncillo",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Bocconia frutescens",
+   "common": "Trompeto",
    "kingdom": "Planta",
    "zonas": [
     "Humedal El Burro"
    ]
   },
   {
-   "id": "Leucanthemum vulgare",
-   "common": "Leucanthemum vulgare",
-   "kingdom": "Animal",
+   "id": "Borago officinalis",
+   "common": "Borago",
+   "kingdom": "Planta",
    "zonas": [
-    "Humedal El Burro"
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Brugmansia candida",
+   "common": "Borrachero",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
    ]
   },
   {
@@ -105,15 +193,64 @@
    "common": "Garcita estriada",
    "kingdom": "Animal",
    "zonas": [
+    "Humedal El Burro",
     "Humedal de Techo"
    ]
   },
   {
-   "id": "Rattus rattus",
-   "common": "Rattus rattus",
+   "id": "Callistemon rigidus",
+   "common": "Calistemo",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Canna indica",
+   "common": "Achira",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Cestrum buxifolium",
+   "common": "Cestrum",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Cestrum",
+   "common": "Cestrum",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Chrysomus icterocephalus",
+   "common": "Monjita",
    "kingdom": "Animal",
    "zonas": [
-    "Humedal de Techo"
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Citharexylum subflavescens",
+   "common": "Cajeto",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Cocytius antaeus",
+   "common": "Mariposa",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
    ]
   },
   {
@@ -121,15 +258,88 @@
    "common": "Colibrí chillón",
    "kingdom": "Animal",
    "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Contopus virens",
+   "common": "Pibi",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey",
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Corymbia ficifolia",
+   "common": "Eucalipto pomarroso",
+   "kingdom": "Planta",
+   "zonas": [
     "Corredor La Magdalena"
    ]
   },
   {
-   "id": "Hibiscus rosa-sinensis",
-   "common": "Hibiscus rosa-sinensis",
+   "id": "Cotoneaster pannosus",
+   "common": "Holy",
    "kingdom": "Planta",
    "zonas": [
-    "Corredor La Magdalena"
+    "Corredor La Magdalena",
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Croton mutisianus",
+   "common": "Sangregado",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Croton purdiei",
+   "common": "Sangregado",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Cucurbita pepo",
+   "common": "Calabaza",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Cyperaceae",
+   "common": "Cyperus",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Dendrocygna autumnalis",
+   "common": "Pisingos",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Diglossa humeralis",
+   "common": "Pinchaflor",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
    ]
   },
   {
@@ -141,11 +351,27 @@
    ]
   },
   {
-   "id": "Pelargonium",
-   "common": "Pelargonium",
+   "id": "Dodonaea viscosa",
+   "common": "Dodonea",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Duranta mutisii",
+   "common": "Duranta",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Elanus leucurus",
+   "common": "Gavilán maromero",
    "kingdom": "Animal",
    "zonas": [
-    "Huerta Monterrey"
+    "Humedal El Burro"
    ]
   },
   {
@@ -158,19 +384,80 @@
    ]
   },
   {
-   "id": "Sambucus nigra",
-   "common": "Sambucus nigra",
+   "id": "Eucalyptus globulus",
+   "common": "Eucalipto",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Euphorbia pulcherrima",
+   "common": "Flor de navidad",
    "kingdom": "Planta",
    "zonas": [
     "Corredor La Magdalena"
    ]
   },
   {
-   "id": "Baccharis latifolia",
-   "common": "Baccharis latifolia",
+   "id": "Solanum quitoense",
+   "common": "Lulo",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Ficus americana",
+   "common": "Caucho",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Fuchsia arborescens",
+   "common": "Fucsia",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Fuertesimalva limensis",
+   "common": "Malva",
    "kingdom": "Planta",
    "zonas": [
     "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Fulica americana",
+   "common": "Focha",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Gallinula galeata",
+   "common": "Tingua picorojo",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Grevillea robusta",
+   "common": "Roble australiano",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
    ]
   },
   {
@@ -178,15 +465,69 @@
    "common": "Mariquita",
    "kingdom": "Animal",
    "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Hemerocallis fulva",
+   "common": "Azucena",
+   "kingdom": "Planta",
+   "zonas": [
     "Corredor La Magdalena"
    ]
   },
   {
-   "id": "Tecoma stans",
-   "common": "Tecoma stans",
+   "id": "Hibiscus rosa-sinensis",
+   "common": "Hibiscus",
    "kingdom": "Planta",
    "zonas": [
-    "Corredor La Magdalena"
+    "Corredor La Magdalena",
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Hydrocotyle ranunculoides",
+   "common": "Sombrillita",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Ischnura cruzi",
+   "common": "Caballito del diablo",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Lafoensia acuminata",
+   "common": "Guayacan de Manizales",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Lantana camara",
+   "common": "Lantana",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Lemna minor",
+   "common": "Lenteja de agua",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal de Techo"
    ]
   },
   {
@@ -194,15 +535,84 @@
    "common": "Mariposa de la col",
    "kingdom": "Animal",
    "zonas": [
-    "Huerta Monterrey"
+    "Huerta Monterrey",
+    "Humedal El Burro",
+    "Humedal de Techo"
    ]
   },
   {
-   "id": "Tanacetum parthenium",
-   "common": "Tanacetum parthenium",
+   "id": "Leptospermum scoparium",
+   "common": "Árbol del té",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Ligustrum lucidum",
+   "common": "Ligustrum",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Ligustrum ovalifolium",
+   "common": "Ligustrum",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Lonchocarpus utilis",
+   "common": "Lonchocarpus",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Lycianthes lycioides",
+   "common": "Lycianthes",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Melaleuca viminalis",
+   "common": "Melaleuca",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Melanchroia chephise",
+   "common": "Mariposa",
    "kingdom": "Animal",
    "zonas": [
-    "Huerta Monterrey"
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Melilotus albus",
+   "common": "Melilotus",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Mesamphiagrion laterale",
+   "common": "Caballito del diablo",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro",
+    "Humedal de Techo"
    ]
   },
   {
@@ -214,6 +624,56 @@
    ]
   },
   {
+   "id": "Molothrus bonariensis",
+   "common": "Chamón",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Monnina",
+   "common": "Monina",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Morella pubescens",
+   "common": "Morella",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Myrcianthes leucoxyla",
+   "common": "Mirciantes",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Nicotiana tabacum",
+   "common": "Tabaco",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Brugmansia sanguinea",
+   "common": "Borrachero",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
    "id": "Oiketicus",
    "common": "Cargapalitos",
    "kingdom": "Animal",
@@ -222,8 +682,16 @@
    ]
   },
   {
-   "id": "Salix",
-   "common": "Salix",
+   "id": "Oreopanax incisus",
+   "common": "Mano de oso",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Oxyura jamaicensis",
+   "common": "Pato turrio",
    "kingdom": "Animal",
    "zonas": [
     "Humedal El Burro"
@@ -238,12 +706,45 @@
    ]
   },
   {
-   "id": "Prunus serotina",
-   "common": "Prunus serotina",
+   "id": "Paracatua rubrolimbata",
+   "common": "Paracatua",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Paraserianthes lophantha",
+   "common": "Paraserianthes",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Passiflora tarminiana",
+   "common": "Passiflora",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Passiflora tripartita",
+   "common": "Passiflora",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Pelargonium zonale",
+   "common": "Pelargonium",
    "kingdom": "Planta",
    "zonas": [
     "Corredor La Magdalena",
-    "Humedal El Burro"
+    "Huerta Monterrey"
    ]
   },
   {
@@ -255,19 +756,31 @@
    ]
   },
   {
-   "id": "Piranga olivacea",
-   "common": "Piranga alinegra",
+   "id": "Phimosus infuscatus",
+   "common": "Coquito",
    "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Phoenix canariensis",
+   "common": "Phoenix",
+   "kingdom": "Planta",
    "zonas": [
     "Corredor La Magdalena"
    ]
   },
   {
-   "id": "Syzygium paniculatum",
-   "common": "Syzygium paniculatum",
+   "id": "Physalis peruviana",
+   "common": "Uchuva",
    "kingdom": "Planta",
    "zonas": [
-    "Corredor La Magdalena"
+    "Corredor La Magdalena",
+    "Huerta Monterrey",
+    "Humedal de Techo"
    ]
   },
   {
@@ -275,7 +788,281 @@
    "common": "Piranga roja",
    "kingdom": "Animal",
    "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Pittosporum undulatum",
+   "common": "Jazmin del cabo",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Platycladus orientalis",
+   "common": "Cupresus",
+   "kingdom": "Planta",
+   "zonas": [
     "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Pleroma urvilleanum",
+   "common": "Pleroma",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Porphyrio martinica",
+   "common": "Tingua",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Prunus persica",
+   "common": "Cerezo",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Prunus serotina",
+   "common": "Cerezo",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Eucalyptus",
+   "common": "Eucalipto",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Pyrocephalus rubinus",
+   "common": "Cardenal",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Raphanus raphanistrum",
+   "common": "Rabano",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey",
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Raphanus sativus",
+   "common": "Raphanus",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Ricinus communis",
+   "common": "Ricino",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Zea mays",
+   "common": "Maiz",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Rhionaeschna marchali",
+   "common": "Libélula",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Rosa chinensis",
+   "common": "Rosa",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Rosa",
+   "common": "Rosa",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Ruta graveolens",
+   "common": "Ruta",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Viola wittrockiana",
+   "common": "Pensamiento",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Salix humboldtiana",
+   "common": "Salix",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Sambucus nigra",
+   "common": "Sauco",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Thymus vulgaris",
+   "common": "Tomillo",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Schinus areira",
+   "common": "Falso pimiento",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Schoenoplectus californicus",
+   "common": "Junco",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Senna multiglandulosa",
+   "common": "Alcaparro",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Senna viarum",
+   "common": "Alcaparro",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Solanum lycopersicum",
+   "common": "Tomate",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Schefflera arboricola",
+   "common": "cheflera",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Smallanthus pyramidalis",
+   "common": "Arboloco",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Solandra maxima",
+   "common": "Solandra",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Solanum betaceum",
+   "common": "solanum",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Solanum marginatum",
+   "common": "Solanum",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Sonchus",
+   "common": "Sonchus",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Spatula discors",
+   "common": "Pato canadiense",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
    ]
   },
   {
@@ -283,7 +1070,9 @@
    "common": "Jilguero",
    "kingdom": "Animal",
    "zonas": [
-    "Corredor La Magdalena"
+    "Corredor La Magdalena",
+    "Huerta Monterrey",
+    "Humedal El Burro"
    ]
   },
   {
@@ -295,11 +1084,11 @@
    ]
   },
   {
-   "id": "Scarabaeidae",
-   "common": "Scarabaeidae",
+   "id": "Sympetrum gilvum",
+   "common": "Libélula",
    "kingdom": "Animal",
    "zonas": [
-    "Corredor La Magdalena"
+    "Humedal El Burro"
    ]
   },
   {
@@ -311,11 +1100,55 @@
    ]
   },
   {
+   "id": "Syzygium paniculatum",
+   "common": "Eugenia",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Solanum laxum",
+   "common": "Manto de maría",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Tara spinosa",
+   "common": "Tara",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Taraxacum officinale",
+   "common": "Diente de león",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Tecoma stans",
+   "common": "Chicalá",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
    "id": "Thraupis episcopus",
    "common": "Azulejo",
    "kingdom": "Animal",
    "zonas": [
-    "Corredor La Magdalena"
+    "Corredor La Magdalena",
+    "Humedal El Burro"
    ]
   },
   {
@@ -323,15 +1156,26 @@
    "common": "Mosca de la flor",
    "kingdom": "Animal",
    "zonas": [
+    "Huerta Monterrey",
     "Humedal de Techo"
    ]
   },
   {
-   "id": "Bidens latifolia",
-   "common": "Bidens latifolia",
+   "id": "Trifolium pratense",
+   "common": "Trébol",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Tringa solitaria",
+   "common": "Playerito",
    "kingdom": "Animal",
    "zonas": [
-    "Humedal de Techo"
+    "Corredor La Magdalena",
+    "Humedal El Burro"
    ]
   },
   {
@@ -339,14 +1183,7 @@
    "common": "Mirla",
    "kingdom": "Animal",
    "zonas": [
-    "Humedal El Burro"
-   ]
-  },
-  {
-   "id": "Cotoneaster pannosus",
-   "common": "Cotoneaster pannosus",
-   "kingdom": "Planta",
-   "zonas": [
+    "Huerta Monterrey",
     "Humedal El Burro"
    ]
   },
@@ -359,11 +1196,11 @@
    ]
   },
   {
-   "id": "Eucalyptus globulus",
-   "common": "Eucalyptus globulus",
+   "id": "Typha latifolia",
+   "common": "Typha",
    "kingdom": "Planta",
    "zonas": [
-    "Huerta Monterrey"
+    "Humedal de Techo"
    ]
   },
   {
@@ -371,7 +1208,60 @@
    "common": "Sirirí",
    "kingdom": "Animal",
    "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey",
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Tyrannus savana",
+   "common": "Tijereta",
+   "kingdom": "Animal",
+   "zonas": [
     "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Tyrannus tyrannus",
+   "common": "Tiranus",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Ulex europaeus",
+   "common": "Retamo espinoso",
+   "kingdom": "Planta",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Urtica urens",
+   "common": "Ortiga",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Vallea stipularis",
+   "common": "Raque",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro",
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Vanellus chilensis",
+   "common": "Alcaraván",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Humedal El Burro"
    ]
   },
   {
@@ -379,15 +1269,435 @@
    "common": "Dama de dos ojos",
    "kingdom": "Animal",
    "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Verbena litoralis",
+   "common": "Verbena",
+   "kingdom": "Planta",
+   "zonas": [
     "Corredor La Magdalena"
    ]
   },
   {
-   "id": "Lantana camara",
-   "common": "Lantana camara",
+   "id": "Viburnum triphyllum",
+   "common": "Viburnum",
    "kingdom": "Planta",
    "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Vireo olivaceus",
+   "common": "Vireo",
+   "kingdom": "Animal",
+   "zonas": [
     "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Xylosma spiculifera",
+   "common": "Corono",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Zantedeschia aethiopica",
+   "common": "Cartucho",
+   "kingdom": "Planta",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Zenaida auriculata",
+   "common": "Torcaza",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Zonotrichia capensis",
+   "common": "Copetón",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena",
+    "Huerta Monterrey",
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Agapanthus praecox",
+   "common": "Agapanto",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Albuca bracteata",
+   "common": "Cebolla",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Allium fistulosum",
+   "common": "Cebolla larga",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Allium schoenoprasum",
+   "common": "Cebollin",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Aloe vera",
+   "common": "Savila",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Antirrhinum majus",
+   "common": "Boca de dragón",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Argyranthemum frutescens",
+   "common": "Margarita",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Artemisia dracunculus",
+   "common": "Estragón",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Artemisia vulgaris",
+   "common": "Artemisa",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Asparagus densiflorus",
+   "common": "Espárrago",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Beta vulgaris",
+   "common": "Acelga",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Brassica oleracea",
+   "common": "Acelga peruana",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Brassica oleracea sabellica",
+   "common": "Kale crespo",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Brunfelsia australis",
+   "common": "Jazmín lavanda",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Calendula officinalis",
+   "common": "Caléndula",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Chenopodium quinoa",
+   "common": "Quinua",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Clerodendrum thomsoniae",
+   "common": "Clerodendrum thomsoniae",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Cnidoscolus aconitifolius",
+   "common": "Cnidoscolus aconitifolius",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Coffea arabica",
+   "common": "Café",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Cucumis sativus",
+   "common": "Cocombro",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Ficus carica",
+   "common": "Brevo",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Fragaria vesca",
+   "common": "Fresa",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Hippeastrum vittatum",
+   "common": "Azucena",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Hydrangea macrophylla",
+   "common": "Hortensia",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Lactuca sativa",
+   "common": "Lechuga batavia",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Troglodytes aedon",
+   "common": "Matracas y saltaparedes",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Tyto alba",
+   "common": "Lechuza de campanario",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Contopus",
+   "common": "Papamoscas contopus",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Allograpta",
+   "common": "Moscas rayadas de las flores",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Syrphus",
+   "common": "Mosca de la flor",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Lobularia maritima",
+   "common": "Aliso",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Myosotis azorica",
+   "common": "Nomeolvides",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Peperomia galioides",
+   "common": "Canelón",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Persea americana",
+   "common": "Aguacate",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Petroselinum crispum",
+   "common": "Perejil",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Rhododendron simsii",
+   "common": "Azalea",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Rubus idaeus",
+   "common": "Frambuesa",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Salvia rosmarinus",
+   "common": "Salvia",
+   "kingdom": "Planta",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Coriandrum sativum",
+   "common": "Coriandrum sativum",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Leucanthemum vulgare",
+   "common": "Leucanthemum vulgare",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Rattus rattus",
+   "common": "Rattus rattus",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal de Techo"
+   ]
+  },
+  {
+   "id": "Pelargonium",
+   "common": "Pelargonium",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Tanacetum parthenium",
+   "common": "Tanacetum parthenium",
+   "kingdom": "Animal",
+   "zonas": [
+    "Huerta Monterrey"
+   ]
+  },
+  {
+   "id": "Salix",
+   "common": "Salix",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal El Burro"
+   ]
+  },
+  {
+   "id": "Scarabaeidae",
+   "common": "Scarabaeidae",
+   "kingdom": "Animal",
+   "zonas": [
+    "Corredor La Magdalena"
+   ]
+  },
+  {
+   "id": "Bidens latifolia",
+   "common": "Bidens latifolia",
+   "kingdom": "Animal",
+   "zonas": [
+    "Humedal de Techo"
    ]
   }
  ],

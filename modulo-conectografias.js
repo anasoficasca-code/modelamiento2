@@ -121,7 +121,9 @@
 
       simulation = d3.forceSimulation(allNodes)
         .force("link", d3.forceLink(allLinks).id(d => d.id).distance(70).strength(0.5))
-        .force("charge", d3.forceManyBody().strength(-140))
+        .force("charge", d3.forceManyBody().strength(-90))
+        .force("x", d3.forceX(width / 2).strength(0.025))
+        .force("y", d3.forceY(height / 2).strength(0.025))
         .force("center", d3.forceCenter(width / 2, height / 2))
         .force("collide", d3.forceCollide(d => 8 + (degreeOf(d.id, allLinks) / degMax) * 14));
 
