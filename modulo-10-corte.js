@@ -2266,11 +2266,12 @@
     // las gotas eran casi invisibles (demasiado chicas y demasiado
     // dispersas respecto a lo que la camara realmente encuadra).
     const COUNT = 1200;
-    const RADIO = 650; // cubre el area visible real de la axonometria
-    const ALTO_MAX = 180, ALTO_MIN = 15;
+    const RADIO = 320; // acotado al area que la camara de la axonometria realmente encuadra (antes 650, caia fuera de cuadro)
+    const ALTO_MAX = 70, ALTO_MIN = 4; // igual, acotado -- antes 15-180 quedaba por encima de lo visible en esta vista
     const geo = new THREE.CylinderGeometry(0.4, 0.4, 7, 5, 1);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xbfe0f2, transparent: true, opacity: 0.5, depthWrite: false });
+    const mat = new THREE.MeshBasicMaterial({ color: 0xbfe0f2, transparent: true, opacity: 0.6, depthWrite: false, depthTest: false });
     lluviaGroup = new THREE.InstancedMesh(geo, mat, COUNT);
+    lluviaGroup.renderOrder = 997; // para que no quede tapada por el terreno/edificios ya dibujados
     lluviaVel = new Float32Array(COUNT);
     const dummy = new THREE.Object3D();
     for (let i = 0; i < COUNT; i++) {
@@ -2295,10 +2296,10 @@
       lluviaGroup.getMatrixAt(i, lluviaDummy.matrix);
       lluviaDummy.matrix.decompose(lluviaDummy.position, lluviaDummy.quaternion, lluviaDummy.scale);
       lluviaDummy.position.y -= lluviaVel[i] * dt;
-      if (lluviaDummy.position.y < 15) {
-        lluviaDummy.position.y = 160 + Math.random() * 20;
-        lluviaDummy.position.x = (Math.random() - 0.5) * 1300;
-        lluviaDummy.position.z = (Math.random() - 0.5) * 1300;
+      if (lluviaDummy.position.y < 4) {
+        lluviaDummy.position.y = 65 + Math.random() * 5; // igual al nuevo ALTO_MAX de buildLluvia
+        lluviaDummy.position.x = (Math.random() - 0.5) * 640; // igual al nuevo RADIO*2
+        lluviaDummy.position.z = (Math.random() - 0.5) * 640;
       }
       lluviaDummy.rotation.set(0.12, 0, 0.07);
       lluviaDummy.updateMatrix();
