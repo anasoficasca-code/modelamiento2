@@ -52,83 +52,54 @@
     }
   };
 
-  // --- 2. NODOS DEL SISTEMA (18 MODELOS) ---
+  // --- 2. NODOS DEL SISTEMA (18 MODELOS) CON RÓTULOS Y LÍNEAS EXACTAS ---
   const NODES_DATA = [
     {
       id: "escenarios_hipoteticos",
-      name: "Modelo de Escenarios\nHipotéticos",
+      name: "Modelo de Escenarios Hipotéticos",
+      lines: ["Modelo de", "Escenarios", "Hipotéticos"],
       macro: "gemelos",
-      x: 360, y: 280, r: 62,
+      x: 360, y: 280, r: 64,
+      large: true,
       desc: "Simulación prospectiva de escenarios urbanos bajo diferentes supuestos de intervención en Kennedy, cambio climático e infraestructura vial y logística.",
       inputs: ["Datos climáticos proyectados (precipitación, temperatura)", "Planes de ordenamiento territorial (POT)", "Patrones de crecimiento demográfico y comercial"],
       outputs: ["Mapas de escenarios de riesgo futuro", "Evaluación de resiliencia territorial", "Trayectorias de adaptación comunitaria e institucional"]
     },
     {
+      id: "flujos_materiales_energia",
+      name: "Contabilidad de Flujos de Materiales y Energía",
+      lines: ["Contabilidad", "de Flujos de", "Materiales y", "Energía"],
+      macro: "metabolismo",
+      x: 535, y: 620, r: 68,
+      large: true,
+      desc: "Cuantificación masiva y energética de entradas, transformaciones internas y acumulaciones que sostienen el funcionamiento de Kennedy y su epicentro agroalimentario.",
+      inputs: ["Registros de consumo eléctrico y gas natural", "Distribución de agua potable y descarga de aguas servidas", "Tonelaje de alimentos ingresados a Corabastos"],
+      outputs: ["Huella metabólica territorial", "Balance integral de masa y energía", "Puntos críticos de ineficiencia y fuga de recursos"]
+    },
+    {
       id: "perturbaciones_contingencia",
-      name: "Modelo de Simulación de\nPerturbaciones y Rutas\nde Contingencia",
+      name: "Modelo de Simulación de Perturbaciones y Rutas de Contingencia",
+      lines: ["Modelo de", "Simulación de", "Perturbaciones y", "Rutas de", "Contingencia"],
       macro: "gemelos",
-      x: 228, y: 290, r: 42,
+      x: 228, y: 290, r: 44,
       desc: "Modelación de eventos disruptivos (inundaciones en humedales, bloqueos en Av. de las Américas/Av. Cali, fallas en suministro) y cálculo de rutas de contingencia.",
       inputs: ["Eventos pluviométricos extremos y crecidas del Río Bogotá", "Vulnerabilidad estructural de la red vial", "Ubicación de centros de emergencia y salud"],
       outputs: ["Tiempos de respuesta y evacuación óptimos", "Cuellos de botella viales críticos", "Protocolos de contingencia operativa territorial"]
     },
     {
-      id: "simulacion_agentes",
-      name: "Modelo de Simulación\nBasada en Agentes",
-      macro: "sets",
-      x: 295, y: 520, r: 50,
-      desc: "Comportamiento autónomo y toma de decisiones de actores urbanos (comerciantes de Corabastos, transportadores, recicladores, habitantes) interactuando en el espacio.",
-      inputs: ["Reglas de decisión y micro-comportamiento individual", "Patrones de movilidad peatonal y vehicular local", "Densidad y localización de actividades comerciales informales"],
-      outputs: ["Patrones emergentes de ocupación del espacio público", "Dinámicas de aglomeración y dispersión espontánea", "Zonas de congestión no planificadas"]
-    },
-    {
-      id: "estres_microclimatico",
-      name: "Simulación de Estrés\nMicroclimático y Respuesta\nVegetal",
-      macro: "sets",
-      x: 205, y: 655, r: 48,
-      desc: "Evaluación del confort térmico, efecto isla de calor y capacidad amortiguadora de la cobertura arbórea y humedales (El Burro y La Vaca) ante radiación solar.",
-      inputs: ["Imágenes satelitales de temperatura superficial (LST)", "Catastro arbóreo y fitosanitario del JBB", "Humedad relativa y velocidad del viento"],
-      outputs: ["Índice de estrés térmico peatonal", "Capacidad amortiguadora vegetal", "Zonas prioritarias para arborización y renaturalización"]
-    },
-    {
-      id: "coevolucion_territorio_sociedad",
-      name: "Co-evolución Adaptativa\nTerritorio-Sociedad",
-      macro: "sets",
-      x: 215, y: 790, r: 42,
-      desc: "Procesos mutuos de transformación histórica y adaptativa entre la matriz biofísica de Kennedy y las prácticas socioculturales comunitarias.",
-      inputs: ["Evolución histórica de coberturas ecológicas e hídricas", "Iniciativas comunitarias de recuperación de humedales", "Normativa urbana y dinámicas de autoconstrucción"],
-      outputs: ["Indicadores de memoria biofísica y arraigo social", "Patrones de transformación espacial comunitaria"]
-    },
-    {
-      id: "vulnerabilidad_resiliencia",
-      name: "Modelo de Vulnerabilidad\ny Resiliencia Sistémica",
-      macro: "sets",
-      x: 305, y: 800, r: 44,
-      desc: "Capacidad de absorción, resistencia y regeneración de los sistemas socioecológicos de Kennedy frente a shocks ambientales y presiones socioeconómicas.",
-      inputs: ["Exposición a amenazas de inundación y contaminación", "Capacidad adaptativa institucional y comunitaria", "Conectividad de la Estructura Ecológica Principal"],
-      outputs: ["Índice de resiliencia territorial multivariable", "Identificación de áreas críticas de fragilidad ecológica"]
-    },
-    {
-      id: "reconfiguracion_redes",
-      name: "Reconfiguración\nAdaptativa de Redes",
-      macro: "sets",
-      x: 365, y: 615, r: 42,
-      desc: "Flexibilidad y redundancia topológica de las redes ecológicas, logísticas e hídricas para auto-organizarse y redirigir flujos tras una alteración.",
-      inputs: ["Matriz de conectividad de parches verdes y cuerpos de agua", "Estructura de la malla vial secundaria y terciaria", "Nodos logísticos de almacenamiento y transbordo"],
-      outputs: ["Grado de redundancia nodal", "Capacidad de reconfiguración estructural ante cortes viales o ecológicos"]
-    },
-    {
-      id: "simbiosis_ecoindustrial",
-      name: "Modelo de Simbiosis\nUrbana y Ecoindustrial",
-      macro: "metabolismo",
-      x: 410, y: 725, r: 40,
-      desc: "Aprovechamiento y valorización de subproductos orgánicos y flujos energéticos residuales de Corabastos como insumos para compostaje, agricultura urbana y biometano.",
-      inputs: ["Inventario diario de biomasa residual en Corabastos", "Demanda energética y de abonos en la subcuenca del Tintal", "Capacidad instalada de plantas de bio-transformación"],
-      outputs: ["Potencial de circularidad de nutrientes", "Balance de reducción de residuos dispuestos en relleno sanitario"]
+      id: "ciclos_actividad_ocupacion",
+      name: "Modelo de Ciclos de Actividad y Ocupación Temporal",
+      lines: ["Modelo de", "Ciclos de", "Actividad y", "Ocupación", "Temporal"],
+      macro: "cronosistemas",
+      x: 505, y: 255, r: 43,
+      desc: "Cronotopos urbanos: alternancia diurna, nocturna e hiper-temprana de usos del suelo y espacio público en el entorno de abastos y centralidades barriales.",
+      inputs: ["Registros comerciales de horarios de apertura y cierre", "Patrones de iluminación nocturna y conteos peatonales", "Usos informales y transitorios del espacio público"],
+      outputs: ["Mapas de cronotopos y activación espacial 24h", "Identificación de vacíos de uso urbano temporal"]
     },
     {
       id: "pulsos_demanda_horas_pico",
-      name: "Modelo de Simulación de\nPulsos de Demanda y\nHoras Pico",
+      name: "Modelo de Simulación de Pulsos de Demanda y Horas Pico",
+      lines: ["Modelo de", "Simulación de", "Pulsos de", "Demanda y", "Horas Pico"],
       macro: "cronosistemas",
       x: 435, y: 375, r: 44,
       desc: "Variación temporal rítmica de los flujos de carga pesada, abastecimiento mayorista y transporte público en función de los ciclos de operación territorial.",
@@ -136,71 +107,119 @@
       outputs: ["Curvas de sincronización y fricción horaria", "Ventanas de saturación logística y conflicto peatón-camión"]
     },
     {
-      id: "ciclos_actividad_ocupacion",
-      name: "Modelo de Ciclos de\nActividad y Ocupación\nTemporal",
-      macro: "cronosistemas",
-      x: 505, y: 260, r: 42,
-      desc: "Cronotopos urbanos: alternancia diurna, nocturna e hiper-temprana de usos del suelo y espacio público en el entorno de abastos y centralidades barriales.",
-      inputs: ["Registros comerciales de horarios de apertura y cierre", "Patrones de iluminación nocturna y conteos peatonales", "Usos informales y transitorios del espacio público"],
-      outputs: ["Mapas de cronotopos y activación espacial 24h", "Identificación de vacíos de uso urbano temporal"]
+      id: "simulacion_agentes",
+      name: "Modelo de Simulación Basada en Agentes",
+      lines: ["Modelo de", "Simulación", "Basada en", "Agentes"],
+      macro: "sets",
+      x: 295, y: 515, r: 48,
+      desc: "Comportamiento autónomo y toma de decisiones de actores urbanos (comerciantes de Corabastos, transportadores, recicladores, habitantes) interactuando en el espacio.",
+      inputs: ["Reglas de decisión y micro-comportamiento individual", "Patrones de movilidad peatonal y vehicular local", "Densidad y localización de actividades comerciales informales"],
+      outputs: ["Patrones emergentes de ocupación del espacio público", "Dinámicas de aglomeración y dispersión espontánea", "Zonas de congestión no planificadas"]
     },
     {
-      id: "flujos_materiales_energia",
-      name: "Contabilidad de Flujos\nde Materiales y Energía",
+      id: "estres_microclimatico",
+      name: "Simulación de Estrés Microclimático y Respuesta Vegetal.",
+      lines: ["Simulación de", "Estrés", "Microclimátic", "o y Respuesta", "Vegetal."],
+      macro: "sets",
+      x: 205, y: 650, r: 46,
+      desc: "Evaluación del confort térmico, efecto isla de calor y capacidad amortiguadora de la cobertura arbórea y humedales (El Burro y La Vaca) ante radiación solar.",
+      inputs: ["Imágenes satelitales de temperatura superficial (LST)", "Catastro arbóreo y fitosanitario del JBB", "Humedad relativa y velocidad del viento"],
+      outputs: ["Índice de estrés térmico peatonal", "Capacidad amortiguadora vegetal", "Zonas prioritarias para arborización y renaturalización"]
+    },
+    {
+      id: "reconfiguracion_redes",
+      name: "Reconfiguración Adaptativa de Redes",
+      lines: ["Reconfiguraci", "ón Adaptativa", "de Redes"],
+      macro: "sets",
+      x: 365, y: 615, r: 43,
+      desc: "Flexibilidad y redundancia topológica de las redes ecológicas, logísticas e hídricas para auto-organizarse y redirigir flujos tras una alteración.",
+      inputs: ["Matriz de conectividad de parches verdes y cuerpos de agua", "Estructura de la malla vial secundaria y terciaria", "Nodos logísticos de almacenamiento y transbordo"],
+      outputs: ["Grado de redundancia nodal", "Capacidad de reconfiguración estructural ante cortes viales o ecológicos"]
+    },
+    {
+      id: "coevolucion_territorio_sociedad",
+      name: "Co-evolución Adaptativa Territorio-Sociedad",
+      lines: ["Co-evolución", "Adaptativa", "Territorio-", "Sociedad"],
+      macro: "sets",
+      x: 215, y: 785, r: 43,
+      desc: "Procesos mutuos de transformación histórica y adaptativa entre la matriz biofísica de Kennedy y las prácticas socioculturales comunitarias.",
+      inputs: ["Evolución histórica de coberturas ecológicas e hídricas", "Iniciativas comunitarias de recuperación de humedales", "Normativa urbana y dinámicas de autoconstrucción"],
+      outputs: ["Indicadores de memoria biofísica y arraigo social", "Patrones de transformación espacial comunitaria"]
+    },
+    {
+      id: "vulnerabilidad_resiliencia",
+      name: "Modelo de Vulnerabilidad y Resiliencia Sistémica",
+      lines: ["Modelo de", "Vulnerabilidad", "y Resiliencia", "Sistémica"],
+      macro: "sets",
+      x: 305, y: 795, r: 45,
+      desc: "Capacidad de absorción, resistencia y regeneración de los sistemas socioecológicos de Kennedy frente a shocks ambientales y presiones socioeconómicas.",
+      inputs: ["Exposición a amenazas de inundación y contaminación", "Capacidad adaptativa institucional y comunitaria", "Conectividad de la Estructura Ecológica Principal"],
+      outputs: ["Índice de resiliencia territorial multivariable", "Identificación de áreas críticas de fragilidad ecológica"]
+    },
+    {
+      id: "simbiosis_ecoindustrial",
+      name: "Modelo de Simbiosis Urbana y Ecoindustrial",
+      lines: ["Modelo de", "Simbiosis", "Urbana y", "Ecoindustrial"],
       macro: "metabolismo",
-      x: 535, y: 620, r: 66,
-      desc: "Cuantificación masiva y energética de entradas, transformaciones internas y acumulaciones que sostienen el funcionamiento de Kennedy y su epicentro agroalimentario.",
-      inputs: ["Registros de consumo eléctrico y gas natural", "Distribución de agua potable y descarga de aguas servidas", "Tonelaje de alimentos ingresados a Corabastos"],
-      outputs: ["Huella metabólica territorial", "Balance integral de masa y energía", "Puntos críticos de ineficiencia y fuga de recursos"]
+      x: 410, y: 720, r: 41,
+      desc: "Aprovechamiento y valorización de subproductos orgánicos y flujos energéticos residuales de Corabastos como insumos para compostaje, agricultura urbana y biometano.",
+      inputs: ["Inventario diario de biomasa residual en Corabastos", "Demanda energética y de abonos en la subcuenca del Tintal", "Capacidad instalada de plantas de bio-transformación"],
+      outputs: ["Potencial de circularidad de nutrientes", "Balance de reducción de residuos dispuestos en relleno sanitario"]
     },
     {
       id: "modelo_eleccion",
       name: "Modelo de Elección",
+      lines: ["Modelo de", "Elección"],
       macro: "sintaxis",
-      x: 590, y: 495, r: 38,
+      x: 590, y: 490, r: 39,
       desc: "Sintaxis Espacial: medición matemática de la probabilidad de que un segmento de calle sea elegido como la ruta más directa y accesible (Choice / Intermediación).",
       inputs: ["Grafo axial de la malla vial de Kennedy", "Radios topológicos y métricos (r=3, r=n)", "Pesos de conectividad de intersecciones"],
       outputs: ["Líneas de mayor potencial de flujo pasante", "Ejes estructurantes de dinamismo comercial"]
     },
     {
       id: "profundidad_convexidad",
-      name: "Modelo de Profundidad\ny Convexidad Topológica",
+      name: "Modelo de Profundidad y Convexidad Topológica",
+      lines: ["Modelo de", "Profundidad y", "Convexidad", "Topológica"],
       macro: "sintaxis",
-      x: 720, y: 420, r: 42,
+      x: 720, y: 415, r: 43,
       desc: "Cálculo del número de cambios de dirección requeridos para acceder a un espacio desde la red general (Integración, Profundidad Media e Isóvistas).",
       inputs: ["Polígonos de espacios convexos y espacio público", "Topología del tejido vial y callejones de barrio", "Puntos de control visual e intervisibilidad"],
       outputs: ["Mapa de integración global y local", "Detección de bolsas de aislamiento y segregación espacial"]
     },
     {
       id: "autoorganizacion_morfologica",
-      name: "Modelo de Autoorganización\nMorfológica",
+      name: "Modelo de Autoorganización Morfológica",
+      lines: ["Modelo de", "Autoorganización", "Morfológica"],
       macro: "sintaxis",
-      x: 730, y: 535, r: 38,
+      x: 730, y: 535, r: 39,
       desc: "Patrones de emergencia morfológica y adaptación informal del parcelario y edificaciones alrededor de grandes focos de atracción económica.",
       inputs: ["Fotografías aéreas históricas y evolución predial", "Loteo catastral y subdivisiones informales", "Tipologías de ocupación comercial progresiva"],
       outputs: ["Índices de permeabilidad y granularidad morfológica", "Vectores de propagación del crecimiento comercial informal"]
     },
     {
       id: "friccion_flujos_transporte",
-      name: "Modelo de fricción y\ndistribución de flujos\nde transporte",
+      name: "Modelo de fricción y distribución de flujos de transporte",
+      lines: ["Modelo de fricción", "y distribución de", "flujos de", "transporte"],
       macro: "sintaxis",
-      x: 635, y: 630, r: 42,
+      x: 635, y: 625, r: 43,
       desc: "Impedancia espacial, demoras por congestión y distribución probabilística de viajes entre orígenes y destinos en la red multimodal.",
       inputs: ["Tiempos de viaje y velocidades operativas por tramo vial", "Matriz Origen-Destino de carga y pasajeros", "Capacidad vial de ejes arteriales"],
       outputs: ["Líneas de deseo y distribución modal", "Costos generalizados de fricción espacial"]
     },
     {
       id: "metabolismo_movilidad_viales",
-      name: "Metabolismo de Movilidad\ny Flujos Viales",
+      name: "Metabolismo de Movilidad y Flujos Viales",
+      lines: ["Metabolismo", "de Movilidad y", "Flujos Viales"],
       macro: "metabolismo",
-      x: 585, y: 765, r: 44,
+      x: 585, y: 760, r: 45,
       desc: "Consumo de combustibles fósiles, desgaste de la infraestructura pavimentada y emisiones generadas por el transporte de carga y transporte masivo.",
       inputs: ["Volumen y tipología de vehículos diésel y gasolina", "Factores de emisión por flota vehicular", "Índice de estado del pavimento (PCI)"],
       outputs: ["Inventario de emisiones móviles (CO₂, PM2.5)", "Demanda energética del subsistema de transporte"]
     },
     {
       id: "entradas_salidas_recursos",
-      name: "modelo de entradas,\nsalidas y acumulación\nde recursos.",
+      name: "modelo de entradas, salidas y acumulación de recursos.",
+      lines: ["modelo de", "entradas,", "salidas y", "acumulación", "de recursos."],
       macro: "metabolismo",
       x: 470, y: 825, r: 52,
       desc: "Balance de masa agregado: cálculo dinámico de toneladas de alimentos que ingresan, productos redistribuidos hacia Bogotá y residuos orgánicos generados.",
@@ -209,9 +228,10 @@
     },
     {
       id: "gestion_residuos_emisiones",
-      name: "Gestión de Residuos\ny Emisiones",
+      name: "Gestión de Residuos y Emisiones",
+      lines: ["Gestión de", "Residuos y", "Emisiones"],
       macro: "metabolismo",
-      x: 630, y: 875, r: 42,
+      x: 630, y: 875, r: 41,
       desc: "Logística inversa, rutas de recolección de residuos sólidos, control de lixiviados y emisiones fugitivas de metano en el entorno de almacenamiento y abastos.",
       inputs: ["Toneladas diarias de residuos recolectados por operadores", "Capacidad de acopios y bodegas de reciclaje", "Monitoreo de olores y gases en puntos de acopio"],
       outputs: ["Rutas optimizadas de recolección selectiva", "Balance de emisiones evitadas por valorización local"]
@@ -283,38 +303,36 @@
     {
       id: "gemelos",
       label: "MODELO DE GEMELOS DIGITALES Y SIMULACIÓN COMPUTACIONAL",
-      // Path envolvente suave
       d: "M 155,240 C 155,185 410,180 445,240 C 475,300 415,385 340,380 C 240,375 155,340 155,240 Z",
-      // Path guía para el texto superior curvado
-      textPathD: "M 160,205 C 220,165 370,165 440,215",
+      textPathD: "M 120,320 C 120,175 340,140 450,210",
       startOffset: "50%"
     },
     {
       id: "cronosistemas",
       label: "MACROMODELO DE CRONOSISTEMAS Y TEMPORALIDAD SOCIAL",
       d: "M 370,320 C 370,205 570,180 575,270 C 580,345 500,445 425,445 C 370,445 370,390 370,320 Z",
-      textPathD: "M 375,200 C 440,160 520,175 580,230",
+      textPathD: "M 380,185 C 470,140 570,180 610,260",
       startOffset: "50%"
     },
     {
       id: "sets",
       label: "SISTEMAS SOCIOECOLÓGICOS Y TECNOLÓGICOS (SETS)",
       d: "M 130,680 C 110,480 340,430 425,560 C 445,630 425,750 365,850 C 270,915 150,865 135,760 Z",
-      textPathD: "M 135,760 C 110,640 150,510 270,455",
+      textPathD: "M 140,780 C 100,640 180,480 360,440",
       startOffset: "50%"
     },
     {
       id: "sintaxis",
       label: "SINTAXIS ESPACIAL Y ECONOMÍA DE MOVIMIENTO",
       d: "M 535,510 C 535,360 780,340 790,460 C 800,560 770,670 650,700 C 565,715 535,620 535,510 Z",
-      textPathD: "M 570,360 C 670,320 780,380 805,500",
+      textPathD: "M 570,360 C 690,300 790,380 810,510",
       startOffset: "50%"
     },
     {
       id: "metabolismo",
       label: "MACROMODELO DE METABOLISMO URBANO",
       d: "M 345,745 C 375,550 635,540 710,720 C 740,845 680,950 515,950 C 390,950 330,875 345,745 Z",
-      textPathD: "M 340,860 C 420,965 620,965 720,850",
+      textPathD: "M 680,570 C 740,700 720,860 620,950",
       startOffset: "50%"
     }
   ];
@@ -326,20 +344,19 @@
   let width = mainContainer.clientWidth || window.innerWidth;
   let height = mainContainer.clientHeight || window.innerHeight;
 
-  // Viewbox centrado en 1000x1000
   const VB_SIZE = 1000;
 
-  // Crear defs (gradientes y filtros)
+  // Defs (gradientes y filtros)
   const defs = svg.append("defs");
 
-  // Gradiente radial para los nodos (celeste degradado como en el diagrama)
+  // Gradiente radial para los nodos
   const nodeGrad = defs.append("radialGradient")
     .attr("id", "nodeGradient")
     .attr("cx", "45%")
     .attr("cy", "40%")
     .attr("r", "55%");
-  nodeGrad.append("stop").attr("offset", "0%").attr("stop-color", "#e3f4fd");
-  nodeGrad.append("stop").attr("offset", "70%").attr("stop-color", "#c0e4f8");
+  nodeGrad.append("stop").attr("offset", "0%").attr("stop-color", "#ebf7fd");
+  nodeGrad.append("stop").attr("offset", "65%").attr("stop-color", "#c3e6f8");
   nodeGrad.append("stop").attr("offset", "100%").attr("stop-color", "#a6d6f2");
 
   // Sombra suave para nodos
@@ -373,11 +390,11 @@
   // Path para texto envolvente exterior: "MODELO DE COMPLEJIDAD URBANA"
   defs.append("path")
     .attr("id", "tp-outer-title")
-    .attr("d", "M 130,360 C 180,110 820,110 870,360");
+    .attr("d", "M 740,240 C 920,380 920,620 740,780");
 
   // --- 6. DIBUJO DE ESTRUCTURAS DE FONDO Y CLUSTERS ---
   function drawBackgroundStructures() {
-    // 1. Círculo / Elipse envolvente exterior
+    // Círculo envolvente exterior
     outerLayer.append("ellipse")
       .attr("cx", 480)
       .attr("cy", 520)
@@ -388,7 +405,7 @@
       .attr("stroke-dasharray", "7 6")
       .attr("stroke-width", 2.2);
 
-    // Texto superior envolvente: "MODELO DE COMPLEJIDAD URBANA"
+    // Texto perimetral derecho: "MODELO DE COMPLEJIDAD URBANA"
     outerLayer.append("text")
       .attr("class", "macro-outer-label")
       .append("textPath")
@@ -397,38 +414,35 @@
       .attr("text-anchor", "middle")
       .text("MODELO DE COMPLEJIDAD URBANA");
 
-    // Botón / Cruz decorativa superior (✕) como en la imagen
+    // Botón circular superior de cierre / reset (✕)
     const closeGroup = outerLayer.append("g")
       .attr("class", "diagram-close-btn")
-      .attr("transform", "translate(480, 78)")
+      .attr("transform", "translate(480, 80)")
       .on("click", () => resetZoom());
 
     closeGroup.append("circle")
-      .attr("r", 12)
-      .attr("fill", "#ffffff")
-      .attr("stroke", "#94a3b8")
-      .attr("stroke-width", 1.5);
+      .attr("r", 15)
+      .attr("fill", "#475569")
+      .attr("filter", "url(#nodeShadow)");
 
     closeGroup.append("text")
       .attr("text-anchor", "middle")
       .attr("dy", 4.5)
-      .attr("font-size", 12)
+      .attr("font-size", 13)
       .attr("font-weight", "bold")
-      .attr("fill", "#64748b")
+      .attr("fill", "#ffffff")
       .text("✕");
 
-    // 2. Clusters macromodelo con formas y rótulos curvados
+    // Clusters macromodelo
     CLUSTERS_DATA.forEach(cluster => {
       const cg = clusterLayer.append("g")
         .attr("class", "cluster-group")
         .attr("data-cluster", cluster.id);
 
-      // Forma orgánica envolvente
       cg.append("path")
         .attr("d", cluster.d)
         .attr("class", "macro-cluster-path");
 
-      // Texto curvado a lo largo del path
       cg.append("text")
         .attr("class", "macro-label-text")
         .append("textPath")
@@ -439,7 +453,7 @@
     });
   }
 
-  // --- 7. DIBUJO DE ENLACES (CURVED DASHED BEZIER LINKS) ---
+  // --- 7. DIBUJO DE ENLACES ---
   const nodeMap = new Map();
   NODES_DATA.forEach(n => {
     n.origX = n.x;
@@ -447,7 +461,6 @@
     nodeMap.set(n.id, n);
   });
 
-  // Resuelve objetos source/target
   const resolvedLinks = LINKS_DATA.map(l => {
     return {
       source: typeof l.source === "string" ? nodeMap.get(l.source) : l.source,
@@ -455,7 +468,6 @@
     };
   });
 
-  // Generador de curvas Bezier suaves entre nodos
   function linkPath(d) {
     const sx = d.source.x, sy = d.source.y;
     const tx = d.target.x, ty = d.target.y;
@@ -464,7 +476,6 @@
 
     if (dist === 0) return `M ${sx} ${sy}`;
 
-    // Leve curvatura perpendicular
     const curvature = Math.min(22, dist * 0.08);
     const mx = (sx + tx) / 2 - (dy / dist) * curvature;
     const my = (sy + ty) / 2 + (dx / dist) * curvature;
@@ -482,7 +493,7 @@
       .attr("d", linkPath);
   }
 
-  // --- 8. DIBUJO DE NODOS Y TEXTOS MULTILÍNEA ---
+  // --- 8. DIBUJO DE NODOS Y AJUSTE PERFECTO DE TEXTO (SIN DESBORDAMIENTO) ---
   let nodeElements;
 
   function drawNodes() {
@@ -511,15 +522,24 @@
       .attr("r", d => d.r)
       .attr("filter", "url(#nodeShadow)");
 
-    // Rótulo de texto centrado multilínea
+    // Rótulo de texto con cálculo de tamaño dinámico para evitar desbordamientos
     nodeElements.each(function (d) {
-      const textEl = d3.select(this).append("text")
-        .attr("class", "node-text" + (d.r > 55 ? " large" : ""))
-        .attr("dy", "0");
+      const g = d3.select(this);
+      const textEl = g.append("text")
+        .attr("class", "node-text" + (d.large ? " large" : ""))
+        .attr("text-anchor", "middle");
 
-      const lines = d.name.split("\n");
-      const lineHeight = d.r > 55 ? 13 : 11.5;
-      const totalOffset = ((lines.length - 1) * lineHeight) / 2;
+      const lines = d.lines || d.name.split("\n");
+      const numLines = lines.length;
+
+      // Tamaño de fuente base según tamaño del nodo y cantidad de líneas
+      let fontSize = d.large ? 12 : (d.r <= 41 ? 7.6 : (d.r <= 46 ? 8.2 : 9.0));
+      if (numLines >= 5 && !d.large) fontSize = Math.min(fontSize, 7.3);
+
+      textEl.style("font-size", fontSize + "px");
+
+      let lineHeight = fontSize * 1.22;
+      let totalOffset = ((numLines - 1) * lineHeight) / 2;
 
       lines.forEach((line, i) => {
         textEl.append("tspan")
@@ -527,6 +547,28 @@
           .attr("y", -totalOffset + i * lineHeight)
           .text(line);
       });
+
+      // Medición exacta y auto-ajuste de escala si excede el área segura del círculo
+      try {
+        const bbox = textEl.node().getBBox();
+        const maxAllowedWidth = d.r * 1.76;
+        const maxAllowedHeight = d.r * 1.72;
+
+        if (bbox.width > maxAllowedWidth || bbox.height > maxAllowedHeight) {
+          const scale = Math.min(maxAllowedWidth / bbox.width, maxAllowedHeight / bbox.height, 1);
+          if (scale < 0.98) {
+            fontSize = Math.floor(fontSize * scale * 10) / 10;
+            textEl.style("font-size", fontSize + "px");
+            lineHeight = fontSize * 1.20;
+            totalOffset = ((numLines - 1) * lineHeight) / 2;
+            textEl.selectAll("tspan").each(function (t, i) {
+              d3.select(this).attr("y", -totalOffset + i * lineHeight);
+            });
+          }
+        }
+      } catch (err) {
+        // En caso de SSR o render sin DOM activo
+      }
     });
   }
 
@@ -587,7 +629,6 @@
     selectedNodeId = d.id;
     highlightNeighborhood(d);
 
-    // Enlaces conectados a este nodo
     const connectedNodes = [];
     resolvedLinks.forEach(l => {
       if (l.source.id === d.id) connectedNodes.push(l.target);
@@ -640,7 +681,6 @@
       </div>
     `;
 
-    // Vincular clics de pastillas conectadas
     drawerBody.querySelectorAll(".connected-pill").forEach(el => {
       el.addEventListener("click", () => {
         const targetId = el.getAttribute("data-target");
@@ -782,7 +822,6 @@
   let animFrameId = null;
   const particles = [];
 
-  // Crear 60 partículas distribuidas en los enlaces
   resolvedLinks.forEach((link, idx) => {
     particles.push({
       link: link,
@@ -804,7 +843,6 @@
       p.t += p.speed;
       if (p.t > 1) p.t = 0;
 
-      // Calcular posición en la curva
       const sx = p.link.source.x, sy = p.link.source.y;
       const tx = p.link.target.x, ty = p.link.target.y;
       const dx = tx - sx, dy = ty - sy;
@@ -813,7 +851,6 @@
       const mx = (sx + tx) / 2 - (dy / dist) * curvature;
       const my = (sy + ty) / 2 + (dx / dist) * curvature;
 
-      // Bezier cuadrático: B(t) = (1-t)^2 P0 + 2(1-t)t P1 + t^2 P2
       const t = p.t;
       const invT = 1 - t;
       p.x = invT * invT * sx + 2 * invT * t * mx + t * t * tx;
