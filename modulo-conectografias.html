@@ -4,85 +4,456 @@
 <meta charset="UTF-8">
 <script src="rapot-v2.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Red de interacciones bióticas — Kennedy</title>
+<title>Red de Conectografías — Modelo de Complejidad Urbana</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="navigation-unified.css?v=20260920">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#0b0c0f; --panel:rgba(255,255,255,.06); --panel-border:rgba(255,255,255,.12);
-    --ink:#e8ecf1; --ink-dim:#8b96a5; --accent:#24c8bd;
+  :root {
+    --bg: #f8fafc;
+    --canvas-bg: #ffffff;
+    --panel: rgba(255, 255, 255, 0.95);
+    --panel-border: rgba(15, 23, 42, 0.12);
+    --ink: #0f172a;
+    --ink-dim: #64748b;
+    --accent: #0284c7;
+    --accent-glow: rgba(2, 132, 199, 0.35);
+    --node-cyan-bg: #cde8f6;
+    --node-cyan-border: #9ecbe5;
+    --node-text: #133555;
+    --link-stroke: #197bbd;
   }
-  *{box-sizing:border-box;}
-  html,body{height:100%;margin:0;}
-  body{ background:var(--bg); color:var(--ink); font-family:Inter,Arial,sans-serif; overflow:hidden; }
-  .app{ display:flex; min-height:100vh; }
-  .main{ flex:1; position:relative; min-width:0; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+  }
+  .app { display: flex; min-height: 100vh; }
+  .main { flex: 1; position: relative; min-width: 0; background: var(--canvas-bg); }
 
-  #redSvg{ position:absolute; inset:0; width:100%; height:100%; display:block; cursor:grab; }
-  #redSvg:active{ cursor:grabbing; }
+  #redSvg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+    user-select: none;
+  }
+  #redSvg:active { cursor: grabbing; }
 
-  .hud-title{ position:absolute; top:18px; left:18px; z-index:5; pointer-events:none; }
-  .hud-title h1{ font-size:15px; font-weight:600; margin:0 0 3px; }
-  .hud-title p{ font-size:11.5px; color:var(--ink-dim); margin:0; max-width:52ch; }
+  /* HUD Header */
+  .hud-title {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    z-index: 5;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+  .hud-title h1 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0b1a2e;
+    margin: 0 0 3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hud-title h1 .badge {
+    font-size: 10.5px;
+    font-weight: 600;
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid #bae6fd;
+  }
+  .hud-title p {
+    font-size: 11.5px;
+    color: var(--ink-dim);
+    margin: 0;
+    max-width: 58ch;
+    line-height: 1.35;
+  }
 
-  .red-size{
-    position:absolute; top:18px; right:18px; z-index:5; text-align:right;
-    font-size:11px; color:var(--ink-dim); pointer-events:none;
+  /* Filter Toolbar */
+  .toolbar-top {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .red-size b{ color:var(--ink); font-weight:600; }
+  .search-box {
+    position: relative;
+    width: 220px;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 8px 12px 8px 32px;
+    border-radius: 20px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.95);
+    font-size: 12px;
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    outline: none;
+    transition: all .2s ease;
+  }
+  .search-box input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+  }
+  .search-box i {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 11.5px;
+    color: var(--ink-dim);
+  }
+  .btn-action {
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all .2s ease;
+  }
+  .btn-action:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+  .btn-action.active {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+  }
 
-  .panel-filtros{
-    position:absolute; top:118px; left:18px; z-index:6; width:220px;
-    background:rgba(17,20,24,.92); border:1px solid var(--panel-border); border-radius:12px;
-    padding:14px; backdrop-filter:blur(6px); max-height:calc(100vh - 180px); overflow-y:auto;
+  /* Macromodel Filter Chips */
+  .macro-chips {
+    position: absolute;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--panel-border);
+    border-radius: 30px;
+    padding: 6px 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    max-width: 90vw;
+    overflow-x: auto;
   }
-  .panel-filtros input[type=search]{
-    width:100%; padding:7px 9px; border-radius:8px; border:1px solid var(--panel-border);
-    background:var(--panel); color:var(--ink); font-size:12px; margin-bottom:12px;
+  .macro-chip {
+    padding: 5px 12px;
+    border-radius: 16px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .15s ease;
   }
-  .panel-filtros h4{ font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-dim); margin:0 0 8px; }
-  .filtro-grupo{ margin-bottom:14px; }
-  .filtro-chip{
-    display:flex; align-items:center; gap:7px; font-size:11.5px; padding:4px 0; cursor:pointer; user-select:none;
+  .macro-chip:hover {
+    background: #f1f5f9;
+    color: #0f172a;
   }
-  .filtro-chip input{ accent-color:var(--accent); }
-  .filtro-chip .dot{ width:10px; height:10px; border-radius:50%; flex:none; }
-  .filtro-chip .line{ width:14px; height:3px; border-radius:2px; flex:none; }
+  .macro-chip.active {
+    background: #e0f2fe;
+    color: #0284c7;
+    border-color: #bae6fd;
+  }
 
-  .leyenda-fuente{ font-size:9.5px; color:var(--ink-dim); line-height:1.5; margin-top:10px; padding-top:10px; border-top:1px dashed var(--panel-border); }
-  .leyenda-fuente a{ color:var(--accent); }
+  /* Zoom controls */
+  .zoom-controls {
+    position: absolute;
+    bottom: 22px;
+    left: 18px;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .zoom-controls button {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 13px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s ease;
+  }
+  .zoom-controls button:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+  }
 
-  .zoom-controls{
-    position:absolute; bottom:20px; left:18px; z-index:6; display:flex; flex-direction:column; gap:6px;
+  /* Info Drawer */
+  .info-drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 15;
+    width: min(420px, 92vw);
+    background: #ffffff;
+    border-left: 1px solid var(--panel-border);
+    box-shadow: -10px 0 40px rgba(0,0,0,0.08);
+    padding: 28px 24px;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform .32s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .zoom-controls button{
-    width:32px; height:32px; border-radius:8px; border:1px solid var(--panel-border); background:rgba(17,20,24,.9);
-    color:var(--ink); cursor:pointer; font-size:13px;
+  .info-drawer.open { transform: translateX(0); }
+  .drawer-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all .15s ease;
   }
-  .zoom-controls button:hover{ background:rgba(255,255,255,.1); }
+  .drawer-close:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+  .drawer-macro {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #0284c7;
+    margin-bottom: 6px;
+  }
+  .drawer-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.25;
+    margin: 0 0 16px;
+  }
+  .drawer-desc {
+    font-size: 13px;
+    color: #334155;
+    line-height: 1.55;
+    margin-bottom: 18px;
+    background: #f8fafc;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+  }
+  .drawer-section {
+    margin-bottom: 16px;
+  }
+  .drawer-section h4 {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .drawer-section ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12.5px;
+    color: #334155;
+    line-height: 1.5;
+  }
+  .drawer-section ul li {
+    margin-bottom: 5px;
+  }
+  .connected-pill-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .connected-pill {
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    font-size: 12px;
+    color: #0369a1;
+    cursor: pointer;
+    transition: all .15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .connected-pill:hover {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+    transform: translateX(3px);
+  }
 
-  .info-panel{
-    position:absolute; top:0; right:0; bottom:0; z-index:12; width:min(340px,88vw);
-    background:#111418; border-left:1px solid var(--panel-border); box-shadow:-14px 0 40px rgba(0,0,0,.35);
-    padding:22px; overflow-y:auto; transform:translateX(100%); transition:transform .3s cubic-bezier(.2,.8,.2,1);
+  /* SVG Typography & Elements */
+  .macro-boundary-path {
+    fill: none;
+    stroke: #cbd5e1;
+    stroke-width: 1.8;
+    stroke-dasharray: 6 5;
+    transition: stroke .25s ease;
   }
-  .info-panel.open{ transform:translateX(0); }
-  .info-panel .close-btn{
-    position:absolute; top:14px; right:14px; width:26px; height:26px; border-radius:50%; border:none;
-    background:var(--panel); color:var(--ink-dim); cursor:pointer; font-size:12px;
+  .macro-boundary-path.active {
+    stroke: #0284c7;
+    stroke-width: 2.4;
   }
-  .info-kind{ font-size:10px; text-transform:uppercase; letter-spacing:.07em; margin:0 0 6px; font-weight:700; }
-  .info-panel h3{ font-size:16px; font-style:italic; margin:0 0 2px; }
-  .info-panel .common{ font-size:12.5px; color:var(--ink-dim); margin:0 0 16px; }
-  .info-row{ font-size:11.5px; color:var(--ink-dim); margin-bottom:10px; line-height:1.5; }
-  .info-row b{ color:var(--ink); display:block; font-size:10px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }
-  .info-list{ list-style:none; margin:0; padding:0; }
-  .info-list li{
-    font-size:11.5px; padding:8px 0; border-bottom:1px solid var(--panel-border); line-height:1.4;
+  .macro-cluster-path {
+    fill: rgba(240, 249, 255, 0.45);
+    stroke: #cbd5e1;
+    stroke-width: 1.5;
+    stroke-dasharray: 5 4;
+    transition: all .25s ease;
   }
-  .info-list li b{ font-style:italic; color:var(--ink); }
+  .macro-cluster-path:hover {
+    fill: rgba(224, 242, 254, 0.65);
+    stroke: #7dd3fc;
+  }
+  .macro-label-text {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    fill: #475569;
+    text-transform: uppercase;
+    user-select: none;
+    pointer-events: none;
+  }
+  .macro-outer-label {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    fill: #1e293b;
+    text-transform: uppercase;
+    user-select: none;
+    pointer-events: none;
+  }
 
-  .node-label{ font-size:9.5px; fill:#e8ecf1; pointer-events:none; text-anchor:middle; paint-order:stroke; stroke:#0b0c0f; stroke-width:3px; }
+  /* Links */
+  .net-link {
+    fill: none;
+    stroke: #1b7bb8;
+    stroke-width: 2.2;
+    stroke-dasharray: 5 4;
+    stroke-linecap: round;
+    opacity: 0.75;
+    transition: opacity .2s ease, stroke .2s ease, stroke-width .2s ease;
+  }
+  .net-link.highlight {
+    stroke: #0284c7;
+    stroke-width: 3.2;
+    opacity: 1;
+    stroke-dasharray: none;
+  }
+  .net-link.dimmed {
+    opacity: 0.12;
+  }
+
+  /* Particle Flow */
+  .link-particle {
+    fill: #0284c7;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .link-particle.active {
+    opacity: 0.9;
+  }
+
+  /* Nodes */
+  .net-node {
+    cursor: pointer;
+    transition: transform .2s cubic-bezier(0.16, 1, 0.3, 1), opacity .2s ease;
+  }
+  .node-circle {
+    fill: url(#nodeGradient);
+    stroke: #9ecbe5;
+    stroke-width: 1.8;
+    filter: drop-shadow(0 4px 10px rgba(14, 116, 144, 0.08));
+    transition: all .2s ease;
+  }
+  .net-node:hover .node-circle {
+    stroke: #0284c7;
+    stroke-width: 2.6;
+    filter: drop-shadow(0 6px 16px rgba(2, 132, 199, 0.28));
+  }
+  .net-node.active .node-circle {
+    stroke: #0369a1;
+    stroke-width: 3.2;
+    filter: drop-shadow(0 0 0 5px rgba(2, 132, 199, 0.25));
+  }
+  .net-node.dimmed {
+    opacity: 0.18;
+  }
+  .node-text {
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.15;
+    fill: #133555;
+    text-anchor: middle;
+    pointer-events: none;
+    user-select: none;
+  }
+  .node-text.large {
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* Diagram close button (decorative or reset) */
+  .diagram-close-btn {
+    cursor: pointer;
+    transition: transform .15s ease;
+  }
+  .diagram-close-btn:hover {
+    transform: scale(1.1);
+  }
 </style>
 </head>
 <body>
@@ -101,7 +472,7 @@
       <a href="modulo-08.html" class="icon-nav-item" title="08 · Lectura dinámica"><i class="fa-solid fa-wave-square"></i></a>
       <a href="modulo-08-3d.html" class="icon-nav-item" title="08 · Simulación 3D"><i class="fa-solid fa-cube"></i></a>
       <a href="modulo-10-corte.html" class="icon-nav-item" title="10 · Corte axonométrico"><i class="fa-solid fa-scissors"></i></a>
-      <a href="modulo-conectografias.html" class="icon-nav-item active" title="Red de interacciones bióticas"><i class="fa-solid fa-diagram-project"></i></a>
+      <a href="modulo-conectografias.html" class="icon-nav-item active" title="Red de Conectografías"><i class="fa-solid fa-diagram-project"></i></a>
       <a href="modulo-12-problemas.html" class="icon-nav-item" title="12 · Problemáticas Corabastos"><i class="fa-solid fa-triangle-exclamation"></i></a>
       <a href="red-residuos-organicos.html" class="icon-nav-item" title="Red de problemáticas"><i class="fa-solid fa-diagram-project"></i></a>
       <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
@@ -111,50 +482,55 @@
   <main class="main">
     <svg id="redSvg"></svg>
 
+    <!-- Top HUD -->
     <div class="hud-title">
-      <h1>Red de interacciones bióticas — Kennedy</h1>
-      <p>Interacciones reales en Humedal El Burro, Humedal de Techo, Corredor La Magdalena y Huerta Monterrey · clic en un nodo para ver detalles</p>
+      <h1>
+        Red de Conectografías
+        <span class="badge">Modelo de Complejidad Urbana</span>
+      </h1>
+      <p>Articulación sistémica de modelos de simulación, metabolismo urbano, sintaxis espacial y cronosistemas en el territorio de Kennedy.</p>
     </div>
 
-    <div class="red-size" id="redSize"></div>
-
-    <div class="panel-filtros">
-      <input type="search" id="buscador" placeholder="Nombre científico o común">
-      <div class="filtro-grupo">
-        <h4>Reino</h4>
-        <label class="filtro-chip"><input type="checkbox" class="f-reino" value="Animal" checked><span class="dot" style="background:#e8743b;"></span> Animal</label>
-        <label class="filtro-chip"><input type="checkbox" class="f-reino" value="Cromista" checked><span class="dot" style="background:#4a9fc7;"></span> Cromista</label>
-        <label class="filtro-chip"><input type="checkbox" class="f-reino" value="Planta" checked><span class="dot" style="background:#5fb85c;"></span> Planta</label>
-        <label class="filtro-chip"><input type="checkbox" class="f-reino" value="Bacteria" checked><span class="dot" style="background:#c7a24a;"></span> Bacteria</label>
-        <label class="filtro-chip"><input type="checkbox" class="f-reino" value="Hongo" checked><span class="dot" style="background:#9a6fb0;"></span> Hongo</label>
-        <label class="filtro-chip"><input type="checkbox" class="f-reino" value="Protozoario" checked><span class="dot" style="background:#6fb09a;"></span> Protozoario</label>
+    <!-- Top Toolbar Actions -->
+    <div class="toolbar-top">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="search" id="modelSearch" placeholder="Buscar modelo o variable...">
       </div>
-      <div class="filtro-grupo">
-        <h4>Interacción</h4>
-        <label class="filtro-chip"><input type="checkbox" class="f-tipo" value="Visita floral" checked><span class="line" style="background:#c77dd1;"></span> Visita floral</label>
-        <label class="filtro-chip"><input type="checkbox" class="f-tipo" value="Herbivoría (frugivoría)" checked><span class="line" style="background:#d4a24a;"></span> Herbivoría (frugivoría)</label>
-        <label class="filtro-chip"><input type="checkbox" class="f-tipo" value="Herbivoría" checked><span class="line" style="background:#8a9a4a;"></span> Herbivoría</label>
-        <label class="filtro-chip"><input type="checkbox" class="f-tipo" value="Depredación" checked><span class="line" style="background:#c4454a;"></span> Depredación</label>
-      </div>
-      <div class="leyenda-fuente">
-        Datos reales: Montoya Quiroga A.M. (2025), Jardín Botánico de Bogotá "José Celestino Mutis". <a href="https://doi.org/10.15472/8jwhfm" target="_blank" rel="noopener">DOI 10.15472/8jwhfm</a>. Visualización inspirada en la <a href="https://redbiotica.jbb.gov.co/" target="_blank" rel="noopener">Red de Interacciones Bióticas de Bogotá</a> del JBB.
-      </div>
+      <button type="button" class="btn-action" id="simFlowBtn" title="Simular propagación de flujos e impulsos sistémicos">
+        <i class="fa-solid fa-play"></i> Simular Flujos
+      </button>
+      <button type="button" class="btn-action" id="resetLayoutBtn" title="Restablecer posiciones originales">
+        <i class="fa-solid fa-rotate-left"></i> Restablecer
+      </button>
     </div>
 
+    <!-- Macromodel Filter Chips -->
+    <div class="macro-chips" id="macroFilterChips">
+      <button type="button" class="macro-chip active" data-macro="all">Todos los Modelos (18)</button>
+      <button type="button" class="macro-chip" data-macro="gemelos">Gemelos Digitales</button>
+      <button type="button" class="macro-chip" data-macro="cronosistemas">Cronosistemas</button>
+      <button type="button" class="macro-chip" data-macro="sets">SETS (Socioecológicos)</button>
+      <button type="button" class="macro-chip" data-macro="sintaxis">Sintaxis Espacial</button>
+      <button type="button" class="macro-chip" data-macro="metabolismo">Metabolismo Urbano</button>
+    </div>
+
+    <!-- Zoom Controls -->
     <div class="zoom-controls">
       <button type="button" id="zoomIn" title="Acercar"><i class="fa-solid fa-plus"></i></button>
       <button type="button" id="zoomOut" title="Alejar"><i class="fa-solid fa-minus"></i></button>
-      <button type="button" id="zoomReset" title="Restablecer"><i class="fa-solid fa-expand"></i></button>
+      <button type="button" id="zoomReset" title="Encuadre original"><i class="fa-solid fa-expand"></i></button>
     </div>
 
-    <div class="info-panel" id="infoPanel">
-      <button type="button" class="close-btn" id="infoClose"><i class="fa-solid fa-xmark"></i></button>
-      <div id="infoBody"></div>
+    <!-- Slide-out Details Drawer -->
+    <div class="info-drawer" id="infoDrawer">
+      <button type="button" class="drawer-close" id="drawerClose" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+      <div id="drawerBody"></div>
     </div>
   </main>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="modulo-conectografias.js?v=1"></script>
+<script src="modulo-conectografias.js?v=20261005"></script>
 </body>
 </html>
