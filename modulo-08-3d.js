@@ -23,8 +23,8 @@
   const canvas = document.getElementById("sceneCanvas");
   const wrap = document.getElementById("sceneWrap");
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xf3f4f5);
-  scene.fog = new THREE.Fog(0xf3f4f5, 900, 3200);
+  scene.background = new THREE.Color(0x141416);
+  scene.fog = new THREE.Fog(0x141416, 1000, 3600);
   // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
   // se agrega a este grupo, no directamente a la escena, para poder
   // rotarlo entero en X/Y/Z con los controles manuales de orientacion.
@@ -34,9 +34,80 @@
   // no es el eje "arriba" de esta escena); un giro en Y reordena el plano
   // igual mientras deja la altura intacta.
   const sceneRoot = new THREE.Group();
-  // No se rota el grupo entero — el reacomodo del plano se hace de forma
-  // pura dentro de toScene() (ver abajo), sin tocar la altura de nada.
   scene.add(sceneRoot);
+
+  // Variables y grupos de la simulación histórica (1950 - 1956)
+  let currentHistoricalYear = 1950;
+  let rawWaterData = null;
+  let modernRoadLines = null;
+  let modernRoadMesh = null;
+  let modernManzanasMesh = null;
+  let modernBuildingEdges = null;
+  let modernParquesMesh = null;
+  let modernFacadesMesh = null;
+  let camAnim = null;
+
+  const cowsGroup = new THREE.Group();
+  sceneRoot.add(cowsGroup);
+
+  const historicalWetlandsGroup = new THREE.Group();
+  sceneRoot.add(historicalWetlandsGroup);
+
+  const americasRoadGroup = new THREE.Group();
+  sceneRoot.add(americasRoadGroup);
+
+  const aeropuertoTechoGroup = new THREE.Group();
+  sceneRoot.add(aeropuertoTechoGroup);
+
+  const corabastosGroup = new THREE.Group();
+  sceneRoot.add(corabastosGroup);
+
+  const roads1972Group = new THREE.Group();
+  sceneRoot.add(roads1972Group);
+
+  const avCaliGroup = new THREE.Group();
+  sceneRoot.add(avCaliGroup);
+
+  const protechoGroup = new THREE.Group();
+  sceneRoot.add(protechoGroup);
+
+  const historicalTreesGroup = new THREE.Group();
+  sceneRoot.add(historicalTreesGroup);
+
+  const userPlantedGroup = new THREE.Group();
+  userPlantedGroup.renderOrder = 999;
+  sceneRoot.add(userPlantedGroup);
+  const userPlantedElements = [];
+  let currentActiveTool = null; // 'tree' | 'cow' | 'road' | 'runway' | null
+
+  // Grupo para polígonos personalizados de vía y pista de aterrizaje
+  const customPolysGroup = new THREE.Group();
+  customPolysGroup.renderOrder = 300;
+  sceneRoot.add(customPolysGroup);
+
+  const customRoadPoints = [];
+  const customRunwayPoints = [];
+  let currentActiveRoadMesh = null;
+  let currentActiveRunwayMesh = null;
+
+  const viaTexLoader = new THREE.TextureLoader();
+  const roadTexture = viaTexLoader.load("./assets/textura_via.jpg");
+  roadTexture.wrapS = THREE.RepeatWrapping;
+  roadTexture.wrapT = THREE.RepeatWrapping;
+
+  const customRoadMat = new THREE.MeshStandardMaterial({
+    map: roadTexture,
+    color: 0x9099a3,
+    roughness: 0.85,
+    side: THREE.DoubleSide
+  });
+
+  const customRunwayMat = new THREE.MeshStandardMaterial({
+    map: roadTexture,
+    color: 0x727982,
+    roughness: 0.85,
+    side: THREE.DoubleSide
+  });
 
   let camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
   const orthoCameraRef = camera; // referencia estable a la ortografica, para poder volver a ella
@@ -81,18 +152,20 @@
   window.addEventListener("resize", resize);
 
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
-  canvas.addEventListener("contextmenu", (e) => e.preventDefault()); // sin esto, el navegador abre su menu contextual con el clic derecho en vez de dejarlo mover (panear) la vista
+  canvas.addEventListener("contextmenu", (e) => e.preventDefault());
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  // Antes el angulo de camara quedaba fijo en 45 grados (solo se podia
-  // orbitar en horizontal). Ahora se puede inclinar la vista libremente,
-  // para poder ver el corte de la caja de seccion desde el angulo que se
-  // quiera, no solo desde arriba.
-  controls.minPolarAngle = Math.PI / 12;   // casi cenital
-  controls.maxPolarAngle = Math.PI / 2.05; // casi al ras del horizonte
+  controls.enableRotate = false; // Vista axonométrica fija: no rota, solo se desplaza y hace zoom
+  controls.enablePan = true;
+  controls.screenSpacePanning = true;
+  controls.enableZoom = true;
   controls.minZoom = 0.15;
   controls.maxZoom = 30;
-  controls.enablePan = true;
+  controls.mouseButtons = {
+    LEFT: THREE.MOUSE.PAN,
+    MIDDLE: THREE.MOUSE.DOLLY,
+    RIGHT: THREE.MOUSE.PAN
+  };
 
   // ---- Cambiar entre proyeccion ortografica (axonometrica, la de
   // siempre) y perspectiva (con fuga real, como ve un ojo humano). Al
@@ -116,7 +189,10 @@
     controls.update();
     resize();
     camera.updateProjectionMatrix();
-    perspToggleBtn.textContent = usingPersp ? "📏 Ver en axonométrica" : "📐 Ver en perspectiva";
+    perspToggleBtn.innerHTML = usingPersp 
+      ? '<i class="fa-solid fa-compass"></i> Ver en axonométrica' 
+      : '<i class="fa-solid fa-cube"></i> Ver en perspectiva';
+    perspToggleBtn.classList.toggle("active", usingPersp);
     if (typeof updateSectionBox === "function") updateSectionBox(); // refrescar el cuadro de coordenadas con la nueva proyeccion
   });
 
@@ -158,15 +234,34 @@
   // ---- Suelo ----
   let netCenter = { x: 0, y: 0 };
   let roadMat = null, waterMat = null, parqueMat = null; // referencias para los selectores de color en vivo
+  let modernWaterMesh = null;
   let waterTexRef = null, waterBumpRef = null; // texturas de agua, animadas en el loop de render
   let buildingEdgeMat = null; // referencia para ajustar su opacidad segun el zoom
   let groundMesh = null;
+  const grassTexLoader = new THREE.TextureLoader();
+  const histGrassTex = grassTexLoader.load("./assets/textura_pasto.jpg");
+  histGrassTex.wrapS = THREE.RepeatWrapping;
+  histGrassTex.wrapT = THREE.RepeatWrapping;
+  histGrassTex.anisotropy = 16;
+  histGrassTex.minFilter = THREE.LinearMipmapLinearFilter;
+  histGrassTex.magFilter = THREE.LinearFilter;
 
   function buildGround(bbox) {
     const w = (bbox[2] - bbox[0]) * SCALE * 1.4;
     const h = (bbox[3] - bbox[1]) * SCALE * 1.4;
     const geo = new THREE.PlaneGeometry(w, h);
-    const mat = new THREE.MeshStandardMaterial({ color: 0xeceeef, roughness: 1, metalness: 0 });
+    
+    // Repetición suave y amplia para evitar efecto cuadrícula/cuarteado
+    histGrassTex.repeat.set(Math.max(10, Math.round(w / 45)), Math.max(10, Math.round(h / 45)));
+    
+    const mat = new THREE.MeshStandardMaterial({
+      map: histGrassTex,
+      color: 0x98b488, // Verde pasto natural de sabana del principio (#98b488)
+      roughness: 0.92,
+      metalness: 0.0,
+      transparent: true,
+      opacity: 0.85
+    });
     groundMesh = new THREE.Mesh(geo, mat);
     groundMesh.rotation.x = -Math.PI / 2;
     groundMesh.position.set(0, -0.4, 0);
@@ -183,6 +278,869 @@
     return { x: (x - netCenter.x) * SCALE, z: -(y - netCenter.y) * SCALE };
   }
 
+// =====================================================================
+  // SIMULACIÓN HISTÓRICA: 1950 (Sabana & Humedal El Burro) y 1956 (La Vaca & Aeropuerto de Techo)
+  // =====================================================================
+
+  // Texturas de agua con relieve y movimiento (mismo color y textura que la axonometría)
+  const waterTexLoader = new THREE.TextureLoader();
+  const waterTex = waterTexLoader.load("./assets/textura_agua2.jpg");
+  waterTex.wrapS = THREE.RepeatWrapping;
+  waterTex.wrapT = THREE.RepeatWrapping;
+  waterTexRef = waterTex;
+
+  const bumpTex = waterTexLoader.load("./assets/textura_agua2.jpg");
+  bumpTex.wrapS = THREE.RepeatWrapping;
+  bumpTex.wrapT = THREE.RepeatWrapping;
+  bumpTex.repeat.set(2.3, 2.3);
+  waterBumpRef = bumpTex;
+
+  const sharedWaterMat = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    map: waterTex,
+    bumpMap: bumpTex,
+    bumpScale: 0.12,
+    roughness: 0.15,
+    metalness: 0.15,
+    transparent: true,
+    opacity: 0.88,
+    side: THREE.DoubleSide
+  });
+  waterMat = sharedWaterMat;
+
+  // 1. Sprites de vacas en pastoreo con sombra negra en el suelo (caminando en el plano sin flotar)
+  const cowTextures = [];
+  const cowTexLoader = new THREE.TextureLoader();
+  for (let i = 0; i < 12; i++) {
+    cowTextures.push(cowTexLoader.load(`./assets/vaca_${i}.png`));
+  }
+
+  const cowInstances = [];
+  function createCows() {
+    cowsGroup.clear();
+    cowInstances.length = 0;
+    
+    // Zonas de pastoreo alrededor de los humedales y pasturas
+    const cowZones = [
+      { cx: 210, cz: -10, rx: 80, rz: 60, count: 28 }, // Humedal El Burro
+      { cx: 70, cz: 115, rx: 65, rz: 50, count: 24 },  // Humedal La Vaca
+      { cx: 270, cz: 90, rx: 75, rz: 60, count: 20 },  // Pasturas orientales / Techo
+      { cx: 130, cz: -80, rx: 70, rz: 60, count: 18 }, // Zona rural norte
+    ];
+
+    cowZones.forEach(zone => {
+      for (let i = 0; i < zone.count; i++) {
+        const tex = cowTextures[Math.floor(Math.random() * cowTextures.length)];
+        const mat = new THREE.MeshBasicMaterial({
+          map: tex,
+          transparent: true,
+          side: THREE.DoubleSide,
+          alphaTest: 0.35,
+          depthWrite: false
+        });
+        const geo = new THREE.PlaneGeometry(1.6, 1.1);
+        const mesh = new THREE.Mesh(geo, mat);
+
+        // Sombra negra en el suelo debajo de la vaca
+        const shadowGeo = new THREE.PlaneGeometry(1.5, 0.8);
+        const shadowMat = new THREE.MeshBasicMaterial({
+          color: 0x000000,
+          transparent: true,
+          opacity: 0.38,
+          depthWrite: false
+        });
+        const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+        shadowMesh.rotation.x = -Math.PI / 2;
+        shadowMesh.position.set(0, -0.48, 0);
+        mesh.add(shadowMesh);
+
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.sqrt(Math.random());
+        const x = zone.cx + Math.cos(angle) * zone.rx * dist;
+        const z = zone.cz + Math.sin(angle) * zone.rz * dist;
+
+        mesh.position.set(x, 0.55, z);
+        mesh.rotation.x = -Math.PI / 4.2;
+        mesh.rotation.y = (Math.random() - 0.5) * 0.3;
+        const s = 0.85 + Math.random() * 0.3;
+        mesh.scale.set((Math.random() > 0.5 ? 1 : -1) * s, s, s);
+
+        cowsGroup.add(mesh);
+        cowInstances.push({
+          mesh,
+          baseX: x,
+          baseZ: z,
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.3 + Math.random() * 0.4,
+          wanderR: 1.2 + Math.random() * 2.0
+        });
+      }
+    });
+  }
+
+  // 2. Construcción de humedales históricos con el área solicitada según la época
+  function buildHistoricalWetlands(waterBodies, year = 1950) {
+    if (!waterBodies || !waterBodies.length) return;
+    historicalWetlandsGroup.clear();
+    const positions = [], uvs = [], colors = [], linePositions = [];
+    const UV_SCALE = 0.08;
+
+    function polyArea(pts) {
+      let a = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const p1 = pts[i], p2 = pts[(i + 1) % pts.length];
+        a += p1[0] * p2[1] - p2[0] * p1[1];
+      }
+      return Math.abs(a) / 2;
+    }
+
+    // Suavizado de esquinas curvas (Algoritmo de Chaikin)
+    function chaikinSmooth(pts, iterations = 2) {
+      let cur = pts;
+      for (let iter = 0; iter < iterations; iter++) {
+        const n = cur.length;
+        const res = [];
+        for (let i = 0; i < n; i++) {
+          const p0 = cur[i];
+          const p1 = cur[(i + 1) % n];
+          res.push([0.75 * p0[0] + 0.25 * p1[0], 0.75 * p0[1] + 0.25 * p1[1]]);
+          res.push([0.25 * p0[0] + 0.75 * p1[0], 0.25 * p0[1] + 0.75 * p1[1]]);
+        }
+        cur = res;
+      }
+      return cur;
+    }
+
+    let targetAreaBurro = 1710000;
+    let targetAreaVaca = 1810000;
+    let targetAreaTecho = 1200000;
+
+    if (year === 1972) {
+      targetAreaBurro = 385300;
+      targetAreaVaca = 800000;
+      targetAreaTecho = 300000;
+    } else if (year === 1988) {
+      targetAreaBurro = 271400;
+      targetAreaVaca = 300000;
+      targetAreaTecho = 100000;
+    }
+
+    const burroObj = waterBodies.find(w => (w.nombre || "").includes("Burro"));
+    let burroCx = 7436.96, burroCy = 3271.17;
+    if (burroObj && burroObj.pts && burroObj.pts.length) {
+      burroCx = burroObj.pts.reduce((s, p) => s + p[0], 0) / burroObj.pts.length;
+      burroCy = burroObj.pts.reduce((s, p) => s + p[1], 0) / burroObj.pts.length;
+    }
+
+    waterBodies.forEach((w) => {
+      const name = w.nombre || "";
+      if (!name.includes("Burro") && !name.includes("Vaca") && !name.includes("Techo")) return;
+      if (!w.pts || w.pts.length < 3) return;
+
+      const ptsOriginal = w.pts;
+      const baseArea = polyArea(ptsOriginal);
+      if (baseArea <= 0) return;
+      if (name.includes("Vaca") && baseArea < 20000) return;
+
+      const cx = ptsOriginal.reduce((s, p) => s + p[0], 0) / ptsOriginal.length;
+      const cy = ptsOriginal.reduce((s, p) => s + p[1], 0) / ptsOriginal.length;
+
+      let expandedPts = [];
+      let yLayer = 0.024;
+
+      if (name.includes("Burro")) {
+        yLayer = 0.024;
+        const scale = Math.sqrt(targetAreaBurro / baseArea);
+        const unscaled = ptsOriginal.map(p => [cx + (p[0] - cx) * scale, cy + (p[1] - cy) * scale]);
+        const smoothed = chaikinSmooth(unscaled, 1);
+        const sArea = polyArea(smoothed);
+        const k = Math.sqrt(targetAreaBurro / (sArea || 1));
+        const scx = smoothed.reduce((s, p) => s + p[0], 0) / smoothed.length;
+        const scy = smoothed.reduce((s, p) => s + p[1], 0) / smoothed.length;
+        expandedPts = smoothed.map(p => [scx + (p[0] - scx) * k, scy + (p[1] - scy) * k]);
+      } else if (name.includes("Vaca")) {
+        yLayer = 0.025;
+        const scaleBase = Math.sqrt(targetAreaVaca / baseArea);
+        const dx = burroCx - cx, dy = burroCy - cy;
+        const dist = Math.hypot(dx, dy) || 1;
+        const ux = dx / dist, uy = dy / dist;
+
+        const transformed = ptsOriginal.map(p => {
+          const px = p[0] - cx, py = p[1] - cy;
+          const proj = px * ux + py * uy;
+          const perp_x = px - proj * ux, perp_y = py - proj * uy;
+          const newProj = proj * (scaleBase * 1.30) + dist * 0.25;
+          const newPerpX = perp_x * (scaleBase * 0.769);
+          const newPerpY = perp_y * (scaleBase * 0.769);
+          return [cx + newProj * ux + newPerpX, cy + newProj * uy + newPerpY];
+        });
+
+        const smoothed = chaikinSmooth(transformed, 2);
+        const sArea = polyArea(smoothed);
+        const k = Math.sqrt(targetAreaVaca / (sArea || 1));
+        const scx = smoothed.reduce((s, p) => s + p[0], 0) / smoothed.length;
+        const scy = smoothed.reduce((s, p) => s + p[1], 0) / smoothed.length;
+        expandedPts = smoothed.map(p => [scx + (p[0] - scx) * k, scy + (p[1] - scy) * k]);
+      } else if (name.includes("Techo")) {
+        yLayer = 0.026;
+        const scaleBase = Math.sqrt(targetAreaTecho / baseArea);
+        const dx = burroCx - cx, dy = burroCy - cy;
+        const dist = Math.hypot(dx, dy) || 1;
+        const ux = dx / dist, uy = dy / dist;
+
+        const transformed = ptsOriginal.map(p => {
+          const px = p[0] - cx, py = p[1] - cy;
+          const proj = px * ux + py * uy;
+          const perp_x = px - proj * ux, perp_y = py - proj * uy;
+          const newProj = proj * (scaleBase * 1.22) + dist * 0.20;
+          const newPerpX = perp_x * (scaleBase * 0.82);
+          const newPerpY = perp_y * (scaleBase * 0.82);
+          return [cx + newProj * ux + newPerpX, cy + newProj * uy + newPerpY];
+        });
+
+        const smoothed = chaikinSmooth(transformed, 1);
+        const sArea = polyArea(smoothed);
+        const k = Math.sqrt(targetAreaTecho / (sArea || 1));
+        const scx = smoothed.reduce((s, p) => s + p[0], 0) / smoothed.length;
+        const scy = smoothed.reduce((s, p) => s + p[1], 0) / smoothed.length;
+        expandedPts = smoothed.map(p => [scx + (p[0] - scx) * k, scy + (p[1] - scy) * k]);
+      }
+
+      const scenePts = expandedPts.map(p => toScene(p[0], p[1]));
+      if (scenePts.length < 3) return;
+
+      const pts2d = scenePts.map(p => new THREE.Vector2(p.x, p.z));
+      let tris = [];
+      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) {}
+
+      const nPts = scenePts.length;
+      const polyCentroidX = scenePts.reduce((s, p) => s + p.x, 0) / nPts;
+      const polyCentroidZ = scenePts.reduce((s, p) => s + p.z, 0) / nPts;
+      
+      let maxDist = 0.001;
+      for (let i = 0; i < nPts; i++) {
+        const d = Math.hypot(scenePts[i].x - polyCentroidX, scenePts[i].z - polyCentroidZ);
+        if (d > maxDist) maxDist = d;
+      }
+
+      function getWetlandGradientColor(px, pz) {
+        const dist = Math.hypot(px - polyCentroidX, pz - polyCentroidZ);
+        const t = Math.min(1.0, Math.max(0.0, dist / maxDist));
+        // Difuminado orgánico: Centro = Azul acuático vivo (#0284c7), Bordes = Verde oscuro musgoso y profundo (#143522)
+        const tPow = Math.pow(t, 1.4);
+        const r = 0.01 + (0.07 - 0.01) * tPow;
+        const g = 0.52 + (0.21 - 0.52) * tPow;
+        const b = 0.82 + (0.13 - 0.82) * tPow;
+        return [r, g, b];
+      }
+
+      // Línea de orilla oscura verdosa
+      for (let i = 0; i < nPts; i++) {
+        const p1 = scenePts[i];
+        const p2 = scenePts[(i + 1) % nPts];
+        linePositions.push(p1.x, yLayer + 0.004, p1.z, p2.x, yLayer + 0.004, p2.z);
+      }
+
+      tris.forEach(([a, b, c]) => {
+        [a, b, c].forEach(idx => {
+          const pt = scenePts[idx];
+          positions.push(pt.x, yLayer, pt.z);
+          uvs.push(pt.x * UV_SCALE, pt.z * UV_SCALE);
+          const [cr, cg, cb] = getWetlandGradientColor(pt.x, pt.z);
+          colors.push(cr, cg, cb);
+        });
+      });
+    });
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    geo.computeVertexNormals();
+
+    const bedGeo = geo.clone();
+    const bedMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    const bedMesh = new THREE.Mesh(bedGeo, bedMat);
+    bedMesh.position.y = -0.004;
+    bedMesh.renderOrder = 10;
+    historicalWetlandsGroup.add(bedMesh);
+
+    const mesh = new THREE.Mesh(geo, sharedWaterMat);
+    mesh.renderOrder = 15;
+    mesh.receiveShadow = false;
+    historicalWetlandsGroup.add(mesh);
+
+    if (linePositions.length) {
+      const lineGeo = new THREE.BufferGeometry();
+      lineGeo.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x143422, transparent: true, opacity: 0.65 });
+      const lineMesh = new THREE.LineSegments(lineGeo, lineMat);
+      lineMesh.renderOrder = 20;
+      historicalWetlandsGroup.add(lineMesh);
+    }
+  }
+  // ---- Modelos Históricos Documentados ----
+  function buildCorabastosModel() {
+    corabastosGroup.clear();
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.7, metalness: 0.1 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.4 });
+    const bodegas = [
+      { x: 260, z: 45, w: 28, h: 4.5, d: 14 },
+      { x: 260, z: 65, w: 28, h: 4.5, d: 14 },
+      { x: 295, z: 45, w: 24, h: 4.5, d: 14 },
+      { x: 295, z: 65, w: 24, h: 4.5, d: 14 },
+      { x: 275, z: 88, w: 38, h: 5.0, d: 16 }
+    ];
+    bodegas.forEach(b => {
+      const bGeo = new THREE.BoxGeometry(b.w, b.h, b.d);
+      const mesh = new THREE.Mesh(bGeo, wallMat);
+      mesh.position.set(b.x, b.h / 2 + 0.05, b.z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      const eGeo = new THREE.EdgesGeometry(bGeo);
+      const eMesh = new THREE.LineSegments(eGeo, edgeMat);
+      mesh.add(eMesh);
+      corabastosGroup.add(mesh);
+    });
+  }
+
+  function buildRoads1972() {
+    roads1972Group.clear();
+    const viaTex = new THREE.TextureLoader().load("./assets/textura_via.jpg");
+    viaTex.wrapS = THREE.RepeatWrapping; viaTex.wrapT = THREE.RepeatWrapping;
+    const avenues = [
+      { width: 2.2, pts: [{ x: 460, z: 48 }, { x: 380, z: 66 }, { x: 310, z: 85 }] },
+      { width: 1.8, pts: [{ x: 310, z: 15 }, { x: 310, z: 85 }, { x: 280, z: 125 }, { x: 260, z: 160 }] }
+    ];
+    avenues.forEach(ave => {
+      const pts = ave.pts;
+      const halfW = ave.width * 0.5;
+      const ribbonGeo = new THREE.BufferGeometry();
+      const ribbonPos = [], ribbonUv = [];
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1];
+        const dx = b.x - a.x, dz = b.z - a.z;
+        const len = Math.hypot(dx, dz) || 0.001;
+        const nx = -dz / len * halfW, nz = dx / len * halfW;
+        ribbonPos.push(
+          a.x - nx, 0.038, a.z - nz,  a.x + nx, 0.038, a.z + nz,  b.x + nx, 0.038, b.z + nz,
+          a.x - nx, 0.038, a.z - nz,  b.x + nx, 0.038, b.z + nz,  b.x - nx, 0.038, b.z - nz
+        );
+        [
+          [a.x - nx, a.z - nz], [a.x + nx, a.z + nz], [b.x + nx, b.z + nz],
+          [a.x - nx, a.z - nz], [b.x + nx, b.z + nz], [b.x - nx, b.z - nz]
+        ].forEach(([px, pz]) => ribbonUv.push(px * 0.06, pz * 0.06));
+      }
+      ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(ribbonPos, 3));
+      ribbonGeo.setAttribute("uv", new THREE.Float32BufferAttribute(ribbonUv, 2));
+      ribbonGeo.computeVertexNormals();
+      const roadMat = new THREE.MeshStandardMaterial({ map: viaTex, color: 0x94a3b8, roughness: 0.85, side: THREE.DoubleSide });
+      const rMesh = new THREE.Mesh(ribbonGeo, roadMat);
+      roads1972Group.add(rMesh);
+    });
+  }
+
+  function buildAvCaliModel() {
+    avCaliGroup.clear();
+    const viaTex = new THREE.TextureLoader().load("./assets/textura_via.jpg");
+    viaTex.wrapS = THREE.RepeatWrapping; viaTex.wrapT = THREE.RepeatWrapping;
+    const pts = [
+      { x: 226, z: -120 }, { x: 220, z: -55 }, { x: 212, z: -10 }, { x: 206, z: 45 }, { x: 198, z: 120 }
+    ];
+    const ribbonGeo = new THREE.BufferGeometry();
+    const ribbonPos = [], ribbonUv = [];
+    const halfW = 1.35;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const dx = b.x - a.x, dz = b.z - a.z;
+      const len = Math.hypot(dx, dz) || 0.001;
+      const nx = -dz / len * halfW, nz = dx / len * halfW;
+      ribbonPos.push(
+        a.x - nx, 0.042, a.z - nz,  a.x + nx, 0.042, a.z + nz,  b.x + nx, 0.042, b.z + nz,
+        a.x - nx, 0.042, a.z - nz,  b.x + nx, 0.042, b.z + nz,  b.x - nx, 0.042, b.z - nz
+      );
+      [
+        [a.x - nx, a.z - nz], [a.x + nx, a.z + nz], [b.x + nx, b.z + nz],
+        [a.x - nx, a.z - nz], [b.x + nx, b.z + nz], [b.x - nx, b.z - nz]
+      ].forEach(([px, pz]) => ribbonUv.push(px * 0.06, pz * 0.06));
+    }
+    ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(ribbonPos, 3));
+    ribbonGeo.setAttribute("uv", new THREE.Float32BufferAttribute(ribbonUv, 2));
+    ribbonGeo.computeVertexNormals();
+    const roadMat = new THREE.MeshStandardMaterial({ map: viaTex, color: 0x64748b, roughness: 0.85, side: THREE.DoubleSide });
+    const rMesh = new THREE.Mesh(ribbonGeo, roadMat);
+    avCaliGroup.add(rMesh);
+  }
+
+  function buildProtechoModel() {
+    protechoGroup.clear();
+    const facMat = new THREE.MeshStandardMaterial({ color: 0x78716c, roughness: 0.85 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x1c1917, transparent: true, opacity: 0.45 });
+    const pGeo = new THREE.BoxGeometry(22, 6.5, 16);
+    const pMesh = new THREE.Mesh(pGeo, facMat);
+    pMesh.position.set(168, 3.3, -38);
+    pMesh.castShadow = true;
+    pMesh.receiveShadow = true;
+    const eGeo = new THREE.EdgesGeometry(pGeo);
+    const eMesh = new THREE.LineSegments(eGeo, edgeMat);
+    pMesh.add(eMesh);
+    protechoGroup.add(pMesh);
+  }
+
+
+  // 3. Modelo del Antiguo Aeropuerto de Techo (1956) con Pista y Vía trazadas en gris claro
+  const AEROPUERTO_RUNWAY_PTS = [
+    { x: 235.83, z: 96.00 },
+    { x: 231.51, z: 98.92 },
+    { x: 228.91, z: 103.03 },
+    { x: 228.24, z: 107.15 },
+    { x: 230.23, z: 112.00 },
+    { x: 233.77, z: 116.51 },
+    { x: 259.94, z: 144.64 },
+    { x: 264.32, z: 146.57 },
+    { x: 269.91, z: 145.06 },
+    { x: 273.99, z: 143.61 },
+    { x: 322.12, z: 120.95 },
+    { x: 332.93, z: 113.64 },
+    { x: 329.58, z: 107.96 },
+    { x: 328.33, z: 103.83 },
+    { x: 324.59, z: 103.22 },
+    { x: 234.95, z: 96.15 }
+  ];
+
+  const AEROPUERTO_ROAD_PTS = [
+    { x: 393.48, z: 107.81 },
+    { x: 235.46, z: 95.63 }
+  ];
+
+  function isPointInRunway(px, pz) {
+    let inside = false;
+    const n = AEROPUERTO_RUNWAY_PTS.length;
+    for (let i = 0; i < n; i++) {
+      const p1 = AEROPUERTO_RUNWAY_PTS[i], p2 = AEROPUERTO_RUNWAY_PTS[(i + 1) % n];
+      if (((p1.z > pz) !== (p2.z > pz)) && (px < (p2.x - p1.x) * (pz - p1.z) / (p2.z - p1.z + 1e-9) + p1.x)) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
+  function isPointNearRoad(px, pz, maxDist = 3.8) {
+    const a = AEROPUERTO_ROAD_PTS[0], b = AEROPUERTO_ROAD_PTS[1];
+    const dx = b.x - a.x, dz = b.z - a.z;
+    const l2 = dx * dx + dz * dz;
+    if (l2 === 0) return Math.hypot(px - a.x, pz - a.z) < maxDist;
+    const t = Math.max(0, Math.min(1, ((px - a.x) * dx + (pz - a.z) * dz) / l2));
+    const projX = a.x + t * dx, projZ = a.z + t * dz;
+    return Math.hypot(px - projX, pz - projZ) < maxDist;
+  }
+
+  function buildAeropuertoTecho() {
+    aeropuertoTechoGroup.clear();
+
+    const viaTex = new THREE.TextureLoader().load("./assets/textura_via.jpg");
+    viaTex.wrapS = THREE.RepeatWrapping;
+    viaTex.wrapT = THREE.RepeatWrapping;
+
+    // A. Pista de Techo (polígono relleno con textura de vía en gris claro)
+    const pts2d = AEROPUERTO_RUNWAY_PTS.map(p => new THREE.Vector2(p.x, p.z));
+    let tris = [];
+    try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) {}
+
+    const runwayPos = [], runwayUv = [];
+    const RUNWAY_UV_SCALE = 0.05;
+    tris.forEach(([ia, ib, ic]) => {
+      [ia, ib, ic].forEach(idx => {
+        const pt = AEROPUERTO_RUNWAY_PTS[idx];
+        runwayPos.push(pt.x, 0.032, pt.z);
+        runwayUv.push(pt.x * RUNWAY_UV_SCALE, pt.z * RUNWAY_UV_SCALE);
+      });
+    });
+
+    const runwayGeo = new THREE.BufferGeometry();
+    runwayGeo.setAttribute("position", new THREE.Float32BufferAttribute(runwayPos, 3));
+    runwayGeo.setAttribute("uv", new THREE.Float32BufferAttribute(runwayUv, 2));
+    runwayGeo.computeVertexNormals();
+
+    const runwayMat = new THREE.MeshStandardMaterial({
+      map: viaTex,
+      color: 0xd2d6da, // Gris más claro
+      roughness: 0.85,
+      metalness: 0.02,
+      side: THREE.DoubleSide
+    });
+
+    const runwayMesh = new THREE.Mesh(runwayGeo, runwayMat);
+    runwayMesh.receiveShadow = true;
+    aeropuertoTechoGroup.add(runwayMesh);
+
+    // B. Vía de conexión (ribbon continuo en gris más claro)
+    const roadPos = [], roadUv = [];
+    const a = AEROPUERTO_ROAD_PTS[0], b = AEROPUERTO_ROAD_PTS[1];
+    const dx = b.x - a.x, dz = b.z - a.z;
+    const len = Math.hypot(dx, dz) || 1;
+    const nx = -dz / len, nz = dx / len;
+    const halfW = 1.35;
+    const ax = nx * halfW, az = nz * halfW;
+
+    roadPos.push(
+      a.x - ax, 0.035, a.z - az,  a.x + ax, 0.035, a.z + az,  b.x + ax, 0.035, b.z + az,
+      a.x - ax, 0.035, a.z - az,  b.x + ax, 0.035, b.z + az,  b.x - ax, 0.035, b.z - az
+    );
+    [
+      [a.x - ax, a.z - az], [a.x + ax, a.z + az], [b.x + ax, b.z + az],
+      [a.x - ax, a.z - az], [b.x + ax, b.z + az], [b.x - ax, b.z - az]
+    ].forEach(([px, pz]) => roadUv.push(px * 0.06, pz * 0.06));
+
+    const roadGeo = new THREE.BufferGeometry();
+    roadGeo.setAttribute("position", new THREE.Float32BufferAttribute(roadPos, 3));
+    roadGeo.setAttribute("uv", new THREE.Float32BufferAttribute(roadUv, 2));
+    roadGeo.computeVertexNormals();
+
+    const roadMatTecho = new THREE.MeshStandardMaterial({
+      map: viaTex,
+      color: 0xd2d6da, // Gris más claro idéntico
+      roughness: 0.85,
+      side: THREE.DoubleSide
+    });
+
+    const roadMesh = new THREE.Mesh(roadGeo, roadMatTecho);
+    roadMesh.receiveShadow = true;
+    aeropuertoTechoGroup.add(roadMesh);
+
+    // C. Edificio Terminal y torre
+    const pos = toScene(8180.94, 2102.08); // Coordenadas en Techo
+    const group = new THREE.Group();
+    group.position.set(pos.x, 0, pos.z);
+
+    const wallMat = new THREE.MeshStandardMaterial({
+      color: 0xf4f1ea,
+      roughness: 0.85,
+      metalness: 0.05
+    });
+    const termGeo = new THREE.BoxGeometry(20, 2.2, 8);
+    const term = new THREE.Mesh(termGeo, wallMat);
+    term.position.set(0, 1.1, -4);
+    group.add(term);
+
+    // Torre de control
+    const towerGeo = new THREE.BoxGeometry(4.2, 4.5, 4.2);
+    const tower = new THREE.Mesh(towerGeo, wallMat);
+    tower.position.set(0, 2.25, -4);
+    group.add(tower);
+
+    // Bordes limpios
+    const edgeGeo = new THREE.EdgesGeometry(termGeo);
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2c2d30, transparent: true, opacity: 0.35 });
+    const termEdges = new THREE.LineSegments(edgeGeo, edgeMat);
+    termEdges.position.copy(term.position);
+    group.add(termEdges);
+
+    aeropuertoTechoGroup.add(group);
+  }
+
+  // 4. Animación suave de cámara entre épocas
+  function transitionCameraTo(targetPos, targetLookAt, targetZoom, duration = 2200) {
+    const startPos = camera.position.clone();
+    const startLookAt = controls.target.clone();
+    const startZoom = camera.zoom;
+    const startTime = performance.now();
+
+    camAnim = {
+      update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const ease = progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+        camera.position.lerpVectors(startPos, targetPos, ease);
+        controls.target.lerpVectors(startLookAt, targetLookAt, ease);
+        camera.zoom = startZoom + (targetZoom - startZoom) * ease;
+        camera.updateProjectionMatrix();
+        controls.update();
+
+        if (progress >= 1) camAnim = null;
+      }
+    };
+  }
+
+  // 5. Función de cambio de época histórica
+  function setHistoricalYear(year, animateCam = true) {
+    currentHistoricalYear = year;
+
+    document.querySelectorAll(".year-btn").forEach(btn => {
+      const y = parseInt(btn.dataset.year, 10);
+      const isActive = y === year;
+      btn.classList.toggle("active", isActive);
+      btn.style.borderColor = isActive ? "var(--accent)" : "var(--panel-border)";
+      btn.style.background = isActive ? "rgba(36,200,189,.25)" : "rgba(255,255,255,.06)";
+      btn.style.color = isActive ? "var(--accent)" : "var(--ink)";
+    });
+    const slider = document.getElementById("histYearSlider");
+    if (slider) slider.value = year;
+
+    const badge = document.getElementById("eraBadge");
+    const desc = document.getElementById("eraDesc");
+
+    // Ocultar capas urbanas modernas en 1950 y 1956
+    if (currentBuildingMesh) currentBuildingMesh.visible = false;
+    if (buildingEdgeMat) buildingEdgeMat.visible = false;
+    if (modernBuildingEdges) modernBuildingEdges.visible = false;
+    if (modernRoadLines) modernRoadLines.visible = false;
+    if (modernRoadMesh) modernRoadMesh.visible = false;
+    if (modernManzanasMesh) modernManzanasMesh.visible = false;
+    if (modernFacadesMesh) modernFacadesMesh.visible = false;
+    if (elBurroMesh) elBurroMesh.visible = false;
+    if (modernWaterMesh) modernWaterMesh.visible = false;
+    if (vehInstanced) vehInstanced.visible = false;
+    if (intersectionMeshes && intersectionMeshes.length) {
+      intersectionMeshes.forEach(m => { if (m) m.visible = false; });
+    }
+
+    // Mantener árboles reales y zonas verdes visibles
+    if (treeMesh) treeMesh.visible = true;
+    if (modernParquesMesh) modernParquesMesh.visible = true;
+
+    cowsGroup.visible = true;
+    historicalWetlandsGroup.visible = true;
+    userPlantedGroup.visible = true;
+    customPolysGroup.visible = true;
+
+    if (groundMesh && groundMesh.material) {
+      if (groundMesh.material.map !== histGrassTex) {
+        groundMesh.material.map = histGrassTex;
+        groundMesh.material.needsUpdate = true;
+      }
+      groundMesh.material.color.setHex(0x8ea082);
+      groundMesh.material.opacity = 0.85;
+      groundMesh.material.transparent = true;
+    }
+
+    if (year === 1950) {
+      if (badge) badge.textContent = "1950 · Sabana Rural";
+      if (desc) desc.textContent = "1950 · Humedal El Burro (171 ha), La Vaca (181 ha) y Sabana Rural con 210 vacas en pastoreo y senderos veredales.";
+      cowsGroup.visible = true;
+      historicalWetlandsGroup.visible = true;
+      aeropuertoTechoGroup.visible = false;
+      corabastosGroup.visible = false;
+      roads1972Group.visible = false;
+      avCaliGroup.visible = false;
+      protechoGroup.visible = false;
+
+      if (rawWaterData) buildHistoricalWetlands(rawWaterData, 1950);
+
+      if (animateCam) {
+        transitionCameraTo(
+          new THREE.Vector3(117.21, 724.68, 628.88),
+          new THREE.Vector3(219.64, -56.32, -92.84),
+          1.95,
+          2000
+        );
+      }
+    } else if (year === 1956) {
+      if (badge) badge.textContent = "1956 · Aeropuerto Techo";
+      if (desc) desc.textContent = "1956 · Humedal La Vaca y Laguna de Techo extendidos hacia El Burro, Antiguo Aeropuerto de Techo con pista y vías de conexión.";
+      cowsGroup.visible = true;
+      historicalWetlandsGroup.visible = true;
+      aeropuertoTechoGroup.visible = true;
+      corabastosGroup.visible = false;
+      roads1972Group.visible = false;
+      avCaliGroup.visible = false;
+      protechoGroup.visible = false;
+
+      if (rawWaterData) buildHistoricalWetlands(rawWaterData, 1956);
+
+      if (animateCam) {
+        transitionCameraTo(
+          new THREE.Vector3(50.39, 695.32, 825.02),
+          new THREE.Vector3(171.99, -60.08, 79.42),
+          2.23,
+          2400
+        );
+      }
+    } else if (year === 1972) {
+      if (badge) badge.textContent = "1972 · Corabastos";
+      if (desc) desc.textContent = "1972 · Inauguración de Corabastos en Potrero Alto Negro y acceso por Av. Las Américas. Humedales reducidos a 38,5 ha.";
+      cowsGroup.visible = false;
+      historicalWetlandsGroup.visible = true;
+      aeropuertoTechoGroup.visible = false;
+      corabastosGroup.visible = true;
+      roads1972Group.visible = true;
+      avCaliGroup.visible = false;
+      protechoGroup.visible = false;
+
+      if (rawWaterData) buildHistoricalWetlands(rawWaterData, 1972);
+
+      if (animateCam) {
+        transitionCameraTo(
+          new THREE.Vector3(135.0, 710.0, 690.0),
+          new THREE.Vector3(240.0, -30.0, 35.0),
+          1.80,
+          2200
+        );
+      }
+    } else if (year === 1988) {
+      if (badge) badge.textContent = "1988 · Bisección Av. Cali";
+      if (desc) desc.textContent = "1988 · Construcción de Av. Ciudad de Cali que divide el humedal en dos sectores y Planta de basuras Protecho (EDIS).";
+      cowsGroup.visible = false;
+      historicalWetlandsGroup.visible = true;
+      aeropuertoTechoGroup.visible = false;
+      corabastosGroup.visible = true;
+      roads1972Group.visible = true;
+      avCaliGroup.visible = true;
+      protechoGroup.visible = true;
+
+      if (rawWaterData) buildHistoricalWetlands(rawWaterData, 1988);
+
+      if (animateCam) {
+        transitionCameraTo(
+          new THREE.Vector3(155.0, 680.0, 620.0),
+          new THREE.Vector3(210.0, -25.0, -10.0),
+          1.75,
+          2200
+        );
+      }
+    } else if (year >= 2024) {
+      if (badge) badge.textContent = "Actualidad (2024)";
+      if (desc) desc.textContent = "Actualidad · Modelo axonométrico arquitectónico urbano completo de Kennedy con el Humedal El Burro protegido de 18,8 ha.";
+      
+      if (currentBuildingMesh) currentBuildingMesh.visible = true;
+      if (buildingEdgeMat) buildingEdgeMat.visible = true;
+      if (modernBuildingEdges) modernBuildingEdges.visible = true;
+      if (modernRoadLines) modernRoadLines.visible = true;
+      if (modernRoadMesh) modernRoadMesh.visible = true;
+      if (modernManzanasMesh) modernManzanasMesh.visible = true;
+      if (modernFacadesMesh) modernFacadesMesh.visible = true;
+      if (elBurroMesh) elBurroMesh.visible = true;
+      if (modernWaterMesh) modernWaterMesh.visible = true;
+      if (modernParquesMesh) modernParquesMesh.visible = true;
+      if (treeMesh) treeMesh.visible = true;
+      if (vehInstanced) vehInstanced.visible = true;
+
+      cowsGroup.visible = false;
+      historicalWetlandsGroup.visible = false;
+      aeropuertoTechoGroup.visible = false;
+      corabastosGroup.visible = false;
+      roads1972Group.visible = false;
+      avCaliGroup.visible = false;
+      protechoGroup.visible = false;
+
+      if (groundMesh && groundMesh.material) {
+        groundMesh.material.map = null;
+        groundMesh.material.color.setHex(0xebedee);
+        groundMesh.material.opacity = 1.0;
+        groundMesh.material.transparent = false;
+        groundMesh.material.needsUpdate = true;
+      }
+
+      if (animateCam) {
+        transitionCameraTo(
+          new THREE.Vector3(17.6, 630.7, 713.9),
+          new THREE.Vector3(139.2, -124.7, -31.7),
+          1.30,
+          2200
+        );
+      }
+    }
+  }
+
+  // Función de vista inicial en Humedal El Burro (1950)
+  function setAxonometricView(distance) {
+    camera.position.set(117.21, 724.68, 628.88);
+    controls.target.set(219.64, -56.32, -92.84);
+    camera.zoom = 1.95;
+    camera.updateProjectionMatrix();
+    controls.update();
+    if (typeof updateLiveCameraCoordsUI === "function") updateLiveCameraCoordsUI();
+  }
+
+  // Preset Buttons
+  function setActivePreset(activeBtn) {
+    document.querySelectorAll(".preset-btn").forEach(b => {
+      if (b.id !== "perspToggle") b.classList.remove("active");
+    });
+    if (activeBtn) activeBtn.classList.add("active");
+  }
+
+  const btnViewOverview = document.getElementById("btnViewOverview");
+  if (btnViewOverview) {
+    btnViewOverview.addEventListener("click", () => {
+      setActivePreset(btnViewOverview);
+      transitionCameraTo(
+        new THREE.Vector3(117.21, 724.68, 628.88),
+        new THREE.Vector3(219.64, -56.32, -92.84),
+        1.35,
+        1800
+      );
+    });
+  }
+
+  const btnViewBurro = document.getElementById("btnViewBurro");
+  if (btnViewBurro) {
+    btnViewBurro.addEventListener("click", () => {
+      setActivePreset(btnViewBurro);
+      transitionCameraTo(
+        new THREE.Vector3(117.21, 724.68, 628.88),
+        new THREE.Vector3(219.64, -56.32, -92.84),
+        2.25,
+        1800
+      );
+    });
+  }
+
+  const btnViewTecho = document.getElementById("btnViewTecho");
+  if (btnViewTecho) {
+    btnViewTecho.addEventListener("click", () => {
+      setActivePreset(btnViewTecho);
+      transitionCameraTo(
+        new THREE.Vector3(50.39, 695.32, 825.02),
+        new THREE.Vector3(171.99, -60.08, 79.42),
+        2.23,
+        2000
+      );
+    });
+  }
+
+  // 7. Event listeners de la línea de tiempo histórica
+  document.querySelectorAll(".year-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      setHistoricalYear(parseInt(btn.dataset.year, 10), true);
+    });
+  });
+
+  const histYears = [1950, 1956, 1972, 1988, 2024];
+  const histSlider = document.getElementById("histYearSlider");
+  if (histSlider) {
+    histSlider.addEventListener("input", () => {
+      const idx = parseInt(histSlider.value, 10);
+      const y = histYears[idx] || 1950;
+      setHistoricalYear(y, true);
+    });
+  }
+
+  let histPlaying = false, histPlayTimer = null;
+  const histPlayBtn = document.getElementById("histPlayPause");
+  if (histPlayBtn) {
+    histPlayBtn.addEventListener("click", () => {
+      histPlaying = !histPlaying;
+      histPlayBtn.innerHTML = histPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+      if (histPlaying) {
+        histPlayTimer = setInterval(() => {
+          const curIdx = histYears.indexOf(currentHistoricalYear);
+          const nextIdx = (curIdx + 1) % histYears.length;
+          setHistoricalYear(histYears[nextIdx], true);
+        }, 5500);
+      } else {
+        clearInterval(histPlayTimer);
+      }
+    });
+  }
+
+
+
+  
+
   // ---- Red vial: una sola geometria de lineas fusionada (19 mil tramos,
   // asi que se combina TODO en un unico BufferGeometry por rendimiento) ----
   function buildRoads(edges) {
@@ -198,6 +1156,8 @@
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     const mat = new THREE.LineBasicMaterial({ color: 0x4a545e, transparent: true, opacity: 0.85 });
     const lines = new THREE.LineSegments(geo, mat);
+    modernRoadLines = lines;
+    if (currentHistoricalYear <= 1956) lines.visible = false;
     sceneRoot.add(lines);
 
     // Segunda capa mas gruesa "de asfalto" usando una tira continua con
@@ -265,6 +1225,8 @@
     });
     roadMat = ribbonMat;
     const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
+    modernRoadMesh = roadMesh;
+    if (currentHistoricalYear <= 1956) roadMesh.visible = false;
     roadMesh.receiveShadow = true;
     sceneRoot.add(roadMesh);
   }
@@ -313,72 +1275,191 @@
     return out;
   }
 
+  let currentBuildingMesh = null;
+  let buildingRanges = [];
+  let buildingStarts = [];
+  let selectedBuildingRange = null;
+  let customBuildingColorsMap = {};
+
   function buildBuildings(buildings) {
     const positions = [];
     const normals = [];
-    const edgePositions = []; // lineas de borde: perimetro del techo + perimetro de la base + esquinas verticales (para que se lea el volumen completo), nada de lineas interiores
-    buildings.forEach(b => {
+    const colors = [];
+    const edgePositions = [];
+    buildingRanges = [];
+    buildingStarts = [];
+
+    let vertexOffset = 0;
+
+    buildings.forEach((b, idx) => {
       const pts = b.pts.map(p => toScene(p[0], p[1]));
       const h = b.h * SCALE;
-      if (pts.length < 4) return; // huella degenerada
-      // Paredes: un rectangulo (2 triangulos) por cada segmento del perimetro
+      if (pts.length < 4) return;
+
+      const startV = vertexOffset;
+      const bldgId = `bldg_${idx + 1}`;
+      const userHex = customBuildingColorsMap[bldgId] || "#ffffff";
+      const c = new THREE.Color(userHex);
+
+      let bVertCount = 0;
+
+      // Paredes: 2 triángulos (6 vértices) por cada segmento del perímetro
       for (let i = 0; i < pts.length - 1; i++) {
-        const a = pts[i], c = pts[i + 1];
-        const dx = c.x - a.x, dz = c.z - a.z;
+        const a = pts[i], cSeg = pts[i + 1];
+        const dx = cSeg.x - a.x, dz = cSeg.z - a.z;
         const len = Math.hypot(dx, dz) || 0.001;
-        const nx = dz / len, nz = -dx / len; // normal horizontal de la pared (hacia afuera)
+        const nx = dz / len, nz = -dx / len;
+
         positions.push(
-          a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z,
-          a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
+          a.x, 0, a.z,  cSeg.x, 0, cSeg.z,  cSeg.x, h, cSeg.z,
+          a.x, 0, a.z,  cSeg.x, h, cSeg.z,  a.x, h, a.z
         );
-        for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
-        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // solo el perimetro del techo (forma simplificada, menos lineas = menos "gris" acumulado)
+        for (let k = 0; k < 6; k++) {
+          normals.push(nx, 0, nz);
+          colors.push(c.r, c.g, c.b);
+        }
+        bVertCount += 6;
+        edgePositions.push(a.x, h, a.z, cSeg.x, h, cSeg.z);
       }
 
-      // Techo plano simple (sin parapeto sintetico): las mallas REALES de
-      // techo del modelo Rhino (techos a dos aguas y techos planos con
-      // parapeto ya modelado) se cargan por separado y quedan encima de
-      // esta tapa, dandole el detalle real. Tener ademas un parapeto
-      // aproximado aqui hacia que ambas geometrias compitieran/se vieran
-      // mal superpuestas.
+      // Techo: triangulación del polígono superior en la altura h
       const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
       let tris;
       try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
       catch (e) { tris = []; }
+
       tris.forEach(([ia, ib, ic]) => {
         positions.push(
-          pts[ia].x, h, pts[ia].z, pts[ib].x, h, pts[ib].z, pts[ic].x, h, pts[ic].z
+          pts[ia].x, h, pts[ia].z,
+          pts[ib].x, h, pts[ib].z,
+          pts[ic].x, h, pts[ic].z
         );
-        for (let k = 0; k < 3; k++) normals.push(0, 1, 0);
+        for (let k = 0; k < 3; k++) {
+          normals.push(0, 1, 0);
+          colors.push(c.r, c.g, c.b);
+        }
+        bVertCount += 3;
       });
+
+      vertexOffset += bVertCount;
+      buildingRanges.push({
+        id: bldgId,
+        index: idx,
+        start: startV,
+        count: bVertCount,
+        colorHex: userHex,
+        hMeters: b.h
+      });
+      buildingStarts.push(startV);
     });
+
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+    geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+
     const mat = new THREE.MeshStandardMaterial({
-      color: 0xffffff, roughness: 0.6, metalness: 0.03, side: THREE.DoubleSide,
-      polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 2, // evita z-fighting con las lineas de borde (que quedan exactamente sobre la superficie)
+      vertexColors: true,
+      roughness: 0.6,
+      metalness: 0.03,
+      side: THREE.DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: 2,
+      polygonOffsetUnits: 2,
     });
+
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    currentBuildingMesh = mesh;
+    if (currentHistoricalYear <= 1956) mesh.visible = false;
     sceneRoot.add(mesh);
 
-    // Borde oscuro de cada edificio: perimetro del techo + esquinas
-    // verticales (sin lineas internas), para que se lea como un volumen
-    // real y no una silueta plana.
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
     const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.14 });
     buildingEdgeMat = edgeMat;
-    sceneRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
+    const edgeLines = new THREE.LineSegments(edgeGeo, edgeMat);
+    modernBuildingEdges = edgeLines;
+    if (currentHistoricalYear <= 1956) edgeLines.visible = false;
+    sceneRoot.add(edgeLines);
   }
 
-  let cachedBuildingsData = null; // se reusa para Usos del Suelo/Dispersion, para no volver a bajar este archivo de 37MB otra vez
+  function findBuildingByVertexIndex(vIdx) {
+    if (!buildingStarts.length) return null;
+    let lo = 0, hi = buildingStarts.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const st = buildingStarts[mid];
+      const count = buildingRanges[mid].count;
+      if (vIdx >= st && vIdx < st + count) {
+        return buildingRanges[mid];
+      }
+      if (vIdx < st) hi = mid - 1;
+      else lo = mid + 1;
+    }
+    return null;
+  }
+
+  function updateBuildingColorOutput() {
+    const outputEl = document.getElementById("buildingColorConfigOutput");
+    if (!outputEl) return;
+    const keys = Object.keys(customBuildingColorsMap);
+    const nl = String.fromCharCode(10);
+    if (!keys.length) {
+      outputEl.value = "// === CAMBIOS DE COLOR DE EDIFICIOS ===" + nl + "const BUILDING_COLORS = {};";
+      return;
+    }
+    const lines = ["// === CAMBIOS DE COLOR DE EDIFICIOS ===", "const BUILDING_COLORS = {"];
+    keys.forEach((k, i) => {
+      lines.push('  "' + k + '": "' + customBuildingColorsMap[k] + '"' + (i < keys.length - 1 ? ',' : ''));
+    });
+    lines.push("};");
+    outputEl.value = lines.join(nl);
+  }
+
+  function setBuildingColor(range, hexColor) {
+    if (!currentBuildingMesh) return;
+    const c = new THREE.Color(hexColor);
+    const colorAttr = currentBuildingMesh.geometry.attributes.color;
+    for (let i = range.start; i < range.start + range.count; i++) {
+      colorAttr.setXYZ(i, c.r, c.g, c.b);
+    }
+    colorAttr.needsUpdate = true;
+    range.colorHex = hexColor;
+    if (hexColor === "#ffffff") {
+      delete customBuildingColorsMap[range.id];
+    } else {
+      customBuildingColorsMap[range.id] = hexColor;
+    }
+    updateBuildingColorOutput();
+  }
+
+  function showBuildingEditor(range) {
+    selectedBuildingRange = range;
+    const info = document.getElementById("buildingInfo");
+    const title = document.getElementById("buildingInfoTitle");
+    const details = document.getElementById("buildingInfoDetails");
+    const customPicker = document.getElementById("buildingCustomColorPicker");
+    if (!info) return;
+
+    if (title) title.textContent = `Edificio #${range.index + 1}`;
+    if (details) details.textContent = `Altura: ${range.hMeters.toFixed(1)} m · ID: ${range.id}`;
+    if (customPicker) customPicker.value = range.colorHex;
+    updateBuildingColorOutput();
+    info.classList.add("show");
+  }
+
+  function hideBuildingEditor() {
+    selectedBuildingRange = null;
+    const info = document.getElementById("buildingInfo");
+    if (info) info.classList.remove("show");
+  }
+
   function loadBuildings() {
     return fetch(BUILDINGS_URL)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + BUILDINGS_URL); return r.json(); })
-      .then(data => { cachedBuildingsData = data; buildBuildings(data); })
+      .then(data => { buildBuildings(data); })
       .catch(err => console.warn("No se pudieron cargar los edificios:", err));
   }
 
@@ -422,34 +1503,69 @@
     // mirar siempre hacia la camara (ver updateTreeBillboards), y como
     // la camara es ortografica y esta fija a 45°, un solo angulo sirve
     // para las 120 mil instancias.
-    // NOTA: se quito el tenido por especie (vertexColors + instanceColor)
-    // que se habia agregado -- producia arboles en negro solido en vez
-    // del color real de la foto. Vuelve a la version simple de antes.
     const planeGeo = makePlaneGeometry();
     const mat = new THREE.MeshStandardMaterial({
       map: treeTex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.95,
     });
     const mesh = new THREE.InstancedMesh(planeGeo, mat, trees.length);
+    mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(trees.length * 3), 3);
     mesh.castShadow = false;
     treeMesh = mesh;
 
     treeInstanceData = new Array(trees.length);
-
+    const colorAlimento1 = new THREE.Color(0xff5fa8); // Cerezo
+    const colorAlimento2 = new THREE.Color(0xb06bff); // Sauco
+    const colorDescanso = new THREE.Color(0x25d0a0);  // Urapan
+    const colorNormal = new THREE.Color(0xffffff);
+    
     trees.forEach((t, i) => {
-      const [x, y, hMeters, , code] = t;
+      const [x, y, hMeters, especieStr, code] = t;
       const p = toScene(x, y);
+
+      // Quitar árboles que caen sobre la pista o la vía del aeropuerto
+      if (typeof isPointInRunway === "function" && (isPointInRunway(p.x, p.z) || isPointNearRoad(p.x, p.z, 3.8))) {
+        treeInstanceData[i] = { x: p.x, z: p.z, w: 0, h: 0, baseScale: 0, removed: true };
+        mesh.setColorAt(i, new THREE.Color(0x000000));
+        return;
+      }
+
       const h = Math.max(0.3, hMeters * SCALE);
       const w = h * (1.1 + (hash2(code) % 20) / 100 - 0.1);
-      treeInstanceData[i] = { x: p.x, z: p.z, w, h };
+      const baseVar = 0.95 + ((hash2(code + "v") % 25) / 100);
+      treeInstanceData[i] = { x: p.x, z: p.z, w, h, baseScale: baseVar, removed: false };
+      
+      let c = colorNormal;
+      if (especieStr.includes("Sauco")) c = colorAlimento2;
+      else if (especieStr.includes("capuli")) c = colorAlimento1;
+      else if (especieStr.includes("Fresno") || especieStr.includes("Urap")) c = colorDescanso;
+      
+      mesh.setColorAt(i, c);
     });
+    mesh.instanceColor.needsUpdate = true;
     sceneRoot.add(mesh);
     treeMeshes = [{ mesh, data: trees }];
+    pickProminentTrees(24);
     updateTreeBillboards();
   }
-  // Recalcula la rotacion de TODAS las tarjetas para que miren hacia la
-  // camara actual. Con camara ortografica la direccion hacia la camara es
-  // la misma sin importar la posicion en el suelo, asi que un solo angulo
-  // (el acimut actual de la camara) sirve para todas las instancias.
+  // Control de árboles grandes destacados individuales (~24 aleatorios)
+  let prominentTreeIndices = new Set();
+  let prominentTreeScale = 2.2;
+
+  function pickProminentTrees(count = 24) {
+    prominentTreeIndices.clear();
+    if (!treeInstanceData || !treeInstanceData.length) return;
+    const total = treeInstanceData.length;
+    const targetCount = Math.min(count, total);
+    while (prominentTreeIndices.size < targetCount) {
+      const idx = Math.floor(Math.random() * total);
+      if (!treeInstanceData[idx].removed) {
+        prominentTreeIndices.add(idx);
+      }
+    }
+    updateTreeBillboards();
+  }
+
+  // Recalcula la rotacion y escala individual de las tarjetas de arboles
   const dummyT = new THREE.Object3D();
   function updateTreeBillboards() {
     if (!treeMesh || !treeInstanceData) return;
@@ -457,8 +1573,17 @@
     const faceAngle = Math.atan2(dx, dz);
     for (let i = 0; i < treeInstanceData.length; i++) {
       const d = treeInstanceData[i];
+      if (d.removed || d.h === 0) {
+        dummyT.position.set(0, -9999, 0);
+        dummyT.scale.set(0, 0, 0);
+        dummyT.updateMatrix();
+        treeMesh.setMatrixAt(i, dummyT.matrix);
+        continue;
+      }
+      const isProminent = prominentTreeIndices.has(i);
+      const s = isProminent ? prominentTreeScale : (d.baseScale || 1.0);
       dummyT.position.set(d.x, 0, d.z);
-      dummyT.scale.set(d.w, d.h, d.w);
+      dummyT.scale.set(d.w * s, d.h * s, d.w * s);
       dummyT.rotation.set(0, faceAngle, 0);
       dummyT.updateMatrix();
       treeMesh.setMatrixAt(i, dummyT.matrix);
@@ -472,8 +1597,7 @@
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + TREES_URL); return r.json(); })
       .then(data => {
         buildTrees(data);
-        allTreesData = data;
-        birdTreesGrid = buildBirdTreeGrid(sampleAttractorTrees(data, 0));
+        birdTreesGrid = buildBirdTreeGrid(sampleAttractorTrees(data));
       })
       .catch(err => console.warn("No se pudieron cargar los árboles:", err));
   }
@@ -508,635 +1632,6 @@
   noiseBufCanvas.width = NOISE_BUF_W; noiseBufCanvas.height = NOISE_BUF_H;
   const noiseBufCtx = noiseBufCanvas.getContext("2d", { willReadFrequently: true });
   let noiseFieldImg = null; // se reusa para que las mirlas lean el mismo campo real
-  let noiseIntensityField = null; // intensidad 0..1 real, SEPARADA del color visual
-  // ---- Usos del suelo (Shapefile Usos_kennedy, 50.878 lotes reales,
-  // EPSG:4686 convertido a la proyeccion local) -- pinta el EDIFICIO
-  // COMPLETO (paredes + techo), no el piso, segun el uso real asignado
-  // por union espacial en Python (centroide del edificio contra el lote
-  // que lo contiene), guardado en kennedy_buildings_uso.json en el mismo
-  // orden que kennedy_buildings.json. ----
-  const USOS_COLORS = {
-    "Residencial": 0xf4d35e, "Comercio": 0xe63946, "Vias": 0x6b7280,
-    "Espacio publico": 0x52b788, "Suelo protegido": 0x1b4332,
-    "Dotacional": 0x457b9d, "Sin edificar": 0xd4c5a9, "Industrial": 0x7b2d8e,
-    "Parqueadero": 0x495057, "Recreacional": 0x8ac926, "Otros": 0xadb5bd
-  };
-  let usosSueloGroup = null, usosSueloLoading = false;
-  // Mapas que permiten recolorear un edificio individual despues de
-  // construido: por cada vertice se guarda a que edificio pertenece
-  // (bldIndexAttr), y bldVertexRanges[i] = [startVertex, vertexCount]
-  // para poder reescribir solo esos colores sin rehacer todo el mesh.
-  let bldVertexRanges = null;
-  let usosColorAttr = null;
-  let usosGeo = null;
-  // { buildingIndex: "#rrggbb" } -- correcciones manuales de la usuaria,
-  // pegadas desde el codigo que genera el panel de Usos del suelo.
-  const manualColorOverrides = {
-    359: "#f4d35e",
-    360: "#f4d35e",
-    375: "#f4d35e",
-    408: "#f4d35e",
-    38675: "#f4d35e",
-    39916: "#f4d35e",
-    40540: "#f4d35e",
-    46270: "#f4d35e",
-    50083: "#f4d35e",
-    57028: "#f4d35e",
-    57808: "#f4d35e",
-    58000: "#f4d35e",
-    58878: "#f4d35e",
-    59158: "#f4d35e",
-    59976: "#f4d35e",
-    59998: "#e63946",
-    60931: "#f4d35e",
-    60958: "#f4d35e",
-    62198: "#f4d35e",
-    62229: "#f4d35e",
-    62258: "#f4d35e",
-    67673: "#f4d35e",
-    76591: "#f4d35e",
-    81642: "#f4d35e",
-    85748: "#f4d35e",
-    86328: "#f4d35e",
-    90908: "#f4d35e",
-    91652: "#f4d35e",
-    96126: "#8ac926",
-    98111: "#f4d35e",
-    100098: "#f4d35e",
-    104571: "#f4d35e",
-    104684: "#f4d35e",
-    105363: "#e63946",
-    105470: "#f4d35e",
-    107140: "#f4d35e",
-    107821: "#e63946",
-    108042: "#f4d35e",
-    110969: "#f4d35e",
-    113639: "#e63946",
-    119966: "#f4d35e",
-    120199: "#f4d35e",
-    120340: "#e63946",
-    124092: "#f4d35e",
-    127835: "#f4d35e",
-    128428: "#f4d35e",
-    129229: "#f4d35e",
-    129383: "#f4d35e",
-    129384: "#f4d35e",
-    131129: "#e63946",
-    132319: "#f4d35e",
-    132610: "#f4d35e",
-    133788: "#f4d35e",
-    135436: "#f4d35e",
-    135444: "#f4d35e",
-    135742: "#f4d35e",
-    137947: "#f4d35e",
-    139338: "#f4d35e",
-    140451: "#f4d35e",
-    140528: "#f4d35e",
-    140536: "#f4d35e",
-    143124: "#f4d35e",
-    143729: "#f4d35e",
-    145146: "#f4d35e",
-    145895: "#f4d35e",
-    157743: "#f4d35e",
-    160511: "#f4d35e",
-    163639: "#f4d35e",
-    163867: "#f4d35e",
-    165104: "#e63946",
-    165534: "#f4d35e",
-    165949: "#f4d35e",
-    167554: "#e63946",
-    167587: "#f4d35e",
-    168758: "#f4d35e",
-    169948: "#8ac926",
-    171361: "#f4d35e",
-    172298: "#f4d35e",
-    172678: "#f4d35e",
-    172977: "#f4d35e",
-    175736: "#f4d35e",
-    176531: "#f4d35e",
-    176831: "#f4d35e",
-    177346: "#f4d35e",
-    179746: "#f4d35e",
-    180391: "#f4d35e",
-    182529: "#f4d35e",
-    182839: "#f4d35e",
-    183051: "#f4d35e",
-    185117: "#f4d35e",
-    195220: "#f4d35e",
-    195765: "#f4d35e",
-    199356: "#f4d35e",
-    199697: "#f4d35e",
-    199940: "#f4d35e",
-    201220: "#f4d35e",
-    201423: "#f4d35e",
-    203406: "#f4d35e",
-    205332: "#f4d35e",
-    207679: "#f4d35e",
-    211629: "#f4d35e",
-    211792: "#f4d35e",
-    212469: "#e63946",
-    213136: "#f4d35e",
-    215067: "#f4d35e",
-    215854: "#f4d35e",
-    216839: "#f4d35e",
-    217211: "#f4d35e",
-    217431: "#f4d35e",
-    217432: "#f4d35e",
-    217731: "#f4d35e",
-    218122: "#f4d35e",
-    218304: "#f4d35e",
-    219177: "#e63946",
-    222700: "#f4d35e",
-    223486: "#f4d35e",
-    225052: "#f4d35e",
-    227701: "#f4d35e",
-    235245: "#f4d35e",
-    235247: "#f4d35e",
-    235248: "#f4d35e",
-    235249: "#f4d35e",
-    235250: "#f4d35e",
-    235251: "#f4d35e",
-    235313: "#f4d35e",
-    235361: "#f4d35e",
-    235362: "#f4d35e",
-    235369: "#f4d35e",
-    235407: "#f4d35e",
-    235409: "#f4d35e",
-    235417: "#f4d35e",
-    235419: "#f4d35e",
-    235422: "#f4d35e",
-    235423: "#f4d35e",
-    235425: "#f4d35e",
-    235426: "#f4d35e",
-    235427: "#f4d35e",
-    235430: "#f4d35e",
-    235432: "#f4d35e",
-    235488: "#f4d35e",
-    235492: "#f4d35e",
-    235493: "#f4d35e",
-    235498: "#f4d35e",
-    235504: "#f4d35e",
-    236487: "#f4d35e",
-    236490: "#f4d35e",
-    236491: "#f4d35e",
-    236533: "#f4d35e",
-    239201: "#e63946",
-    239497: "#e63946",
-  };
-  function softenColor(hex) {
-    const c = new THREE.Color(hex);
-    return c.lerp(new THREE.Color(0xffffff), 0.35);
-  }
-  function buildUsosSueloBuildings(buildingsArr, usoArr) {
-    const TALL_THRESHOLD_M = 15; // a partir de esta altura real (metros), si no tiene uso asignado por el plano, se asume Residencial (torres de vivienda son las mas altas en Kennedy)
-    const NEARBY_RADIUS_M = 60; // radio para considerar "cerca de lo pintado"
-    const CELL_M = 40; // tamano de celda de la cuadrícula espacial (en metros reales)
-    const positions = [];
-    const colors = [];
-    bldVertexRanges = new Array(buildingsArr.length);
-
-    // --- Paso 1: centro de cada edificio + saber cuales ya tienen color
-    // (uso real, alto, o correccion manual) para armar una cuadricula
-    // espacial de edificios YA pintados. ---
-    const centers = new Array(buildingsArr.length);
-    const grid = new Map(); // "gx,gy" -> [indices de edificios pintados]
-    function cellKey(gx, gy) { return gx + "," + gy; }
-    buildingsArr.forEach((b, i) => {
-      const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length;
-      const cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
-      centers[i] = [cx, cy];
-      let uso = usoArr[i];
-      if (!uso && b.h >= TALL_THRESHOLD_M) uso = "Residencial";
-      const painted = !!manualColorOverrides[i] || !!uso;
-      if (painted) {
-        const gx = Math.floor(cx / CELL_M), gy = Math.floor(cy / CELL_M);
-        const key = cellKey(gx, gy);
-        if (!grid.has(key)) grid.set(key, []);
-        grid.get(key).push(i);
-      }
-    });
-    function isNearPainted(cx, cy) {
-      const gx = Math.floor(cx / CELL_M), gy = Math.floor(cy / CELL_M);
-      for (let dx = -1; dx <= 1; dx++) {
-        for (let dy = -1; dy <= 1; dy++) {
-          const bucket = grid.get(cellKey(gx + dx, gy + dy));
-          if (!bucket) continue;
-          for (const j of bucket) {
-            const [px, py] = centers[j];
-            const d2 = (px - cx) * (px - cx) + (py - cy) * (py - cy);
-            if (d2 <= NEARBY_RADIUS_M * NEARBY_RADIUS_M) return true;
-          }
-        }
-      }
-      return false;
-    }
-    const UNPAINTED_NEARBY_COLOR = USOS_COLORS["Comercio"]; // mismo rojo exacto de las convenciones (#e63946), no uno nuevo
-
-    let _dbgQuitados = 0, _dbgNuevos = 0;
-    buildingsArr.forEach((b, i) => {
-      let uso = usoArr[i];
-      if (!uso && b.h >= TALL_THRESHOLD_M) uso = "Residencial";
-      // Dispersion comercial: si el slider esta por debajo de 100%, el
-      // plano de usos TAMBIEN se ve distinto -- algunos edificios de
-      // Comercio cerca del polo original dejan de serlo (se reparte el
-      // comercio), y aparecen edificios de Comercio nuevos cerca de los
-      // polos dispersos, para que se vea de verdad "ya no es Corabastos
-      // centralizado, hay varios puntos de comercio".
-      if (comercioCentroide && dispersionFactor < 1 && centers[i]) {
-        const [cx, cy] = centers[i];
-        const h1 = hashVehId("b" + i) / 4294967295;
-        if (uso === "Comercio") {
-          const d2 = (cx - comercioCentroide.x) ** 2 + (cy - comercioCentroide.y) ** 2;
-          if (d2 < comercioRadioM * comercioRadioM && h1 > dispersionFactor) {
-            uso = "Otros"; // este ya no es comercio -- se repartio
-            _dbgQuitados++;
-          }
-        } else if (uso && polosDispersos.length) {
-          for (const polo of polosDispersos) {
-            const d2 = (cx - polo.x) ** 2 + (cy - polo.y) ** 2;
-            if (d2 < (comercioRadioM * 1.1) ** 2 && h1 < (1 - dispersionFactor) * 0.6) {
-              uso = "Comercio"; // comercio nuevo aparece aqui
-              _dbgNuevos++;
-              break;
-            }
-          }
-        }
-      }
-      let forcedRed = false;
-      if (manualColorOverrides[i]) {
-        // override manual: se usa tal cual, ya en formato #rrggbb
-      } else if (!uso) {
-        // sin uso asignado: solo se pinta de rojo si esta cerca de
-        // edificios que SI tienen color (zona de estudio); si esta
-        // lejos y aislado, se deja sin pintar (blanco), tal como se pidio.
-        const [cx, cy] = centers[i];
-        if (isNearPainted(cx, cy)) forcedRed = true;
-        else return;
-      }
-      const pts = b.pts.map(p => toScene(p[0], p[1]));
-      if (pts.length < 4) return;
-      const h = b.h * SCALE;
-      const colorHex = manualColorOverrides[i] || (forcedRed ? UNPAINTED_NEARBY_COLOR : USOS_COLORS[uso]) || USOS_COLORS["Otros"];
-      const soft = softenColor(colorHex);
-      const startVertex = positions.length / 3;
-
-      function pushTri(ax, ay, az, bx, by, bz, cx, cy, cz) {
-        positions.push(ax, ay, az, bx, by, bz, cx, cy, cz);
-        for (let n = 0; n < 3; n++) colors.push(soft.r, soft.g, soft.b);
-      }
-      // Paredes
-      for (let k = 0; k < pts.length - 1; k++) {
-        const a = pts[k], c = pts[k + 1];
-        pushTri(a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z);
-        pushTri(a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z);
-      }
-      // Techo: triangulacion real (ear-clipping), que si funciona con
-      // edificios en L/U/formas no convexas -- el abanico simple de antes
-      // dejaba huecos en esos casos y por eso algunos techos se veian sin
-      // color. Se sube un pelin (epsilon) para evitar z-fighting.
-      const hRoof = h + 0.03;
-      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
-      let tris = [];
-      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
-      tris.forEach(([ia, ib, ic]) => {
-        pushTri(pts[ia].x, hRoof, pts[ia].z, pts[ib].x, hRoof, pts[ib].z, pts[ic].x, hRoof, pts[ic].z);
-      });
-
-      const vertexCount = positions.length / 3 - startVertex;
-      bldVertexRanges[i] = [startVertex, vertexCount];
-    });
-    usosGeo = new THREE.BufferGeometry();
-    usosGeo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    usosColorAttr = new THREE.Float32BufferAttribute(colors, 3);
-    usosGeo.setAttribute("color", usosColorAttr);
-    usosGeo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.85, metalness: 0.02 });
-    usosSueloGroup = new THREE.Group();
-    usosSueloGroup.add(new THREE.Mesh(usosGeo, mat));
-    sceneRoot.add(usosSueloGroup);
-    console.log("[dispersion] factor:", dispersionFactor, "| centroide:", comercioCentroide, "| polos:", polosDispersos.length, "| quitados de Comercio:", _dbgQuitados, "| nuevos Comercio:", _dbgNuevos);
-  }
-  function toggleUsosSuelo() {
-    console.log("[usos] toggleUsosSuelo llamado, usosSueloGroup:", !!usosSueloGroup, "loading:", usosSueloLoading);
-    const legend = document.getElementById("usosSueloLegend");
-    const loadingEl = document.getElementById("usosSueloLoading");
-    const btn = document.getElementById("usosSueloBtn");
-    if (usosSueloGroup) {
-      usosSueloGroup.visible = !usosSueloGroup.visible;
-      if (legend) {
-        legend.style.display = usosSueloGroup.visible ? "block" : "none";
-        if (usosSueloGroup.visible) { legend.classList.remove("pop-in"); void legend.offsetWidth; legend.classList.add("pop-in"); }
-      }
-      if (btn) btn.style.background = usosSueloGroup.visible ? "rgba(0,0,0,.08)" : "";
-      return;
-    }
-    if (usosSueloLoading) return;
-    usosSueloLoading = true;
-    if (legend) { legend.style.display = "block"; legend.classList.add("pop-in"); }
-    if (loadingEl) loadingEl.textContent = "Cargando usos del suelo…";
-    cargarDatosUsos().then(([buildingsArr, usoArr]) => {
-      if (!comercioCentroide) comercioCentroide = calcularCentroideComercial(buildingsArr, usoArr);
-      buildUsosSueloBuildings(buildingsArr, usoArr);
-      usosSueloLoading = false;
-      if (loadingEl) loadingEl.textContent = "";
-      if (btn) btn.style.background = "rgba(0,0,0,.08)";
-    }).catch(err => {
-      console.error("[usos del suelo]", err);
-      usosSueloLoading = false;
-      if (loadingEl) loadingEl.textContent = "No se pudo cargar.";
-    });
-  }
-  // Los dos edificios/usos (JSON) se comparten entre el plano de usos y
-  // la dispersion comercial -- se piden una sola vez, no por separado.
-  let datosUsosPromise = null;
-  function cargarDatosUsos() {
-    if (!datosUsosPromise) {
-      datosUsosPromise = Promise.all([
-        fetch(BUILDINGS_URL).then(r => r.json()),
-        fetch("./assets/kennedy_buildings_uso.json").then(r => r.json())
-      ]);
-    }
-    return datosUsosPromise;
-  }
-  // Si el plano de usos ya esta construido y se mueve el slider de
-  // dispersion, se reconstruye en vivo para que se vea el comercio
-  // repartiendose de verdad, no solo el efecto en el ruido.
-  function reconstruirUsosSiVisible() {
-    if (!usosSueloGroup || !usosSueloGroup.visible) return;
-    cargarDatosUsos().then(([buildingsArr, usoArr]) => {
-      sceneRoot.remove(usosSueloGroup);
-      usosGeo?.dispose();
-      buildUsosSueloBuildings(buildingsArr, usoArr);
-    });
-  }
-  // ---- Herramienta de alineacion manual: el plano de usos (solo
-  // contornos, sin triangular -- mucho mas liviano) se puede arrastrar
-  // con el mouse sobre el piso, y se muestran las coordenadas finales
-  // para fijar el desplazamiento correcto de una vez. ----
-  const USOS_OUTLINE_COLORS = {
-    "Residencial": 0xf4d35e, "Comercio": 0xe63946, "Dotacional": 0x457b9d,
-    "Industrial": 0x7b2d8e, "Parqueadero": 0x495057, "Recreacional": 0x8ac926, "Otros": 0xadb5bd
-  };
-  const INITIAL_OFFSET_X = 984549.70, INITIAL_OFFSET_Y = 1001643.24; // ajustado a mano por la usuaria con la herramienta de arrastre -- confirmado que mejora la cobertura real (36.8% -> 44.3%)
-  let alinearGroup = null, alinearLoading = false, alinearActive = false;
-  let alinearDragging = false, alinearLastX = 0, alinearLastY = 0;
-  function parseOutlineBin(buf) {
-    const dv = new DataView(buf);
-    let offset = 0;
-    const n = dv.getUint32(offset, true); offset += 4;
-    const metas = [];
-    for (let i = 0; i < n; i++) {
-      const nameLen = dv.getUint16(offset, true); offset += 2;
-      const nameBytes = new Uint8Array(buf, offset, nameLen); offset += nameLen;
-      const name = new TextDecoder("utf-8").decode(nameBytes);
-      const count = dv.getUint32(offset, true); offset += 4;
-      metas.push({ name, count });
-    }
-    const data = {};
-    metas.forEach(m => {
-      data[m.name] = new Float32Array(buf.slice(offset, offset + m.count * 4));
-      offset += m.count * 4;
-    });
-    return data;
-  }
-  function buildAlinearLines(data) {
-    alinearGroup = new THREE.Group();
-    Object.keys(data).forEach(categoria => {
-      const flat = data[categoria];
-      if (!flat || !flat.length) return;
-      const colorHex = USOS_OUTLINE_COLORS[categoria] !== undefined ? USOS_OUTLINE_COLORS[categoria] : 0xadb5bd;
-      const positions = new Float32Array((flat.length / 2) * 3);
-      for (let i = 0, j = 0; i < flat.length; i += 2, j += 3) {
-        const p = toScene(flat[i] - INITIAL_OFFSET_X, flat[i + 1] - INITIAL_OFFSET_Y);
-        positions[j] = p.x; positions[j + 1] = 0.15; positions[j + 2] = p.z;
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      const mat = new THREE.LineBasicMaterial({ color: colorHex });
-      alinearGroup.add(new THREE.LineSegments(geo, mat));
-    });
-    sceneRoot.add(alinearGroup);
-    updateAlinearCoordsOutput();
-  }
-  function updateAlinearCoordsOutput() {
-    const out = document.getElementById("alinearPlanoCoords");
-    if (!out || !alinearGroup) return;
-    const finalOffsetX = INITIAL_OFFSET_X - alinearGroup.position.x / SCALE;
-    const finalOffsetY = INITIAL_OFFSET_Y + alinearGroup.position.z / SCALE;
-    out.value = `OFFSET_X: ${finalOffsetX.toFixed(2)}\nOFFSET_Y: ${finalOffsetY.toFixed(2)}\n(movido: ${alinearGroup.position.x.toFixed(1)}, ${alinearGroup.position.z.toFixed(1)} en escena)`;
-  }
-  function toggleAlinearPlano() {
-    const panel = document.getElementById("alinearPlanoPanel");
-    const btn = document.getElementById("alinearPlanoBtn");
-    if (alinearGroup) {
-      alinearActive = !alinearActive;
-      alinearGroup.visible = alinearActive;
-      if (panel) panel.style.display = alinearActive ? "block" : "none";
-      if (btn) btn.style.background = alinearActive ? "rgba(0,0,0,.08)" : "";
-      return;
-    }
-    if (alinearLoading) return;
-    alinearLoading = true;
-    fetch("./assets/kennedy_usos_outline.bin").then(r => r.arrayBuffer()).then(buf => {
-      const data = parseOutlineBin(buf);
-      buildAlinearLines(data);
-      alinearActive = true;
-      alinearLoading = false;
-      if (panel) panel.style.display = "block";
-      if (btn) btn.style.background = "rgba(0,0,0,.08)";
-    }).catch(err => { console.error("[alinear plano]", err); alinearLoading = false; });
-  }
-  const alinearPlanoBtn = document.getElementById("alinearPlanoBtn");
-  if (alinearPlanoBtn) alinearPlanoBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleAlinearPlano(); });
-  const alinearPlanoCopyBtn = document.getElementById("alinearPlanoCopy");
-  if (alinearPlanoCopyBtn) alinearPlanoCopyBtn.addEventListener("click", () => {
-    const out = document.getElementById("alinearPlanoCoords");
-    if (out) { out.select(); document.execCommand("copy"); }
-  });
-  // Arrastre: clic izquierdo + mover, SOLO mientras el modo esta activo --
-  // asi no interfiere con la orbita normal de la camara (que usa el mismo
-  // boton). Se mueve el grupo en el plano X/Z (piso), no en altura.
-  renderer.domElement.addEventListener("pointerdown", (e) => {
-    if (!alinearActive || !alinearGroup || e.button !== 0) return;
-    alinearDragging = true;
-    alinearLastX = e.clientX; alinearLastY = e.clientY;
-    e.stopImmediatePropagation();
-  }, true);
-  window.addEventListener("pointermove", (e) => {
-    if (!alinearDragging || !alinearGroup) return;
-    const dx = e.clientX - alinearLastX, dy = e.clientY - alinearLastY;
-    alinearLastX = e.clientX; alinearLastY = e.clientY;
-    // factor exacto: unidades de escena por pixel, segun el frustum
-    // ortografico actual (top-bottom) y el alto real del canvas.
-    const rect = renderer.domElement.getBoundingClientRect();
-    const unitsPerPixel = (camera.top - camera.bottom) / rect.height;
-    // Se proyectan los ejes derecha/arriba de la CAMARA sobre el piso
-    // (X/Z), para que arrastrar siga al mouse sin importar el angulo u
-    // orbita actual de la vista (no solo cuando mira derecho hacia abajo).
-    const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-    const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
-    camRight.y = 0; camUp.y = 0;
-    camRight.normalize(); camUp.normalize();
-    const moveX = dx * unitsPerPixel, moveY = -dy * unitsPerPixel;
-    alinearGroup.position.x += camRight.x * moveX + camUp.x * moveY;
-    alinearGroup.position.z += camRight.z * moveX + camUp.z * moveY;
-    updateAlinearCoordsOutput();
-    e.stopPropagation();
-  }, true);
-  window.addEventListener("pointerup", () => { alinearDragging = false; });
-
-  // ---- Clic en un edificio individual para cambiarle el color a mano.
-  // Las correcciones se guardan en manualColorOverrides (por indice de
-  // edificio) y se exportan como un codigo de texto corto que la usuaria
-  // puede copiar y pegar de vuelta para dejarlas fijas de forma permanente. ----
-  function findBuildingIndexFromFace(faceIndex) {
-    if (!bldVertexRanges) return null;
-    const v0 = faceIndex * 3; // primer vertice de ese triangulo en la geometria no indexada
-    for (let i = 0; i < bldVertexRanges.length; i++) {
-      const r = bldVertexRanges[i];
-      if (!r) continue;
-      if (v0 >= r[0] && v0 < r[0] + r[1]) return i;
-    }
-    return null;
-  }
-  function recolorBuilding(buildingIndex, colorHex) {
-    manualColorOverrides[buildingIndex] = colorHex;
-    const range = bldVertexRanges[buildingIndex];
-    if (!range || !usosColorAttr) return;
-    const soft = softenColor(colorHex);
-    const [start, count] = range;
-    for (let v = start; v < start + count; v++) {
-      usosColorAttr.setXYZ(v, soft.r, soft.g, soft.b);
-    }
-    usosColorAttr.needsUpdate = true;
-    updateCorreccionesOutput();
-  }
-  function updateCorreccionesOutput() {
-    const box = document.getElementById("usosCorreccionesBox");
-    const out = document.getElementById("usosCorreccionesOut");
-    const keys = Object.keys(manualColorOverrides);
-    if (!out || !box) return;
-    if (keys.length === 0) { box.style.display = "none"; return; }
-    box.style.display = "block";
-    out.value = keys.map(k => `${k}:${manualColorOverrides[k]}`).join(";");
-  }
-  const usosCorreccionesCopyBtn = document.getElementById("usosCorreccionesCopy");
-  if (usosCorreccionesCopyBtn) usosCorreccionesCopyBtn.addEventListener("click", () => {
-    const out = document.getElementById("usosCorreccionesOut");
-    if (out) { out.select(); document.execCommand("copy"); }
-  });
-
-  const PICKER_COLORS = Object.keys(USOS_COLORS).map(k => USOS_COLORS[k]);
-  const colorPickerEl = document.getElementById("buildingColorPicker");
-  const swatchesEl = document.getElementById("buildingColorSwatches");
-  let pickerTargetBuilding = null;
-  if (swatchesEl) {
-    PICKER_COLORS.forEach(hex => {
-      const sw = document.createElement("div");
-      const hexStr = "#" + hex.toString(16).padStart(6, "0");
-      sw.style.cssText = `width:22px; height:22px; border-radius:5px; cursor:pointer; background:${hexStr}; border:1px solid rgba(0,0,0,.15);`;
-      sw.addEventListener("click", () => {
-        if (pickerTargetBuilding !== null) recolorBuilding(pickerTargetBuilding, hexStr);
-        colorPickerEl.style.display = "none";
-      });
-      swatchesEl.appendChild(sw);
-    });
-  }
-  const usosRaycaster = new THREE.Raycaster();
-  const usosPointerNDC = new THREE.Vector2();
-  renderer.domElement.addEventListener("click", (e) => {
-    if (!usosSueloGroup || !usosSueloGroup.visible || alinearActive) return;
-    const rect = renderer.domElement.getBoundingClientRect();
-    usosPointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    usosPointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    usosRaycaster.setFromCamera(usosPointerNDC, camera);
-    const hits = usosRaycaster.intersectObject(usosSueloGroup, true);
-    if (!hits.length) { if (colorPickerEl) colorPickerEl.style.display = "none"; return; }
-    const bIdx = findBuildingIndexFromFace(hits[0].faceIndex);
-    if (bIdx === null) return;
-    pickerTargetBuilding = bIdx;
-    if (colorPickerEl) {
-      colorPickerEl.style.left = e.clientX + "px";
-      colorPickerEl.style.top = e.clientY + "px";
-      colorPickerEl.style.display = "block";
-    }
-  });
-
-  const usosSueloBtn = document.getElementById("usosSueloBtn");
-  if (usosSueloBtn) usosSueloBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleUsosSuelo(); });
-
-  // ---- Dispersion del comercio: al bajar la "concentracion comercial",
-  // se reduce la intensidad del ruido/trafico especificamente en el
-  // radio del polo comercial principal real (centroide de los edificios
-  // de uso Comercio, que en Kennedy cae cerca de Corabastos) -- como si
-  // esos carros ya no convergieran todos ahi porque el comercio esta mas
-  // repartido. Es un modelo conceptual (igual que el resto de esta
-  // simulacion, que ya se aclara que no es SUMO real), no un recalculo
-  // de rutas, pero el efecto visual en el mapa de ruido es real: se nota
-  // menos rojo alrededor de ese punto.
-  // dispersionFactor: 1 = comercio concentrado en un solo polo (modelo
-  // base), 0 = totalmente repartido entre varios polos nuevos. No es
-  // solo bajar la intensidad del ruido -- los vehiculos que iban hacia
-  // el polo original de verdad se REDIRIGEN (cambia el punto donde
-  // aportan ruido) hacia los polos dispersos, asi el trancon baja en el
-  // punto original PORQUE los carros ya no van todos ahi, no porque se
-  // les reste intensidad artificialmente.
-  let comercioCentroide = null, comercioRadioM = 550, dispersionFactor = 1;
-  let polosDispersos = [];
-  let dispersionLoading = false;
-  function calcularCentroideComercial(buildingsArr, usoArr) {
-    let sx = 0, sy = 0, n = 0;
-    buildingsArr.forEach((b, i) => {
-      if (usoArr[i] !== "Comercio") return;
-      const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length;
-      const cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
-      sx += cx; sy += cy; n++;
-    });
-    if (!n) return null;
-    const centro = { x: sx / n, y: sy / n };
-    // 4 polos nuevos alrededor del original, a una distancia razonable
-    // (unas 15-18 cuadras), dentro del area real de Kennedy.
-    const DIST_M = 2200;
-    const angulos = [Math.PI * 0.15, Math.PI * 0.85, Math.PI * 1.35, Math.PI * 1.85];
-    polosDispersos = angulos.map(a => ({
-      x: Math.min(10400, Math.max(600, centro.x + Math.cos(a) * DIST_M)),
-      y: Math.min(6300, Math.max(400, centro.y + Math.sin(a) * DIST_M)),
-    }));
-    return centro;
-  }
-  function hashVehId(id) {
-    let h = 0;
-    const s = String(id);
-    for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) >>> 0;
-    return h;
-  }
-  // La dispersion ya no tiene boton aparte -- el slider vive DENTRO del
-  // panel de Usos del Suelo, y se activa solo (calcula el centroide
-  // comercial) la primera vez que esa capa se muestra.
-  function asegurarCentroideComercial() {
-    if (comercioCentroide || dispersionLoading) return;
-    dispersionLoading = true;
-    const statusEl = document.getElementById("dispersionStatus");
-    if (statusEl) statusEl.textContent = "Ubicando el polo comercial…";
-    cargarDatosUsos().then(([buildingsArr, usoArr]) => {
-      comercioCentroide = calcularCentroideComercial(buildingsArr, usoArr);
-      dispersionLoading = false;
-      if (statusEl) statusEl.textContent = "";
-    }).catch(err => {
-      console.error("[dispersion comercio]", err);
-      dispersionLoading = false;
-      if (statusEl) statusEl.textContent = "No se pudo cargar.";
-    });
-  }
-  const dispersionSlider = document.getElementById("dispersionSlider");
-  const dispersionVal = document.getElementById("dispersionVal");
-  if (dispersionSlider) dispersionSlider.addEventListener("input", () => {
-    const v = Number(dispersionSlider.value);
-    dispersionFactor = v / 100;
-    if (dispersionVal) dispersionVal.textContent = v === 100 ? "100% (base)" : `${v}%`;
-    reconstruirUsosSiVisible();
-  });
-
   function buildNoiseGround(bbox) {
     noiseOriginX = bbox[0]; noiseOriginY = bbox[1];
     noiseGroundW = bbox[2] - bbox[0]; noiseGroundH = bbox[3] - bbox[1];
@@ -1165,28 +1660,7 @@
     const sx = NOISE_BUF_W / noiseGroundW, sy = NOISE_BUF_H / noiseGroundH;
     const blobR = NOISE_VEH_RADIUS_M * sx;
     vehicles.forEach(v => {
-      // Si el comercio se dispersa (dispersionFactor < 1): un vehiculo
-      // que esta dentro del radio del polo original, con probabilidad
-      // (1-dispersionFactor) -- fija por vehiculo (por su id), no
-      // parpadeando cuadro a cuadro -- aporta su ruido en uno de los
-      // polos dispersos EN VEZ DEL original. Es una redireccion real de
-      // a donde "va" ese trafico, no solo restarle intensidad.
-      let wx = v.x, wy = v.y;
-      if (comercioCentroide && dispersionFactor < 1 && polosDispersos.length) {
-        const d2 = (v.x - comercioCentroide.x) ** 2 + (v.y - comercioCentroide.y) ** 2;
-        if (d2 < comercioRadioM * comercioRadioM) {
-          const h = hashVehId(v.id) / 4294967295; // 0..1 estable para este vehiculo
-          if (h > dispersionFactor) {
-            const polo = polosDispersos[hashVehId(v.id + "_p") % polosDispersos.length];
-            // se posiciona cerca del polo disperso (con un poco de
-            // variacion por vehiculo para no apilarlos en un punto exacto)
-            const jx = (hashVehId(v.id + "_jx") % 200) - 100;
-            const jy = (hashVehId(v.id + "_jy") % 200) - 100;
-            wx = polo.x + jx; wy = polo.y + jy;
-          }
-        }
-      }
-      const bx = (wx - noiseOriginX) * sx, by = NOISE_BUF_H - (wy - noiseOriginY) * sy;
+      const bx = (v.x - noiseOriginX) * sx, by = NOISE_BUF_H - (v.y - noiseOriginY) * sy;
       const grad = noiseBufCtx.createRadialGradient(bx, by, 0, bx, by, blobR);
       grad.addColorStop(0, "rgba(255,255,255,0.9)");
       grad.addColorStop(1, "rgba(255,255,255,0)");
@@ -1196,21 +1670,10 @@
     noiseBufCtx.globalCompositeOperation = "source-over";
     const img = noiseBufCtx.getImageData(0, 0, NOISE_BUF_W, NOISE_BUF_H);
     const data = img.data;
-    // Intensidad REAL (0..1) guardada aparte, independiente del color
-    // visual -- antes las mirlas trataban de adivinar el ruido por el
-    // brillo del color pintado, y al cambiar la paleta a tonos oliva
-    // (todos con un brillo muy parecido entre si) esa adivinanza dejo de
-    // funcionar bien, haciendo que casi todo se sintiera "ruidoso" por
-    // igual. Con esto, cambiar los colores del mapa nunca vuelve a
-    // romper el comportamiento real de las mirlas.
-    if (!noiseIntensityField || noiseIntensityField.length !== NOISE_BUF_W * NOISE_BUF_H) {
-      noiseIntensityField = new Float32Array(NOISE_BUF_W * NOISE_BUF_H);
-    }
-    for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+    for (let i = 0; i < data.length; i += 4) {
       const intensity = data[i + 3] / 255;
-      if (intensity < 0.02) { data[i + 3] = 0; noiseIntensityField[p] = 0; continue; }
+      if (intensity < 0.02) { data[i + 3] = 0; continue; }
       const t = Math.min(1, Math.pow(intensity, 2.4));
-      noiseIntensityField[p] = t;
       const [r, g, b] = noiseColorAt(t);
       data[i] = r; data[i + 1] = g; data[i + 2] = b;
       data[i + 3] = Math.round(NOISE_ALPHA * 255); // alpha SIEMPRE el mismo, solo cambia el color
@@ -1226,13 +1689,18 @@
   // donde estan los carros DE VERDAD en este instante, no un valor fijo.
   const NOISE_DB_BASE = 40, NOISE_DB_SPAN = 52;
   function noiseDbAt(x, y) {
-    if (!noiseIntensityField || !noiseGroundW) return NOISE_DB_BASE;
+    if (!noiseFieldImg || !noiseGroundW) return NOISE_DB_BASE;
     const bx = Math.floor(((x - noiseOriginX) / noiseGroundW) * NOISE_BUF_W);
     const by = Math.floor(NOISE_BUF_H - ((y - noiseOriginY) / noiseGroundH) * NOISE_BUF_H);
     if (bx < 0 || by < 0 || bx >= NOISE_BUF_W || by >= NOISE_BUF_H) return NOISE_DB_BASE;
-    const t = noiseIntensityField[by * NOISE_BUF_W + bx] || 0; // intensidad REAL, ya no se adivina por el color
-    if (t < 0.01) return NOISE_DB_BASE;
-    return NOISE_DB_BASE + NOISE_DB_SPAN * t;
+    const idx = (by * NOISE_BUF_W + bx) * 4;
+    const raw = noiseFieldImg.data[idx + 3] / 255; // el alpha ya no sirve de intensidad (quedo fijo); se usa el brillo del color en su lugar
+    const bright = (noiseFieldImg.data[idx] + noiseFieldImg.data[idx + 1] + noiseFieldImg.data[idx + 2]) / (3 * 255);
+    if (raw < 0.01) return NOISE_DB_BASE;
+    // mientras mas cerca de rojo (stop final), mas alto: se aproxima con
+    // la distancia de color a "amarillo claro" (stop inicial, ruido bajo).
+    const t = 1 - bright; // aprox: colores mas oscuros/rojos = mas ruido
+    return NOISE_DB_BASE + NOISE_DB_SPAN * Math.max(0, Math.min(1, t * 1.6));
   }
   function noiseEscapeDir(x, y) {
     const paso = (noiseGroundW / NOISE_BUF_W) * 3;
@@ -1252,41 +1720,19 @@
   // zonas con mas de 60 dB(A) de ruido (usando el mismo indice real de
   // ruido ya cargado), con un grupo residente en un refugio fijo.
   // ============================================================
-  const LA_VACA_X = 6017.9, LA_VACA_Y = 1980.2; // centro real de Humedal La Vaca
-  // Los DOS humedales reales deben tener dinamica de mirlas -- El Burro
-  // (centro real calculado de su poligono, elBurroCentro) y La Vaca
-  // (punto fijo). getHumedalCentro() elige uno al azar cada vez que se
-  // llama (para repartir mirlas y cobertura entre ambos, no solo uno).
-  function getHumedalCentro() {
-    const burro = (typeof elBurroCentro !== "undefined" && elBurroCentro) ? elBurroCentro : null;
-    const vaca = { x: LA_VACA_X, y: LA_VACA_Y };
-    if (!burro) return vaca;
-    return Math.random() < 0.5 ? burro : vaca;
-  }
-  // Para la concentracion de cobertura vegetal extra: distancia al MAS
-  // CERCANO de los dos humedales (no solo a uno), asi arboles cerca de
-  // cualquiera de los dos se priorizan.
-  function distAlHumedalMasCercano(x, y) {
-    const burro = (typeof elBurroCentro !== "undefined" && elBurroCentro) ? elBurroCentro : null;
-    const dVaca = (x - LA_VACA_X) ** 2 + (y - LA_VACA_Y) ** 2;
-    if (!burro) return dVaca;
-    const dBurro = (x - burro.x) ** 2 + (y - burro.y) ** 2;
-    return Math.min(dVaca, dBurro);
-  }
+  const HUMEDAL_X = 6017.9, HUMEDAL_Y = 1980.2; // centro real del Humedal La Vaca
   const BIRD_TREE_SPECIES = {
     "Sauco": { key: "sauco", color: 0xb06bff, weight: 1.0, base: 260 },
     "Cerezo, capuli": { key: "capuli", color: 0xff5fa8, weight: 0.76, base: 200 },
     "Urapán, Fresno": { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 },
   };
-  const BIRD_VISION = 38, BIRD_ARRIVE = 1.4, BIRD_WIND = 1.5, BIRD_MAX_SPEED = 4.2; // vision ampliada (antes 14): con 780 arboles repartidos en toda la ciudad, un campo visual chico hacia que muchas mirlas nunca encontraran ningun arbol cerca y parecieran "no atraerse" a nada
-  const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 9.5; let BIRD_COUNT = 90; // 90 de inicio (antes 60), ajustable luego con el slider -- K_REP subido de 4.2 a 9.5 para que el escape del ruido se note mucho mas fuerte y claro
+  const BIRD_VISION = 14, BIRD_ARRIVE = 1.4, BIRD_WIND = 1.5, BIRD_MAX_SPEED = 4.2;
+  const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 50;
   const REFUGE_X = 3600, REFUGE_Y = 1000, REFUGE_R = 220; // esquina noroeste real del area de Kennedy
-  let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null, allTreesData = null, birdsSnappedToTrees = false;
+  let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null;
   let noiseEdgesRaw = null; // se reusan los mismos datos reales de ruido ya cargados
 
-  function sampleAttractorTrees(trees, vegBoost) {
-    const boost = vegBoost || 0;
-    const factor = 1 + boost / 100; // igual formula que la simulacion 2D
+  function sampleAttractorTrees(trees) {
     const porEspecie = {};
     trees.forEach(t => {
       const meta = BIRD_TREE_SPECIES[t[3]];
@@ -1296,138 +1742,12 @@
     Object.keys(porEspecie).forEach(k => {
       const lista = porEspecie[k];
       const meta = lista[0].meta;
-      const topeBase = meta.base;
-      const pasoBase = Math.max(1, Math.floor(lista.length / topeBase));
-      const baseSample = [];
-      const usados = new Set();
-      for (let i = 0; i < lista.length; i += pasoBase) { baseSample.push(lista[i]); usados.add(i); }
-      if (boost <= 0) {
-        // reduccion: se achica la muestra base de siempre, repartida por
-        // toda la ciudad (una baja pareja no tiene por que ser solo cerca
-        // del humedal).
-        const topeReducido = Math.max(1, Math.round(topeBase * factor));
-        out.push(...baseSample.slice(0, topeReducido));
-      } else {
-        // aumento: los arboles EXTRA se toman de los mas cercanos al
-        // humedal (de los que no estaban ya en la muestra base), tal
-        // como se pidio -- asi mas cobertura vegetal se nota alrededor
-        // del humedal, no repartida parejo por toda la ciudad.
-        out.push(...baseSample);
-        const topeTotal = Math.round(topeBase * factor);
-        const extraNecesarios = Math.max(0, topeTotal - topeBase);
-        if (extraNecesarios > 0) {
-          const candidatosCercaHumedal = lista
-            .map((t, i) => ({ t, i, d2: distAlHumedalMasCercano(t.x, t.y) }))
-            .filter(c => !usados.has(c.i))
-            .sort((a, b) => a.d2 - b.d2)
-            .slice(0, extraNecesarios);
-          candidatosCercaHumedal.forEach(c => out.push(c.t));
-        }
-      }
+      const paso = Math.max(1, Math.floor(lista.length / meta.base));
+      for (let i = 0; i < lista.length; i += paso) out.push(lista[i]);
     });
     return out;
   }
-  // Marcadores de color SOBRE los arboles atractores reales (Sauco,
-  // Capuli, Urapan), para que se vea exactamente donde estan ubicados --
-  // sin tocar el material/textura del arbol real (eso ya causo el bug de
-  // los arboles en negro una vez, se deja intacto). Son discos pequenos
-  // flotando justo encima de la copa de cada arbol atractor.
-  let attractorMarkersGroup = null;
-  const MARKER_BASE_R = 1.4; // un poco mas grande que el ultimo ajuste (0.9), seguia siendo muy chico
-  function buildAttractorTreeMarkers(attractors) {
-    if (attractorMarkersGroup) { sceneRoot.remove(attractorMarkersGroup); attractorMarkersGroup.geometry?.dispose(); }
-    const diskGeo = new THREE.CircleGeometry(MARKER_BASE_R, 10);
-    diskGeo.rotateX(-Math.PI / 2);
-    const porColor = {};
-    attractors.forEach(a => {
-      const hex = a.meta.color;
-      if (!porColor[hex]) porColor[hex] = [];
-      porColor[hex].push(a);
-    });
-    attractorMarkersGroup = new THREE.Group();
-    const dummy = new THREE.Object3D();
-    Object.keys(porColor).forEach(hex => {
-      const lista = porColor[hex];
-      const mat = new THREE.MeshBasicMaterial({ color: parseInt(hex), side: THREE.DoubleSide, transparent: true, opacity: 0.85, depthWrite: false });
-      const inst = new THREE.InstancedMesh(diskGeo, mat, lista.length);
-      lista.forEach((a, i) => {
-        const p = toScene(a.x, a.y);
-        dummy.position.set(p.x, 6, p.z); // flotando sobre la copa del arbol
-        dummy.scale.set(1, 1, 1);
-        dummy.updateMatrix();
-        inst.setMatrixAt(i, dummy.matrix);
-        // Se guarda en el propio objeto del arbol (el mismo que usan las
-        // mirlas para apuntar) la referencia a su instancia, para poder
-        // agrandarlo/iluminarlo cuando una mirla aterriza ahi.
-        a.markerMesh = inst; a.markerIndex = i; a.markerScenePos = p;
-      });
-      inst.instanceMatrix.needsUpdate = true;
-      attractorMarkersGroup.add(inst);
-    });
-    attractorMarkersGroup.visible = birdsGroup ? birdsGroup.visible : false;
-    sceneRoot.add(attractorMarkersGroup);
-  }
-  const markerDummy = new THREE.Object3D();
-  let litTrees = []; // arboles actualmente iluminados (una mirla acaba de llegar)
-  function litUpMarker(arbol) {
-    if (!arbol || !arbol.markerMesh) return;
-    if (!arbol._lit) { arbol._lit = true; litTrees.push(arbol); }
-    arbol.litUntil = performance.now() + 2600; // 2.6s de brillo tras aterrizar
-  }
-  function updateAttractorMarkerGlow(now) {
-    if (!attractorMarkersGroup || !litTrees.length) return;
-    litTrees = litTrees.filter(arbol => {
-      const activo = arbol.litUntil > now;
-      const t = activo ? (arbol.litUntil - now) / 2600 : 0; // 1 justo al aterrizar -> 0 al apagarse
-      const s = 1 + t * 2.6; // se agranda hasta 3.6x al llegar, vuelve a su tamano normal
-      markerDummy.position.copy(arbol.markerScenePos ? new THREE.Vector3(arbol.markerScenePos.x, 6, arbol.markerScenePos.z) : markerDummy.position);
-      markerDummy.scale.set(s, s, s);
-      markerDummy.updateMatrix();
-      arbol.markerMesh.setMatrixAt(arbol.markerIndex, markerDummy.matrix);
-      arbol.markerMesh.instanceMatrix.needsUpdate = true;
-      if (!activo) arbol._lit = false;
-      return activo;
-    });
-  }
-  let allAttractorsFlat = []; // lista plana (para elegir un arbol al azar al armar mirlas que ya nacen posadas)
-  function rebuildBirdTreesWithBoost(vegBoost) {
-    if (!allTreesData) return;
-    const attractors = sampleAttractorTrees(allTreesData, vegBoost);
-    birdTreesGrid = buildBirdTreeGrid(attractors);
-    buildAttractorTreeMarkers(attractors);
-    allAttractorsFlat = attractors;
-    const countEl = document.getElementById("bioVegCount");
-    if (countEl) countEl.textContent = attractors.length.toLocaleString("es-CO");
-  }
-  function setBirdCount(n) {
-    const target = Math.max(1, Math.round(n));
-    if (!birds.length || !birdsGroup) return;
-    const birdTexUpRef = birdTexUp, birdTexDownRef = birdTexDown;
-    while (birds.length > target) {
-      const b = birds.pop();
-      birdsGroup.remove(b.sprite);
-    }
-    while (birds.length < target) {
-      const refugeCount = Math.max(4, Math.round(target * 0.15));
-      let origen;
-      if (birds.length < refugeCount) origen = "refugio";
-      else {
-        const r2 = birds.length % 10;
-        if (r2 < 2) origen = "humedal";
-        else if (r2 < 3) origen = "oriente";
-        else origen = "disperso";
-      }
-      const b = makeBirdAgent(origen);
-      const spriteMat = new THREE.SpriteMaterial({ map: birdTexUpRef, transparent: true, alphaTest: 0.15, depthWrite: false, depthTest: false });
-      const sprite = new THREE.Sprite(spriteMat);
-      sprite.scale.set(9, 9, 1);
-      sprite.renderOrder = 999;
-      birdsGroup.add(sprite);
-      b.sprite = sprite;
-      birds.push(b);
-    }
-  }
-  const BIRD_CELL = 60; // metros reales por celda (subido junto con BIRD_VISION, para que la busqueda siga revisando una cantidad de celdas razonable)
+  const BIRD_CELL = 25; // metros reales por celda de la rejilla de arboles
   function buildBirdTreeGrid(attractors) {
     const grid = new Map();
     attractors.forEach(t => {
@@ -1437,33 +1757,23 @@
     });
     return grid;
   }
-  function bestTreeNear(grid, x, y, excludeTree) {
+  function bestTreeNear(grid, x, y) {
     const r = BIRD_VISION * 10; // convertir de unidades de escena (SCALE=0.1) a metros reales
     const cx0 = Math.floor((x - r) / BIRD_CELL), cx1 = Math.floor((x + r) / BIRD_CELL);
     const cy0 = Math.floor((y - r) / BIRD_CELL), cy1 = Math.floor((y + r) / BIRD_CELL);
-    // En vez de SIEMPRE elegir el arbol de mejor puntaje (eso hacia que
-    // muchas mirlas cercanas entre si convergieran todas al mismo arbol,
-    // como si anduvieran en manada), se guardan varios candidatos buenos
-    // y se elige uno al azar entre ellos -- asi mirlas cercanas se
-    // reparten entre distintos arboles, no se apilan en uno solo.
-    const candidatos = [];
+    let best = null, bestScore = 0, bestDist = 0;
     for (let cx = cx0; cx <= cx1; cx++) for (let cy = cy0; cy <= cy1; cy++) {
       const celda = grid.get(cx + "," + cy);
       if (!celda) continue;
       celda.forEach(t => {
-        if (t === excludeTree) return;
         const dx = t.x - x, dy = t.y - y, d2 = dx * dx + dy * dy;
         if (d2 > r * r) return;
         const d = Math.sqrt(d2) || 0.001;
         const score = t.meta.weight / d;
-        candidatos.push({ arbol: t, dist: d, score });
+        if (score > bestScore) { bestScore = score; best = t; bestDist = d; }
       });
     }
-    if (!candidatos.length) return null;
-    candidatos.sort((a, b) => b.score - a.score);
-    const top = candidatos.slice(0, Math.min(5, candidatos.length));
-    const elegido = top[Math.floor(Math.random() * top.length)];
-    return { arbol: elegido.arbol, dist: elegido.dist };
+    return best ? { arbol: best, dist: bestDist } : null;
   }
 
   function makeBirdSprite(wingUp) {
@@ -1488,34 +1798,11 @@
   }
   function makeBirdAgent(origen) {
     let x, y;
-    if (origen === "en_arbol" && allAttractorsFlat.length) {
-      // Ya esta posada en un arbol real desde el inicio -- para que al
-      // mirar al azar se vea de una vez la variedad de estados: unas ya
-      // en el arbol, otras llegando, otras saliendo.
-      const arbol = allAttractorsFlat[Math.floor(Math.random() * allAttractorsFlat.length)];
-      x = arbol.x; y = arbol.y;
-      const b = {
-        x, y, vx: 0, vy: 0, rest: 1 + Math.random() * 2, cooldown: 0,
-        restColor: arbol.meta.color, residente: false, estresada: false,
-        phase: Math.random() * 6.28, sprite: null,
-        landedAt: { x: arbol.x, y: arbol.y, arbolRef: arbol }, lastTree: arbol, targetTree: null,
-      };
-      litUpMarker(arbol);
-      return b;
-    }
     if (origen === "refugio") {
       const a = Math.random() * Math.PI * 2, r = Math.random() * REFUGE_R;
       x = REFUGE_X + Math.cos(a) * r; y = REFUGE_Y + Math.sin(a) * r;
     } else if (origen === "humedal") {
-      // area mucho mas amplia alrededor del humedal, no un cuadrito
-      // chiquito -- para que no parezcan amontonadas ahi mismo.
-      const hc = getHumedalCentro();
-      x = hc.x + (Math.random() - 0.5) * 1400; y = hc.y + (Math.random() - 0.5) * 1400;
-    } else if (origen === "disperso") {
-      // repartidas por TODA la zona de Kennedy, cada una ya volando por
-      // su cuenta en un punto distinto -- esto es lo que de verdad evita
-      // la apariencia de manada: no todas entrando por el mismo borde.
-      x = 500 + Math.random() * 10000; y = 300 + Math.random() * 6500;
+      x = HUMEDAL_X + (Math.random() - 0.5) * 200; y = HUMEDAL_Y + (Math.random() - 0.5) * 200;
     } else { // oriente: borde este real del area de Kennedy
       x = 10500 + Math.random() * 150; y = 500 + Math.random() * 5500;
     }
@@ -1557,30 +1844,15 @@
       if (b.cooldown > 0) b.cooldown -= dt;
       b.vx -= BIRD_WIND * dt;
       b.vy += Math.sin(b.phase * 0.28) * 0.7 * dt;
-      // Cada mirla elige UN arbol y se compromete con el (no reevalua
-      // "el mejor cercano" en cada cuadro) -- las mirlas no andan en
-      // manada, cada una va por su cuenta a un destino propio, no todas
-      // convergen al mismo arbol top-score del area. Al llegar y
-      // descansar, se obliga a elegir un arbol DISTINTO al anterior la
-      // proxima vez, para que de verdad vaya variando de arbol en arbol.
-      if (!b.targetTree && birdTreesGrid) {
-        const hallazgo = bestTreeNear(birdTreesGrid, b.x, b.y, b.lastTree);
-        if (hallazgo) b.targetTree = hallazgo.arbol;
-      }
-      if (b.targetTree && b.cooldown <= 0) {
-        const arbol = b.targetTree;
-        const dx = arbol.x - b.x, dy = arbol.y - b.y;
-        const dist = Math.hypot(dx, dy) || 0.001;
-        const ux = dx / dist, uy = dy / dist;
+      const hallazgo = birdTreesGrid ? bestTreeNear(birdTreesGrid, b.x, b.y) : null;
+      if (hallazgo && b.cooldown <= 0) {
+        const { arbol, dist } = hallazgo;
+        const ux = (arbol.x - b.x) / dist, uy = (arbol.y - b.y) / dist;
         const esSauco = arbol.meta.key === "sauco";
         const fuerza = arbol.meta.weight * (esSauco ? 20 : 11);
         b.vx += ux * fuerza * dt; b.vy += uy * fuerza * dt;
         if (dist < BIRD_ARRIVE * 10) {
-          b.rest = 2 + Math.random(); b.restColor = arbol.meta.color; b.cooldown = 7;
-          b.landedAt = { x: arbol.x, y: arbol.y, arbolRef: arbol };
-          litUpMarker(arbol);
-          b.lastTree = arbol; // para no repetir el mismo en la siguiente busqueda
-          b.targetTree = null;
+          b.rest = 2 + Math.random(); b.restColor = arbol.meta.color; b.cooldown = 7; b.landedAt = { x: arbol.x, y: arbol.y };
         }
       }
       const sp = Math.hypot(b.vx, b.vy);
@@ -1608,17 +1880,7 @@
     const spriteMat = new THREE.SpriteMaterial({ map: birdTexUp, transparent: true, alphaTest: 0.15, depthWrite: false, depthTest: false });
     const refugeCount = Math.max(4, Math.round(BIRD_COUNT * 0.15));
     for (let i = 0; i < BIRD_COUNT; i++) {
-      // La mayoria nace YA dispersa por toda la zona (no en manada en un
-      // solo punto); solo una porcion chica sale del refugio, humedal
-      // concreto, u oriente, para mantener esos origenes narrativos.
-      let origen;
-      if (i < refugeCount) origen = "refugio";
-      else {
-        const r2 = i % 10;
-        if (r2 < 2) origen = "humedal";
-        else if (r2 < 3) origen = "oriente";
-        else origen = "disperso";
-      }
+      const origen = i < refugeCount ? "refugio" : (i % 2 ? "humedal" : "oriente");
       const b = makeBirdAgent(origen);
       const sprite = new THREE.Sprite(spriteMat.clone());
       sprite.scale.set(9, 9, 1); // mas grande que en modulo-10-corte (3.2): aqui se ve TODA la ciudad, no un sector acercado, y con el sprite chico no se alcanzaban a ver las mirlas
@@ -1639,17 +1901,7 @@
       const p = toScene(b.x, b.y);
       const bat = Math.sin(b.phase) * (b.rest > 0 ? 0.15 : 0.3);
       b.sprite.position.set(p.x, 3.2 + bat, p.z);
-      // Roja y clara cuando el ruido la estresa (formula Frep=-K*(Lruido-60)
-      // ya aplicada en updateBirdAgent) -- antes era un naranja tenue, se
-      // pidio que sea rojo de verdad para que se note el estres.
-      b.sprite.material.color.set(b.estresada ? 0xff2020 : 0xffffff);
-      // Se "voltea" (espejo horizontal) segun hacia donde esta yendo
-      // ahora mismo, para que se note visualmente el giro al escapar del
-      // ruido (antes siempre miraba para el mismo lado sin importar el
-      // rumbo real).
-      const dirSign = b.vx >= 0 ? 1 : -1;
-      const sB = 9 * dirSign;
-      if (b.sprite.scale.x !== sB) b.sprite.scale.x = sB;
+      b.sprite.material.color.set(b.estresada ? 0xff6b4d : 0xffffff);
       const nuevaTex = Math.sin(b.phase) > 0 ? birdTexUp : birdTexDown;
       if (b.sprite.material.map !== nuevaTex) { b.sprite.material.map = nuevaTex; b.sprite.material.needsUpdate = true; }
     });
@@ -1708,29 +1960,11 @@
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
     geo.computeVertexNormals();
-    const waterTex = new THREE.TextureLoader().load("./assets/textura_agua2.jpg");
-    waterTex.wrapS = THREE.RepeatWrapping;
-    waterTex.wrapT = THREE.RepeatWrapping;
-    waterTexRef = waterTex;
-    // Segunda copia de la misma textura, usada como relieve (bump map) en
-    // vez de color: le da micro-relieve a la superficie para que capte
-    // la luz de forma irregular (brillos/reflejos que cambian segun el
-    // angulo), como agua real — una superficie perfectamente lisa se ve
-    // "plana"/pintada, no renderizada. Se anima a otra velocidad/escala
-    // que la capa de color, simulando dos capas de oleaje superpuestas.
-    const bumpTex = new THREE.TextureLoader().load("./assets/textura_agua2.jpg");
-    bumpTex.wrapS = THREE.RepeatWrapping;
-    bumpTex.wrapT = THREE.RepeatWrapping;
-    bumpTex.repeat.set(2.3, 2.3);
-    waterBumpRef = bumpTex;
-    const mat = new THREE.MeshStandardMaterial({
-      map: waterTex, bumpMap: bumpTex, bumpScale: 0.12,
-      color: 0x97a5af, roughness: 0.18, metalness: 0.15,
-      transparent: true, opacity: 0.82, side: THREE.DoubleSide,
-    });
+    const mat = sharedWaterMat;
     waterMat = mat;
     const waterMesh = new THREE.Mesh(geo, mat);
     waterMesh.receiveShadow = false; // sin sombras encima (se veian como parches/bloques feos sobre el agua)
+    modernWaterMesh = waterMesh;
     sceneRoot.add(waterMesh);
     elBurroMat = mat; // El Burro comparte la misma textura/material que el resto del agua
     rebuildElBurro(HUMEDAL_CICLO[0].expansion_pct); // arranca en Enero, igual que el valor por defecto del deslizador
@@ -1798,53 +2032,17 @@
       const scale = 1 + d.expansion_pct / 100 * 0.6;
       d.area_ha = elBurroBaseAreaHa * scale * scale;
     }
-    actualizarLluvia(mes);
     return d;
-  }
-  // ---- Lluvia: se ve SOLO en los meses reales de temporada de lluvias
-  // en Bogota (patron bimodal real: marzo-mayo y octubre-noviembre); en
-  // temporada seca no se muestra nada. ----
-  const MESES_LLUVIA = [3, 4, 5, 10, 11];
-  let rainPoints = null, rainVelocities = null, rainActive = false, lastRainTs = 0;
-  function buildRain() {
-    if (rainPoints || !sceneExtentW || !sceneExtentH) return;
-    const COUNT = 2200;
-    const positions = new Float32Array(COUNT * 3);
-    rainVelocities = new Float32Array(COUNT);
-    for (let i = 0; i < COUNT; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * sceneExtentW * 1.3;
-      positions[i * 3 + 1] = Math.random() * 90 + 5;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * sceneExtentH * 1.3;
-      rainVelocities[i] = 55 + Math.random() * 35;
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const mat = new THREE.PointsMaterial({ color: 0xaecbe8, size: 0.35, transparent: true, opacity: 0.55, depthWrite: false });
-    rainPoints = new THREE.Points(geo, mat);
-    rainPoints.visible = false;
-    rainPoints.renderOrder = 998;
-    sceneRoot.add(rainPoints);
-  }
-  function updateRain(dt) {
-    if (!rainActive || !rainPoints) return;
-    const pos = rainPoints.geometry.attributes.position;
-    for (let i = 0; i < rainVelocities.length; i++) {
-      let y = pos.getY(i) - rainVelocities[i] * dt;
-      if (y < 0) y = 85 + Math.random() * 10;
-      pos.setY(i, y);
-    }
-    pos.needsUpdate = true;
-  }
-  function actualizarLluvia(mes) {
-    buildRain();
-    rainActive = MESES_LLUVIA.includes(mes);
-    if (rainPoints) rainPoints.visible = rainActive;
   }
 
   function loadWaterBodies() {
     return fetch(WATER_URL)
       .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + WATER_URL); return r.json(); })
-      .then(data => { buildWaterBodies(data); if (typeof applyHumedalMes === "function") applyHumedalMes(parseInt(humedalMesSlider.value, 10)); })
+      .then(data => {
+        buildWaterBodies(data);
+        buildHistoricalWetlands(data);
+        setHistoricalYear(1950, false);
+      })
       .catch(err => console.warn("No se pudieron cargar los cuerpos de agua:", err));
   }
 
@@ -1864,7 +2062,10 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     const mat = new THREE.LineBasicMaterial({ color: 0x8a8f96, transparent: true, opacity: 0.5 });
-    sceneRoot.add(new THREE.LineSegments(geo, mat));
+    const manMesh = new THREE.LineSegments(geo, mat);
+    modernManzanasMesh = manMesh;
+    if (currentHistoricalYear <= 1956) manMesh.visible = false;
+    sceneRoot.add(manMesh);
   }
 
   function loadManzanas() {
@@ -1902,9 +2103,11 @@
     const pastoTex = new THREE.TextureLoader().load("./assets/textura_pasto.jpg");
     pastoTex.wrapS = THREE.RepeatWrapping;
     pastoTex.wrapT = THREE.RepeatWrapping;
-    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xadaa90, roughness: 0.95, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xa8c59f, roughness: 0.95, transparent: true, opacity: 0.65, side: THREE.DoubleSide });
     parqueMat = mat;
     const mesh = new THREE.Mesh(geo, mat);
+    modernParquesMesh = mesh;
+    mesh.visible = true; // Zonas verdes/pastos naturales siempre visibles
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
   }
@@ -2040,6 +2243,8 @@
     geo.computeVertexNormals();
     const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0.02, side: THREE.DoubleSide, ...opts });
     const mesh = new THREE.Mesh(geo, mat);
+    modernFacadesMesh = mesh;
+    if (currentHistoricalYear <= 1956) mesh.visible = false;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     sceneRoot.add(mesh);
@@ -2079,7 +2284,6 @@
   const dummy = new THREE.Object3D();
 
   let timesteps = [];
-  let netEdges = null; // segmentos reales de la red vial (kennedy_net.json), para el cierre de vias
   let playing = false;
   let currentTime = 0;
   let speed = 2;
@@ -2095,223 +2299,12 @@
     return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
   }
 
-  // =====================================================================
-  // CIERRE DE VIA CON RERUTEO REAL (portado del modulo 2D, modulo-08-sumo.js)
-  // IMPORTANTE: modelo ilustrativo/conceptual, no una re-simulacion SUMO
-  // real -- multiplica/desvia visualmente los MISMOS vehiculos grabados,
-  // pero el desvio en si SI es un camino real por Dijkstra sobre las
-  // calles existentes (kennedy_net.json), no un empujon visual al lado.
-  // =====================================================================
-  let closedEdgeIdx = null;
-  let detourMap = new Map();
-  const CLOSURE_CANDIDATES = [
-    { edgeIdx: 9847, label: "Vía crítica 1 (mayor tránsito registrado)" },
-    { edgeIdx: 11268, label: "Vía crítica 2" },
-    { edgeIdx: 8260, label: "Vía crítica 3" },
-    { edgeIdx: 9919, label: "Vía crítica 4" },
-    { edgeIdx: 10240, label: "Vía crítica 5" },
-    { edgeIdx: 9449, label: "Vía crítica 6" },
-  ];
-
-  // ---- UI de cierre de via: llenar el dropdown y manejar el boton
-  // "Cerrar" -- calcula el reruteo real (Dijkstra) sobre la red vial ya
-  // cargada y aplica el desvio a los vehiculos que pasarian cerca. ----
-  const closureIconBtn = document.getElementById("closureIconBtn");
-  const closurePanelEl = document.getElementById("closurePanel");
-  if (closureIconBtn) closureIconBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    closurePanelEl.style.display = closurePanelEl.style.display === "block" ? "none" : "block";
-  });
-  const closureSelect = document.getElementById("closureSelect");
-  if (closureSelect) {
-    CLOSURE_CANDIDATES.forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = String(c.edgeIdx);
-      opt.textContent = c.label;
-      closureSelect.appendChild(opt);
-    });
-  }
-  const closureBtn = document.getElementById("closureBtn");
-  const closureStatus = document.getElementById("closureStatus");
-  if (closureBtn) closureBtn.addEventListener("click", () => {
-    const val = closureSelect ? closureSelect.value : "";
-    if (!val) {
-      closedEdgeIdx = null;
-      detourMap = new Map();
-      if (closureStatus) closureStatus.textContent = "Sin cambios — mostrando el modelo base.";
-      return;
-    }
-    if (!netEdges || !timesteps.length) {
-      if (closureStatus) closureStatus.textContent = "Todavía se está cargando la red vial, intenta de nuevo en un momento.";
-      return;
-    }
-    closedEdgeIdx = Number(val);
-    if (closureStatus) closureStatus.textContent = "Calculando desvíos reales por las calles vecinas…";
-    // El calculo de Dijkstra puede tardar un poco con muchos vehiculos --
-    // se corre despues de pintar el mensaje, para que no se sienta trabado.
-    setTimeout(() => {
-      computeRealDetours(closedEdgeIdx);
-      if (closureStatus) {
-        const label = CLOSURE_CANDIDATES.find(c => c.edgeIdx === closedEdgeIdx)?.label || "";
-        closureStatus.textContent = `${label}: cerrada. ${detourMap.size} vehículo(s) desviados por calles reales vecinas.`;
-      }
-    }, 30);
-  });
-
-  function distToSegment(px, py, ax, ay, bx, by) {
-    const dx = bx - ax, dy = by - ay;
-    const len2 = dx * dx + dy * dy;
-    let t = len2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
-    t = Math.max(0, Math.min(1, t));
-    const cx = ax + t * dx, cy = ay + t * dy;
-    return Math.hypot(px - cx, py - cy);
-  }
-  function buildLocalGraphAround(closedIdx, radiusM) {
-    const closedPts = netEdges[closedIdx][1];
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    closedPts.forEach(([x, y]) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); });
-    minX -= radiusM; maxX += radiusM; minY -= radiusM; maxY += radiusM;
-    const nodes = new Map(); const adj = new Map();
-    const SNAP_M = 22;
-    const nodeKey = (x, y) => Math.round(x / SNAP_M) + "," + Math.round(y / SNAP_M);
-    const addNode = (x, y) => { const k = nodeKey(x, y); if (!nodes.has(k)) nodes.set(k, { x, y }); return k; };
-    const addEdgeBidir = (k1, k2, dist) => {
-      if (k1 === k2) return;
-      if (!adj.has(k1)) adj.set(k1, []);
-      if (!adj.has(k2)) adj.set(k2, []);
-      adj.get(k1).push({ to: k2, dist });
-      adj.get(k2).push({ to: k1, dist });
-    };
-    netEdges.forEach(([, pts], edgeIdx) => {
-      if (edgeIdx === closedIdx) return;
-      for (let i = 0; i < pts.length - 1; i++) {
-        const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
-        const inside = (ax >= minX && ax <= maxX && ay >= minY && ay <= maxY) || (bx >= minX && bx <= maxX && by >= minY && by <= maxY);
-        if (!inside) continue;
-        const dist = Math.hypot(bx - ax, by - ay);
-        if (dist > 0) addEdgeBidir(addNode(ax, ay), addNode(bx, by), dist);
-      }
-    });
-    return { nodes, adj, nodeKey };
-  }
-  function findNearestGraphNode(graph, x, y) {
-    let best = null, bestD = Infinity;
-    graph.nodes.forEach((p, key) => {
-      const d = Math.hypot(p.x - x, p.y - y);
-      if (d < bestD) { bestD = d; best = key; }
-    });
-    return best;
-  }
-  function dijkstraPath(graph, startKey, endKey) {
-    const dist = new Map([[startKey, 0]]);
-    const prev = new Map();
-    const visited = new Set();
-    const heap = [[0, startKey]];
-    const heapPush = (item) => {
-      heap.push(item);
-      let i = heap.length - 1;
-      while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }
-    };
-    const heapPop = () => {
-      const top = heap[0]; const last = heap.pop();
-      if (heap.length) {
-        heap[0] = last; let i = 0;
-        while (true) {
-          let l = 2 * i + 1, r = 2 * i + 2, s = i;
-          if (l < heap.length && heap[l][0] < heap[s][0]) s = l;
-          if (r < heap.length && heap[r][0] < heap[s][0]) s = r;
-          if (s === i) break;
-          [heap[s], heap[i]] = [heap[i], heap[s]]; i = s;
-        }
-      }
-      return top;
-    };
-    while (heap.length) {
-      const [d, u] = heapPop();
-      if (visited.has(u)) continue;
-      visited.add(u);
-      if (u === endKey) break;
-      (graph.adj.get(u) || []).forEach(({ to, dist: w }) => {
-        const nd = d + w;
-        if (nd < (dist.get(to) ?? Infinity)) { dist.set(to, nd); prev.set(to, u); heapPush([nd, to]); }
-      });
-    }
-    if (!dist.has(endKey)) return null;
-    const path = []; let cur = endKey;
-    while (cur !== undefined) { path.push(graph.nodes.get(cur)); if (cur === startKey) break; cur = prev.get(cur); }
-    return path.reverse();
-  }
-  const DETOUR_THRESHOLD_M = 45, DETOUR_MAX_VEHICLES = 180;
-  function computeRealDetours(closedIdx) {
-    detourMap = new Map();
-    if (!netEdges || !timesteps.length) return;
-    const graph = buildLocalGraphAround(closedIdx, 900);
-    const closedPts = netEdges[closedIdx][1];
-    const near = new Map();
-    timesteps.forEach((step) => {
-      step.vehicles.forEach((v) => {
-        let minD = Infinity;
-        for (let i = 0; i < closedPts.length - 1; i++) {
-          const d = distToSegment(v.x, v.y, closedPts[i][0], closedPts[i][1], closedPts[i + 1][0], closedPts[i + 1][1]);
-          if (d < minD) minD = d;
-        }
-        if (minD < DETOUR_THRESHOLD_M) {
-          if (!near.has(v.id)) near.set(v.id, []);
-          near.get(v.id).push({ time: step.time, x: v.x, y: v.y });
-        }
-      });
-    });
-    let count = 0;
-    for (const [id, samples] of near) {
-      if (count >= DETOUR_MAX_VEHICLES) break;
-      samples.sort((a, b) => a.time - b.time);
-      const first = samples[0], last = samples[samples.length - 1];
-      const entryStart = findNearestGraphNode(graph, first.x, first.y);
-      const exitEnd = findNearestGraphNode(graph, last.x, last.y);
-      if (!entryStart || !exitEnd || entryStart === exitEnd) continue;
-      const path = dijkstraPath(graph, entryStart, exitEnd);
-      if (!path || path.length < 2) continue;
-      let totalDist = 0;
-      for (let i = 0; i < path.length - 1; i++) totalDist += Math.hypot(path[i + 1].x - path[i].x, path[i + 1].y - path[i].y);
-      detourMap.set(id, { fromTime: first.time, toTime: last.time, path, totalDist });
-      count++;
-    }
-  }
-  function detourPositionAt(detour, t) {
-    const span = detour.toTime - detour.fromTime || 1;
-    const frac = Math.max(0, Math.min(1, (t - detour.fromTime) / span));
-    const targetDist = frac * detour.totalDist;
-    let acc = 0;
-    for (let i = 0; i < detour.path.length - 1; i++) {
-      const a = detour.path[i], b = detour.path[i + 1];
-      const segLen = Math.hypot(b.x - a.x, b.y - a.y);
-      if (acc + segLen >= targetDist) {
-        const segFrac = segLen > 0 ? (targetDist - acc) / segLen : 0;
-        return { x: a.x + (b.x - a.x) * segFrac, y: a.y + (b.y - a.y) * segFrac };
-      }
-      acc += segLen;
-    }
-    const lastP = detour.path[detour.path.length - 1];
-    return { x: lastP.x, y: lastP.y };
-  }
-  function applyClosureDetour(baseVehicles, t) {
-    if (closedEdgeIdx == null || !detourMap.size) return baseVehicles;
-    return baseVehicles.map((v) => {
-      const detour = detourMap.get(v.id);
-      if (detour && t >= detour.fromTime && t <= detour.toTime) {
-        const p = detourPositionAt(detour, t);
-        return { id: v.id, x: p.x, y: p.y };
-      }
-      return v;
-    });
-  }
-
   let lastAngle = {}; // rumbo persistente por vehiculo, para no perderlo cuando esta detenido
   function vehiclesAtTime(t) {
     if (!timesteps.length) return [];
-    if (t <= timesteps[0].time) return applyClosureDetour(timesteps[0].vehicles.map(v => ({ id: v.id, x: v.x, y: v.y })), t);
+    if (t <= timesteps[0].time) return timesteps[0].vehicles.map(v => ({ id: v.id, x: v.x, y: v.y }));
     const last = timesteps[timesteps.length - 1];
-    if (t >= last.time) return applyClosureDetour(last.vehicles.map(v => ({ id: v.id, x: v.x, y: v.y })), t);
+    if (t >= last.time) return last.vehicles.map(v => ({ id: v.id, x: v.x, y: v.y }));
     let lo = 0, hi = timesteps.length - 1;
     while (hi - lo > 1) {
       const mid = (lo + hi) >> 1;
@@ -2320,7 +2313,7 @@
     const a = timesteps[lo], b = timesteps[hi];
     const frac = (t - a.time) / (b.time - a.time || 1);
     const bMap = {}; b.vehicles.forEach(v => bMap[v.id] = v);
-    const interpolated = a.vehicles.map(v => {
+    return a.vehicles.map(v => {
       const bv = bMap[v.id];
       if (!bv) return { id: v.id, x: v.x, y: v.y };
       // El rumbo se calcula con el DESPLAZAMIENTO REAL entre 2 pasos de
@@ -2335,7 +2328,6 @@
       if (Math.hypot(dx, dz) > 0.05) lastAngle[v.id] = Math.atan2(dx, dz);
       return { id: v.id, x: v.x + (bv.x - v.x) * frac, y: v.y + (bv.y - v.y) * frac };
     });
-    return applyClosureDetour(interpolated, t);
   }
 
   function renderVehiclesAt(t) {
@@ -2350,18 +2342,18 @@
       dummy.updateMatrix();
       vehInstanced.setMatrixAt(i, dummy.matrix);
     }
-    vehInstanced.count = n;
+    vehInstanced.count = (currentHistoricalYear <= 1956 ? 0 : n);
+    if (currentHistoricalYear <= 1956) vehInstanced.visible = false;
     vehInstanced.instanceMatrix.needsUpdate = true;
     computeLiveNoiseField(vehicles, performance.now());
   }
 
   function finishLoadingTimesteps() {
     const totalTime = timesteps.length ? timesteps[timesteps.length - 1].time : 0;
-    slider.max = String(Math.round(totalTime));
-    slider.disabled = false;
-    playBtn.disabled = false;
+    if (slider) { slider.max = String(Math.round(totalTime)); slider.disabled = false; }
+    if (playBtn) playBtn.disabled = false;
     setStatus("", false);
-    timeLabel.textContent = `00:00 / ${fmtTime(totalTime)}`;
+    if (timeLabel) timeLabel.textContent = `00:00 / ${fmtTime(totalTime)}`;
     renderVehiclesAt(0);
   }
 
@@ -2373,15 +2365,14 @@
         finishLoadingTimesteps();
       })
       .catch(err => {
-        console.warn(err);
-        setStatus("Red vial cargada. No se encontraron las trayectorias de vehículos (assets/kennedy_vehiculos.json).", true);
+        console.warn("Trayectorias de vehículos omitidas para la simulación histórica.");
+        setStatus("", false);
       });
   }
 
   fetch(NET_URL)
     .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + NET_URL); return r.json(); })
     .then(data => {
-      netEdges = data.edges; // se guarda para el cierre de vias con reruteo real (Dijkstra)
       netCenter = { x: (data.bbox[0] + data.bbox[2]) / 2, y: (data.bbox[1] + data.bbox[3]) / 2 };
       buildGround(data.bbox);
       buildNoiseGround(data.bbox);
@@ -2392,148 +2383,89 @@
       viewSize = Math.max(w, h) * 0.14;
       resize();
       setAxonometricView(w);
-      setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
+      setStatus("", false); // ocultar overlay de inmediato
+      createCows();
+      buildAeropuertoTecho();
+      buildCorabastosModel();
+      buildRoads1972();
+      buildAvCaliModel();
+      buildProtechoModel();
+      loadWaterBodies();
       loadBuildings();
       loadTrees();
-      // loadNoise(); // reemplazado por el campo de ruido EN VIVO (computeLiveNoiseField), calculado a partir de la posicion real de los vehiculos
       buildBirds();
-      loadWaterBodies();
       loadManzanas();
       loadParques();
-      // loadIntersections(); // quitado: semaforos/cruces peatonales, a pedido del usuario
-      loadTriMesh("./assets/kennedy_roofs_flat.json", 0xffffff);    // techos planos con parapeto ya modelado
-      loadTriMesh("./assets/kennedy_facades.json", 0xa05a41);       // fachadas verificadas con StreetView
-      // loadTerrain(); // quitado a pedido del usuario, vuelve al plano liso
+      loadTriMesh("./assets/kennedy_facades.json", 0xa05a41);
       return loadVehicles();
     })
     .catch(err => {
       console.error(err);
-      setStatus("No se pudo cargar la red vial (assets/kennedy_net.json). Revisa que el archivo esté disponible.");
+      setStatus("", false);
     });
 
   // ---- Controles de reproduccion ----
-  playBtn.addEventListener("click", () => {
-    playing = !playing;
-    playBtn.innerHTML = playing ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
-    lastFrameAt = null;
-  });
-  slider.addEventListener("input", () => {
-    currentTime = parseFloat(slider.value);
-    renderVehiclesAt(currentTime);
-    timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(parseFloat(slider.max))}`;
-  });
-  speedSelect.addEventListener("change", () => { speed = parseFloat(speedSelect.value); });
+  if (playBtn) {
+    playBtn.addEventListener("click", () => {
+      playing = !playing;
+      playBtn.innerHTML = playing ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+      lastFrameAt = null;
+    });
+  }
+  if (slider) {
+    slider.addEventListener("input", () => {
+      currentTime = parseFloat(slider.value);
+      renderVehiclesAt(currentTime);
+      if (timeLabel) timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(parseFloat(slider.max))}`;
+    });
+  }
+  if (speedSelect) {
+    speedSelect.addEventListener("change", () => { speed = parseFloat(speedSelect.value); });
+  }
 
-  // ---- Vista axonometrica fija: 45 grados de elevacion (bloqueado en
-  // los controles) y 45 grados de acimut, proyeccion en paralelo (sin
-  // fuga de perspectiva). ----
+  // ---- Vista axonometrica fija con las coordenadas de la usuaria ----
   function setAxonometricView(distance) {
-    // Vista inicial fija que el usuario dejo lista (posicion, objetivo y
-    // zoom exactos), en vez de calcularla a partir del tamano de la red.
-    // Se verifico que la elevacion sigue siendo exactamente 45° (proyeccion
-    // paralela/axonometrica intacta).
-    camera.position.set(56.88, 700.96, 649.09);
-    controls.target.set(178.42, -54.42, -96.45);
-    camera.zoom = 1.0;
+    camera.position.set(117.21, 724.68, 628.88);
+    controls.target.set(219.64, -56.32, -92.84);
+    camera.zoom = 1.95;
     camera.updateProjectionMatrix();
+    controls.update();
+    if (typeof updateLiveCameraCoordsUI === "function") updateLiveCameraCoordsUI();
   }
 
   // ---- Botones de vista ----
-  document.getElementById("viewReset").addEventListener("click", () => setAxonometricView(400));
+  const viewResetBtn = document.getElementById("viewReset");
+  if (viewResetBtn) viewResetBtn.addEventListener("click", () => setAxonometricView(400));
 
-  // ---- Rotacion manual del mapa completo (X/Y/Z), para que el usuario
-  const noiseAmbienceAudio = document.getElementById("noiseAmbienceAudio");
-  const noiseMuteBtn = document.getElementById("noiseMuteBtn");
-  if (noiseMuteBtn) noiseMuteBtn.addEventListener("click", () => {
-    if (!noiseAmbienceAudio) return;
-    noiseAmbienceAudio.muted = !noiseAmbienceAudio.muted;
-    noiseMuteBtn.innerHTML = noiseAmbienceAudio.muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
-  });
-  document.getElementById("noiseToggle").addEventListener("click", (e) => {
+  // ---- Toggles ----
+  const noiseToggle = document.getElementById("noiseToggle");
+  if (noiseToggle) noiseToggle.addEventListener("click", (e) => {
     if (!noiseMesh) return;
     noiseMesh.visible = !noiseMesh.visible;
     e.target.classList.toggle("active", noiseMesh.visible);
-    e.target.innerHTML = noiseMesh.visible ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
-    // mismo audio real de la simulacion 2D (sumo-traffic-ambience.mp3)
-    if (noiseAmbienceAudio) {
-      if (noiseMesh.visible) noiseAmbienceAudio.play().catch(() => {});
-      else noiseAmbienceAudio.pause();
-    }
-    const legend = document.getElementById("noiseLegend");
-    if (legend) {
-      if (noiseMesh.visible) {
-        legend.style.display = "block";
-        legend.classList.remove("pop-in"); void legend.offsetWidth; // reinicia la animacion cada vez
-        legend.classList.add("pop-in");
-      } else {
-        legend.style.display = "none";
-        legend.classList.remove("pop-in");
-      }
-    }
+    e.target.textContent = noiseMesh.visible ? "🔇 Ocultar mapa de ruido" : "🔊 Mostrar mapa de ruido";
   });
-  document.getElementById("bioToggle").addEventListener("click", (e) => {
+  const bioToggle = document.getElementById("bioToggle");
+  if (bioToggle) bioToggle.addEventListener("click", (e) => {
     if (!birdsGroup) return;
     birdsGroup.visible = !birdsGroup.visible;
     e.target.classList.toggle("active", birdsGroup.visible);
-    e.target.innerHTML = birdsGroup.visible ? '<i class="fa-solid fa-dove" style="opacity:.45;"></i>' : '<i class="fa-solid fa-dove"></i>';
-    const panel = document.getElementById("bioPanel");
-    if (panel) {
-      panel.style.display = birdsGroup.visible ? "block" : "none";
-      if (birdsGroup.visible) { panel.classList.remove("pop-in"); void panel.offsetWidth; panel.classList.add("pop-in"); }
-    }
-    if (birdsGroup.visible) {
-      rebuildBirdTreesWithBoost(Number(document.getElementById("bioVegSlider")?.value || 0));
-      // Las mirlas se crean antes de que los arboles atractores esten
-      // listos, asi que ninguna pudo nacer "ya posada" -- apenas los
-      // arboles estan disponibles (primera vez que se abre el panel), se
-      // fuerza a una porcion de las mirlas YA EXISTENTES a aparecer de
-      // una vez posadas en un arbol real, para que se vea variedad de
-      // estados desde el primer instante (no solo con el tiempo).
-      if (allAttractorsFlat.length && !birdsSnappedToTrees) {
-        birdsSnappedToTrees = true;
-        birds.forEach((b, i) => {
-          if (b.residente || i % 4 !== 0) return; // 1 de cada 4, sin tocar las del refugio
-          const arbol = allAttractorsFlat[Math.floor(Math.random() * allAttractorsFlat.length)];
-          b.x = arbol.x; b.y = arbol.y; b.vx = 0; b.vy = 0;
-          b.rest = 1 + Math.random() * 2; b.restColor = arbol.meta.color;
-          b.landedAt = { x: arbol.x, y: arbol.y, arbolRef: arbol };
-          b.lastTree = arbol; b.targetTree = null;
-          litUpMarker(arbol);
-        });
-      }
-    }
-    if (attractorMarkersGroup) attractorMarkersGroup.visible = birdsGroup.visible;
+    e.target.textContent = birdsGroup.visible ? "🐦 Ocultar mirlas" : "🐦 Mostrar mirlas";
   });
-  // Las mirlas totales = lo que el usuario puso en su propio slider, MAS
-  // un extra que crece con la cobertura vegetal (mas arboles atractores
-  // -> mas mirlas tiene sentido que haya) -- por ahi 5 mirlas mas por
-  // cada 20% de aumento en la cobertura.
-  let birdBaseFromSlider = 90;
-  function extraMirlasPorCobertura(vegBoost) {
-    return vegBoost > 0 ? Math.round(vegBoost / 20) * 5 : 0;
+
+  // ---- Barra de controles expandible con doble clic ----
+  const controlsBarEl = document.getElementById("controlsBar");
+  if (controlsBarEl) {
+    controlsBarEl.addEventListener("dblclick", (e) => {
+      controlsBarEl.classList.toggle("expanded");
+    });
   }
-  function aplicarTotalMirlas(vegBoost) {
-    const total = Math.max(5, birdBaseFromSlider + extraMirlasPorCobertura(vegBoost));
-    setBirdCount(total);
-    const bioBirdSliderEl = document.getElementById("bioBirdSlider");
-    const bioBirdCountValEl = document.getElementById("bioBirdCountVal");
-    if (bioBirdSliderEl) bioBirdSliderEl.value = Math.min(200, total);
-    if (bioBirdCountValEl) bioBirdCountValEl.textContent = total;
+  if (playBtn) {
+    playBtn.addEventListener("dblclick", (e) => {
+      e.stopPropagation();
+      if (controlsBarEl) controlsBarEl.classList.toggle("expanded");
+    });
   }
-  const bioBirdSlider = document.getElementById("bioBirdSlider");
-  const bioBirdCountVal = document.getElementById("bioBirdCountVal");
-  if (bioBirdSlider) bioBirdSlider.addEventListener("input", () => {
-    birdBaseFromSlider = Number(bioBirdSlider.value);
-    const vegBoostActual = Number(document.getElementById("bioVegSlider")?.value || 0);
-    aplicarTotalMirlas(vegBoostActual);
-  });
-  const bioVegSlider = document.getElementById("bioVegSlider");
-  const bioVegVal = document.getElementById("bioVegVal");
-  if (bioVegSlider) bioVegSlider.addEventListener("input", () => {
-    rebuildBirdTreesWithBoost(Number(bioVegSlider.value));
-    if (bioVegVal) bioVegVal.textContent = `+${bioVegSlider.value}%`;
-    aplicarTotalMirlas(Number(bioVegSlider.value));
-  });
 
   // ---- Reloj climatico anual del Humedal El Burro ----
   const MESES_NOMBRE = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -2545,17 +2477,18 @@
   const humedalHa = document.getElementById("humedalHa");
   function applyHumedalMes(mes) {
     const d = setHumedalMes(mes);
-    humedalMesVal.textContent = MESES_NOMBRE[mes - 1];
+    if (humedalMesVal) humedalMesVal.textContent = MESES_NOMBRE[mes - 1];
     if (d) {
-      humedalDatos.textContent = `Profundidad: ${d.profundidad_m.toFixed(2)} m`;
-      humedalPctLabel.textContent = `+${d.expansion_pct.toFixed(1)}%`;
-      humedalBar.style.width = Math.min(100, d.expansion_pct / 50 * 100) + "%";
-      humedalHa.textContent = d.area_ha != null ? d.area_ha.toFixed(2) : "—";
+      if (humedalDatos) humedalDatos.textContent = `Profundidad: ${d.profundidad_m.toFixed(2)} m`;
+      if (humedalPctLabel) humedalPctLabel.textContent = `+${d.expansion_pct.toFixed(1)}%`;
+      if (humedalBar) humedalBar.style.width = Math.min(100, d.expansion_pct / 50 * 100) + "%";
+      if (humedalHa) humedalHa.textContent = d.area_ha != null ? d.area_ha.toFixed(2) : "—";
     }
   }
-  humedalMesSlider.addEventListener("input", () => applyHumedalMes(parseInt(humedalMesSlider.value, 10)));
+  if (humedalMesSlider) humedalMesSlider.addEventListener("input", () => applyHumedalMes(parseInt(humedalMesSlider.value, 10)));
   let humedalPlaying = false, humedalPlayTimer = null;
-  document.getElementById("humedalPlay").addEventListener("click", (e) => {
+  const humedalPlayBtn = document.getElementById("humedalPlay");
+  if (humedalPlayBtn) humedalPlayBtn.addEventListener("click", (e) => {
     humedalPlaying = !humedalPlaying;
     if (humedalPlaying) {
       e.target.textContent = "⏸ Detener";
@@ -2601,20 +2534,114 @@
   const treeInfo = document.getElementById("treeInfo");
   const treeInfoName = document.getElementById("treeInfoName");
   const treeInfoDetails = document.getElementById("treeInfoDetails");
-  document.getElementById("treeInfoClose").addEventListener("click", () => treeInfo.classList.remove("show"));
+  const treeInfoCloseBtn = document.getElementById("treeInfoClose");
+  if (treeInfoCloseBtn && treeInfo) treeInfoCloseBtn.addEventListener("click", () => treeInfo.classList.remove("show"));
+
+  let isBrushPainting = false;
+  let lastPlantedPoint = null;
+
+  function getRaycastGroundPoint(clientX, clientY) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouseNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    mouseNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouseNdc, camera);
+
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const intersectPt = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(groundPlane, intersectPt)) {
+      return intersectPt;
+    }
+    if (groundMesh) {
+      const gh = raycaster.intersectObject(groundMesh);
+      if (gh.length > 0) return gh[0].point;
+    }
+    return null;
+  }
+
+  function handleBrushPaint(clientX, clientY, force = false) {
+    if (!currentActiveTool) return;
+    const pt = getRaycastGroundPoint(clientX, clientY);
+    if (!pt) return;
+
+    if (currentActiveTool === "tree") {
+      const minDistance = 2.2; // Espaciado ágil para poblar rápidamente
+      if (force || !lastPlantedPoint || lastPlantedPoint.distanceTo(pt) >= minDistance) {
+        // Plantar cluster denso de 3 a 5 árboles naturales por cada movimiento
+        const clusterCount = force ? 4 : 3;
+        for (let k = 0; k < clusterCount; k++) {
+          const ang = Math.random() * Math.PI * 2;
+          const rad = (k === 0 ? 0 : 0.8 + Math.random() * 2.6);
+          const h = 3.6 + Math.random() * 5.0;
+          plantSingleTree(pt.x + Math.cos(ang) * rad, pt.z + Math.sin(ang) * rad, h);
+        }
+        lastPlantedPoint = pt.clone();
+      }
+    } else if (currentActiveTool === "cow") {
+      const minDistance = 5.5; // Espaciado para vacas
+      if (force || !lastPlantedPoint || lastPlantedPoint.distanceTo(pt) >= minDistance) {
+        plantSingleCow(pt.x, pt.z);
+        if (Math.random() > 0.4) {
+          const ang = Math.random() * Math.PI * 2;
+          plantSingleCow(pt.x + Math.cos(ang) * 2.2, pt.z + Math.sin(ang) * 2.2);
+        }
+        lastPlantedPoint = pt.clone();
+      }
+    }
+  }
+
+  function handlePolyPointAdd(clientX, clientY) {
+    const pt = getRaycastGroundPoint(clientX, clientY);
+    if (!pt) return;
+    if (currentActiveTool === "road") {
+      customRoadPoints.push({ x: pt.x, z: pt.z });
+      buildRoadRibbon(customRoadPoints, false);
+      updatePolyCoordsUI();
+    } else if (currentActiveTool === "runway") {
+      customRunwayPoints.push({ x: pt.x, z: pt.z });
+      if (customRunwayPoints.length >= 3) {
+        buildRunwayPolygon(customRunwayPoints, false);
+      }
+      updatePolyCoordsUI();
+    }
+  }
 
   let downAt = null;
-  renderer.domElement.addEventListener("pointerdown", (e) => { downAt = { x: e.clientX, y: e.clientY }; });
+  renderer.domElement.addEventListener("pointerdown", (e) => {
+    downAt = { x: e.clientX, y: e.clientY };
+    if (currentActiveTool === "tree" || currentActiveTool === "cow") {
+      isBrushPainting = true;
+      lastPlantedPoint = null;
+      handleBrushPaint(e.clientX, e.clientY, true);
+    } else if (currentActiveTool === "road" || currentActiveTool === "runway") {
+      handlePolyPointAdd(e.clientX, e.clientY);
+    }
+  });
+
+  renderer.domElement.addEventListener("pointermove", (e) => {
+    if (isBrushPainting && (currentActiveTool === "tree" || currentActiveTool === "cow")) {
+      handleBrushPaint(e.clientX, e.clientY, false);
+    }
+  });
+
+  window.addEventListener("pointerup", () => {
+    isBrushPainting = false;
+    lastPlantedPoint = null;
+  });
+
   renderer.domElement.addEventListener("pointerup", (e) => {
     if (!downAt) return;
     const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
     downAt = null;
+    if (currentActiveTool) return; // si estaba pintando con la brocha, no abrir tarjeta de árbol
     if (moved > 6) return; // fue un arrastre de camara, no un clic
+
     if (!treeMeshes.length) return;
     const rect = renderer.domElement.getBoundingClientRect();
     mouseNdc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     mouseNdc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(mouseNdc, camera);
+
+    if (!treeMeshes.length) return;
     let best = null;
     treeMeshes.forEach(tm => {
       const hits = raycaster.intersectObject(tm.mesh);
@@ -2627,8 +2654,21 @@
       treeInfoName.textContent = nombre;
       treeInfoDetails.textContent = `Altura aproximada: ${hMeters.toFixed(1)} m`;
       treeInfo.classList.add("show");
+      hideBuildingEditor();
     } else {
       treeInfo.classList.remove("show");
+      if (currentBuildingMesh) {
+        const bHits = raycaster.intersectObject(currentBuildingMesh);
+        if (bHits.length > 0) {
+          const hitVIdx = bHits[0].faceIndex * 3;
+          const bRange = findBuildingByVertexIndex(hitVIdx);
+          if (bRange) {
+            showBuildingEditor(bRange);
+            return;
+          }
+        }
+      }
+      hideBuildingEditor();
     }
   });
 
@@ -2716,7 +2756,19 @@
 
   function animate(now) {
     requestAnimationFrame(animate);
-    if (playing && timesteps.length) {
+    if (camAnim) camAnim.update(now);
+
+    // Animación de las vacas caminando en el terreno sin flotar
+    if (cowsGroup.visible && cowInstances.length) {
+      const t = now * 0.001;
+      for (let i = 0; i < cowInstances.length; i++) {
+        const c = cowInstances[i];
+        c.mesh.position.y = 0.55; // Firme sobre el terreno
+        c.mesh.position.x = c.baseX + Math.sin(t * 0.15 * c.speed + c.phase) * c.wanderR;
+        c.mesh.position.z = c.baseZ + Math.cos(t * 0.15 * c.speed + c.phase) * c.wanderR;
+      }
+    }
+    if (playing && timesteps.length && slider) {
       if (lastFrameAt == null) lastFrameAt = now;
       const dt = (now - lastFrameAt) / 1000;
       lastFrameAt = now;
@@ -2724,15 +2776,12 @@
       const maxT = parseFloat(slider.max) || 0;
       if (currentTime > maxT) currentTime = 0;
       slider.value = String(Math.round(currentTime));
-      timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(maxT)}`;
+      if (timeLabel) timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(maxT)}`;
       renderVehiclesAt(currentTime);
     }
-    // Lineas de borde de edificios: opacidad FIJA y baja, no cambia con
-    // el zoom (asi no se ven gruesas/densas cuando no se esta haciendo
-    // zoom, y no cambian de aspecto al acercar/alejar la camara).
     // Agua con movimiento: se desplaza lentamente la textura de color Y
     // la capa de relieve (bump) a velocidades/escalas DISTINTAS entre si,
-    // simulando dos capas de oleaje superpuestas.
+    // simulando dos capas de oleaje superpuestas (exacto a modulo-10-corte.html).
     if (waterTexRef) {
       waterTexRef.offset.x = (now * 0.000018) % 1;
       waterTexRef.offset.y = (now * 0.000012) % 1;
@@ -2742,10 +2791,6 @@
       waterBumpRef.offset.y = (now * 0.000021) % 1;
     }
     updateBirds(now);
-    updateAttractorMarkerGlow(now);
-    const rainDt = lastRainTs ? Math.min(0.05, (now - lastRainTs) / 1000) : 0;
-    lastRainTs = now;
-    updateRain(rainDt);
     controls.update();
     renderer.render(scene, camera);
   }
@@ -2830,6 +2875,551 @@
     }
   });
 
+  
+  // ---- Controles de edición de color de edificios ----
+  const bInfoClose = document.getElementById("buildingInfoClose");
+  if (bInfoClose) bInfoClose.addEventListener("click", hideBuildingEditor);
+
+  const colorSwatches = document.querySelectorAll("#buildingColorPalette .color-swatch");
+  colorSwatches.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const hexColor = btn.dataset.color;
+      const customPicker = document.getElementById("buildingCustomColorPicker");
+      if (customPicker) customPicker.value = hexColor;
+      if (selectedBuildingRange) {
+        setBuildingColor(selectedBuildingRange, hexColor);
+      }
+    });
+  });
+
+  const customPicker = document.getElementById("buildingCustomColorPicker");
+  if (customPicker) {
+    customPicker.addEventListener("input", (e) => {
+      const hexColor = e.target.value;
+      if (selectedBuildingRange) {
+        setBuildingColor(selectedBuildingRange, hexColor);
+      }
+    });
+  }
+
+  const copyConfigBtn = document.getElementById("copyBuildingColorConfigBtn");
+  if (copyConfigBtn) {
+    copyConfigBtn.addEventListener("click", async () => {
+      const outputEl = document.getElementById("buildingColorConfigOutput");
+      if (!outputEl) return;
+      try {
+        await navigator.clipboard.writeText(outputEl.value);
+        copyConfigBtn.textContent = "✅ Configuración copiada";
+        setTimeout(() => { copyConfigBtn.textContent = "📋 Copiar cambios de color"; }, 1600);
+      } catch (e) {}
+    });
+  }
+
+  // =====================================================================
+  // HERRAMIENTAS DE COORDENADAS DE CÁMARA Y POBLACIÓN DE ELEMENTOS
+  // =====================================================================
+
+  // 1. Panel de Coordenadas de Cámara en Vivo
+  function updateLiveCameraCoordsUI() {
+    const box = document.getElementById("liveCamCoordsBox");
+    if (!box) return;
+    const p = camera.position;
+    const t = controls.target;
+    const z = camera.zoom;
+    box.innerHTML = `<b>pos:</b> [${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}]<br>` +
+                    `<b>target:</b> [${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)}]<br>` +
+                    `<b>zoom:</b> ${z.toFixed(2)}`;
+  }
+
+  controls.addEventListener("change", updateLiveCameraCoordsUI);
+
+  const copyCamBtn = document.getElementById("copyCamCoordsBtn");
+  if (copyCamBtn) {
+    copyCamBtn.addEventListener("click", async () => {
+      const p = camera.position;
+      const t = controls.target;
+      const z = camera.zoom;
+      const snippet = `// Coordenadas de Vista seleccionadas:\ncamera.position.set(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)});\ncontrols.target.set(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)});\ncamera.zoom = ${z.toFixed(2)};\ncamera.updateProjectionMatrix();\ncontrols.update();`;
+      try {
+        await navigator.clipboard.writeText(snippet);
+        copyCamBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado';
+        setTimeout(() => { copyCamBtn.innerHTML = '<i class="fa-solid fa-copy"></i> Copiar'; }, 1800);
+      } catch (e) {}
+    });
+  }
+
+  const applyCamBtn = document.getElementById("applyCamCoordsBtn");
+  const pasteCamInput = document.getElementById("pasteCamCoordsInput");
+  if (applyCamBtn && pasteCamInput) {
+    applyCamBtn.addEventListener("click", () => {
+      const raw = pasteCamInput.value.trim();
+      if (!raw) return;
+      // Extrae números usando regex
+      const matches = raw.match(/[-+]?\d*\.?\d+/g);
+      if (matches && matches.length >= 6) {
+        const px = parseFloat(matches[0]), py = parseFloat(matches[1]), pz = parseFloat(matches[2]);
+        const tx = parseFloat(matches[3]), ty = parseFloat(matches[4]), tz = parseFloat(matches[5]);
+        const z = matches.length >= 7 ? parseFloat(matches[6]) : camera.zoom;
+
+        transitionCameraTo(
+          new THREE.Vector3(px, py, pz),
+          new THREE.Vector3(tx, ty, tz),
+          z,
+          1200
+        );
+      }
+    });
+  }
+
+  // 2. Población de Árboles y Vacas
+  function updateUserPlantedUI() {
+    const treeCountEl = document.getElementById("plantedTreesCount");
+    const cowCountEl = document.getElementById("plantedCowsCount");
+    const textarea = document.getElementById("elementsCoordsOutput");
+
+    const trees = userPlantedElements.filter(e => e.type === "arbol");
+    const cows = userPlantedElements.filter(e => e.type === "vaca");
+
+    if (treeCountEl) treeCountEl.textContent = `${trees.length} nuevos`;
+    if (cowCountEl) cowCountEl.textContent = `${cows.length} nuevas`;
+
+    if (textarea) {
+      const formatted = userPlantedElements.map((el, idx) => {
+        if (el.type === "arbol") {
+          return `{"id": ${idx + 1}, "tipo": "arbol", "x": ${el.x.toFixed(2)}, "z": ${el.z.toFixed(2)}, "altura": ${el.h.toFixed(2)}}`;
+        } else {
+          return `{"id": ${idx + 1}, "tipo": "vaca", "x": ${el.x.toFixed(2)}, "z": ${el.z.toFixed(2)}}`;
+        }
+      }).join(",\n");
+      textarea.value = formatted ? `[\n${formatted}\n]` : "";
+    }
+  }
+
+  function plantSingleTree(x, z, hMeters = null) {
+    const treeTex = new THREE.TextureLoader().load("./assets/arbol_real4.png");
+    const planeGeo = makePlaneGeometry();
+    const mat = new THREE.MeshStandardMaterial({
+      map: treeTex,
+      transparent: true,
+      alphaTest: 0.25,
+      side: THREE.DoubleSide,
+      roughness: 0.95
+    });
+    const mesh = new THREE.Mesh(planeGeo, mat);
+    mesh.renderOrder = 999;
+    
+    // Altura natural variada individual
+    const actualH = hMeters || (4.2 + Math.random() * 5.8);
+    const h = Math.max(0.3, actualH * SCALE);
+    const w = h * (1.05 + Math.random() * 0.25);
+    
+    // ~20% de árboles son ejemplares grandes y maduros
+    const isBig = Math.random() < 0.22;
+    const s = isBig ? (1.8 + Math.random() * 0.6) : (0.9 + Math.random() * 0.35);
+    
+    mesh.userData = { baseW: w, baseH: h, scale: s };
+    mesh.scale.set(w * s, h * s, w * s);
+    mesh.position.set(x, 0.05, z);
+
+    const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z;
+    mesh.rotation.y = Math.atan2(dx, dz);
+
+    userPlantedGroup.add(mesh);
+    userPlantedElements.push({ type: "arbol", x, z, h: actualH * s, mesh });
+    updateUserPlantedUI();
+  }
+
+  function plantSingleCow(x, z) {
+    const tex = cowTextures[Math.floor(Math.random() * cowTextures.length)];
+    const mat = new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
+      side: THREE.DoubleSide,
+      alphaTest: 0.35,
+      depthWrite: false
+    });
+    const geo = new THREE.PlaneGeometry(1.6, 1.1);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.renderOrder = 999;
+
+    const shadowGeo = new THREE.PlaneGeometry(1.5, 0.8);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.38,
+      depthWrite: false
+    });
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.set(0, -0.63, 0);
+    shadowMesh.renderOrder = 998;
+    mesh.add(shadowMesh);
+
+    mesh.position.set(x, 0.65, z);
+    mesh.rotation.x = -Math.PI / 4.2;
+    mesh.rotation.y = (Math.random() - 0.5) * 0.3;
+    const s = 0.85 + Math.random() * 0.3;
+    mesh.scale.set((Math.random() > 0.5 ? 1 : -1) * s, s, s);
+
+    userPlantedGroup.add(mesh);
+    userPlantedElements.push({ type: "vaca", x, z, mesh });
+    updateUserPlantedUI();
+  }
+
+  const USER_TREES_URL = "./assets/user_planted_trees.json";
+  let userTreesInstMesh = null;
+
+  function loadUserPlantedTrees() {
+    return fetch(USER_TREES_URL)
+      .then(r => { if (!r.ok) throw new Error("no user trees"); return r.json(); })
+      .then(items => {
+        if (!Array.isArray(items) || !items.length) return;
+        const treeTex = new THREE.TextureLoader().load("./assets/arbol_real4.png");
+        const planeGeo = makePlaneGeometry();
+        const mat = new THREE.MeshStandardMaterial({
+          map: treeTex,
+          transparent: true,
+          alphaTest: 0.25,
+          side: THREE.DoubleSide,
+          roughness: 0.95
+        });
+
+        const instMesh = new THREE.InstancedMesh(planeGeo, mat, items.length);
+        instMesh.renderOrder = 999;
+        const dummyU = new THREE.Object3D();
+        const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z;
+        const faceAngle = Math.atan2(dx, dz);
+
+        items.forEach((item, idx) => {
+          const h = Math.max(0.3, (item.altura || 7.0) * SCALE);
+          const w = h * 1.15;
+          dummyU.position.set(item.x, 0.05, item.z);
+          dummyU.scale.set(w, h, w);
+          dummyU.rotation.set(0, faceAngle, 0);
+          dummyU.updateMatrix();
+          instMesh.setMatrixAt(idx, dummyU.matrix);
+
+          userPlantedElements.push({
+            type: "arbol",
+            x: item.x,
+            z: item.z,
+            h: item.altura || 7.0,
+            mesh: null
+          });
+        });
+        instMesh.instanceMatrix.needsUpdate = true;
+        userTreesInstMesh = instMesh;
+        userPlantedGroup.add(instMesh);
+        updateUserPlantedUI();
+      })
+      .catch(err => console.warn("No se pudieron cargar árboles pre-plantados:", err));
+  }
+
+  function batchPopulateTrees(count = 48) {
+    const cx = controls.target.x;
+    const cz = controls.target.z;
+    const radius = 65;
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = Math.sqrt(Math.random()) * radius;
+      const x = cx + Math.cos(angle) * dist;
+      const z = cz + Math.sin(angle) * dist;
+      const h = 3.8 + Math.random() * 5.2;
+      plantSingleTree(x, z, h);
+    }
+  }
+
+  function batchPopulateCows(count = 8) {
+    const cx = controls.target.x;
+    const cz = controls.target.z;
+    const radius = 45;
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = Math.sqrt(Math.random()) * radius;
+      const x = cx + Math.cos(angle) * dist;
+      const z = cz + Math.sin(angle) * dist;
+      plantSingleCow(x, z);
+    }
+  }
+
+  // ---- Trazado de Vías (Ribbon con grosor) y Pistas (Polígono Relleno) ----
+  function updatePolyCoordsUI() {
+    const roadCountEl = document.getElementById("roadPointsCount");
+    const runwayCountEl = document.getElementById("runwayPointsCount");
+    const roadOut = document.getElementById("roadCoordsOutput");
+    const runwayOut = document.getElementById("runwayCoordsOutput");
+
+    if (roadCountEl) roadCountEl.textContent = `${customRoadPoints.length} pts`;
+    if (runwayCountEl) runwayCountEl.textContent = `${customRunwayPoints.length} pts`;
+
+    if (roadOut) {
+      if (customRoadPoints.length === 0) roadOut.value = "";
+      else {
+        roadOut.value = "[\n" + customRoadPoints.map(p => `  {"x": ${p.x.toFixed(2)}, "z": ${p.z.toFixed(2)}}`).join(",\n") + "\n]";
+      }
+    }
+
+    if (runwayOut) {
+      if (customRunwayPoints.length === 0) runwayOut.value = "";
+      else {
+        runwayOut.value = "[\n" + customRunwayPoints.map(p => `  {"x": ${p.x.toFixed(2)}, "z": ${p.z.toFixed(2)}}`).join(",\n") + "\n]";
+      }
+    }
+  }
+
+  function buildRoadRibbon(pts, isFinal = false) {
+    if (currentActiveRoadMesh) {
+      customPolysGroup.remove(currentActiveRoadMesh);
+      currentActiveRoadMesh.geometry.dispose();
+      currentActiveRoadMesh = null;
+    }
+    if (pts.length < 2) return;
+
+    const positions = [];
+    const uvs = [];
+    const HALF_W = 1.4; // Ancho natural de vía
+    const RIBBON_UV_SCALE = 0.08;
+
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i];
+      const b = pts[i + 1];
+      const dx = b.x - a.x, dz = b.z - a.z;
+      const len = Math.hypot(dx, dz) || 0.001;
+      const nx = -dz / len * HALF_W, nz = dx / len * HALF_W;
+
+      const y = 0.045; // Justo sobre el terreno
+      positions.push(
+        a.x - nx, y, a.z - nz,  a.x + nx, y, a.z + nz,  b.x + nx, y, b.z + nz,
+        a.x - nx, y, a.z - nz,  b.x + nx, y, b.z + nz,  b.x - nx, y, b.z - nz
+      );
+
+      [
+        [a.x - nx, a.z - nz], [a.x + nx, a.z + nz], [b.x + nx, b.z + nz],
+        [a.x - nx, a.z - nz], [b.x + nx, b.z + nz], [b.x - nx, b.z - nz]
+      ].forEach(([px, pz]) => uvs.push(px * RIBBON_UV_SCALE, pz * RIBBON_UV_SCALE));
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.computeVertexNormals();
+
+    const mesh = new THREE.Mesh(geo, customRoadMat);
+    mesh.renderOrder = 300;
+    mesh.receiveShadow = true;
+    customPolysGroup.add(mesh);
+    if (!isFinal) currentActiveRoadMesh = mesh;
+  }
+
+  function buildRunwayPolygon(pts, isFinal = false) {
+    if (currentActiveRunwayMesh) {
+      customPolysGroup.remove(currentActiveRunwayMesh);
+      currentActiveRunwayMesh.geometry.dispose();
+      currentActiveRunwayMesh = null;
+    }
+    if (pts.length < 3) return;
+
+    const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+    let tris = [];
+    try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) {}
+    if (tris.length === 0 && pts.length >= 3) {
+      for (let i = 1; i < pts.length - 1; i++) tris.push([0, i, i + 1]);
+    }
+
+    const positions = [], uvs = [];
+    const UV_SCALE = 0.06;
+    const y = 0.038;
+    tris.forEach(([ia, ib, ic]) => {
+      [ia, ib, ic].forEach(idx => {
+        positions.push(pts[idx].x, y, pts[idx].z);
+        uvs.push(pts[idx].x * UV_SCALE, pts[idx].z * UV_SCALE);
+      });
+    });
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.computeVertexNormals();
+
+    const mesh = new THREE.Mesh(geo, customRunwayMat);
+    mesh.renderOrder = 290;
+    mesh.receiveShadow = true;
+    customPolysGroup.add(mesh);
+    if (!isFinal) currentActiveRunwayMesh = mesh;
+  }
+
+  const toolTreeBtn = document.getElementById("toolPlantTreeBtn");
+  const toolCowBtn = document.getElementById("toolPlantCowBtn");
+  const toolRoadBtn = document.getElementById("toolDrawRoadBtn");
+  const toolRunwayBtn = document.getElementById("toolDrawRunwayBtn");
+
+  function setToolMode(mode) {
+    currentActiveTool = (currentActiveTool === mode) ? null : mode;
+    
+    if (toolTreeBtn) toolTreeBtn.classList.toggle("active", currentActiveTool === "tree");
+    if (toolCowBtn) toolCowBtn.classList.toggle("cow-active", currentActiveTool === "cow");
+    if (toolRoadBtn) toolRoadBtn.classList.toggle("active", currentActiveTool === "road");
+    if (toolRunwayBtn) toolRunwayBtn.classList.toggle("active", currentActiveTool === "runway");
+
+    // Desactivar paneo de OrbitControls mientras alguna herramienta esté activa
+    controls.enabled = !currentActiveTool;
+    renderer.domElement.style.cursor = currentActiveTool ? "crosshair" : "grab";
+  }
+
+  if (toolTreeBtn) toolTreeBtn.addEventListener("click", () => setToolMode("tree"));
+  if (toolCowBtn) toolCowBtn.addEventListener("click", () => setToolMode("cow"));
+  if (toolRoadBtn) toolRoadBtn.addEventListener("click", () => setToolMode("road"));
+  if (toolRunwayBtn) toolRunwayBtn.addEventListener("click", () => setToolMode("runway"));
+
+  const finishRoadBtn = document.getElementById("finishRoadBtn");
+  if (finishRoadBtn) {
+    finishRoadBtn.addEventListener("click", () => {
+      buildRoadRibbon(customRoadPoints, true);
+      currentActiveRoadMesh = null;
+      setToolMode(null);
+    });
+  }
+
+  const finishRunwayBtn = document.getElementById("finishRunwayBtn");
+  if (finishRunwayBtn) {
+    finishRunwayBtn.addEventListener("click", () => {
+      buildRunwayPolygon(customRunwayPoints, true);
+      currentActiveRunwayMesh = null;
+      setToolMode(null);
+    });
+  }
+
+  const copyRoadCoordsBtn = document.getElementById("copyRoadCoordsBtn");
+  if (copyRoadCoordsBtn) {
+    copyRoadCoordsBtn.addEventListener("click", async () => {
+      const el = document.getElementById("roadCoordsOutput");
+      if (!el || !el.value) return;
+      try {
+        await navigator.clipboard.writeText(el.value);
+        copyRoadCoordsBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+        setTimeout(() => { copyRoadCoordsBtn.innerHTML = '<i class="fa-solid fa-copy"></i> Copiar'; }, 1600);
+      } catch (e) {}
+    });
+  }
+
+  const copyRunwayCoordsBtn = document.getElementById("copyRunwayCoordsBtn");
+  if (copyRunwayCoordsBtn) {
+    copyRunwayCoordsBtn.addEventListener("click", async () => {
+      const el = document.getElementById("runwayCoordsOutput");
+      if (!el || !el.value) return;
+      try {
+        await navigator.clipboard.writeText(el.value);
+        copyRunwayCoordsBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+        setTimeout(() => { copyRunwayCoordsBtn.innerHTML = '<i class="fa-solid fa-copy"></i> Copiar'; }, 1600);
+      } catch (e) {}
+    });
+  }
+
+  const clearPolysBtn = document.getElementById("clearPolysBtn");
+  if (clearPolysBtn) {
+    clearPolysBtn.addEventListener("click", () => {
+      customPolysGroup.clear();
+      customRoadPoints.length = 0;
+      customRunwayPoints.length = 0;
+      currentActiveRoadMesh = null;
+      currentActiveRunwayMesh = null;
+      updatePolyCoordsUI();
+    });
+  }
+
+  // Tecla Escape para cancelar cualquier herramienta activa
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && currentActiveTool) {
+      setToolMode(null);
+    }
+  });
+
+  const batchTreesBtn = document.getElementById("batchTreesBtn");
+  if (batchTreesBtn) {
+    batchTreesBtn.addEventListener("click", () => {
+      batchPopulateTrees(24);
+    });
+  }
+
+  const batchCowsBtn = document.getElementById("batchCowsBtn");
+  if (batchCowsBtn) {
+    batchCowsBtn.addEventListener("click", () => {
+      batchPopulateCows(10);
+    });
+  }
+
+  const copyElementsBtn = document.getElementById("copyElementsCoordsBtn");
+  if (copyElementsBtn) {
+    copyElementsBtn.addEventListener("click", async () => {
+      const textarea = document.getElementById("elementsCoordsOutput");
+      if (!textarea || !textarea.value) return;
+      try {
+        await navigator.clipboard.writeText(textarea.value);
+        copyElementsBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+        setTimeout(() => { copyElementsBtn.innerHTML = '<i class="fa-solid fa-copy"></i>'; }, 1800);
+      } catch (e) {}
+    });
+  }
+
+  const clearElementsBtn = document.getElementById("clearElementsBtn");
+  if (clearElementsBtn) {
+    clearElementsBtn.addEventListener("click", () => {
+      userPlantedGroup.clear();
+      userPlantedElements.length = 0;
+      updateUserPlantedUI();
+    });
+  }
+
+  // 3. Controles en vivo del color y opacidad del pasto
+  const grassColorPicker = document.getElementById("grassColorPicker");
+  const grassColorHex = document.getElementById("grassColorHex");
+  const grassOpacitySlider = document.getElementById("grassOpacitySlider");
+  const grassOpacityVal = document.getElementById("grassOpacityVal");
+
+  if (grassColorPicker) {
+    grassColorPicker.addEventListener("input", (e) => {
+      const hex = e.target.value;
+      if (grassColorHex) grassColorHex.textContent = hex;
+      if (groundMesh && groundMesh.material) {
+        groundMesh.material.color.set(hex);
+      }
+    });
+  }
+
+  if (grassOpacitySlider) {
+    grassOpacitySlider.addEventListener("input", (e) => {
+      const op = parseFloat(e.target.value);
+      if (grassOpacityVal) grassOpacityVal.textContent = `${Math.round(op * 100)}%`;
+      if (groundMesh && groundMesh.material) {
+        groundMesh.material.opacity = op;
+        groundMesh.material.transparent = true;
+      }
+    });
+  }
+
+  // 4. Control de tamaño / escala de árboles individuales (24 destacados)
+  const treeScaleSlider = document.getElementById("treeScaleSlider");
+  const treeScaleVal = document.getElementById("treeScaleVal");
+  if (treeScaleSlider) {
+    treeScaleSlider.addEventListener("input", (e) => {
+      prominentTreeScale = parseFloat(e.target.value);
+      if (treeScaleVal) treeScaleVal.textContent = `${prominentTreeScale.toFixed(1)}x`;
+      updateTreeBillboards();
+    });
+  }
+
+  const randomizeTreesBtn = document.getElementById("randomizeTreesBtn");
+  if (randomizeTreesBtn) {
+    randomizeTreesBtn.addEventListener("click", () => {
+      pickProminentTrees(24);
+    });
+  }
+
   resize();
+  updateLiveCameraCoordsUI();
+  updateUserPlantedUI();
+  updatePolyCoordsUI();
+  loadUserPlantedTrees();
   requestAnimationFrame(animate);
+
 })();
