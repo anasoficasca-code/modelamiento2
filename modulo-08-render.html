@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Render Axonométrico 3D de Alta Fidelidad — Territorio Kennedy</title>
+<title>Twinmotion 3D ArchViz — Territorio Kennedy & Humedales</title>
 
-<!-- Google Fonts & FontAwesome -->
+<!-- Fonts & Icons -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -14,23 +14,21 @@
 
 <style>
   :root {
-    --bg-dark: #07090C;
-    --panel-bg: rgba(13, 17, 23, 0.88);
-    --panel-border: rgba(255, 255, 255, 0.12);
-    --accent: #EAC119;
-    --accent-glow: rgba(234, 193, 25, 0.4);
-    --water: #00B4D8;
-    --green: #2E8B57;
-    --brick: #A65233;
-    --ink: #F0F6FC;
-    --ink-dim: #8B949E;
-    --glass-blur: blur(20px);
+    --tm-bg: #0C0E12;
+    --tm-panel: rgba(18, 22, 29, 0.92);
+    --tm-panel-border: rgba(255, 255, 255, 0.1);
+    --tm-accent: #2BD9C8;
+    --tm-accent-gold: #EAC119;
+    --tm-water: #00B4D8;
+    --tm-ink: #F3F4F6;
+    --tm-ink-dim: #9CA3AF;
+    --tm-blur: blur(24px);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
   html, body {
-    width: 100%; height: 100%; overflow: hidden; background: var(--bg-dark);
-    color: var(--ink); font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    width: 100%; height: 100%; overflow: hidden; background: var(--tm-bg);
+    color: var(--tm-ink); font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
     font-size: 12px; -webkit-font-smoothing: antialiased;
   }
 
@@ -41,316 +39,304 @@
   #canvasContainer:active { cursor: grabbing; }
   #renderCanvas { display: block; width: 100%; height: 100%; }
 
-  .glass-panel {
-    background: var(--panel-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--panel-border);
+  .glass-card {
+    background: var(--tm-panel);
+    backdrop-filter: var(--tm-blur);
+    -webkit-backdrop-filter: var(--tm-blur);
+    border: 1px solid var(--tm-panel-border);
     border-radius: 12px;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
   }
 
-  /* Top Navigation Bar */
-  .top-bar {
-    position: absolute; top: 12px; left: 12px; right: 12px; z-index: 100;
+  /* Top Header (Twinmotion Minimalist UI) */
+  .tm-top-bar {
+    position: absolute; top: 14px; left: 14px; right: 14px; z-index: 100;
     display: flex; justify-content: space-between; align-items: flex-start;
     pointer-events: none; gap: 10px;
   }
-  .nav-group { display: flex; align-items: center; gap: 6px; pointer-events: auto; flex-wrap: wrap; }
+  .tm-nav-group { display: flex; align-items: center; gap: 6px; pointer-events: auto; flex-wrap: wrap; }
 
-  .btn-nav {
-    background: var(--panel-bg); border: 1px solid var(--panel-border);
-    color: var(--ink); padding: 7px 13px; border-radius: 8px; font-size: 10.5px;
+  .tm-btn {
+    background: var(--tm-panel); border: 1px solid var(--tm-panel-border);
+    color: var(--tm-ink); padding: 7px 14px; border-radius: 8px; font-size: 10.5px;
     font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex;
-    align-items: center; gap: 6px; backdrop-filter: var(--glass-blur);
+    align-items: center; gap: 6px; backdrop-filter: var(--tm-blur);
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .btn-nav:hover {
-    background: rgba(234, 193, 25, 0.15); border-color: var(--accent); color: #fff;
-    transform: translateY(-1px); box-shadow: 0 0 16px var(--accent-glow);
+  .tm-btn:hover {
+    background: rgba(43, 217, 200, 0.15); border-color: var(--tm-accent); color: #fff;
+    transform: translateY(-1px); box-shadow: 0 0 16px rgba(43, 217, 200, 0.35);
   }
-  .btn-nav.active {
-    background: var(--accent); color: #000; border-color: var(--accent);
-    box-shadow: 0 0 16px var(--accent-glow);
+  .tm-btn.active {
+    background: var(--tm-accent); color: #07090C; border-color: var(--tm-accent);
+    box-shadow: 0 0 18px rgba(43, 217, 200, 0.5);
   }
 
-  /* Title HUD Card */
-  .title-card {
+  /* Title Info Card */
+  .tm-title-card {
     padding: 12px 18px; max-width: 460px; pointer-events: auto;
-    border-left: 3px solid var(--accent);
+    border-left: 3px solid var(--tm-accent);
   }
-  .title-card h1 {
+  .tm-title-card h1 {
     font-size: 13.5px; font-weight: 800; letter-spacing: 0.5px;
     color: #fff; display: flex; align-items: center; gap: 8px;
     text-transform: uppercase;
   }
-  .title-badge {
+  .tm-badge {
     font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700;
-    padding: 2px 6px; border-radius: 4px; background: rgba(0, 180, 216, 0.2);
-    border: 1px solid var(--water); color: var(--water);
+    padding: 2px 7px; border-radius: 4px; background: rgba(43, 217, 200, 0.18);
+    border: 1px solid var(--tm-accent); color: var(--tm-accent);
   }
-  .title-desc {
-    font-size: 11px; color: var(--ink-dim); margin-top: 4px; line-height: 1.45;
+  .tm-desc {
+    font-size: 11px; color: var(--tm-ink-dim); margin-top: 4px; line-height: 1.45;
   }
 
-  /* Right Tools / Presets Panel */
-  .side-tools {
-    position: absolute; top: 72px; right: 12px; z-index: 90;
+  /* Right Tools / Viewport Bookmarks Panel */
+  .tm-side-tools {
+    position: absolute; top: 74px; right: 14px; z-index: 90;
     display: flex; flex-direction: column; gap: 6px; pointer-events: auto;
     width: 230px;
   }
-  .tool-section { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
-  .tool-header {
+  .tm-tool-box { padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .tm-tool-title {
     font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;
-    color: var(--ink-dim); margin-bottom: 2px; display: flex; justify-content: space-between;
+    color: var(--tm-ink-dim); margin-bottom: 2px; display: flex; justify-content: space-between;
   }
 
-  .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-  .preset-chip {
+  .tm-preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .tm-preset-btn {
     background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #cbd5e1; padding: 6px 8px; border-radius: 6px; font-size: 9.5px; font-weight: 700;
+    color: #CBD5E1; padding: 6px 8px; border-radius: 6px; font-size: 9.5px; font-weight: 700;
     cursor: pointer; transition: all 0.15s ease; text-align: center; display: flex;
     align-items: center; justify-content: center; gap: 4px;
   }
-  .preset-chip:hover {
+  .tm-preset-btn:hover {
     background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); color: #fff;
   }
-  .preset-chip.active {
-    background: rgba(234, 193, 25, 0.2); border-color: var(--accent); color: var(--accent);
+  .tm-preset-btn.active {
+    background: rgba(43, 217, 200, 0.2); border-color: var(--tm-accent); color: var(--tm-accent);
   }
 
-  .render-mode-row { display: flex; gap: 4px; }
-  .render-mode-btn {
-    flex: 1; padding: 5px 4px; border-radius: 6px; background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08); color: #94a3b8; font-size: 9px;
-    font-weight: 700; cursor: pointer; text-align: center; transition: all 0.15s ease;
+  /* Twinmotion Bottom Dock (Time of Day & Weather) */
+  .tm-dock-wrap {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
+    display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: auto;
+    width: min(820px, 94vw);
   }
-  .render-mode-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
-  .render-mode-btn.active { background: #EAC119; color: #000; border-color: #EAC119; }
+  .tm-dock {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px; border-radius: 40px; gap: 14px;
+  }
 
-  /* Sun / Light Slider */
-  .slider-row { display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--ink-dim); }
-  .range-input {
-    -webkit-appearance: none; width: 110px; height: 3px; background: rgba(255, 255, 255, 0.15);
+  .tm-dock-group { display: flex; align-items: center; gap: 10px; }
+
+  /* Sun Time of Day Slider */
+  .tm-slider-box {
+    display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px; color: var(--tm-ink);
+  }
+  .tm-time-slider {
+    -webkit-appearance: none; width: 140px; height: 4px; background: rgba(255, 255, 255, 0.18);
     border-radius: 2px; outline: none; cursor: pointer;
   }
-  .range-input::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 11px; height: 11px; border-radius: 50%;
-    background: var(--accent); cursor: pointer; box-shadow: 0 0 8px var(--accent);
+  .tm-time-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+    background: var(--tm-accent-gold); cursor: pointer; box-shadow: 0 0 10px var(--tm-accent-gold);
   }
 
-  /* Layer Toggle Pills */
-  .layer-pill {
-    padding: 4px 9px; border-radius: 14px; background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1); color: #94a3b8; font-size: 9.5px;
-    font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px;
+  /* Weather / Render Style Selector */
+  .tm-style-pill {
+    padding: 5px 9px; border-radius: 16px; background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1); color: #9CA3AF; font-size: 9.5px;
+    font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px;
     transition: all 0.15s ease;
   }
-  .layer-pill.active {
-    background: rgba(0, 180, 216, 0.18); border-color: var(--water); color: #fff;
-  }
-  .layer-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-
-  /* Bottom Control Bar */
-  .bottom-bar {
-    position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 100;
-    display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: auto;
-  }
-  .bottom-capsule {
-    display: flex; align-items: center; gap: 10px; padding: 8px 18px;
-    border-radius: 36px;
+  .tm-style-pill:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+  .tm-style-pill.active {
+    background: rgba(43, 217, 200, 0.2); border-color: var(--tm-accent); color: #fff;
+    box-shadow: 0 0 12px rgba(43, 217, 200, 0.3);
   }
 
   /* POI Callout Card Modal */
-  .poi-card {
-    position: fixed; bottom: 85px; left: 24px; width: 340px; z-index: 150;
+  .tm-poi-card {
+    position: fixed; bottom: 88px; left: 24px; width: 340px; z-index: 150;
     display: none; flex-direction: column; gap: 8px; padding: 14px 16px;
     animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    border-left: 3px solid var(--accent);
+    border-left: 3px solid var(--tm-accent);
   }
   @keyframes slideUp {
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .poi-img {
+  .tm-poi-img {
     width: 100%; height: 120px; object-fit: cover; border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.1); margin-top: 4px;
   }
 
   /* Loading Overlay */
-  .loader-overlay {
+  .tm-loader {
     position: fixed; inset: 0; background: #07090C; z-index: 9999;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 16px; transition: opacity 0.5s ease;
   }
-  .loader-overlay.hide { opacity: 0; pointer-events: none; }
-  .spinner {
-    width: 44px; height: 44px; border: 3px solid rgba(234, 193, 25, 0.2);
-    border-top-color: var(--accent); border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+  .tm-loader.hide { opacity: 0; pointer-events: none; }
+  .tm-spinner {
+    width: 44px; height: 44px; border: 3px solid rgba(43, 217, 200, 0.2);
+    border-top-color: var(--tm-accent); border-radius: 50%;
+    animation: tmSpin 0.8s linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes tmSpin { to { transform: rotate(360deg); } }
 
   /* Compass UI */
-  .compass-box {
-    position: absolute; bottom: 20px; left: 20px; z-index: 50;
+  .tm-compass {
+    position: absolute; bottom: 24px; left: 24px; z-index: 50;
     display: flex; flex-direction: column; align-items: center; gap: 4px;
     pointer-events: none; opacity: 0.85;
   }
-  .compass-needle {
-    width: 28px; height: 28px; transition: transform 0.1s linear;
+  .tm-needle {
+    width: 30px; height: 30px; transition: transform 0.1s linear;
   }
 </style>
 </head>
 <body>
 
-<div class="loader-overlay" id="loaderOverlay">
-  <div class="spinner"></div>
-  <div style="font-weight:700; font-size:13px; letter-spacing:0.5px; color:#fff;">GENERANDO RENDER DETALLADO DE KENNEDY...</div>
-  <div style="font-size:11px; color:#94a3b8; font-family:'IBM Plex Mono',monospace;" id="loadStatus">Construyendo fachadas, azoteas y volumetría...</div>
+<div class="tm-loader" id="tmLoader">
+  <div class="tm-spinner"></div>
+  <div style="font-weight:800; font-size:13px; letter-spacing:0.5px; color:#fff;">RENDERIZANDO EN TWINMOTION 3D ARCHVIZ...</div>
+  <div style="font-size:11px; color:#9CA3AF; font-family:'IBM Plex Mono',monospace;" id="tmLoadStatus">Generando arquitectura de ladrillo, azoteas y humedales...</div>
 </div>
 
 <div id="canvasContainer">
   <canvas id="renderCanvas"></canvas>
 </div>
 
-<!-- Top Navigation -->
-<div class="top-bar">
-  <div class="nav-group">
-    <a href="index.html" class="btn-nav"><i class="fa-solid fa-arrow-left"></i> Inicio</a>
-    <a href="modulo-08-3d.html" class="btn-nav"><i class="fa-solid fa-clock-rotate-left"></i> Simulación Tráfico</a>
-    <a href="modulo-10-corte.html" class="btn-nav"><i class="fa-solid fa-layer-group"></i> Corte Axonometrico</a>
+<!-- Top Bar -->
+<div class="tm-top-bar">
+  <div class="tm-nav-group">
+    <a href="index.html" class="tm-btn"><i class="fa-solid fa-arrow-left"></i> Inicio</a>
+    <a href="modulo-08-3d.html" class="tm-btn"><i class="fa-solid fa-clock-rotate-left"></i> Simulación Tráfico</a>
+    <a href="modulo-10-corte.html" class="tm-btn"><i class="fa-solid fa-layer-group"></i> Corte Axonometrico</a>
   </div>
 
-  <div class="glass-panel title-card">
+  <div class="glass-card tm-title-card">
     <h1>
-      <span>Render Arquitectónico 3D · Kennedy</span>
-      <span class="title-badge">Google Earth 4.6301°N</span>
+      <span>Twinmotion ArchViz · Territorio Kennedy</span>
+      <span class="tm-badge">Google Earth 4.6301°N</span>
     </h1>
-    <p class="title-desc">
-      Vista detallada de alta resolución: Fachadas de ladrillo y concreto, azoteas con tanques y terrazas, canopia SIGAU y humedales La Vaca y El Burro.
+    <p class="tm-desc">
+      Renderizado arquitectónico de alta fidelidad: Fachadas detalladas de ladrillo toledano, ventanerías reflejantes, azoteas con tanques y humedales La Vaca y El Burro.
     </p>
   </div>
 
-  <div class="nav-group">
-    <button class="btn-nav active" id="btnCamPersp" onclick="setProjectionMode('persp')">
+  <div class="tm-nav-group">
+    <button class="tm-btn active" id="btnCamPersp" onclick="setProjectionMode('persp')">
       <i class="fa-solid fa-eye"></i> Perspectiva Google Earth
     </button>
-    <button class="btn-nav" id="btnCamOrtho" onclick="setProjectionMode('ortho')">
+    <button class="tm-btn" id="btnCamOrtho" onclick="setProjectionMode('ortho')">
       <i class="fa-solid fa-cube"></i> Axonometría Pura
     </button>
-    <button class="btn-nav" id="btnExportRender" onclick="exportHighResRender()">
+    <button class="tm-btn" id="btnExportRender" onclick="exportHighResRender()">
       <i class="fa-solid fa-camera"></i> Render 4K
     </button>
   </div>
 </div>
 
-<!-- Side Presets & Render Styles -->
-<div class="side-tools">
-  <!-- Presets de Cámara -->
-  <div class="glass-panel tool-section">
-    <div class="tool-header">
+<!-- Side Tools / Viewports -->
+<div class="tm-side-tools">
+  <!-- Viewport Presets -->
+  <div class="glass-card tm-tool-box">
+    <div class="tm-tool-title">
       <span>Encuadres Fotorrealistas</span>
-      <i class="fa-solid fa-location-dot" style="color:var(--accent);"></i>
+      <i class="fa-solid fa-location-dot" style="color:var(--tm-accent);"></i>
     </div>
-    <div class="preset-grid">
-      <div class="preset-chip active" id="vpGoogleEarth" onclick="flyToView('googleEarth')">Vista Google Earth</div>
-      <div class="preset-chip" id="vpOverview" onclick="flyToView('overview')">Axonometría Total</div>
-      <div class="preset-chip" id="vpBurro" onclick="flyToView('burro')">Humedal El Burro</div>
-      <div class="preset-chip" id="vpVaca" onclick="flyToView('vaca')">Humedal La Vaca</div>
-      <div class="preset-chip" id="vpCorabastos" onclick="flyToView('corabastos')">Corabastos</div>
-      <div class="preset-chip" id="vpTimiza" onclick="flyToView('timiza')">Parque Timiza</div>
-    </div>
-  </div>
-
-  <!-- Modos de Iluminación / Atmósfera -->
-  <div class="glass-panel tool-section">
-    <div class="tool-header">
-      <span>Atmósfera & Iluminación</span>
-      <i class="fa-solid fa-sun" style="color:var(--accent);"></i>
-    </div>
-    <div class="render-mode-row">
-      <div class="render-mode-btn active" id="modeDay" onclick="setRenderAtmosphere('day')">☀️ Día</div>
-      <div class="render-mode-btn" id="modeSunset" onclick="setRenderAtmosphere('sunset')">🌅 Atardecer</div>
-      <div class="render-mode-btn" id="modeNight" onclick="setRenderAtmosphere('night')">🌃 Noche</div>
-      <div class="render-mode-btn" id="modeClay" onclick="setRenderAtmosphere('clay')">🏛️ Clay</div>
-    </div>
-
-    <!-- Deslizadores de Sol en Vivo -->
-    <div style="margin-top:6px; display:flex; flex-direction:column; gap:6px;">
-      <div class="slider-row">
-        <span>Azimut Sol</span>
-        <input type="range" class="range-input" id="sunAzimuthSlider" min="0" max="360" value="135" oninput="updateSunPosition()">
-      </div>
-      <div class="slider-row">
-        <span>Elevación</span>
-        <input type="range" class="range-input" id="sunElevationSlider" min="10" max="85" value="48" oninput="updateSunPosition()">
-      </div>
+    <div class="tm-preset-grid">
+      <div class="tm-preset-btn active" id="vpGoogleEarth" onclick="flyToView('googleEarth')">Vista Google Earth</div>
+      <div class="tm-preset-btn" id="vpOverview" onclick="flyToView('overview')">Axonometría Total</div>
+      <div class="tm-preset-btn" id="vpBurro" onclick="flyToView('burro')">Humedal El Burro</div>
+      <div class="tm-preset-btn" id="vpVaca" onclick="flyToView('vaca')">Humedal La Vaca</div>
+      <div class="tm-preset-btn" id="vpCorabastos" onclick="flyToView('corabastos')">Corabastos</div>
+      <div class="tm-preset-btn" id="vpTimiza" onclick="flyToView('timiza')">Parque Timiza</div>
     </div>
   </div>
 
-  <!-- Capas Visibles -->
-  <div class="glass-panel tool-section">
-    <div class="tool-header">
-      <span>Capas del Modelo 3D</span>
-      <i class="fa-solid fa-layer-group" style="color:var(--water);"></i>
+  <!-- Capas del Modelo -->
+  <div class="glass-card tm-tool-box">
+    <div class="tm-tool-title">
+      <span>Capas 3D Twinmotion</span>
+      <i class="fa-solid fa-layer-group" style="color:var(--tm-accent);"></i>
     </div>
     <div style="display:flex; flex-direction:column; gap:4px;">
-      <div class="layer-pill active" id="layerBuildings" onclick="toggleLayer('buildings')">
-        <div class="layer-dot" style="color:#D4A373;"></div> Edificación 3D con Fachadas
+      <div class="tm-style-pill active" id="layerBuildings" onclick="toggleLayer('buildings')">
+        <span style="color:#D4A373;">🏢</span> Fachadas de Ladrillo & Concreto
       </div>
-      <div class="layer-pill active" id="layerRoofs" onclick="toggleLayer('roofs')">
-        <div class="layer-dot" style="color:#C67D5A;"></div> Azoteas, Tanques & Terrazas
+      <div class="tm-style-pill active" id="layerRoofs" onclick="toggleLayer('roofs')">
+        <span style="color:#C67D5A;">🏠</span> Azoteas, Tanques & Terrazas
       </div>
-      <div class="layer-pill active" id="layerTrees" onclick="toggleLayer('trees')">
-        <div class="layer-dot" style="color:#48BB78;"></div> Canopia Arbórea SIGAU
+      <div class="tm-style-pill active" id="layerTrees" onclick="toggleLayer('trees')">
+        <span style="color:#48BB78;">🌳</span> Canopia Arbórea SIGAU
       </div>
-      <div class="layer-pill active" id="layerWater" onclick="toggleLayer('water')">
-        <div class="layer-dot" style="color:#00B4D8;"></div> Cuerpos de Agua Reflectivos
+      <div class="tm-style-pill active" id="layerWater" onclick="toggleLayer('water')">
+        <span style="color:#00B4D8;">💧</span> Humedales Reflectivos
       </div>
-      <div class="layer-pill active" id="layerRoads" onclick="toggleLayer('roads')">
-        <div class="layer-dot" style="color:#94A3B8;"></div> Red Vial Asfaltada
+      <div class="tm-style-pill active" id="layerRoads" onclick="toggleLayer('roads')">
+        <span style="color:#94A3B8;">🛣️</span> Red Vial Asfaltada
       </div>
-      <div class="layer-pill active" id="layerPOIs" onclick="toggleLayer('pois')">
-        <div class="layer-dot" style="color:#EAC119;"></div> Puntos Clave & Balizas
+      <div class="tm-style-pill active" id="layerPOIs" onclick="toggleLayer('pois')">
+        <span style="color:#EAC119;">📍</span> Puntos Clave & Balizas
       </div>
     </div>
   </div>
 </div>
 
-<!-- Bottom Capsule Bar -->
-<div class="bottom-bar">
-  <div class="glass-panel bottom-capsule">
-    <button class="btn-nav" id="btnAutoRotate" onclick="toggleAutoRotate()" style="padding:6px 12px;">
-      <i class="fa-solid fa-rotate"></i> Giro 360°
-    </button>
-    <div style="height:16px; width:1px; background:rgba(255,255,255,0.15);"></div>
-    <span style="font-size:10px; color:var(--ink-dim); font-family:'IBM Plex Mono',monospace;">
-      Arrastra para orbitar · Clic derecho para desplazar · Rueda para zoom
-    </span>
+<!-- Bottom Twinmotion Dock -->
+<div class="tm-dock-wrap">
+  <div class="glass-card tm-dock">
+    <!-- Time of Day -->
+    <div class="tm-dock-group">
+      <div class="tm-slider-box">
+        <i class="fa-solid fa-clock" style="color:var(--tm-accent-gold);"></i>
+        <span id="timeLabel">14:00</span>
+        <input type="range" class="tm-time-slider" id="timeOfDaySlider" min="6" max="22" step="0.25" value="14" oninput="updateTimeOfDay(this.value)">
+      </div>
+    </div>
+
+    <!-- Weather & Atmosphere Presets -->
+    <div class="tm-dock-group">
+      <div class="tm-style-pill active" id="modeDay" onclick="setRenderAtmosphere('day')">☀️ Despejado</div>
+      <div class="tm-style-pill" id="modeSunset" onclick="setRenderAtmosphere('sunset')">🌅 Golden Hour</div>
+      <div class="tm-style-pill" id="modeNight" onclick="setRenderAtmosphere('night')">🌃 Nocturno</div>
+      <div class="tm-style-pill" id="modeClay" onclick="setRenderAtmosphere('clay')">🏛️ Clay Render</div>
+    </div>
+
+    <!-- Controls Actions -->
+    <div class="tm-dock-group">
+      <button class="tm-btn" id="btnAutoRotate" onclick="toggleAutoRotate()" style="padding:5px 10px; font-size:10px;">
+        <i class="fa-solid fa-rotate"></i> 360°
+      </button>
+    </div>
   </div>
 </div>
 
-<!-- POI Floating Card Modal -->
-<div class="glass-panel poi-card" id="poiCard">
+<!-- POI Modal Card -->
+<div class="glass-card tm-poi-card" id="poiCard">
   <div style="display:flex; justify-content:space-between; align-items:flex-start;">
     <div>
-      <span id="poiBadge" style="font-size:9px; font-weight:800; color:var(--accent); text-transform:uppercase;">Humedal Distrital</span>
+      <span id="poiBadge" style="font-size:9px; font-weight:800; color:var(--tm-accent); text-transform:uppercase;">Humedal Distrital</span>
       <h2 id="poiTitle" style="font-size:14px; font-weight:800; color:#fff; margin-top:2px;">Humedal El Burro</h2>
     </div>
-    <div class="btn-nav" style="padding:2px 7px; font-size:12px;" onclick="closePoiCard()">×</div>
+    <div class="tm-btn" style="padding:2px 7px; font-size:12px;" onclick="closePoiCard()">×</div>
   </div>
-  <img id="poiImg" src="assets/foto_humedal.png" alt="Punto de Interés" class="poi-img">
-  <p id="poiDesc" style="font-size:11px; color:#cbd5e1; line-height:1.45;"></p>
-  <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.08); padding-top:6px; font-size:10px; color:var(--ink-dim);">
+  <img id="poiImg" src="assets/foto_humedal.png" alt="Punto de Interés" class="tm-poi-img">
+  <p id="poiDesc" style="font-size:11px; color:#CBD5E1; line-height:1.45;"></p>
+  <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.08); padding-top:6px; font-size:10px; color:var(--tm-ink-dim);">
     <span id="poiCoords">📍 4.636°N, -74.153°W</span>
-    <button class="btn-nav" id="btnPoiFly" style="padding:4px 8px; font-size:9.5px; background:var(--accent); color:#000;">Enfocar</button>
+    <button class="tm-btn" id="btnPoiFly" style="padding:4px 8px; font-size:9.5px; background:var(--tm-accent); color:#000;">Enfocar</button>
   </div>
 </div>
 
 <!-- Compass UI -->
-<div class="compass-box">
-  <svg class="compass-needle" id="compassNeedle" viewBox="0 0 100 100">
+<div class="tm-compass">
+  <svg class="tm-needle" id="compassNeedle" viewBox="0 0 100 100">
     <polygon points="50,5 62,50 50,42" fill="#E63946"/>
     <polygon points="50,5 38,50 50,42" fill="#BA181B"/>
     <polygon points="50,95 62,50 50,42" fill="#F1FAEE"/>
@@ -360,7 +346,7 @@
   <span style="font-size:9px; font-family:'IBM Plex Mono',monospace; font-weight:700; color:#cbd5e1;">N</span>
 </div>
 
-<!-- Three.js & Plugins -->
+<!-- Three.js & Engine Plugins -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -368,15 +354,12 @@
 <script>
 (() => {
   // =====================================================================
-  // 1. CONSTANTES Y PROYECCIÓN GEOGRÁFICA
+  // 1. CONSTANTES & COORDENADAS
   // =====================================================================
   const BUILDINGS_URL = "./assets/kennedy_buildings.json";
   const NET_URL       = "./assets/kennedy_net.json";
   const WATER_URL     = "./assets/kennedy_water_bodies.json";
   const TREES_URL     = "./assets/kennedy_trees_real.json";
-  const FACADES_URL   = "./assets/kennedy_facades.json";
-  const ROOFS_FLAT_URL= "./assets/kennedy_roofs_flat.json";
-  const ROOFS_GABLE_URL="./assets/kennedy_roofs_gable.json";
 
   const netCenter = { x: 5341.33, y: 3161.9 };
   const SCALE = 0.08;
@@ -391,11 +374,11 @@
   const canvas = document.getElementById("renderCanvas");
 
   // =====================================================================
-  // 2. MOTOR THREE.JS CON TONE MAPPING FILMIC Y SOMBRAS SUAVES
+  // 2. MOTOR DE RENDERIZADO THREE.JS ESTILO TWINMOTION / UNREAL
   // =====================================================================
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x07090C);
-  scene.fog = new THREE.FogExp2(0x07090C, 0.0016);
+  scene.background = new THREE.Color(0x0C0E12);
+  scene.fog = new THREE.FogExp2(0x0C0E12, 0.0014);
 
   const sceneRoot = new THREE.Group();
   scene.add(sceneRoot);
@@ -409,48 +392,47 @@
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.toneMappingExposure = 1.25;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-  // Cámaras: Inicializada en la vista EXACTA de Google Earth (@4.6301°N, -74.1584°W, tilt 85°)
+  // Cámaras (Inicializada en la perspectiva exacta de Google Earth: @4.6301°N, -74.1584°W, tilt 85°)
   let aspect = window.innerWidth / window.innerHeight;
   let orthoSize = 220;
   const orthoCam = new THREE.OrthographicCamera(-orthoSize * aspect, orthoSize * aspect, orthoSize, -orthoSize, 5, 5000);
-  const perspCam = new THREE.PerspectiveCamera(48, aspect, 2, 5000);
+  const perspCam = new THREE.PerspectiveCamera(46, aspect, 2, 5000);
 
-  // Posición inicial de Google Earth: mirando al norte sobre el tejido urbano de Kennedy con ángulo rasante
-  const initialGoogleEarthPos = { x: 130, y: 55, z: 240 };
-  const initialGoogleEarthTarget = { x: 130, y: 8, z: -40 };
+  const googleEarthCameraPos = { x: 130, y: 52, z: 235 };
+  const googleEarthTargetPos = { x: 130, y: 8, z: -45 };
 
-  perspCam.position.set(initialGoogleEarthPos.x, initialGoogleEarthPos.y, initialGoogleEarthPos.z);
+  perspCam.position.set(googleEarthCameraPos.x, googleEarthCameraPos.y, googleEarthCameraPos.z);
   orthoCam.position.set(360, 390, 360);
 
-  let activeCamera = perspCam; // Inicia en la vista de perspectiva Google Earth
+  let activeCamera = perspCam; // Inicia en la vista fotorrealista de Google Earth
   const controls = new THREE.OrbitControls(activeCamera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.06;
-  controls.target.set(initialGoogleEarthTarget.x, initialGoogleEarthTarget.y, initialGoogleEarthTarget.z);
+  controls.target.set(googleEarthTargetPos.x, googleEarthTargetPos.y, googleEarthTargetPos.z);
   controls.maxPolarAngle = Math.PI / 2 - 0.04;
   controls.minDistance = 10;
-  controls.maxDistance = 2600;
+  controls.maxDistance = 2800;
 
   // =====================================================================
-  // 3. ILUMINACIÓN FOTORREALISTA ARQUITECTÓNICA
+  // 3. ILUMINACIÓN TWINMOTION (SOL FÍSICO + BÓVEDA CELESTE + REBOTE)
   // =====================================================================
-  const sunLight = new THREE.DirectionalLight(0xFFF4E2, 2.3);
+  const sunLight = new THREE.DirectionalLight(0xFFF2DC, 2.4);
   sunLight.castShadow = true;
   sunLight.shadow.mapSize.width = 4096;
   sunLight.shadow.mapSize.height = 4096;
   sunLight.shadow.camera.near = 20;
-  sunLight.shadow.camera.far = 2000;
-  const d = 500;
+  sunLight.shadow.camera.far = 2200;
+  const d = 520;
   sunLight.shadow.camera.left = -d;
   sunLight.shadow.camera.right = d;
   sunLight.shadow.camera.top = d;
   sunLight.shadow.camera.bottom = -d;
   sunLight.shadow.bias = -0.00025;
-  sunLight.shadow.normalBias = 0.05;
+  sunLight.shadow.normalBias = 0.06;
   scene.add(sunLight);
 
   const hemiLight = new THREE.HemisphereLight(0x9EC8EB, 0x384739, 0.95);
@@ -459,36 +441,69 @@
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
   scene.add(ambientLight);
 
-  function updateSunPosition() {
-    const az = parseFloat(document.getElementById("sunAzimuthSlider").value);
-    const el = parseFloat(document.getElementById("sunElevationSlider").value);
+  // Control de Sol por Hora del Día (Time of Day Twinmotion)
+  window.updateTimeOfDay = (hour) => {
+    hour = parseFloat(hour);
+    const intH = Math.floor(hour);
+    const min = Math.floor((hour - intH) * 60);
+    document.getElementById("timeLabel").innerText = `${intH.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+
+    // Mapeo horario: 6:00 (amanecer) a 18:00 (atardecer)
+    const sunProgress = (hour - 6) / 12; // 0 a 1
+    const el = Math.max(5, Math.sin(sunProgress * Math.PI) * 70);
+    const az = 90 + sunProgress * 180;
+
     const radAz = (az * Math.PI) / 180;
     const radEl = (el * Math.PI) / 180;
+    const dist = 700;
 
-    const dist = 650;
-    const x = dist * Math.cos(radEl) * Math.sin(radAz);
-    const y = dist * Math.sin(radEl);
-    const z = dist * Math.cos(radEl) * Math.cos(radAz);
+    sunLight.position.set(
+      dist * Math.cos(radEl) * Math.sin(radAz),
+      dist * Math.sin(radEl),
+      dist * Math.cos(radEl) * Math.cos(radAz)
+    );
 
-    sunLight.position.set(x, y, z);
-  }
-  updateSunPosition();
+    // Ajuste dinámico de color e intensidad
+    if (hour >= 17.0 && hour <= 19.0) {
+      // Golden Hour
+      sunLight.color.setHex(0xFFA040);
+      sunLight.intensity = 2.6;
+      hemiLight.color.setHex(0xFF7043);
+      scene.background.setHex(0x1B0E09);
+      scene.fog.color.setHex(0x1B0E09);
+    } else if (hour > 19.0 || hour < 6.5) {
+      // Noche
+      sunLight.color.setHex(0x6C8EA4);
+      sunLight.intensity = 0.45;
+      hemiLight.color.setHex(0x1D2D44);
+      scene.background.setHex(0x05070A);
+      scene.fog.color.setHex(0x05070A);
+    } else {
+      // Día despejado
+      sunLight.color.setHex(0xFFF2DC);
+      sunLight.intensity = 2.4;
+      hemiLight.color.setHex(0x9EC8EB);
+      scene.background.setHex(0x0C0E12);
+      scene.fog.color.setHex(0x0C0E12);
+    }
+  };
+  updateTimeOfDay(14);
 
   // =====================================================================
-  // 4. PODIO BASE Y SUELO REALISTA CON TEXTURAS
+  // 4. PODIO BASE & TERRENO TEXTURIZADO
   // =====================================================================
   const terrainGroup = new THREE.Group();
   sceneRoot.add(terrainGroup);
 
-  const baseSize = 960;
-  const baseGeo = new THREE.BoxGeometry(baseSize, 20, baseSize);
+  const baseSize = 980;
+  const baseGeo = new THREE.BoxGeometry(baseSize, 22, baseSize);
   const baseMat = new THREE.MeshStandardMaterial({
     color: 0x111419,
     roughness: 0.95,
     metalness: 0.08
   });
   const basePodium = new THREE.Mesh(baseGeo, baseMat);
-  basePodium.position.y = -10.2;
+  basePodium.position.y = -11.2;
   basePodium.receiveShadow = true;
   terrainGroup.add(basePodium);
 
@@ -496,7 +511,7 @@
   const pastoTex = texLoader.load("./assets/textura_pasto.jpg");
   pastoTex.wrapS = THREE.RepeatWrapping;
   pastoTex.wrapT = THREE.RepeatWrapping;
-  pastoTex.repeat.set(45, 45);
+  pastoTex.repeat.set(48, 48);
 
   const groundGeo = new THREE.PlaneGeometry(baseSize, baseSize, 32, 32);
   const groundMat = new THREE.MeshStandardMaterial({
@@ -511,15 +526,15 @@
   groundMesh.receiveShadow = true;
   terrainGroup.add(groundMesh);
 
-  // Cuadrícula sutil isométrica
-  const gridHelper = new THREE.GridHelper(baseSize, 48, 0xEAC119, 0x1E2732);
+  // Cuadrícula arquitectónica
+  const gridHelper = new THREE.GridHelper(baseSize, 48, 0x2BD9C8, 0x1E2732);
   gridHelper.position.y = 0.03;
-  gridHelper.material.opacity = 0.22;
+  gridHelper.material.opacity = 0.18;
   gridHelper.material.transparent = true;
   terrainGroup.add(gridHelper);
 
   // =====================================================================
-  // 5. CUERPOS DE AGUA REFLECTIVOS & TRANSLÚCIDOS
+  // 5. AGUA REFLECTIVA & TRANSLÚCIDA (TWINMOTION WATER SHADER)
   // =====================================================================
   const waterGroup = new THREE.Group();
   sceneRoot.add(waterGroup);
@@ -531,11 +546,11 @@
 
   const waterMat = new THREE.MeshStandardMaterial({
     map: waterTex,
-    color: 0x0C7C8A,
-    roughness: 0.15,
-    metalness: 0.35,
+    color: 0x0A7E8C,
+    roughness: 0.12,
+    metalness: 0.4,
     transparent: true,
-    opacity: 0.9,
+    opacity: 0.92,
     side: THREE.DoubleSide
   });
 
@@ -593,7 +608,7 @@
         const edgeList = Array.isArray(net) ? net : (net.edges || []);
         const linePositions = [];
         const lineColors = [];
-        const colMajor = new THREE.Color(0xEAC119);
+        const colMajor = new THREE.Color(0x2BD9C8);
         const colMinor = new THREE.Color(0x8B949E);
 
         edgeList.forEach(e => {
@@ -626,53 +641,44 @@
   }
 
   // =====================================================================
-  // 7. EDIFICIOS DETALLADOS (FACHADAS BOGOTÁ, VENTANAS, AZOTEAS, TANQUES)
+  // 7. EDIFICIOS DETALLADOS (LADRILLO BOGOTANO, CONCRETO, AZOTEAS, TANQUES)
   // =====================================================================
   const buildingsGroup = new THREE.Group();
   const roofsGroup = new THREE.Group();
   sceneRoot.add(buildingsGroup);
   sceneRoot.add(roofsGroup);
 
-  // Materiales de Fachada de Bogotá (Ladrillo Toledano, Concreto Arquitectónico, Vidrio)
+  // Materiales de Fachada de Bogotá
   const brickMat1 = new THREE.MeshStandardMaterial({
     color: 0xBA5A3A, // Ladrillo rojo tolete
-    roughness: 0.78,
-    metalness: 0.1
+    roughness: 0.76,
+    metalness: 0.12
   });
   const brickMat2 = new THREE.MeshStandardMaterial({
-    color: 0x984428, // Ladrillo oscuro cocido
-    roughness: 0.82,
-    metalness: 0.08
+    color: 0x984428, // Ladrillo oscuro
+    roughness: 0.8,
+    metalness: 0.1
   });
   const concreteMat = new THREE.MeshStandardMaterial({
-    color: 0xDCD6CD, // Concreto a la vista
-    roughness: 0.68,
-    metalness: 0.15
+    color: 0xDCD6CD, // Concreto visto
+    roughness: 0.65,
+    metalness: 0.18
   });
   const commercialMat = new THREE.MeshStandardMaterial({
     color: 0x8C9AA8, // Fachada comercial / paneles metálicos
-    roughness: 0.55,
-    metalness: 0.35
+    roughness: 0.52,
+    metalness: 0.38
   });
 
   // Materiales de Azotea
-  const roofTerraceMat = new THREE.MeshStandardMaterial({
-    color: 0x756B63, // Baldosa de terraza / gravilla
-    roughness: 0.9,
-    metalness: 0.05
-  });
   const waterTankMat = new THREE.MeshStandardMaterial({
-    color: 0x1E426D, // Tanque de agua azul polietileno
-    roughness: 0.45,
+    color: 0x1A3B65, // Tanque de agua azul polietileno
+    roughness: 0.4,
     metalness: 0.2
-  });
-  const parapetMat = new THREE.MeshStandardMaterial({
-    color: 0x5A483E, // Remate de antepecho
-    roughness: 0.85
   });
 
   function createRooftopDetails(cx, cz, topY, w, d) {
-    if (w < 1.5 || d < 1.5) return null;
+    if (w < 1.4 || d < 1.4) return null;
 
     const rGroup = new THREE.Group();
     rGroup.position.set(cx, topY, cz);
@@ -686,7 +692,7 @@
     tankMesh.castShadow = true;
     rGroup.add(tankMesh);
 
-    // 2. Caseta de máquinas / terraza para edificios medianos/altos
+    // 2. Caseta de máquinas para edificios medianos/altos
     if (topY > 6.0 && Math.random() > 0.4) {
       const phW = Math.min(2.5, w * 0.35);
       const phD = Math.min(2.5, d * 0.35);
@@ -706,7 +712,7 @@
       .then(r => r.json())
       .then(buildings => {
         const list = Array.isArray(buildings) ? buildings : (buildings.buildings || []);
-        const count = Math.min(list.length, 4200); // 4200 edificios detallados
+        const count = Math.min(list.length, 4200);
 
         const bMeshes = new THREE.Group();
         const edgePositions = [];
@@ -733,13 +739,12 @@
           const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
           geo.rotateX(Math.PI / 2);
 
-          // Selección de material de fachada arquitectónica
           let mat = brickMat1;
           const hashVal = (i * 37) % 100;
-          if (hashVal < 45) mat = brickMat1;       // 45% Ladrillo rojo
-          else if (hashVal < 70) mat = brickMat2;  // 25% Ladrillo oscuro
-          else if (hashVal < 88) mat = concreteMat;// 18% Concreto visto
-          else mat = commercialMat;                // 12% Comercial / vidrio
+          if (hashVal < 45) mat = brickMat1;
+          else if (hashVal < 70) mat = brickMat2;
+          else if (hashVal < 88) mat = concreteMat;
+          else mat = commercialMat;
 
           const mesh = new THREE.Mesh(geo, mat);
           mesh.position.y = height + 0.1;
@@ -747,7 +752,7 @@
           mesh.receiveShadow = true;
           bMeshes.add(mesh);
 
-          // Líneas de arista arquitectónica (Ambient Occlusion Silhouette)
+          // Siluetas arquitectónicas
           for (let j = 0; j < sPts.length - 1; j++) {
             edgePositions.push(
               sPts[j].x, height + 0.12, sPts[j].z,
@@ -755,7 +760,7 @@
             );
           }
 
-          // Añadir detalles de azotea (tanques de agua, casetas)
+          // Azoteas con tanques
           if (i % 2 === 0) {
             let cx = 0, cz = 0;
             sPts.forEach(p => { cx += p.x; cz += p.z; });
@@ -772,12 +777,11 @@
 
         buildingsGroup.add(bMeshes);
 
-        // Geometría de siluetas arquitectónicas
         if (edgePositions.length > 0) {
           const edgeGeo = new THREE.BufferGeometry();
           edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
           const edgeLineMat = new THREE.LineBasicMaterial({
-            color: 0x221B16,
+            color: 0x1E1712,
             transparent: true,
             opacity: 0.65
           });
@@ -789,7 +793,7 @@
   }
 
   // =====================================================================
-  // 8. ARBOLADO INSTANCIADO CON VARIACIÓN CLOROFÍLICA (SIGAU)
+  // 8. ARBOLADO INSTANCIADO (14,000+ ÁRBOLES SIGAU)
   // =====================================================================
   const treesGroup = new THREE.Group();
   sceneRoot.add(treesGroup);
@@ -818,14 +822,14 @@
         const colPalette = [
           new THREE.Color(0x2E6B38), // Verde bosque
           new THREE.Color(0x4A8505), // Verde brillante
-          new THREE.Color(0xD4A017), // Chicalá amarillo flor
+          new THREE.Color(0xD4A017), // Chicalá amarillo
           new THREE.Color(0x5C8001), // Sauco
-          new THREE.Color(0x1B4332)  // Ciprés oscuro
+          new THREE.Color(0x1B4332)  // Ciprés
         ];
 
         for (let i = 0; i < sampleCount; i++) {
           const t = list[i];
-          const [x, y, hMeters, specName] = t;
+          const [x, y, hMeters] = t;
           const p = toScene(x, y);
           const h = Math.max(0.6, (hMeters || 6.0) * SCALE);
 
@@ -860,8 +864,8 @@
       desc: "Perspectiva axonométrica rasante sobre el corredor de la Av. Ciudad de Cali, conectando los humedales La Vaca y El Burro con Corabastos.",
       coords: "📍 4.6301°N, -74.1584°W · Kennedy Central",
       pos: { x: 130, y: 14, z: 0 },
-      camPos: { x: 130, y: 55, z: 240 },
-      camTarget: { x: 130, y: 8, z: -40 },
+      camPos: googleEarthCameraPos,
+      camTarget: googleEarthTargetPos,
       img: "assets/foto_humedal.png"
     },
     {
@@ -918,8 +922,8 @@
       const coneGeo = new THREE.ConeGeometry(3.2, 8.5, 16);
       coneGeo.rotateX(Math.PI);
       const pinMat = new THREE.MeshStandardMaterial({
-        color: 0xEAC119,
-        emissive: 0xEAC119,
+        color: 0x2BD9C8,
+        emissive: 0x2BD9C8,
         emissiveIntensity: 0.45,
         roughness: 0.25,
         metalness: 0.8
@@ -930,7 +934,7 @@
 
       const ringGeo = new THREE.RingGeometry(2.5, 5.5, 24);
       const ringMat = new THREE.MeshBasicMaterial({
-        color: 0xEAC119,
+        color: 0x2BD9C8,
         transparent: true,
         opacity: 0.65,
         side: THREE.DoubleSide
@@ -946,12 +950,12 @@
   }
   createPoiPins();
 
-  // Raycasting en POIs
+  // Raycasting
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
   window.addEventListener("pointerdown", (e) => {
-    if (e.target.closest(".glass-panel") || e.target.closest(".top-bar") || e.target.closest(".side-tools") || e.target.closest(".bottom-bar")) return;
+    if (e.target.closest(".glass-card") || e.target.closest(".tm-top-bar") || e.target.closest(".tm-side-tools") || e.target.closest(".tm-dock-wrap")) return;
 
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -1009,7 +1013,7 @@
   // 10. ENCUADRES PREDEFINIDOS (FLY TO VIEW)
   // =====================================================================
   const VIEW_PRESETS = {
-    googleEarth: { cam: initialGoogleEarthPos, target: initialGoogleEarthTarget },
+    googleEarth: { cam: googleEarthCameraPos, target: googleEarthTargetPos },
     overview:    { cam: { x: 360, y: 390, z: 360 }, target: { x: 0, y: 0, z: 0 } },
     burro:       { cam: { x: 260, y: 90, z: 180 }, target: { x: 209.56, y: 2, z: 10.93 } },
     vaca:        { cam: { x: 120, y: 80, z: -20 }, target: { x: 67.66, y: 2, z: -118.17 } },
@@ -1018,7 +1022,7 @@
   };
 
   window.flyToView = (key) => {
-    document.querySelectorAll(".preset-chip").forEach(c => c.classList.remove("active"));
+    document.querySelectorAll(".tm-preset-btn").forEach(c => c.classList.remove("active"));
     const btn = document.getElementById(`vp${key.charAt(0).toUpperCase() + key.slice(1)}`);
     if (btn) btn.classList.add("active");
 
@@ -1067,52 +1071,33 @@
   // 12. MODOS DE ATMÓSFERA & ILUMINACIÓN FOTORREALISTA
   // =====================================================================
   window.setRenderAtmosphere = (mode) => {
-    document.querySelectorAll(".render-mode-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tm-style-pill").forEach(b => {
+      if (['modeDay', 'modeSunset', 'modeNight', 'modeClay'].includes(b.id)) b.classList.remove("active");
+    });
     const btn = document.getElementById(`mode${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
     if (btn) btn.classList.add("active");
 
     if (mode === "day") {
-      scene.background.setHex(0x07090C);
-      scene.fog.color.setHex(0x07090C);
-      sunLight.color.setHex(0xFFF4E2);
-      sunLight.intensity = 2.3;
-      hemiLight.color.setHex(0x9EC8EB);
-      hemiLight.groundColor.setHex(0x384739);
-      hemiLight.intensity = 0.95;
+      updateTimeOfDay(14);
       groundMat.color.setHex(0x55734E);
       brickMat1.color.setHex(0xBA5A3A);
       brickMat2.color.setHex(0x984428);
-      waterMat.color.setHex(0x0C7C8A);
-      document.getElementById("sunAzimuthSlider").value = 135;
-      document.getElementById("sunElevationSlider").value = 48;
+      waterMat.color.setHex(0x0A7E8C);
+      document.getElementById("timeOfDaySlider").value = 14;
     } else if (mode === "sunset") {
-      scene.background.setHex(0x1B0E09);
-      scene.fog.color.setHex(0x1B0E09);
-      sunLight.color.setHex(0xFFA040);
-      sunLight.intensity = 2.7;
-      hemiLight.color.setHex(0xFF7043);
-      hemiLight.groundColor.setHex(0x2E1C14);
-      hemiLight.intensity = 0.8;
+      updateTimeOfDay(17.75);
       groundMat.color.setHex(0x6D5838);
       brickMat1.color.setHex(0xD96A43);
       brickMat2.color.setHex(0xB24825);
       waterMat.color.setHex(0xBF5B24);
-      document.getElementById("sunAzimuthSlider").value = 240;
-      document.getElementById("sunElevationSlider").value = 20;
+      document.getElementById("timeOfDaySlider").value = 17.75;
     } else if (mode === "night") {
-      scene.background.setHex(0x030507);
-      scene.fog.color.setHex(0x030507);
-      sunLight.color.setHex(0x6C8EA4);
-      sunLight.intensity = 0.45;
-      hemiLight.color.setHex(0x1D2D44);
-      hemiLight.groundColor.setHex(0x0B131F);
-      hemiLight.intensity = 0.55;
+      updateTimeOfDay(21);
       groundMat.color.setHex(0x182420);
       brickMat1.color.setHex(0x3A4452);
       brickMat2.color.setHex(0x29313D);
       waterMat.color.setHex(0x0D3B66);
-      document.getElementById("sunAzimuthSlider").value = 310;
-      document.getElementById("sunElevationSlider").value = 14;
+      document.getElementById("timeOfDaySlider").value = 21;
     } else if (mode === "clay") {
       scene.background.setHex(0x101317);
       scene.fog.color.setHex(0x101317);
@@ -1126,7 +1111,6 @@
       brickMat2.color.setHex(0xE5E5E5);
       waterMat.color.setHex(0x99C2D2);
     }
-    updateSunPosition();
   };
 
   // =====================================================================
@@ -1167,12 +1151,12 @@
     const dataUrl = canvas.toDataURL("image/png");
     const a = document.createElement("a");
     a.href = dataUrl;
-    a.download = `render_arquitectonico_kennedy_4k_${Date.now()}.png`;
+    a.download = `twinmotion_archviz_kennedy_4k_${Date.now()}.png`;
     a.click();
   };
 
   // =====================================================================
-  // 15. ANIMACIÓN Y CICLO DE RENDER
+  // 15. CICLO DE ANIMACIÓN
   // =====================================================================
   const compassNeedle = document.getElementById("compassNeedle");
 
@@ -1213,21 +1197,21 @@
     renderer.setSize(w, h);
   });
 
-  const loadStatus = document.getElementById("loadStatus");
-  const loaderOverlay = document.getElementById("loaderOverlay");
+  const tmLoadStatus = document.getElementById("tmLoadStatus");
+  const tmLoader = document.getElementById("tmLoader");
 
   Promise.all([
-    loadWater().then(() => { if (loadStatus) loadStatus.innerText = "Cargando red vial asfaltada..."; }),
-    loadRoads().then(() => { if (loadStatus) loadStatus.innerText = "Cargando arbolado nativo SIGAU..."; }),
-    loadTrees().then(() => { if (loadStatus) loadStatus.innerText = "Construyendo fachadas de ladrillo y azoteas..."; }),
+    loadWater().then(() => { if (tmLoadStatus) tmLoadStatus.innerText = "Cargando red vial asfaltada..."; }),
+    loadRoads().then(() => { if (tmLoadStatus) tmLoadStatus.innerText = "Cargando arbolado nativo SIGAU..."; }),
+    loadTrees().then(() => { if (tmLoadStatus) tmLoadStatus.innerText = "Construyendo fachadas de ladrillo y azoteas..."; }),
     loadBuildings()
   ]).then(() => {
     setTimeout(() => {
-      if (loaderOverlay) loaderOverlay.classList.add("hide");
-    }, 600);
+      if (tmLoader) tmLoader.classList.add("hide");
+    }, 500);
   }).catch(e => {
     console.error("Error cargando modelo:", e);
-    if (loaderOverlay) loaderOverlay.classList.add("hide");
+    if (tmLoader) tmLoader.classList.add("hide");
   });
 
   animate();
