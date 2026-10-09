@@ -1,0 +1,2835 @@
+// =====================================================================
+// Simulacion 3D de transito — Kennedy (fase 1: red vial + vehiculos)
+// Reutiliza los mismos datos reales de SUMO que la version 2D
+// (assets/kennedy_net.json y assets/kennedy_vehiculos.json).
+// =====================================================================
+(() => {
+  const NET_URL = "./assets/kennedy_net.json";
+  const VEHICULOS_JSON_URL = "./assets/kennedy_vehiculos.json";
+  const BUILDINGS_URL = "./assets/kennedy_buildings.json";
+  const TREES_URL = "./assets/kennedy_trees_real.json";
+  const WATER_URL = "./assets/kennedy_water_bodies.json";
+  const MANZANAS_URL = "./assets/kennedy_manzanas.json";
+  const PARQUES_URL = "./assets/kennedy_parques.json";
+  const SCALE = 1 / 10; // las coordenadas del JSON llegan a ~10700 unidades; se escalan para Three.js
+
+  const statusOverlay = document.getElementById("statusOverlay");
+  function setStatus(text, show = true) {
+    statusOverlay.textContent = text;
+    statusOverlay.classList.toggle("hide", !show);
+  }
+
+  // ---- Escena, camara, render ----
+  const canvas = document.getElementById("sceneCanvas");
+  const wrap = document.getElementById("sceneWrap");
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xf3f4f5);
+  scene.fog = new THREE.Fog(0xf3f4f5, 900, 3200);
+  // Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
+  // se agrega a este grupo, no directamente a la escena, para poder
+  // rotarlo entero en X/Y/Z con los controles manuales de orientacion.
+  // El usuario encontro que la orientacion correcta del plano necesita un
+  // giro de 180° — se aplica aqui en el eje Y (vertical), no en Z, porque
+  // un giro en Z tambien voltea la altura de los edificios boca abajo (Z
+  // no es el eje "arriba" de esta escena); un giro en Y reordena el plano
+  // igual mientras deja la altura intacta.
+  const sceneRoot = new THREE.Group();
+  // No se rota el grupo entero — el reacomodo del plano se hace de forma
+  // pura dentro de toScene() (ver abajo), sin tocar la altura de nada.
+  scene.add(sceneRoot);
+
+  let camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 5, 2000);
+  const orthoCameraRef = camera; // referencia estable a la ortografica, para poder volver a ella
+  const perspCamera = new THREE.PerspectiveCamera(55, 1, 1, 5000);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.BasicShadowMap;
+  renderer.localClippingEnabled = true; // para la caja de seccion (corte del modelo)
+
+  // Los planos de recorte de la caja de seccion se crean y se ACTIVAN
+  // desde ya (igual que en Corte axonometrico), antes de construir
+  // cualquier edificio/via/etc.
+  const secPlanes = {
+    xMin: new THREE.Plane(new THREE.Vector3(1, 0, 0), 1e6),
+    xMax: new THREE.Plane(new THREE.Vector3(-1, 0, 0), 1e6),
+    yMin: new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6),
+    yMax: new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6),
+    zMin: new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6),
+    zMax: new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6),
+  };
+  renderer.clippingPlanes = [secPlanes.xMin, secPlanes.xMax, secPlanes.yMin, secPlanes.yMax, secPlanes.zMin, secPlanes.zMax];
+  let sceneExtentW = 100, sceneExtentH = 100; // ancho/alto de la escena en unidades (para la caja de seccion)
+
+  // Tamano visible (mitad de la altura del encuadre, en unidades de la
+  // escena) para la proyeccion ortogonal — se ajusta al cargar la red.
+  let viewSize = 260;
+  function resize() {
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    renderer.setSize(w, h, false);
+    const aspect = w / h;
+    if (camera.isOrthographicCamera) {
+      camera.left = -viewSize * aspect;
+      camera.right = viewSize * aspect;
+      camera.top = viewSize;
+      camera.bottom = -viewSize;
+    } else {
+      camera.aspect = aspect;
+    }
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener("resize", resize);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  canvas.addEventListener("contextmenu", (e) => e.preventDefault()); // sin esto, el navegador abre su menu contextual con el clic derecho en vez de dejarlo mover (panear) la vista
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  // Antes el angulo de camara quedaba fijo en 45 grados (solo se podia
+  // orbitar en horizontal). Ahora se puede inclinar la vista libremente,
+  // para poder ver el corte de la caja de seccion desde el angulo que se
+  // quiera, no solo desde arriba.
+  controls.minPolarAngle = Math.PI / 12;   // casi cenital
+  controls.maxPolarAngle = Math.PI / 2.05; // casi al ras del horizonte
+  controls.minZoom = 0.15;
+  controls.maxZoom = 30;
+  controls.enablePan = true;
+
+  // ---- Cambiar entre proyeccion ortografica (axonometrica, la de
+  // siempre) y perspectiva (con fuga real, como ve un ojo humano). Al
+  // cambiar, se copia la posicion y el punto al que mira, para no perder
+  // el encuadre que ya se tenia armado. ----
+  const perspToggleBtn = document.getElementById("perspToggle");
+  let usingPersp = false;
+  if (perspToggleBtn) perspToggleBtn.addEventListener("click", () => {
+    const target = controls.target.clone();
+    const pos = camera.position.clone();
+    usingPersp = !usingPersp;
+    if (usingPersp) {
+      perspCamera.position.copy(pos);
+      camera = perspCamera;
+    } else {
+      camera = orthoCameraRef;
+      camera.position.copy(pos);
+    }
+    controls.object = camera;
+    controls.target.copy(target);
+    controls.update();
+    resize();
+    camera.updateProjectionMatrix();
+    perspToggleBtn.textContent = usingPersp ? "📏 Ver en axonométrica" : "📐 Ver en perspectiva";
+    if (typeof updateSectionBox === "function") updateSectionBox(); // refrescar el cuadro de coordenadas con la nueva proyeccion
+  });
+
+  // ---- Luces (con sombras, tipo render arquitectonico) ----
+  const ambient = new THREE.AmbientLight(0xffffff, 0.95);
+  scene.add(ambient);
+  const sun = new THREE.DirectionalLight(0xffffff, 0.65);
+  scene.add(sun);
+  scene.add(sun.target);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.near = 10;
+  sun.shadow.camera.far = 2600;
+  sun.shadow.bias = -0.00015;
+  sun.shadow.normalBias = 0.35; // reduce el parpadeo/artefactos de sombra (shadow acne)
+  const SHADOW_FRUSTUM = 750;
+  sun.shadow.camera.left = -SHADOW_FRUSTUM;
+  sun.shadow.camera.right = SHADOW_FRUSTUM;
+  sun.shadow.camera.top = SHADOW_FRUSTUM;
+  sun.shadow.camera.bottom = -SHADOW_FRUSTUM;
+  const rim = new THREE.DirectionalLight(0xdce8ff, 0.25);
+  rim.position.set(-400, 200, -300);
+  scene.add(rim);
+
+  // Posicion del sol controlada por azimut/altura (grados), para poder
+  // "mover las sombras" con los deslizadores de la interfaz.
+  let sunAzimuth = 130, sunElevation = 45, sunDistance = 900;
+  function updateSunPosition() {
+    const az = sunAzimuth * Math.PI / 180, el = sunElevation * Math.PI / 180;
+    sun.position.set(
+      sunDistance * Math.cos(el) * Math.sin(az),
+      sunDistance * Math.sin(el),
+      sunDistance * Math.cos(el) * Math.cos(az)
+    );
+    sun.target.position.set(0, 0, 0);
+  }
+  updateSunPosition();
+
+  // ---- Suelo ----
+  let netCenter = { x: 0, y: 0 };
+  let roadMat = null, waterMat = null, parqueMat = null; // referencias para los selectores de color en vivo
+  let waterTexRef = null, waterBumpRef = null; // texturas de agua, animadas en el loop de render
+  let buildingEdgeMat = null; // referencia para ajustar su opacidad segun el zoom
+  let groundMesh = null;
+
+  function buildGround(bbox) {
+    const w = (bbox[2] - bbox[0]) * SCALE * 1.4;
+    const h = (bbox[3] - bbox[1]) * SCALE * 1.4;
+    const geo = new THREE.PlaneGeometry(w, h);
+    const mat = new THREE.MeshStandardMaterial({ color: 0xeceeef, roughness: 1, metalness: 0 });
+    groundMesh = new THREE.Mesh(geo, mat);
+    groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.position.set(0, -0.4, 0);
+    groundMesh.receiveShadow = true;
+    sceneRoot.add(groundMesh);
+  }
+
+  // Convierte una coordenada del JSON (x,y en el plano, x=este, y=norte
+  // real en UTM) a posicion 3D (x,z en Three.js, y=altura). El eje Z se
+  // invierte (espejo, no rotacion) para que el plano quede orientado
+  // correctamente — esto NO toca la altura (Y) de nada, a diferencia de
+  // rotar el grupo entero.
+  function toScene(x, y) {
+    return { x: (x - netCenter.x) * SCALE, z: -(y - netCenter.y) * SCALE };
+  }
+
+  // ---- Red vial: una sola geometria de lineas fusionada (19 mil tramos,
+  // asi que se combina TODO en un unico BufferGeometry por rendimiento) ----
+  function buildRoads(edges) {
+    const positions = [];
+    edges.forEach(([kind, pts]) => {
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = toScene(pts[i][0], pts[i][1]);
+        const b = toScene(pts[i + 1][0], pts[i + 1][1]);
+        positions.push(a.x, 0, a.z, b.x, 0, b.z);
+      }
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    const mat = new THREE.LineBasicMaterial({ color: 0x4a545e, transparent: true, opacity: 0.85 });
+    const lines = new THREE.LineSegments(geo, mat);
+    sceneRoot.add(lines);
+
+    // Segunda capa mas gruesa "de asfalto" usando una tira continua con
+    // UNION DE ESQUINA (miter) en cada vertice interior — se promedia la
+    // normal de los dos segmentos que se juntan ahi (en vez de tratar cada
+    // segmento como un rectangulo independiente), para que las curvas
+    // queden con un borde continuo y suave, sin muescas/quiebres.
+    const ribbonGeo = new THREE.BufferGeometry();
+    const ribbonPos = [];
+    const ribbonUv = [];
+    const RIBBON_UV_SCALE = 0.06;
+    const HALF_W = 0.9;
+    edges.forEach(([kind, pts], edgeIdx) => {
+      // Desfase de altura MUY pequeno por via (no por segmento, para que
+      // cada via quede perfectamente plana a lo largo de si misma), asi
+      // las vias que se cruzan en una interseccion no quedan EXACTAMENTE
+      // coplanares (evita z-fighting). El rango es minusculo para que no
+      // se note como un "escalon" entre una via y la siguiente.
+      const yJitter = 0.03 + ((edgeIdx * 2654435761) % 1000) / 1000 * 0.006;
+      const n = pts.length;
+      if (n < 2) return;
+      const scenePts = pts.map(p => toScene(p[0], p[1]));
+      const segNormal = (p, q) => {
+        const dx = q.x - p.x, dz = q.z - p.z;
+        const len = Math.hypot(dx, dz) || 0.001;
+        return { x: -dz / len, z: dx / len };
+      };
+      const vertNormals = new Array(n);
+      for (let i = 0; i < n; i++) {
+        if (i === 0) { vertNormals[i] = segNormal(scenePts[0], scenePts[1]); continue; }
+        if (i === n - 1) { vertNormals[i] = segNormal(scenePts[n - 2], scenePts[n - 1]); continue; }
+        const n1 = segNormal(scenePts[i - 1], scenePts[i]);
+        const n2 = segNormal(scenePts[i], scenePts[i + 1]);
+        let ax = n1.x + n2.x, az = n1.z + n2.z;
+        const alen = Math.hypot(ax, az);
+        if (alen < 0.05) { vertNormals[i] = n1; continue; } // giro casi en U, evitar division por ~0
+        ax /= alen; az /= alen;
+        const cosHalf = Math.max(ax * n1.x + az * n1.z, 0.25); // limitar el miter en angulos muy agudos
+        vertNormals[i] = { x: ax / cosHalf, z: az / cosHalf };
+      }
+      for (let i = 0; i < n - 1; i++) {
+        const a = scenePts[i], b = scenePts[i + 1];
+        const na = vertNormals[i], nb = vertNormals[i + 1];
+        const ax = na.x * HALF_W, az = na.z * HALF_W;
+        const bx = nb.x * HALF_W, bz = nb.z * HALF_W;
+        ribbonPos.push(
+          a.x - ax, yJitter, a.z - az, a.x + ax, yJitter, a.z + az, b.x + bx, yJitter, b.z + bz,
+          a.x - ax, yJitter, a.z - az, b.x + bx, yJitter, b.z + bz, b.x - bx, yJitter, b.z - bz
+        );
+        [
+          [a.x - ax, a.z - az], [a.x + ax, a.z + az], [b.x + bx, b.z + bz],
+          [a.x - ax, a.z - az], [b.x + bx, b.z + bz], [b.x - bx, b.z - bz],
+        ].forEach(([px, pz]) => ribbonUv.push(px * RIBBON_UV_SCALE, pz * RIBBON_UV_SCALE));
+      }
+    });
+    ribbonGeo.setAttribute("position", new THREE.Float32BufferAttribute(ribbonPos, 3));
+    ribbonGeo.setAttribute("uv", new THREE.Float32BufferAttribute(ribbonUv, 2));
+    ribbonGeo.computeVertexNormals();
+    const viaTex = new THREE.TextureLoader().load("./assets/textura_via.jpg");
+    viaTex.wrapS = THREE.RepeatWrapping;
+    viaTex.wrapT = THREE.RepeatWrapping;
+    const ribbonMat = new THREE.MeshStandardMaterial({
+      map: viaTex, color: 0xb7babd, roughness: 0.85, side: THREE.DoubleSide,
+      transparent: true, opacity: 0.7,
+    });
+    roadMat = ribbonMat;
+    const roadMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
+    roadMesh.receiveShadow = true;
+    sceneRoot.add(roadMesh);
+  }
+
+  // ---- Edificios: extrusion de cada huella (paredes + techo), TODO
+  // fusionado en una sola geometria por rendimiento (143 mil edificios). ----
+  // Desplaza cada vertice de un anillo cerrado (poligono con el primer
+  // punto repetido al final) hacia ADENTRO una distancia fija, usando el
+  // promedio de las normales de los 2 segmentos que se juntan en cada
+  // vertice (mismo criterio de "miter" que ya se uso en las vias), para
+  // que las esquinas no se deformen. Devuelve un anillo del mismo tamano
+  // (tambien cerrado).
+  // Area con signo de un anillo cerrado (formula shoelace) - se usa para
+  // detectar si el anillo interior (offset) se invirtio por ser el
+  // edificio demasiado chico para el offset pedido.
+  function signedArea(pts) {
+    let a = 0;
+    for (let i = 0; i < pts.length - 1; i++) a += pts[i].x * pts[i + 1].z - pts[i + 1].x * pts[i].z;
+    return a / 2;
+  }
+
+  function insetRing(pts, dist) {
+    const m = pts.length - 1;
+    if (m < 3) return pts.slice();
+    const segNormalIn = (p, q) => {
+      const dx = q.x - p.x, dz = q.z - p.z, len = Math.hypot(dx, dz) || 0.001;
+      return { x: -dz / len, z: dx / len }; // hacia adentro (opuesta a la de pared)
+    };
+    const out = new Array(m);
+    for (let i = 0; i < m; i++) {
+      const prev = (i - 1 + m) % m, next = (i + 1) % m;
+      const n1 = segNormalIn(pts[prev], pts[i]);
+      const n2 = segNormalIn(pts[i], pts[next]);
+      let ax = n1.x + n2.x, az = n1.z + n2.z;
+      const alen = Math.hypot(ax, az);
+      let nx, nz;
+      if (alen < 0.05) { nx = n1.x; nz = n1.z; }
+      else {
+        ax /= alen; az /= alen;
+        const cosHalf = Math.max(ax * n1.x + az * n1.z, 0.25);
+        nx = ax / cosHalf; nz = az / cosHalf;
+      }
+      out[i] = { x: pts[i].x + nx * dist, z: pts[i].z + nz * dist };
+    }
+    out.push(out[0]);
+    return out;
+  }
+
+  function buildBuildings(buildings) {
+    const positions = [];
+    const normals = [];
+    const edgePositions = []; // lineas de borde: perimetro del techo + perimetro de la base + esquinas verticales (para que se lea el volumen completo), nada de lineas interiores
+    buildings.forEach(b => {
+      const pts = b.pts.map(p => toScene(p[0], p[1]));
+      const h = b.h * SCALE;
+      if (pts.length < 4) return; // huella degenerada
+      // Paredes: un rectangulo (2 triangulos) por cada segmento del perimetro
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], c = pts[i + 1];
+        const dx = c.x - a.x, dz = c.z - a.z;
+        const len = Math.hypot(dx, dz) || 0.001;
+        const nx = dz / len, nz = -dx / len; // normal horizontal de la pared (hacia afuera)
+        positions.push(
+          a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z,
+          a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z
+        );
+        for (let k = 0; k < 6; k++) normals.push(nx, 0, nz);
+        edgePositions.push(a.x, h, a.z, c.x, h, c.z); // solo el perimetro del techo (forma simplificada, menos lineas = menos "gris" acumulado)
+      }
+
+      // Techo plano simple (sin parapeto sintetico): las mallas REALES de
+      // techo del modelo Rhino (techos a dos aguas y techos planos con
+      // parapeto ya modelado) se cargan por separado y quedan encima de
+      // esta tapa, dandole el detalle real. Tener ademas un parapeto
+      // aproximado aqui hacia que ambas geometrias compitieran/se vieran
+      // mal superpuestas.
+      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+      let tris;
+      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
+      catch (e) { tris = []; }
+      tris.forEach(([ia, ib, ic]) => {
+        positions.push(
+          pts[ia].x, h, pts[ia].z, pts[ib].x, h, pts[ib].z, pts[ic].x, h, pts[ic].z
+        );
+        for (let k = 0; k < 3; k++) normals.push(0, 1, 0);
+      });
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xffffff, roughness: 0.6, metalness: 0.03, side: THREE.DoubleSide,
+      polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 2, // evita z-fighting con las lineas de borde (que quedan exactamente sobre la superficie)
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    sceneRoot.add(mesh);
+
+    // Borde oscuro de cada edificio: perimetro del techo + esquinas
+    // verticales (sin lineas internas), para que se lea como un volumen
+    // real y no una silueta plana.
+    const edgeGeo = new THREE.BufferGeometry();
+    edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x2b2e33, transparent: true, opacity: 0.14 });
+    buildingEdgeMat = edgeMat;
+    sceneRoot.add(new THREE.LineSegments(edgeGeo, edgeMat));
+  }
+
+  let cachedBuildingsData = null; // se reusa para Usos del Suelo/Dispersion, para no volver a bajar este archivo de 37MB otra vez
+  function loadBuildings() {
+    return fetch(BUILDINGS_URL)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + BUILDINGS_URL); return r.json(); })
+      .then(data => { cachedBuildingsData = data; buildBuildings(data); })
+      .catch(err => console.warn("No se pudieron cargar los edificios:", err));
+  }
+
+  // ---- Arboles: se dibujan como "billboards cruzados" (2 tarjetas
+  // perpendiculares) con una foto real de un arbol (fondo quitado),
+  // en vez de una textura dibujada o geometria 3D solida. ----
+
+  // Geometria de una sola tarjeta (plano vertical). Como la camara esta
+  // fija a 45° de elevacion (solo gira horizontalmente alrededor), esta
+  // tarjeta se reorienta para mirar siempre hacia la camara (billboard
+  // real, no un cruce estatico de 2-3 planos que deja ver una "X" desde
+  // ciertos angulos).
+  function makePlaneGeometry() {
+    const geo = new THREE.BufferGeometry();
+    const positions = [-0.5, 0, 0, 0.5, 0, 0, 0.5, 1, 0, -0.5, 0, 0, 0.5, 1, 0, -0.5, 1, 0];
+    const uvs = [0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1];
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.computeVertexNormals();
+    return geo;
+  }
+
+  let treeMeshes = [];
+  let treeInstanceData = null; // {x,z,w,h} por instancia, para recalcular el billboard al girar la camara
+  let treeMesh = null; // la tarjeta con la foto (para el detalle realista)
+  function makePlaneGeometry() {
+    const geo = new THREE.BufferGeometry();
+    const positions = [-0.5, 0, 0, 0.5, 0, 0, 0.5, 1, 0, -0.5, 0, 0, 0.5, 1, 0, -0.5, 1, 0];
+    const uvs = [0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1];
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.computeVertexNormals();
+    return geo;
+  }
+  function buildTrees(trees) {
+    const treeTex = new THREE.TextureLoader().load("./assets/arbol_real4.png");
+    // Tarjeta plana (billboard) con la foto real completa (ya incluye
+    // tronco y copa) — se pidio que se vea igual que la foto, no un
+    // volumen 3D armado con esfera+cilindro por separado, que se veia
+    // raro con esta imagen especifica. La tarjeta se reorienta para
+    // mirar siempre hacia la camara (ver updateTreeBillboards), y como
+    // la camara es ortografica y esta fija a 45°, un solo angulo sirve
+    // para las 120 mil instancias.
+    // NOTA: se quito el tenido por especie (vertexColors + instanceColor)
+    // que se habia agregado -- producia arboles en negro solido en vez
+    // del color real de la foto. Vuelve a la version simple de antes.
+    const planeGeo = makePlaneGeometry();
+    const mat = new THREE.MeshStandardMaterial({
+      map: treeTex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.95,
+    });
+    const mesh = new THREE.InstancedMesh(planeGeo, mat, trees.length);
+    mesh.castShadow = false;
+    treeMesh = mesh;
+
+    treeInstanceData = new Array(trees.length);
+
+    trees.forEach((t, i) => {
+      const [x, y, hMeters, , code] = t;
+      const p = toScene(x, y);
+      const h = Math.max(0.3, hMeters * SCALE);
+      const w = h * (1.1 + (hash2(code) % 20) / 100 - 0.1);
+      treeInstanceData[i] = { x: p.x, z: p.z, w, h };
+    });
+    sceneRoot.add(mesh);
+    treeMeshes = [{ mesh, data: trees }];
+    updateTreeBillboards();
+  }
+  // Recalcula la rotacion de TODAS las tarjetas para que miren hacia la
+  // camara actual. Con camara ortografica la direccion hacia la camara es
+  // la misma sin importar la posicion en el suelo, asi que un solo angulo
+  // (el acimut actual de la camara) sirve para todas las instancias.
+  const dummyT = new THREE.Object3D();
+  function updateTreeBillboards() {
+    if (!treeMesh || !treeInstanceData) return;
+    const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z;
+    const faceAngle = Math.atan2(dx, dz);
+    for (let i = 0; i < treeInstanceData.length; i++) {
+      const d = treeInstanceData[i];
+      dummyT.position.set(d.x, 0, d.z);
+      dummyT.scale.set(d.w, d.h, d.w);
+      dummyT.rotation.set(0, faceAngle, 0);
+      dummyT.updateMatrix();
+      treeMesh.setMatrixAt(i, dummyT.matrix);
+    }
+    treeMesh.instanceMatrix.needsUpdate = true;
+  }
+  function hash2(str) { let h = 0; for (const c of (str || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
+
+  function loadTrees() {
+    return fetch(TREES_URL)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + TREES_URL); return r.json(); })
+      .then(data => {
+        buildTrees(data);
+        allTreesData = data;
+        birdTreesGrid = buildBirdTreeGrid(sampleAttractorTrees(data, 0));
+      })
+      .catch(err => console.warn("No se pudieron cargar los árboles:", err));
+  }
+
+  // ---- Mapa de ruido REAL en vivo: igual que en el modulo 8 en 2D
+  // (modulo-08-noise.js -> computeNoiseField), se recalcula en cada
+  // instante de la simulacion a partir de donde estan los vehiculos DE
+  // VERDAD en ese momento (no un valor fijo por via) — manchas de
+  // intensidad alrededor de cada carro, acumuladas con "lighter" en un
+  // canvas, luego coloreadas amarillo->rojo con el MISMO alpha fijo
+  // (0.42) que en 2D, sin importar el nivel. Empieza oculto.
+  const NOISE_ALPHA = 0.42;
+  const NOISE_BUF_W = 260, NOISE_BUF_H = 180; // resolucion baja a proposito, mancha continua no puntos
+  const NOISE_COLOR_STOPS = [
+    { t: 0.00, rgb: [255, 247, 179] }, { t: 0.20, rgb: [255, 224, 76] },
+    { t: 0.40, rgb: [255, 179, 77] }, { t: 0.60, rgb: [245, 124, 0] },
+    { t: 0.80, rgb: [230, 74, 25] }, { t: 1.00, rgb: [211, 47, 47] },
+  ];
+  function noiseColorAt(t) {
+    t = Math.max(0, Math.min(1, t));
+    for (let i = 0; i < NOISE_COLOR_STOPS.length - 1; i++) {
+      const a = NOISE_COLOR_STOPS[i], b = NOISE_COLOR_STOPS[i + 1];
+      if (t >= a.t && t <= b.t) {
+        const f = (t - a.t) / (b.t - a.t || 1);
+        return [Math.round(a.rgb[0] + (b.rgb[0] - a.rgb[0]) * f), Math.round(a.rgb[1] + (b.rgb[1] - a.rgb[1]) * f), Math.round(a.rgb[2] + (b.rgb[2] - a.rgb[2]) * f)];
+      }
+    }
+    return NOISE_COLOR_STOPS[NOISE_COLOR_STOPS.length - 1].rgb;
+  }
+  let noiseMesh = null, noiseTexture = null, noiseGroundW = 0, noiseGroundH = 0, noiseOriginX = 0, noiseOriginY = 0;
+  const noiseBufCanvas = document.createElement("canvas");
+  noiseBufCanvas.width = NOISE_BUF_W; noiseBufCanvas.height = NOISE_BUF_H;
+  const noiseBufCtx = noiseBufCanvas.getContext("2d", { willReadFrequently: true });
+  let noiseFieldImg = null; // se reusa para que las mirlas lean el mismo campo real
+  let noiseIntensityField = null; // intensidad 0..1 real, SEPARADA del color visual
+  // ---- Usos del suelo (Shapefile Usos_kennedy, 50.878 lotes reales,
+  // EPSG:4686 convertido a la proyeccion local) -- pinta el EDIFICIO
+  // COMPLETO (paredes + techo), no el piso, segun el uso real asignado
+  // por union espacial en Python (centroide del edificio contra el lote
+  // que lo contiene), guardado en kennedy_buildings_uso.json en el mismo
+  // orden que kennedy_buildings.json. ----
+  const USOS_COLORS = {
+    "Residencial": 0xf4d35e, "Comercio": 0xe63946, "Vias": 0x6b7280,
+    "Espacio publico": 0x52b788, "Suelo protegido": 0x1b4332,
+    "Dotacional": 0x457b9d, "Sin edificar": 0xd4c5a9, "Industrial": 0x7b2d8e,
+    "Parqueadero": 0x495057, "Recreacional": 0x8ac926, "Otros": 0xadb5bd
+  };
+  let usosSueloGroup = null, usosSueloLoading = false;
+  // Mapas que permiten recolorear un edificio individual despues de
+  // construido: por cada vertice se guarda a que edificio pertenece
+  // (bldIndexAttr), y bldVertexRanges[i] = [startVertex, vertexCount]
+  // para poder reescribir solo esos colores sin rehacer todo el mesh.
+  let bldVertexRanges = null;
+  let usosColorAttr = null;
+  let usosGeo = null;
+  // { buildingIndex: "#rrggbb" } -- correcciones manuales de la usuaria,
+  // pegadas desde el codigo que genera el panel de Usos del suelo.
+  const manualColorOverrides = {
+    359: "#f4d35e",
+    360: "#f4d35e",
+    375: "#f4d35e",
+    408: "#f4d35e",
+    38675: "#f4d35e",
+    39916: "#f4d35e",
+    40540: "#f4d35e",
+    46270: "#f4d35e",
+    50083: "#f4d35e",
+    57028: "#f4d35e",
+    57808: "#f4d35e",
+    58000: "#f4d35e",
+    58878: "#f4d35e",
+    59158: "#f4d35e",
+    59976: "#f4d35e",
+    59998: "#e63946",
+    60931: "#f4d35e",
+    60958: "#f4d35e",
+    62198: "#f4d35e",
+    62229: "#f4d35e",
+    62258: "#f4d35e",
+    67673: "#f4d35e",
+    76591: "#f4d35e",
+    81642: "#f4d35e",
+    85748: "#f4d35e",
+    86328: "#f4d35e",
+    90908: "#f4d35e",
+    91652: "#f4d35e",
+    96126: "#8ac926",
+    98111: "#f4d35e",
+    100098: "#f4d35e",
+    104571: "#f4d35e",
+    104684: "#f4d35e",
+    105363: "#e63946",
+    105470: "#f4d35e",
+    107140: "#f4d35e",
+    107821: "#e63946",
+    108042: "#f4d35e",
+    110969: "#f4d35e",
+    113639: "#e63946",
+    119966: "#f4d35e",
+    120199: "#f4d35e",
+    120340: "#e63946",
+    124092: "#f4d35e",
+    127835: "#f4d35e",
+    128428: "#f4d35e",
+    129229: "#f4d35e",
+    129383: "#f4d35e",
+    129384: "#f4d35e",
+    131129: "#e63946",
+    132319: "#f4d35e",
+    132610: "#f4d35e",
+    133788: "#f4d35e",
+    135436: "#f4d35e",
+    135444: "#f4d35e",
+    135742: "#f4d35e",
+    137947: "#f4d35e",
+    139338: "#f4d35e",
+    140451: "#f4d35e",
+    140528: "#f4d35e",
+    140536: "#f4d35e",
+    143124: "#f4d35e",
+    143729: "#f4d35e",
+    145146: "#f4d35e",
+    145895: "#f4d35e",
+    157743: "#f4d35e",
+    160511: "#f4d35e",
+    163639: "#f4d35e",
+    163867: "#f4d35e",
+    165104: "#e63946",
+    165534: "#f4d35e",
+    165949: "#f4d35e",
+    167554: "#e63946",
+    167587: "#f4d35e",
+    168758: "#f4d35e",
+    169948: "#8ac926",
+    171361: "#f4d35e",
+    172298: "#f4d35e",
+    172678: "#f4d35e",
+    172977: "#f4d35e",
+    175736: "#f4d35e",
+    176531: "#f4d35e",
+    176831: "#f4d35e",
+    177346: "#f4d35e",
+    179746: "#f4d35e",
+    180391: "#f4d35e",
+    182529: "#f4d35e",
+    182839: "#f4d35e",
+    183051: "#f4d35e",
+    185117: "#f4d35e",
+    195220: "#f4d35e",
+    195765: "#f4d35e",
+    199356: "#f4d35e",
+    199697: "#f4d35e",
+    199940: "#f4d35e",
+    201220: "#f4d35e",
+    201423: "#f4d35e",
+    203406: "#f4d35e",
+    205332: "#f4d35e",
+    207679: "#f4d35e",
+    211629: "#f4d35e",
+    211792: "#f4d35e",
+    212469: "#e63946",
+    213136: "#f4d35e",
+    215067: "#f4d35e",
+    215854: "#f4d35e",
+    216839: "#f4d35e",
+    217211: "#f4d35e",
+    217431: "#f4d35e",
+    217432: "#f4d35e",
+    217731: "#f4d35e",
+    218122: "#f4d35e",
+    218304: "#f4d35e",
+    219177: "#e63946",
+    222700: "#f4d35e",
+    223486: "#f4d35e",
+    225052: "#f4d35e",
+    227701: "#f4d35e",
+    235245: "#f4d35e",
+    235247: "#f4d35e",
+    235248: "#f4d35e",
+    235249: "#f4d35e",
+    235250: "#f4d35e",
+    235251: "#f4d35e",
+    235313: "#f4d35e",
+    235361: "#f4d35e",
+    235362: "#f4d35e",
+    235369: "#f4d35e",
+    235407: "#f4d35e",
+    235409: "#f4d35e",
+    235417: "#f4d35e",
+    235419: "#f4d35e",
+    235422: "#f4d35e",
+    235423: "#f4d35e",
+    235425: "#f4d35e",
+    235426: "#f4d35e",
+    235427: "#f4d35e",
+    235430: "#f4d35e",
+    235432: "#f4d35e",
+    235488: "#f4d35e",
+    235492: "#f4d35e",
+    235493: "#f4d35e",
+    235498: "#f4d35e",
+    235504: "#f4d35e",
+    236487: "#f4d35e",
+    236490: "#f4d35e",
+    236491: "#f4d35e",
+    236533: "#f4d35e",
+    239201: "#e63946",
+    239497: "#e63946",
+  };
+  function softenColor(hex) {
+    const c = new THREE.Color(hex);
+    return c.lerp(new THREE.Color(0xffffff), 0.35);
+  }
+  function buildUsosSueloBuildings(buildingsArr, usoArr) {
+    const TALL_THRESHOLD_M = 15; // a partir de esta altura real (metros), si no tiene uso asignado por el plano, se asume Residencial (torres de vivienda son las mas altas en Kennedy)
+    const NEARBY_RADIUS_M = 60; // radio para considerar "cerca de lo pintado"
+    const CELL_M = 40; // tamano de celda de la cuadrícula espacial (en metros reales)
+    const positions = [];
+    const colors = [];
+    bldVertexRanges = new Array(buildingsArr.length);
+
+    // --- Paso 1: centro de cada edificio + saber cuales ya tienen color
+    // (uso real, alto, o correccion manual) para armar una cuadricula
+    // espacial de edificios YA pintados. ---
+    const centers = new Array(buildingsArr.length);
+    const grid = new Map(); // "gx,gy" -> [indices de edificios pintados]
+    function cellKey(gx, gy) { return gx + "," + gy; }
+    buildingsArr.forEach((b, i) => {
+      const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length;
+      const cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
+      centers[i] = [cx, cy];
+      let uso = usoArr[i];
+      if (!uso && b.h >= TALL_THRESHOLD_M) uso = "Residencial";
+      const painted = !!manualColorOverrides[i] || !!uso;
+      if (painted) {
+        const gx = Math.floor(cx / CELL_M), gy = Math.floor(cy / CELL_M);
+        const key = cellKey(gx, gy);
+        if (!grid.has(key)) grid.set(key, []);
+        grid.get(key).push(i);
+      }
+    });
+    function isNearPainted(cx, cy) {
+      const gx = Math.floor(cx / CELL_M), gy = Math.floor(cy / CELL_M);
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          const bucket = grid.get(cellKey(gx + dx, gy + dy));
+          if (!bucket) continue;
+          for (const j of bucket) {
+            const [px, py] = centers[j];
+            const d2 = (px - cx) * (px - cx) + (py - cy) * (py - cy);
+            if (d2 <= NEARBY_RADIUS_M * NEARBY_RADIUS_M) return true;
+          }
+        }
+      }
+      return false;
+    }
+    const UNPAINTED_NEARBY_COLOR = USOS_COLORS["Comercio"]; // mismo rojo exacto de las convenciones (#e63946), no uno nuevo
+
+    let _dbgQuitados = 0, _dbgNuevos = 0;
+    buildingsArr.forEach((b, i) => {
+      let uso = usoArr[i];
+      if (!uso && b.h >= TALL_THRESHOLD_M) uso = "Residencial";
+      // Dispersion comercial: si el slider esta por debajo de 100%, el
+      // plano de usos TAMBIEN se ve distinto -- algunos edificios de
+      // Comercio cerca del polo original dejan de serlo (se reparte el
+      // comercio), y aparecen edificios de Comercio nuevos cerca de los
+      // polos dispersos, para que se vea de verdad "ya no es Corabastos
+      // centralizado, hay varios puntos de comercio".
+      if (comercioCentroide && dispersionFactor < 1 && centers[i]) {
+        const [cx, cy] = centers[i];
+        const h1 = hashVehId("b" + i) / 4294967295;
+        if (uso === "Comercio") {
+          const d2 = (cx - comercioCentroide.x) ** 2 + (cy - comercioCentroide.y) ** 2;
+          if (d2 < comercioRadioM * comercioRadioM && h1 > dispersionFactor) {
+            uso = "Otros"; // este ya no es comercio -- se repartio
+            _dbgQuitados++;
+          }
+        } else if (uso && polosDispersos.length) {
+          for (const polo of polosDispersos) {
+            const d2 = (cx - polo.x) ** 2 + (cy - polo.y) ** 2;
+            if (d2 < (comercioRadioM * 1.1) ** 2 && h1 < (1 - dispersionFactor) * 0.6) {
+              uso = "Comercio"; // comercio nuevo aparece aqui
+              _dbgNuevos++;
+              break;
+            }
+          }
+        }
+      }
+      let forcedRed = false;
+      if (manualColorOverrides[i]) {
+        // override manual: se usa tal cual, ya en formato #rrggbb
+      } else if (!uso) {
+        // sin uso asignado: solo se pinta de rojo si esta cerca de
+        // edificios que SI tienen color (zona de estudio); si esta
+        // lejos y aislado, se deja sin pintar (blanco), tal como se pidio.
+        const [cx, cy] = centers[i];
+        if (isNearPainted(cx, cy)) forcedRed = true;
+        else return;
+      }
+      const pts = b.pts.map(p => toScene(p[0], p[1]));
+      if (pts.length < 4) return;
+      const h = b.h * SCALE;
+      const colorHex = manualColorOverrides[i] || (forcedRed ? UNPAINTED_NEARBY_COLOR : USOS_COLORS[uso]) || USOS_COLORS["Otros"];
+      const soft = softenColor(colorHex);
+      const startVertex = positions.length / 3;
+
+      function pushTri(ax, ay, az, bx, by, bz, cx, cy, cz) {
+        positions.push(ax, ay, az, bx, by, bz, cx, cy, cz);
+        for (let n = 0; n < 3; n++) colors.push(soft.r, soft.g, soft.b);
+      }
+      // Paredes
+      for (let k = 0; k < pts.length - 1; k++) {
+        const a = pts[k], c = pts[k + 1];
+        pushTri(a.x, 0, a.z, c.x, 0, c.z, c.x, h, c.z);
+        pushTri(a.x, 0, a.z, c.x, h, c.z, a.x, h, a.z);
+      }
+      // Techo: triangulacion real (ear-clipping), que si funciona con
+      // edificios en L/U/formas no convexas -- el abanico simple de antes
+      // dejaba huecos en esos casos y por eso algunos techos se veian sin
+      // color. Se sube un pelin (epsilon) para evitar z-fighting.
+      const hRoof = h + 0.03;
+      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+      let tris = [];
+      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); } catch (e) { tris = []; }
+      tris.forEach(([ia, ib, ic]) => {
+        pushTri(pts[ia].x, hRoof, pts[ia].z, pts[ib].x, hRoof, pts[ib].z, pts[ic].x, hRoof, pts[ic].z);
+      });
+
+      const vertexCount = positions.length / 3 - startVertex;
+      bldVertexRanges[i] = [startVertex, vertexCount];
+    });
+    usosGeo = new THREE.BufferGeometry();
+    usosGeo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    usosColorAttr = new THREE.Float32BufferAttribute(colors, 3);
+    usosGeo.setAttribute("color", usosColorAttr);
+    usosGeo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.85, metalness: 0.02 });
+    usosSueloGroup = new THREE.Group();
+    usosSueloGroup.add(new THREE.Mesh(usosGeo, mat));
+    sceneRoot.add(usosSueloGroup);
+    console.log("[dispersion] factor:", dispersionFactor, "| centroide:", comercioCentroide, "| polos:", polosDispersos.length, "| quitados de Comercio:", _dbgQuitados, "| nuevos Comercio:", _dbgNuevos);
+  }
+  function toggleUsosSuelo() {
+    console.log("[usos] toggleUsosSuelo llamado, usosSueloGroup:", !!usosSueloGroup, "loading:", usosSueloLoading);
+    const legend = document.getElementById("usosSueloLegend");
+    const loadingEl = document.getElementById("usosSueloLoading");
+    const btn = document.getElementById("usosSueloBtn");
+    if (usosSueloGroup) {
+      usosSueloGroup.visible = !usosSueloGroup.visible;
+      if (legend) {
+        legend.style.display = usosSueloGroup.visible ? "block" : "none";
+        if (usosSueloGroup.visible) { legend.classList.remove("pop-in"); void legend.offsetWidth; legend.classList.add("pop-in"); }
+      }
+      if (btn) btn.style.background = usosSueloGroup.visible ? "rgba(0,0,0,.08)" : "";
+      return;
+    }
+    if (usosSueloLoading) return;
+    usosSueloLoading = true;
+    if (legend) { legend.style.display = "block"; legend.classList.add("pop-in"); }
+    if (loadingEl) loadingEl.textContent = "Cargando usos del suelo…";
+    cargarDatosUsos().then(([buildingsArr, usoArr]) => {
+      if (!comercioCentroide) comercioCentroide = calcularCentroideComercial(buildingsArr, usoArr);
+      buildUsosSueloBuildings(buildingsArr, usoArr);
+      usosSueloLoading = false;
+      if (loadingEl) loadingEl.textContent = "";
+      if (btn) btn.style.background = "rgba(0,0,0,.08)";
+    }).catch(err => {
+      console.error("[usos del suelo]", err);
+      usosSueloLoading = false;
+      if (loadingEl) loadingEl.textContent = "No se pudo cargar.";
+    });
+  }
+  // Los dos edificios/usos (JSON) se comparten entre el plano de usos y
+  // la dispersion comercial -- se piden una sola vez, no por separado.
+  let datosUsosPromise = null;
+  function cargarDatosUsos() {
+    if (!datosUsosPromise) {
+      datosUsosPromise = Promise.all([
+        fetch(BUILDINGS_URL).then(r => r.json()),
+        fetch("./assets/kennedy_buildings_uso.json").then(r => r.json())
+      ]);
+    }
+    return datosUsosPromise;
+  }
+  // Si el plano de usos ya esta construido y se mueve el slider de
+  // dispersion, se reconstruye en vivo para que se vea el comercio
+  // repartiendose de verdad, no solo el efecto en el ruido.
+  function reconstruirUsosSiVisible() {
+    if (!usosSueloGroup || !usosSueloGroup.visible) return;
+    cargarDatosUsos().then(([buildingsArr, usoArr]) => {
+      sceneRoot.remove(usosSueloGroup);
+      usosGeo?.dispose();
+      buildUsosSueloBuildings(buildingsArr, usoArr);
+    });
+  }
+  // ---- Herramienta de alineacion manual: el plano de usos (solo
+  // contornos, sin triangular -- mucho mas liviano) se puede arrastrar
+  // con el mouse sobre el piso, y se muestran las coordenadas finales
+  // para fijar el desplazamiento correcto de una vez. ----
+  const USOS_OUTLINE_COLORS = {
+    "Residencial": 0xf4d35e, "Comercio": 0xe63946, "Dotacional": 0x457b9d,
+    "Industrial": 0x7b2d8e, "Parqueadero": 0x495057, "Recreacional": 0x8ac926, "Otros": 0xadb5bd
+  };
+  const INITIAL_OFFSET_X = 984549.70, INITIAL_OFFSET_Y = 1001643.24; // ajustado a mano por la usuaria con la herramienta de arrastre -- confirmado que mejora la cobertura real (36.8% -> 44.3%)
+  let alinearGroup = null, alinearLoading = false, alinearActive = false;
+  let alinearDragging = false, alinearLastX = 0, alinearLastY = 0;
+  function parseOutlineBin(buf) {
+    const dv = new DataView(buf);
+    let offset = 0;
+    const n = dv.getUint32(offset, true); offset += 4;
+    const metas = [];
+    for (let i = 0; i < n; i++) {
+      const nameLen = dv.getUint16(offset, true); offset += 2;
+      const nameBytes = new Uint8Array(buf, offset, nameLen); offset += nameLen;
+      const name = new TextDecoder("utf-8").decode(nameBytes);
+      const count = dv.getUint32(offset, true); offset += 4;
+      metas.push({ name, count });
+    }
+    const data = {};
+    metas.forEach(m => {
+      data[m.name] = new Float32Array(buf.slice(offset, offset + m.count * 4));
+      offset += m.count * 4;
+    });
+    return data;
+  }
+  function buildAlinearLines(data) {
+    alinearGroup = new THREE.Group();
+    Object.keys(data).forEach(categoria => {
+      const flat = data[categoria];
+      if (!flat || !flat.length) return;
+      const colorHex = USOS_OUTLINE_COLORS[categoria] !== undefined ? USOS_OUTLINE_COLORS[categoria] : 0xadb5bd;
+      const positions = new Float32Array((flat.length / 2) * 3);
+      for (let i = 0, j = 0; i < flat.length; i += 2, j += 3) {
+        const p = toScene(flat[i] - INITIAL_OFFSET_X, flat[i + 1] - INITIAL_OFFSET_Y);
+        positions[j] = p.x; positions[j + 1] = 0.15; positions[j + 2] = p.z;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      const mat = new THREE.LineBasicMaterial({ color: colorHex });
+      alinearGroup.add(new THREE.LineSegments(geo, mat));
+    });
+    sceneRoot.add(alinearGroup);
+    updateAlinearCoordsOutput();
+  }
+  function updateAlinearCoordsOutput() {
+    const out = document.getElementById("alinearPlanoCoords");
+    if (!out || !alinearGroup) return;
+    const finalOffsetX = INITIAL_OFFSET_X - alinearGroup.position.x / SCALE;
+    const finalOffsetY = INITIAL_OFFSET_Y + alinearGroup.position.z / SCALE;
+    out.value = `OFFSET_X: ${finalOffsetX.toFixed(2)}\nOFFSET_Y: ${finalOffsetY.toFixed(2)}\n(movido: ${alinearGroup.position.x.toFixed(1)}, ${alinearGroup.position.z.toFixed(1)} en escena)`;
+  }
+  function toggleAlinearPlano() {
+    const panel = document.getElementById("alinearPlanoPanel");
+    const btn = document.getElementById("alinearPlanoBtn");
+    if (alinearGroup) {
+      alinearActive = !alinearActive;
+      alinearGroup.visible = alinearActive;
+      if (panel) panel.style.display = alinearActive ? "block" : "none";
+      if (btn) btn.style.background = alinearActive ? "rgba(0,0,0,.08)" : "";
+      return;
+    }
+    if (alinearLoading) return;
+    alinearLoading = true;
+    fetch("./assets/kennedy_usos_outline.bin").then(r => r.arrayBuffer()).then(buf => {
+      const data = parseOutlineBin(buf);
+      buildAlinearLines(data);
+      alinearActive = true;
+      alinearLoading = false;
+      if (panel) panel.style.display = "block";
+      if (btn) btn.style.background = "rgba(0,0,0,.08)";
+    }).catch(err => { console.error("[alinear plano]", err); alinearLoading = false; });
+  }
+  const alinearPlanoBtn = document.getElementById("alinearPlanoBtn");
+  if (alinearPlanoBtn) alinearPlanoBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleAlinearPlano(); });
+  const alinearPlanoCopyBtn = document.getElementById("alinearPlanoCopy");
+  if (alinearPlanoCopyBtn) alinearPlanoCopyBtn.addEventListener("click", () => {
+    const out = document.getElementById("alinearPlanoCoords");
+    if (out) { out.select(); document.execCommand("copy"); }
+  });
+  // Arrastre: clic izquierdo + mover, SOLO mientras el modo esta activo --
+  // asi no interfiere con la orbita normal de la camara (que usa el mismo
+  // boton). Se mueve el grupo en el plano X/Z (piso), no en altura.
+  renderer.domElement.addEventListener("pointerdown", (e) => {
+    if (!alinearActive || !alinearGroup || e.button !== 0) return;
+    alinearDragging = true;
+    alinearLastX = e.clientX; alinearLastY = e.clientY;
+    e.stopImmediatePropagation();
+  }, true);
+  window.addEventListener("pointermove", (e) => {
+    if (!alinearDragging || !alinearGroup) return;
+    const dx = e.clientX - alinearLastX, dy = e.clientY - alinearLastY;
+    alinearLastX = e.clientX; alinearLastY = e.clientY;
+    // factor exacto: unidades de escena por pixel, segun el frustum
+    // ortografico actual (top-bottom) y el alto real del canvas.
+    const rect = renderer.domElement.getBoundingClientRect();
+    const unitsPerPixel = (camera.top - camera.bottom) / rect.height;
+    // Se proyectan los ejes derecha/arriba de la CAMARA sobre el piso
+    // (X/Z), para que arrastrar siga al mouse sin importar el angulo u
+    // orbita actual de la vista (no solo cuando mira derecho hacia abajo).
+    const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+    camRight.y = 0; camUp.y = 0;
+    camRight.normalize(); camUp.normalize();
+    const moveX = dx * unitsPerPixel, moveY = -dy * unitsPerPixel;
+    alinearGroup.position.x += camRight.x * moveX + camUp.x * moveY;
+    alinearGroup.position.z += camRight.z * moveX + camUp.z * moveY;
+    updateAlinearCoordsOutput();
+    e.stopPropagation();
+  }, true);
+  window.addEventListener("pointerup", () => { alinearDragging = false; });
+
+  // ---- Clic en un edificio individual para cambiarle el color a mano.
+  // Las correcciones se guardan en manualColorOverrides (por indice de
+  // edificio) y se exportan como un codigo de texto corto que la usuaria
+  // puede copiar y pegar de vuelta para dejarlas fijas de forma permanente. ----
+  function findBuildingIndexFromFace(faceIndex) {
+    if (!bldVertexRanges) return null;
+    const v0 = faceIndex * 3; // primer vertice de ese triangulo en la geometria no indexada
+    for (let i = 0; i < bldVertexRanges.length; i++) {
+      const r = bldVertexRanges[i];
+      if (!r) continue;
+      if (v0 >= r[0] && v0 < r[0] + r[1]) return i;
+    }
+    return null;
+  }
+  function recolorBuilding(buildingIndex, colorHex) {
+    manualColorOverrides[buildingIndex] = colorHex;
+    const range = bldVertexRanges[buildingIndex];
+    if (!range || !usosColorAttr) return;
+    const soft = softenColor(colorHex);
+    const [start, count] = range;
+    for (let v = start; v < start + count; v++) {
+      usosColorAttr.setXYZ(v, soft.r, soft.g, soft.b);
+    }
+    usosColorAttr.needsUpdate = true;
+    updateCorreccionesOutput();
+  }
+  function updateCorreccionesOutput() {
+    const box = document.getElementById("usosCorreccionesBox");
+    const out = document.getElementById("usosCorreccionesOut");
+    const keys = Object.keys(manualColorOverrides);
+    if (!out || !box) return;
+    if (keys.length === 0) { box.style.display = "none"; return; }
+    box.style.display = "block";
+    out.value = keys.map(k => `${k}:${manualColorOverrides[k]}`).join(";");
+  }
+  const usosCorreccionesCopyBtn = document.getElementById("usosCorreccionesCopy");
+  if (usosCorreccionesCopyBtn) usosCorreccionesCopyBtn.addEventListener("click", () => {
+    const out = document.getElementById("usosCorreccionesOut");
+    if (out) { out.select(); document.execCommand("copy"); }
+  });
+
+  const PICKER_COLORS = Object.keys(USOS_COLORS).map(k => USOS_COLORS[k]);
+  const colorPickerEl = document.getElementById("buildingColorPicker");
+  const swatchesEl = document.getElementById("buildingColorSwatches");
+  let pickerTargetBuilding = null;
+  if (swatchesEl) {
+    PICKER_COLORS.forEach(hex => {
+      const sw = document.createElement("div");
+      const hexStr = "#" + hex.toString(16).padStart(6, "0");
+      sw.style.cssText = `width:22px; height:22px; border-radius:5px; cursor:pointer; background:${hexStr}; border:1px solid rgba(0,0,0,.15);`;
+      sw.addEventListener("click", () => {
+        if (pickerTargetBuilding !== null) recolorBuilding(pickerTargetBuilding, hexStr);
+        colorPickerEl.style.display = "none";
+      });
+      swatchesEl.appendChild(sw);
+    });
+  }
+  const usosRaycaster = new THREE.Raycaster();
+  const usosPointerNDC = new THREE.Vector2();
+  renderer.domElement.addEventListener("click", (e) => {
+    if (!usosSueloGroup || !usosSueloGroup.visible || alinearActive) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    usosPointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    usosPointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    usosRaycaster.setFromCamera(usosPointerNDC, camera);
+    const hits = usosRaycaster.intersectObject(usosSueloGroup, true);
+    if (!hits.length) { if (colorPickerEl) colorPickerEl.style.display = "none"; return; }
+    const bIdx = findBuildingIndexFromFace(hits[0].faceIndex);
+    if (bIdx === null) return;
+    pickerTargetBuilding = bIdx;
+    if (colorPickerEl) {
+      colorPickerEl.style.left = e.clientX + "px";
+      colorPickerEl.style.top = e.clientY + "px";
+      colorPickerEl.style.display = "block";
+    }
+  });
+
+  const usosSueloBtn = document.getElementById("usosSueloBtn");
+  if (usosSueloBtn) usosSueloBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleUsosSuelo(); });
+
+  // ---- Dispersion del comercio: al bajar la "concentracion comercial",
+  // se reduce la intensidad del ruido/trafico especificamente en el
+  // radio del polo comercial principal real (centroide de los edificios
+  // de uso Comercio, que en Kennedy cae cerca de Corabastos) -- como si
+  // esos carros ya no convergieran todos ahi porque el comercio esta mas
+  // repartido. Es un modelo conceptual (igual que el resto de esta
+  // simulacion, que ya se aclara que no es SUMO real), no un recalculo
+  // de rutas, pero el efecto visual en el mapa de ruido es real: se nota
+  // menos rojo alrededor de ese punto.
+  // dispersionFactor: 1 = comercio concentrado en un solo polo (modelo
+  // base), 0 = totalmente repartido entre varios polos nuevos. No es
+  // solo bajar la intensidad del ruido -- los vehiculos que iban hacia
+  // el polo original de verdad se REDIRIGEN (cambia el punto donde
+  // aportan ruido) hacia los polos dispersos, asi el trancon baja en el
+  // punto original PORQUE los carros ya no van todos ahi, no porque se
+  // les reste intensidad artificialmente.
+  let comercioCentroide = null, comercioRadioM = 550, dispersionFactor = 1;
+  let polosDispersos = [];
+  let dispersionLoading = false;
+  function calcularCentroideComercial(buildingsArr, usoArr) {
+    let sx = 0, sy = 0, n = 0;
+    buildingsArr.forEach((b, i) => {
+      if (usoArr[i] !== "Comercio") return;
+      const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length;
+      const cy = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
+      sx += cx; sy += cy; n++;
+    });
+    if (!n) return null;
+    const centro = { x: sx / n, y: sy / n };
+    // 4 polos nuevos alrededor del original, a una distancia razonable
+    // (unas 15-18 cuadras), dentro del area real de Kennedy.
+    const DIST_M = 2200;
+    const angulos = [Math.PI * 0.15, Math.PI * 0.85, Math.PI * 1.35, Math.PI * 1.85];
+    polosDispersos = angulos.map(a => ({
+      x: Math.min(10400, Math.max(600, centro.x + Math.cos(a) * DIST_M)),
+      y: Math.min(6300, Math.max(400, centro.y + Math.sin(a) * DIST_M)),
+    }));
+    return centro;
+  }
+  function hashVehId(id) {
+    let h = 0;
+    const s = String(id);
+    for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) >>> 0;
+    return h;
+  }
+  // La dispersion ya no tiene boton aparte -- el slider vive DENTRO del
+  // panel de Usos del Suelo, y se activa solo (calcula el centroide
+  // comercial) la primera vez que esa capa se muestra.
+  function asegurarCentroideComercial() {
+    if (comercioCentroide || dispersionLoading) return;
+    dispersionLoading = true;
+    const statusEl = document.getElementById("dispersionStatus");
+    if (statusEl) statusEl.textContent = "Ubicando el polo comercial…";
+    cargarDatosUsos().then(([buildingsArr, usoArr]) => {
+      comercioCentroide = calcularCentroideComercial(buildingsArr, usoArr);
+      dispersionLoading = false;
+      if (statusEl) statusEl.textContent = "";
+    }).catch(err => {
+      console.error("[dispersion comercio]", err);
+      dispersionLoading = false;
+      if (statusEl) statusEl.textContent = "No se pudo cargar.";
+    });
+  }
+  const dispersionSlider = document.getElementById("dispersionSlider");
+  const dispersionVal = document.getElementById("dispersionVal");
+  if (dispersionSlider) dispersionSlider.addEventListener("input", () => {
+    const v = Number(dispersionSlider.value);
+    dispersionFactor = v / 100;
+    if (dispersionVal) dispersionVal.textContent = v === 100 ? "100% (base)" : `${v}%`;
+    reconstruirUsosSiVisible();
+  });
+
+  function buildNoiseGround(bbox) {
+    noiseOriginX = bbox[0]; noiseOriginY = bbox[1];
+    noiseGroundW = bbox[2] - bbox[0]; noiseGroundH = bbox[3] - bbox[1];
+    const c0 = toScene(bbox[0], bbox[1]), c1 = toScene(bbox[2], bbox[3]);
+    const w = Math.abs(c1.x - c0.x), h = Math.abs(c1.z - c0.z);
+    const geo = new THREE.PlaneGeometry(w, h);
+    noiseTexture = new THREE.CanvasTexture(noiseBufCanvas);
+    const mat = new THREE.MeshBasicMaterial({ map: noiseTexture, transparent: true, opacity: 1, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set((c0.x + c1.x) / 2, 0.06, (c0.z + c1.z) / 2);
+    mesh.visible = false;
+    sceneRoot.add(mesh);
+    noiseMesh = mesh;
+  }
+  // Radio de mancha por vehiculo (metros reales) — como no se tiene aqui
+  // la clasificacion local/mid/major por cercania a cada vehiculo (si en
+  // 2D), se usa un radio intermedio razonable, igual para todos.
+  const NOISE_VEH_RADIUS_M = 55;
+  let lastNoiseCompute = 0;
+  function computeLiveNoiseField(vehicles, now) {
+    if (!noiseGroundW || (now - lastNoiseCompute < 140)) return;
+    lastNoiseCompute = now;
+    noiseBufCtx.clearRect(0, 0, NOISE_BUF_W, NOISE_BUF_H);
+    noiseBufCtx.globalCompositeOperation = "lighter";
+    const sx = NOISE_BUF_W / noiseGroundW, sy = NOISE_BUF_H / noiseGroundH;
+    const blobR = NOISE_VEH_RADIUS_M * sx;
+    vehicles.forEach(v => {
+      // Si el comercio se dispersa (dispersionFactor < 1): un vehiculo
+      // que esta dentro del radio del polo original, con probabilidad
+      // (1-dispersionFactor) -- fija por vehiculo (por su id), no
+      // parpadeando cuadro a cuadro -- aporta su ruido en uno de los
+      // polos dispersos EN VEZ DEL original. Es una redireccion real de
+      // a donde "va" ese trafico, no solo restarle intensidad.
+      let wx = v.x, wy = v.y;
+      if (comercioCentroide && dispersionFactor < 1 && polosDispersos.length) {
+        const d2 = (v.x - comercioCentroide.x) ** 2 + (v.y - comercioCentroide.y) ** 2;
+        if (d2 < comercioRadioM * comercioRadioM) {
+          const h = hashVehId(v.id) / 4294967295; // 0..1 estable para este vehiculo
+          if (h > dispersionFactor) {
+            const polo = polosDispersos[hashVehId(v.id + "_p") % polosDispersos.length];
+            // se posiciona cerca del polo disperso (con un poco de
+            // variacion por vehiculo para no apilarlos en un punto exacto)
+            const jx = (hashVehId(v.id + "_jx") % 200) - 100;
+            const jy = (hashVehId(v.id + "_jy") % 200) - 100;
+            wx = polo.x + jx; wy = polo.y + jy;
+          }
+        }
+      }
+      const bx = (wx - noiseOriginX) * sx, by = NOISE_BUF_H - (wy - noiseOriginY) * sy;
+      const grad = noiseBufCtx.createRadialGradient(bx, by, 0, bx, by, blobR);
+      grad.addColorStop(0, "rgba(255,255,255,0.9)");
+      grad.addColorStop(1, "rgba(255,255,255,0)");
+      noiseBufCtx.fillStyle = grad;
+      noiseBufCtx.beginPath(); noiseBufCtx.arc(bx, by, blobR, 0, Math.PI * 2); noiseBufCtx.fill();
+    });
+    noiseBufCtx.globalCompositeOperation = "source-over";
+    const img = noiseBufCtx.getImageData(0, 0, NOISE_BUF_W, NOISE_BUF_H);
+    const data = img.data;
+    // Intensidad REAL (0..1) guardada aparte, independiente del color
+    // visual -- antes las mirlas trataban de adivinar el ruido por el
+    // brillo del color pintado, y al cambiar la paleta a tonos oliva
+    // (todos con un brillo muy parecido entre si) esa adivinanza dejo de
+    // funcionar bien, haciendo que casi todo se sintiera "ruidoso" por
+    // igual. Con esto, cambiar los colores del mapa nunca vuelve a
+    // romper el comportamiento real de las mirlas.
+    if (!noiseIntensityField || noiseIntensityField.length !== NOISE_BUF_W * NOISE_BUF_H) {
+      noiseIntensityField = new Float32Array(NOISE_BUF_W * NOISE_BUF_H);
+    }
+    for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+      const intensity = data[i + 3] / 255;
+      if (intensity < 0.02) { data[i + 3] = 0; noiseIntensityField[p] = 0; continue; }
+      const t = Math.min(1, Math.pow(intensity, 2.4));
+      noiseIntensityField[p] = t;
+      const [r, g, b] = noiseColorAt(t);
+      data[i] = r; data[i + 1] = g; data[i + 2] = b;
+      data[i + 3] = Math.round(NOISE_ALPHA * 255); // alpha SIEMPRE el mismo, solo cambia el color
+    }
+    noiseFieldImg = img;
+    if (noiseMesh && noiseMesh.visible) {
+      noiseBufCtx.putImageData(img, 0, 0);
+      noiseTexture.needsUpdate = true;
+    }
+  }
+  // Lectura del campo real en un punto del mundo (mismas coordenadas que
+  // usan los arboles/mirlas), para que las mirlas huyan del ruido de
+  // donde estan los carros DE VERDAD en este instante, no un valor fijo.
+  const NOISE_DB_BASE = 40, NOISE_DB_SPAN = 52;
+  function noiseDbAt(x, y) {
+    if (!noiseIntensityField || !noiseGroundW) return NOISE_DB_BASE;
+    const bx = Math.floor(((x - noiseOriginX) / noiseGroundW) * NOISE_BUF_W);
+    const by = Math.floor(NOISE_BUF_H - ((y - noiseOriginY) / noiseGroundH) * NOISE_BUF_H);
+    if (bx < 0 || by < 0 || bx >= NOISE_BUF_W || by >= NOISE_BUF_H) return NOISE_DB_BASE;
+    const t = noiseIntensityField[by * NOISE_BUF_W + bx] || 0; // intensidad REAL, ya no se adivina por el color
+    if (t < 0.01) return NOISE_DB_BASE;
+    return NOISE_DB_BASE + NOISE_DB_SPAN * t;
+  }
+  function noiseEscapeDir(x, y) {
+    const paso = (noiseGroundW / NOISE_BUF_W) * 3;
+    const gx = noiseDbAt(x + paso, y) - noiseDbAt(x - paso, y);
+    const gy = noiseDbAt(x, y + paso) - noiseDbAt(x, y - paso);
+    const m = Math.hypot(gx, gy);
+    if (m < 1e-4) return null;
+    return [-gx / m, -gy / m];
+  }
+
+  // ============================================================
+  // MIRLAS (Turdus fuscater) — puerto fiel de la simulacion real de
+  // agentes que ya existe en 2D (modulo-08-sumo.js): aves que se
+  // desplazan de oriente (Cerros Orientales) a occidente (humedales),
+  // atraidas por arboles reales de 3 especies (Sauco, Cerezo/capuli,
+  // Urapan-Fresno) del Arbolado Urbano real de Kennedy, huyendo de las
+  // zonas con mas de 60 dB(A) de ruido (usando el mismo indice real de
+  // ruido ya cargado), con un grupo residente en un refugio fijo.
+  // ============================================================
+  const LA_VACA_X = 6017.9, LA_VACA_Y = 1980.2; // centro real de Humedal La Vaca
+  // Los DOS humedales reales deben tener dinamica de mirlas -- El Burro
+  // (centro real calculado de su poligono, elBurroCentro) y La Vaca
+  // (punto fijo). getHumedalCentro() elige uno al azar cada vez que se
+  // llama (para repartir mirlas y cobertura entre ambos, no solo uno).
+  function getHumedalCentro() {
+    const burro = (typeof elBurroCentro !== "undefined" && elBurroCentro) ? elBurroCentro : null;
+    const vaca = { x: LA_VACA_X, y: LA_VACA_Y };
+    if (!burro) return vaca;
+    return Math.random() < 0.5 ? burro : vaca;
+  }
+  // Para la concentracion de cobertura vegetal extra: distancia al MAS
+  // CERCANO de los dos humedales (no solo a uno), asi arboles cerca de
+  // cualquiera de los dos se priorizan.
+  function distAlHumedalMasCercano(x, y) {
+    const burro = (typeof elBurroCentro !== "undefined" && elBurroCentro) ? elBurroCentro : null;
+    const dVaca = (x - LA_VACA_X) ** 2 + (y - LA_VACA_Y) ** 2;
+    if (!burro) return dVaca;
+    const dBurro = (x - burro.x) ** 2 + (y - burro.y) ** 2;
+    return Math.min(dVaca, dBurro);
+  }
+  const BIRD_TREE_SPECIES = {
+    "Sauco": { key: "sauco", color: 0xb06bff, weight: 1.0, base: 260 },
+    "Cerezo, capuli": { key: "capuli", color: 0xff5fa8, weight: 0.76, base: 200 },
+    "Urapán, Fresno": { key: "urapan", color: 0x25d0a0, weight: 0.52, base: 220 },
+  };
+  const BIRD_VISION = 38, BIRD_ARRIVE = 1.4, BIRD_WIND = 1.5, BIRD_MAX_SPEED = 4.2; // vision ampliada (antes 14): con 780 arboles repartidos en toda la ciudad, un campo visual chico hacia que muchas mirlas nunca encontraran ningun arbol cerca y parecieran "no atraerse" a nada
+  const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 9.5; let BIRD_COUNT = 90; // 90 de inicio (antes 60), ajustable luego con el slider -- K_REP subido de 4.2 a 9.5 para que el escape del ruido se note mucho mas fuerte y claro
+  const REFUGE_X = 3600, REFUGE_Y = 1000, REFUGE_R = 220; // esquina noroeste real del area de Kennedy
+  let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null, allTreesData = null, birdsSnappedToTrees = false;
+  let noiseEdgesRaw = null; // se reusan los mismos datos reales de ruido ya cargados
+
+  function sampleAttractorTrees(trees, vegBoost) {
+    const boost = vegBoost || 0;
+    const factor = 1 + boost / 100; // igual formula que la simulacion 2D
+    const porEspecie = {};
+    trees.forEach(t => {
+      const meta = BIRD_TREE_SPECIES[t[3]];
+      if (meta) (porEspecie[meta.key] || (porEspecie[meta.key] = [])).push({ x: t[0], y: t[1], meta });
+    });
+    const out = [];
+    Object.keys(porEspecie).forEach(k => {
+      const lista = porEspecie[k];
+      const meta = lista[0].meta;
+      const topeBase = meta.base;
+      const pasoBase = Math.max(1, Math.floor(lista.length / topeBase));
+      const baseSample = [];
+      const usados = new Set();
+      for (let i = 0; i < lista.length; i += pasoBase) { baseSample.push(lista[i]); usados.add(i); }
+      if (boost <= 0) {
+        // reduccion: se achica la muestra base de siempre, repartida por
+        // toda la ciudad (una baja pareja no tiene por que ser solo cerca
+        // del humedal).
+        const topeReducido = Math.max(1, Math.round(topeBase * factor));
+        out.push(...baseSample.slice(0, topeReducido));
+      } else {
+        // aumento: los arboles EXTRA se toman de los mas cercanos al
+        // humedal (de los que no estaban ya en la muestra base), tal
+        // como se pidio -- asi mas cobertura vegetal se nota alrededor
+        // del humedal, no repartida parejo por toda la ciudad.
+        out.push(...baseSample);
+        const topeTotal = Math.round(topeBase * factor);
+        const extraNecesarios = Math.max(0, topeTotal - topeBase);
+        if (extraNecesarios > 0) {
+          const candidatosCercaHumedal = lista
+            .map((t, i) => ({ t, i, d2: distAlHumedalMasCercano(t.x, t.y) }))
+            .filter(c => !usados.has(c.i))
+            .sort((a, b) => a.d2 - b.d2)
+            .slice(0, extraNecesarios);
+          candidatosCercaHumedal.forEach(c => out.push(c.t));
+        }
+      }
+    });
+    return out;
+  }
+  // Marcadores de color SOBRE los arboles atractores reales (Sauco,
+  // Capuli, Urapan), para que se vea exactamente donde estan ubicados --
+  // sin tocar el material/textura del arbol real (eso ya causo el bug de
+  // los arboles en negro una vez, se deja intacto). Son discos pequenos
+  // flotando justo encima de la copa de cada arbol atractor.
+  let attractorMarkersGroup = null;
+  const MARKER_BASE_R = 1.4; // un poco mas grande que el ultimo ajuste (0.9), seguia siendo muy chico
+  function buildAttractorTreeMarkers(attractors) {
+    if (attractorMarkersGroup) { sceneRoot.remove(attractorMarkersGroup); attractorMarkersGroup.geometry?.dispose(); }
+    const diskGeo = new THREE.CircleGeometry(MARKER_BASE_R, 10);
+    diskGeo.rotateX(-Math.PI / 2);
+    const porColor = {};
+    attractors.forEach(a => {
+      const hex = a.meta.color;
+      if (!porColor[hex]) porColor[hex] = [];
+      porColor[hex].push(a);
+    });
+    attractorMarkersGroup = new THREE.Group();
+    const dummy = new THREE.Object3D();
+    Object.keys(porColor).forEach(hex => {
+      const lista = porColor[hex];
+      const mat = new THREE.MeshBasicMaterial({ color: parseInt(hex), side: THREE.DoubleSide, transparent: true, opacity: 0.85, depthWrite: false });
+      const inst = new THREE.InstancedMesh(diskGeo, mat, lista.length);
+      lista.forEach((a, i) => {
+        const p = toScene(a.x, a.y);
+        dummy.position.set(p.x, 6, p.z); // flotando sobre la copa del arbol
+        dummy.scale.set(1, 1, 1);
+        dummy.updateMatrix();
+        inst.setMatrixAt(i, dummy.matrix);
+        // Se guarda en el propio objeto del arbol (el mismo que usan las
+        // mirlas para apuntar) la referencia a su instancia, para poder
+        // agrandarlo/iluminarlo cuando una mirla aterriza ahi.
+        a.markerMesh = inst; a.markerIndex = i; a.markerScenePos = p;
+      });
+      inst.instanceMatrix.needsUpdate = true;
+      attractorMarkersGroup.add(inst);
+    });
+    attractorMarkersGroup.visible = birdsGroup ? birdsGroup.visible : false;
+    sceneRoot.add(attractorMarkersGroup);
+  }
+  const markerDummy = new THREE.Object3D();
+  let litTrees = []; // arboles actualmente iluminados (una mirla acaba de llegar)
+  function litUpMarker(arbol) {
+    if (!arbol || !arbol.markerMesh) return;
+    if (!arbol._lit) { arbol._lit = true; litTrees.push(arbol); }
+    arbol.litUntil = performance.now() + 2600; // 2.6s de brillo tras aterrizar
+  }
+  function updateAttractorMarkerGlow(now) {
+    if (!attractorMarkersGroup || !litTrees.length) return;
+    litTrees = litTrees.filter(arbol => {
+      const activo = arbol.litUntil > now;
+      const t = activo ? (arbol.litUntil - now) / 2600 : 0; // 1 justo al aterrizar -> 0 al apagarse
+      const s = 1 + t * 2.6; // se agranda hasta 3.6x al llegar, vuelve a su tamano normal
+      markerDummy.position.copy(arbol.markerScenePos ? new THREE.Vector3(arbol.markerScenePos.x, 6, arbol.markerScenePos.z) : markerDummy.position);
+      markerDummy.scale.set(s, s, s);
+      markerDummy.updateMatrix();
+      arbol.markerMesh.setMatrixAt(arbol.markerIndex, markerDummy.matrix);
+      arbol.markerMesh.instanceMatrix.needsUpdate = true;
+      if (!activo) arbol._lit = false;
+      return activo;
+    });
+  }
+  let allAttractorsFlat = []; // lista plana (para elegir un arbol al azar al armar mirlas que ya nacen posadas)
+  function rebuildBirdTreesWithBoost(vegBoost) {
+    if (!allTreesData) return;
+    const attractors = sampleAttractorTrees(allTreesData, vegBoost);
+    birdTreesGrid = buildBirdTreeGrid(attractors);
+    buildAttractorTreeMarkers(attractors);
+    allAttractorsFlat = attractors;
+    const countEl = document.getElementById("bioVegCount");
+    if (countEl) countEl.textContent = attractors.length.toLocaleString("es-CO");
+  }
+  function setBirdCount(n) {
+    const target = Math.max(1, Math.round(n));
+    if (!birds.length || !birdsGroup) return;
+    const birdTexUpRef = birdTexUp, birdTexDownRef = birdTexDown;
+    while (birds.length > target) {
+      const b = birds.pop();
+      birdsGroup.remove(b.sprite);
+    }
+    while (birds.length < target) {
+      const refugeCount = Math.max(4, Math.round(target * 0.15));
+      let origen;
+      if (birds.length < refugeCount) origen = "refugio";
+      else {
+        const r2 = birds.length % 10;
+        if (r2 < 2) origen = "humedal";
+        else if (r2 < 3) origen = "oriente";
+        else origen = "disperso";
+      }
+      const b = makeBirdAgent(origen);
+      const spriteMat = new THREE.SpriteMaterial({ map: birdTexUpRef, transparent: true, alphaTest: 0.15, depthWrite: false, depthTest: false });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(9, 9, 1);
+      sprite.renderOrder = 999;
+      birdsGroup.add(sprite);
+      b.sprite = sprite;
+      birds.push(b);
+    }
+  }
+  const BIRD_CELL = 60; // metros reales por celda (subido junto con BIRD_VISION, para que la busqueda siga revisando una cantidad de celdas razonable)
+  function buildBirdTreeGrid(attractors) {
+    const grid = new Map();
+    attractors.forEach(t => {
+      const key = Math.floor(t.x / BIRD_CELL) + "," + Math.floor(t.y / BIRD_CELL);
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key).push(t);
+    });
+    return grid;
+  }
+  function bestTreeNear(grid, x, y, excludeTree) {
+    const r = BIRD_VISION * 10; // convertir de unidades de escena (SCALE=0.1) a metros reales
+    const cx0 = Math.floor((x - r) / BIRD_CELL), cx1 = Math.floor((x + r) / BIRD_CELL);
+    const cy0 = Math.floor((y - r) / BIRD_CELL), cy1 = Math.floor((y + r) / BIRD_CELL);
+    // En vez de SIEMPRE elegir el arbol de mejor puntaje (eso hacia que
+    // muchas mirlas cercanas entre si convergieran todas al mismo arbol,
+    // como si anduvieran en manada), se guardan varios candidatos buenos
+    // y se elige uno al azar entre ellos -- asi mirlas cercanas se
+    // reparten entre distintos arboles, no se apilan en uno solo.
+    const candidatos = [];
+    for (let cx = cx0; cx <= cx1; cx++) for (let cy = cy0; cy <= cy1; cy++) {
+      const celda = grid.get(cx + "," + cy);
+      if (!celda) continue;
+      celda.forEach(t => {
+        if (t === excludeTree) return;
+        const dx = t.x - x, dy = t.y - y, d2 = dx * dx + dy * dy;
+        if (d2 > r * r) return;
+        const d = Math.sqrt(d2) || 0.001;
+        const score = t.meta.weight / d;
+        candidatos.push({ arbol: t, dist: d, score });
+      });
+    }
+    if (!candidatos.length) return null;
+    candidatos.sort((a, b) => b.score - a.score);
+    const top = candidatos.slice(0, Math.min(5, candidatos.length));
+    const elegido = top[Math.floor(Math.random() * top.length)];
+    return { arbol: elegido.arbol, dist: elegido.dist };
+  }
+
+  function makeBirdSprite(wingUp) {
+    const c = document.createElement("canvas"); c.width = 48; c.height = 48;
+    const ctx = c.getContext("2d");
+    ctx.translate(24, 24);
+    // Icono simple de pajarito volando (silueta de un solo color solido,
+    // sin trazos claros ni fondo) - igual diseño que en modulo-10-corte,
+    // con 2 alas que suben o bajan segun "wingUp" para dar aleteo.
+    ctx.fillStyle = "#1a1c22";
+    const wingY = wingUp ? -9 : 6;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-8, wingY * 0.4, -16, wingY);
+    ctx.quadraticCurveTo(-8, 1, 0, 2);
+    ctx.quadraticCurveTo(8, 1, 16, wingY);
+    ctx.quadraticCurveTo(8, wingY * 0.4, 0, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 1, 3.4, 2, 0, 0, Math.PI * 2); ctx.fill();
+    return new THREE.CanvasTexture(c);
+  }
+  function makeBirdAgent(origen) {
+    let x, y;
+    if (origen === "en_arbol" && allAttractorsFlat.length) {
+      // Ya esta posada en un arbol real desde el inicio -- para que al
+      // mirar al azar se vea de una vez la variedad de estados: unas ya
+      // en el arbol, otras llegando, otras saliendo.
+      const arbol = allAttractorsFlat[Math.floor(Math.random() * allAttractorsFlat.length)];
+      x = arbol.x; y = arbol.y;
+      const b = {
+        x, y, vx: 0, vy: 0, rest: 1 + Math.random() * 2, cooldown: 0,
+        restColor: arbol.meta.color, residente: false, estresada: false,
+        phase: Math.random() * 6.28, sprite: null,
+        landedAt: { x: arbol.x, y: arbol.y, arbolRef: arbol }, lastTree: arbol, targetTree: null,
+      };
+      litUpMarker(arbol);
+      return b;
+    }
+    if (origen === "refugio") {
+      const a = Math.random() * Math.PI * 2, r = Math.random() * REFUGE_R;
+      x = REFUGE_X + Math.cos(a) * r; y = REFUGE_Y + Math.sin(a) * r;
+    } else if (origen === "humedal") {
+      // area mucho mas amplia alrededor del humedal, no un cuadrito
+      // chiquito -- para que no parezcan amontonadas ahi mismo.
+      const hc = getHumedalCentro();
+      x = hc.x + (Math.random() - 0.5) * 1400; y = hc.y + (Math.random() - 0.5) * 1400;
+    } else if (origen === "disperso") {
+      // repartidas por TODA la zona de Kennedy, cada una ya volando por
+      // su cuenta en un punto distinto -- esto es lo que de verdad evita
+      // la apariencia de manada: no todas entrando por el mismo borde.
+      x = 500 + Math.random() * 10000; y = 300 + Math.random() * 6500;
+    } else { // oriente: borde este real del area de Kennedy
+      x = 10500 + Math.random() * 150; y = 500 + Math.random() * 5500;
+    }
+    const residente = origen === "refugio";
+    return {
+      x, y, vx: residente ? (Math.random() - 0.5) * 2.2 : -(2.6 + Math.random() * 2.6),
+      vy: (Math.random() - 0.5) * (residente ? 2.2 : 1.2),
+      rest: 0, cooldown: 0, restColor: null, residente, estresada: false, phase: Math.random() * 6.28,
+      sprite: null,
+    };
+  }
+  function updateBirdAgent(b, dt) {
+    b.phase += dt * 9;
+    if (b.rest > 0) {
+      b.rest -= dt;
+      b.vx += (Math.random() - 0.5) * 12 * dt; b.vy += (Math.random() - 0.5) * 12 * dt;
+      const freno = Math.pow(0.02, dt);
+      b.vx *= freno; b.vy *= freno;
+      const sp = Math.hypot(b.vx, b.vy);
+      if (sp > BIRD_REST_SPEED) { b.vx = (b.vx / sp) * BIRD_REST_SPEED; b.vy = (b.vy / sp) * BIRD_REST_SPEED; }
+      if (b.landedAt) {
+        const d = Math.hypot(b.x - b.landedAt.x, b.y - b.landedAt.y);
+        if (d > 3) {
+          const ux = (b.landedAt.x - b.x) / d, uy = (b.landedAt.y - b.y) / d;
+          b.vx += ux * 6 * dt; b.vy += uy * 6 * dt;
+        }
+      }
+    } else if (b.residente) {
+      if (b.cooldown > 0) b.cooldown -= dt;
+      b.vx += (Math.random() - 0.5) * 8 * dt; b.vy += (Math.random() - 0.5) * 8 * dt;
+      const d = Math.hypot(b.x - REFUGE_X, b.y - REFUGE_Y);
+      if (d > REFUGE_R) {
+        const ux = (REFUGE_X - b.x) / d, uy = (REFUGE_Y - b.y) / d;
+        b.vx += ux * 11 * dt; b.vy += uy * 11 * dt;
+      }
+      const sp = Math.hypot(b.vx, b.vy);
+      if (sp > 4) { b.vx = (b.vx / sp) * 4; b.vy = (b.vy / sp) * 4; }
+    } else {
+      if (b.cooldown > 0) b.cooldown -= dt;
+      b.vx -= BIRD_WIND * dt;
+      b.vy += Math.sin(b.phase * 0.28) * 0.7 * dt;
+      // Cada mirla elige UN arbol y se compromete con el (no reevalua
+      // "el mejor cercano" en cada cuadro) -- las mirlas no andan en
+      // manada, cada una va por su cuenta a un destino propio, no todas
+      // convergen al mismo arbol top-score del area. Al llegar y
+      // descansar, se obliga a elegir un arbol DISTINTO al anterior la
+      // proxima vez, para que de verdad vaya variando de arbol en arbol.
+      if (!b.targetTree && birdTreesGrid) {
+        const hallazgo = bestTreeNear(birdTreesGrid, b.x, b.y, b.lastTree);
+        if (hallazgo) b.targetTree = hallazgo.arbol;
+      }
+      if (b.targetTree && b.cooldown <= 0) {
+        const arbol = b.targetTree;
+        const dx = arbol.x - b.x, dy = arbol.y - b.y;
+        const dist = Math.hypot(dx, dy) || 0.001;
+        const ux = dx / dist, uy = dy / dist;
+        const esSauco = arbol.meta.key === "sauco";
+        const fuerza = arbol.meta.weight * (esSauco ? 20 : 11);
+        b.vx += ux * fuerza * dt; b.vy += uy * fuerza * dt;
+        if (dist < BIRD_ARRIVE * 10) {
+          b.rest = 2 + Math.random(); b.restColor = arbol.meta.color; b.cooldown = 7;
+          b.landedAt = { x: arbol.x, y: arbol.y, arbolRef: arbol };
+          litUpMarker(arbol);
+          b.lastTree = arbol; // para no repetir el mismo en la siguiente busqueda
+          b.targetTree = null;
+        }
+      }
+      const sp = Math.hypot(b.vx, b.vy);
+      if (sp > BIRD_MAX_SPEED) { b.vx = (b.vx / sp) * BIRD_MAX_SPEED; b.vy = (b.vy / sp) * BIRD_MAX_SPEED; }
+    }
+    const db = noiseDbAt(b.x, b.y);
+    const exceso = Math.max(0, db - BIRD_NOISE_DB);
+    b.estresada = exceso > 0;
+    if (exceso > 0) {
+      const u = noiseEscapeDir(b.x, b.y);
+      if (u) { b.vx += BIRD_K_REP * exceso * u[0] * dt; b.vy += BIRD_K_REP * exceso * u[1] * dt; }
+      if (b.rest > 0) { b.rest = 0; b.cooldown = Math.max(b.cooldown, 3); }
+    }
+    b.x += b.vx * dt * 10; // *10 para pasar de unidades/seg "logicas" a metros/seg reales
+    b.y += b.vy * dt * 10;
+    // sale por el occidente real (x chico): vuelve a entrar por oriente
+    if (b.x < 500) Object.assign(b, makeBirdAgent(b.residente ? "refugio" : "oriente"), { sprite: b.sprite });
+  }
+  let birdTexUp = null, birdTexDown = null;
+  function buildBirds() {
+    birdsGroup = new THREE.Group();
+    birdsGroup.visible = false;
+    birdTexUp = makeBirdSprite(true);
+    birdTexDown = makeBirdSprite(false);
+    const spriteMat = new THREE.SpriteMaterial({ map: birdTexUp, transparent: true, alphaTest: 0.15, depthWrite: false, depthTest: false });
+    const refugeCount = Math.max(4, Math.round(BIRD_COUNT * 0.15));
+    for (let i = 0; i < BIRD_COUNT; i++) {
+      // La mayoria nace YA dispersa por toda la zona (no en manada en un
+      // solo punto); solo una porcion chica sale del refugio, humedal
+      // concreto, u oriente, para mantener esos origenes narrativos.
+      let origen;
+      if (i < refugeCount) origen = "refugio";
+      else {
+        const r2 = i % 10;
+        if (r2 < 2) origen = "humedal";
+        else if (r2 < 3) origen = "oriente";
+        else origen = "disperso";
+      }
+      const b = makeBirdAgent(origen);
+      const sprite = new THREE.Sprite(spriteMat.clone());
+      sprite.scale.set(9, 9, 1); // mas grande que en modulo-10-corte (3.2): aqui se ve TODA la ciudad, no un sector acercado, y con el sprite chico no se alcanzaban a ver las mirlas
+      sprite.renderOrder = 999;
+      birdsGroup.add(sprite);
+      b.sprite = sprite;
+      birds.push(b);
+    }
+    sceneRoot.add(birdsGroup);
+  }
+  let lastBirdUpdate = 0;
+  function updateBirds(now) {
+    if (!birdsGroup || !birdsGroup.visible) return;
+    const dt = lastBirdUpdate ? Math.min(0.05, (now - lastBirdUpdate) / 1000) : 0;
+    lastBirdUpdate = now;
+    if (dt > 0) birds.forEach(b => updateBirdAgent(b, dt));
+    birds.forEach(b => {
+      const p = toScene(b.x, b.y);
+      const bat = Math.sin(b.phase) * (b.rest > 0 ? 0.15 : 0.3);
+      b.sprite.position.set(p.x, 3.2 + bat, p.z);
+      // Roja y clara cuando el ruido la estresa (formula Frep=-K*(Lruido-60)
+      // ya aplicada en updateBirdAgent) -- antes era un naranja tenue, se
+      // pidio que sea rojo de verdad para que se note el estres.
+      b.sprite.material.color.set(b.estresada ? 0xff2020 : 0xffffff);
+      // Se "voltea" (espejo horizontal) segun hacia donde esta yendo
+      // ahora mismo, para que se note visualmente el giro al escapar del
+      // ruido (antes siempre miraba para el mismo lado sin importar el
+      // rumbo real).
+      const dirSign = b.vx >= 0 ? 1 : -1;
+      const sB = 9 * dirSign;
+      if (b.sprite.scale.x !== sB) b.sprite.scale.x = sB;
+      const nuevaTex = Math.sin(b.phase) > 0 ? birdTexUp : birdTexDown;
+      if (b.sprite.material.map !== nuevaTex) { b.sprite.material.map = nuevaTex; b.sprite.material.needsUpdate = true; }
+    });
+  }
+
+  // ---- Cuerpos de agua: poligonos planos (fan de triangulos) apenas
+  // levantados del suelo, con un material azul semi-transparente. ----
+  const EL_BURRO_NOMBRE = "Humedal El Burro";
+  let elBurroPts = null, elBurroCentro = null, elBurroMesh = null, elBurroBaseAreaHa = null;
+  function buildWaterBodies(bodies) {
+    const positions = [];
+    const uvs = [];
+    const UV_SCALE = 0.08; // repite la textura cada ~12.5 unidades de escena
+    bodies.forEach(w => {
+      if (w.nombre === EL_BURRO_NOMBRE) {
+        // El Burro se separa del resto: se reconstruye aparte cada vez
+        // que cambia el mes del reloj climatico anual (se expande o
+        // contrae), sin tener que reconstruir TODOS los demas cuerpos
+        // de agua cada vez.
+        elBurroPts = w.pts;
+        elBurroCentro = {
+          x: w.pts.reduce((s, p) => s + p[0], 0) / w.pts.length,
+          y: w.pts.reduce((s, p) => s + p[1], 0) / w.pts.length,
+        };
+        // area real del poligono base (formula del zapatero / shoelace),
+        // a partir de las mismas coordenadas reales que ya se usan para
+        // dibujar el humedal -- no es un dato inventado, es el area real
+        // del poligono cargado desde el geojson.
+        let area2 = 0;
+        for (let i = 0; i < w.pts.length; i++) {
+          const [x1, y1] = w.pts[i];
+          const [x2, y2] = w.pts[(i + 1) % w.pts.length];
+          area2 += x1 * y2 - x2 * y1;
+        }
+        elBurroBaseAreaHa = Math.abs(area2) / 2 / 10000;
+        return;
+      }
+      const pts = w.pts.map(p => toScene(p[0], p[1]));
+      if (pts.length < 3) return;
+      // Triangulacion real de poligono (ear-clipping), no un abanico
+      // ingenuo desde un solo punto — los canales y rios son formas
+      // largas y NO convexas, y un abanico simple genera triangulos que
+      // se salen de la forma real (cruzando por fuera del poligono).
+      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+      let tris;
+      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
+      catch (e) { tris = []; }
+      tris.forEach(([a, b, c]) => {
+        [a, b, c].forEach(idx => {
+          positions.push(pts[idx].x, 0.022, pts[idx].z);
+          uvs.push(pts[idx].x * UV_SCALE, pts[idx].z * UV_SCALE);
+        });
+      });
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.computeVertexNormals();
+    const waterTex = new THREE.TextureLoader().load("./assets/textura_agua2.jpg");
+    waterTex.wrapS = THREE.RepeatWrapping;
+    waterTex.wrapT = THREE.RepeatWrapping;
+    waterTexRef = waterTex;
+    // Segunda copia de la misma textura, usada como relieve (bump map) en
+    // vez de color: le da micro-relieve a la superficie para que capte
+    // la luz de forma irregular (brillos/reflejos que cambian segun el
+    // angulo), como agua real — una superficie perfectamente lisa se ve
+    // "plana"/pintada, no renderizada. Se anima a otra velocidad/escala
+    // que la capa de color, simulando dos capas de oleaje superpuestas.
+    const bumpTex = new THREE.TextureLoader().load("./assets/textura_agua2.jpg");
+    bumpTex.wrapS = THREE.RepeatWrapping;
+    bumpTex.wrapT = THREE.RepeatWrapping;
+    bumpTex.repeat.set(2.3, 2.3);
+    waterBumpRef = bumpTex;
+    const mat = new THREE.MeshStandardMaterial({
+      map: waterTex, bumpMap: bumpTex, bumpScale: 0.12,
+      color: 0x97a5af, roughness: 0.18, metalness: 0.15,
+      transparent: true, opacity: 0.82, side: THREE.DoubleSide,
+    });
+    waterMat = mat;
+    const waterMesh = new THREE.Mesh(geo, mat);
+    waterMesh.receiveShadow = false; // sin sombras encima (se veian como parches/bloques feos sobre el agua)
+    sceneRoot.add(waterMesh);
+    elBurroMat = mat; // El Burro comparte la misma textura/material que el resto del agua
+    rebuildElBurro(HUMEDAL_CICLO[0].expansion_pct); // arranca en Enero, igual que el valor por defecto del deslizador
+  }
+
+  // ---- Reloj climatico anual del Humedal El Burro: expande/contrae el
+  // poligono real alrededor de su propio centro segun un modelo de
+  // retencion hidrica (el nivel no salta con la lluvia del mes, se va
+  // acumulando y liberando gradualmente, como un humedal real), calculado
+  // a partir de la precipitacion mensual real de Bogota (climate-data.org,
+  // 1991-2021) y calibrado contra los rangos reales publicados por la
+  // Secretaria de Ambiente (expansion del espejo de agua 33%-50%,
+  // profundidad 0.6m-2.0m entre temporada seca y de lluvias). ----
+  let elBurroMat = null;
+  const HUMEDAL_CICLO = [
+    { mes: 1, expansion_pct: 41.7, profundidad_m: 1.32 },
+    { mes: 2, expansion_pct: 42.6, profundidad_m: 1.39 },
+    { mes: 3, expansion_pct: 46.7, profundidad_m: 1.73 },
+    { mes: 4, expansion_pct: 50.0, profundidad_m: 2.00 },
+    { mes: 5, expansion_pct: 47.4, profundidad_m: 1.78 },
+    { mes: 6, expansion_pct: 41.5, profundidad_m: 1.30 },
+    { mes: 7, expansion_pct: 37.7, profundidad_m: 0.99 },
+    { mes: 8, expansion_pct: 34.1, profundidad_m: 0.69 },
+    { mes: 9, expansion_pct: 33.0, profundidad_m: 0.60 },
+    { mes: 10, expansion_pct: 38.6, profundidad_m: 1.06 },
+    { mes: 11, expansion_pct: 43.8, profundidad_m: 1.49 },
+    { mes: 12, expansion_pct: 43.3, profundidad_m: 1.45 },
+  ];
+  function rebuildElBurro(expansionPct) {
+    if (!elBurroPts || !elBurroCentro) return;
+    if (elBurroMesh) { sceneRoot.remove(elBurroMesh); elBurroMesh.geometry.dispose(); }
+    const scale = 1 + expansionPct / 100 * 0.6; // 0.6 de factor visual: al 50% de "expansion" el radio crece ~30%, area ~69% (efecto claramente visible)
+    const positions = [], uvs = [];
+    const UV_SCALE = 0.08;
+    const pts = elBurroPts.map(p => {
+      const ex = elBurroCentro.x + (p[0] - elBurroCentro.x) * scale;
+      const ey = elBurroCentro.y + (p[1] - elBurroCentro.y) * scale;
+      return toScene(ex, ey);
+    });
+    if (pts.length >= 3) {
+      const pts2d = pts.map(p => new THREE.Vector2(p.x, p.z));
+      let tris;
+      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
+      catch (e) { tris = []; }
+      tris.forEach(([a, b, c]) => {
+        [a, b, c].forEach(idx => {
+          positions.push(pts[idx].x, 0.023, pts[idx].z);
+          uvs.push(pts[idx].x * UV_SCALE, pts[idx].z * UV_SCALE);
+        });
+      });
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, elBurroMat);
+    sceneRoot.add(mesh);
+    elBurroMesh = mesh;
+  }
+  function setHumedalMes(mes) {
+    const d = HUMEDAL_CICLO[mes - 1];
+    if (!d) return;
+    rebuildElBurro(d.expansion_pct);
+    if (elBurroBaseAreaHa) {
+      const scale = 1 + d.expansion_pct / 100 * 0.6;
+      d.area_ha = elBurroBaseAreaHa * scale * scale;
+    }
+    actualizarLluvia(mes);
+    return d;
+  }
+  // ---- Lluvia: se ve SOLO en los meses reales de temporada de lluvias
+  // en Bogota (patron bimodal real: marzo-mayo y octubre-noviembre); en
+  // temporada seca no se muestra nada. ----
+  const MESES_LLUVIA = [3, 4, 5, 10, 11];
+  let rainPoints = null, rainVelocities = null, rainActive = false, lastRainTs = 0;
+  function buildRain() {
+    if (rainPoints || !sceneExtentW || !sceneExtentH) return;
+    const COUNT = 2200;
+    const positions = new Float32Array(COUNT * 3);
+    rainVelocities = new Float32Array(COUNT);
+    for (let i = 0; i < COUNT; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * sceneExtentW * 1.3;
+      positions[i * 3 + 1] = Math.random() * 90 + 5;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * sceneExtentH * 1.3;
+      rainVelocities[i] = 55 + Math.random() * 35;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({ color: 0xaecbe8, size: 0.35, transparent: true, opacity: 0.55, depthWrite: false });
+    rainPoints = new THREE.Points(geo, mat);
+    rainPoints.visible = false;
+    rainPoints.renderOrder = 998;
+    sceneRoot.add(rainPoints);
+  }
+  function updateRain(dt) {
+    if (!rainActive || !rainPoints) return;
+    const pos = rainPoints.geometry.attributes.position;
+    for (let i = 0; i < rainVelocities.length; i++) {
+      let y = pos.getY(i) - rainVelocities[i] * dt;
+      if (y < 0) y = 85 + Math.random() * 10;
+      pos.setY(i, y);
+    }
+    pos.needsUpdate = true;
+  }
+  function actualizarLluvia(mes) {
+    buildRain();
+    rainActive = MESES_LLUVIA.includes(mes);
+    if (rainPoints) rainPoints.visible = rainActive;
+  }
+
+  function loadWaterBodies() {
+    return fetch(WATER_URL)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + WATER_URL); return r.json(); })
+      .then(data => { buildWaterBodies(data); if (typeof applyHumedalMes === "function") applyHumedalMes(parseInt(humedalMesSlider.value, 10)); })
+      .catch(err => console.warn("No se pudieron cargar los cuerpos de agua:", err));
+  }
+
+  // ---- Manzanas: solo el CONTORNO (LineSegments), no un poligono relleno.
+  // Se dibuja como lineas delgadas, igual que la capa base de la red vial,
+  // para evitar por completo el riesgo de parpadeo (z-fighting) que si
+  // tendria una superficie rellena compitiendo con vias/agua a alturas
+  // parecidas. Altura propia (0.006) distinta de todo lo demas. ----
+  function buildManzanas(manzanas) {
+    const positions = [];
+    manzanas.forEach(m => {
+      const pts = m.pts.map(p => toScene(p[0], p[1]));
+      for (let i = 0; i < pts.length - 1; i++) {
+        positions.push(pts[i].x, 0.006, pts[i].z, pts[i + 1].x, 0.006, pts[i + 1].z);
+      }
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    const mat = new THREE.LineBasicMaterial({ color: 0x8a8f96, transparent: true, opacity: 0.5 });
+    sceneRoot.add(new THREE.LineSegments(geo, mat));
+  }
+
+  function loadManzanas() {
+    return fetch(MANZANAS_URL)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + MANZANAS_URL); return r.json(); })
+      .then(data => { buildManzanas(data); })
+      .catch(err => console.warn("No se pudieron cargar las manzanas:", err));
+  }
+
+  // ---- Parques/zonas verdes: poligonos rellenos, triangulacion real
+  // (ear-clipping) igual que agua y edificios, en una altura propia
+  // (0.02) que no compite con via/agua/manzanas. ----
+  function buildParques(parques) {
+    const positions = [];
+    const uvs = [];
+    const UV_SCALE = 0.006; // la mitad de antes, porque el tile espejado ahora es 2x mas grande (para mantener el mismo tamano de grano)
+    parques.forEach(p => {
+      const pts = p.pts.map(pt => toScene(pt[0], pt[1]));
+      if (pts.length < 3) return;
+      const pts2d = pts.map(pt => new THREE.Vector2(pt.x, pt.z));
+      let tris;
+      try { tris = THREE.ShapeUtils.triangulateShape(pts2d, []); }
+      catch (e) { tris = []; }
+      tris.forEach(([a, b, c]) => {
+        [a, b, c].forEach(idx => {
+          positions.push(pts[idx].x, 0.02, pts[idx].z);
+          uvs.push(pts[idx].x * UV_SCALE, pts[idx].z * UV_SCALE);
+        });
+      });
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.computeVertexNormals();
+    const pastoTex = new THREE.TextureLoader().load("./assets/textura_pasto.jpg");
+    pastoTex.wrapS = THREE.RepeatWrapping;
+    pastoTex.wrapT = THREE.RepeatWrapping;
+    const mat = new THREE.MeshStandardMaterial({ map: pastoTex, color: 0xadaa90, roughness: 0.95, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+    parqueMat = mat;
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.receiveShadow = true;
+    sceneRoot.add(mesh);
+  }
+
+  function loadParques() {
+    return fetch(PARQUES_URL)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + PARQUES_URL); return r.json(); })
+      .then(data => { buildParques(data); })
+      .catch(err => console.warn("No se pudieron cargar los parques:", err));
+  }
+
+  // ---- Semaforos 3D + cruces peatonales, en un conjunto reducido y bien
+  // espaciado de intersecciones reales (287, fusionando nodos cercanos de
+  // la red vial) — NO en cada nodo donde se juntan tramos, ya que eso
+  // fue un desastre visual antes (SUMO separa carriles en tramos propios,
+  // dando miles de "cruces" falsos). ----
+  let intersectionsData = null;
+  let intersectionMeshes = []; // para poder quitarlas y reconstruir al mover los deslizadores
+  let interParams = { setback: 1.3, crossW: 1.0, poleOffset: 1.1 };
+  function buildIntersections(intersections) {
+    intersectionsData = intersections;
+    intersectionMeshes.forEach(m => { sceneRoot.remove(m); m.geometry.dispose(); });
+    intersectionMeshes = [];
+
+    const poleGeo = new THREE.CylinderGeometry(0.05, 0.06, 1, 6);
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x33383d, roughness: 0.6 });
+    const headGeo = new THREE.BoxGeometry(0.16, 0.42, 0.16);
+    const headMat = new THREE.MeshStandardMaterial({ color: 0x1c1f22, roughness: 0.5 });
+    const lightGeo = new THREE.CircleGeometry(0.06, 10);
+    const lightColors = [0xe14b3f, 0xe8b93f, 0x4bb35a];
+
+    let poleCount = 0;
+    intersections.forEach(inter => (poleCount += Math.min(inter.dirs.length, 4)));
+    const poleMesh = new THREE.InstancedMesh(poleGeo, poleMat, poleCount);
+    const headMesh = new THREE.InstancedMesh(headGeo, headMat, poleCount);
+    poleMesh.castShadow = true; headMesh.castShadow = true;
+    const lightMeshes = lightColors.map(color =>
+      new THREE.InstancedMesh(lightGeo, new THREE.MeshBasicMaterial({ color }), poleCount)
+    );
+
+    const dummy = new THREE.Object3D();
+    const crossPos = []; // posiciones de las rayas de cruce peatonal
+    const POLE_H = 4.2 * SCALE;
+    const SETBACK = interParams.setback, CROSS_W = interParams.crossW, POLE_OFFSET = interParams.poleOffset;
+    let idx = 0;
+    intersections.forEach(inter => {
+      const center = toScene(inter.x, inter.y);
+      inter.dirs.slice(0, 4).forEach(([dx, dy]) => {
+        // direccion real -> direccion en la escena (toScene invierte Y)
+        const ux = dx, uz = -dy;
+        const px = -uz, pz = ux; // perpendicular (ancho de la via)
+        // Poste del semaforo, a un lado del acceso, cerca de la esquina.
+        const poleX = center.x + ux * (SETBACK - 0.7) + px * POLE_OFFSET;
+        const poleZ = center.z + uz * (SETBACK - 0.7) + pz * POLE_OFFSET;
+        dummy.position.set(poleX, POLE_H / 2, poleZ);
+        dummy.scale.set(1, POLE_H, 1);
+        dummy.rotation.set(0, 0, 0);
+        dummy.updateMatrix();
+        poleMesh.setMatrixAt(idx, dummy.matrix);
+        const faceAngle = Math.atan2(-ux, -uz); // el semaforo mira hacia el que se acerca
+        dummy.position.set(poleX, POLE_H + 0.14, poleZ);
+        dummy.scale.set(1, 1, 1);
+        dummy.rotation.set(0, faceAngle, 0);
+        dummy.updateMatrix();
+        headMesh.setMatrixAt(idx, dummy.matrix);
+        const lightYs = [POLE_H + 0.34, POLE_H + 0.21, POLE_H + 0.08];
+        lightMeshes.forEach((lm, li) => {
+          dummy.position.set(poleX + Math.sin(faceAngle) * 0.05, lightYs[li], poleZ + Math.cos(faceAngle) * 0.05);
+          dummy.rotation.set(0, faceAngle, 0);
+          dummy.updateMatrix();
+          lm.setMatrixAt(idx, dummy.matrix);
+        });
+        idx++;
+
+        // Cruce peatonal (rayas) atravesando este acceso, antes de llegar
+        // al centro de la interseccion. Cada raya es angosta en el
+        // sentido transversal a la via (px,pz) y larga en el sentido de
+        // avance (ux,uz) — como una cebra real — con huecos claros entre
+        // rayas consecutivas.
+        const baseX = center.x + ux * SETBACK, baseZ = center.z + uz * SETBACK;
+        const CROSSING_LEN = 3.2, STRIPE_W = 0.32, STRIPE_GAP2 = 0.28;
+        for (let s = -CROSS_W; s <= CROSS_W; s += STRIPE_W + STRIPE_GAP2) {
+          const c0x = baseX + px * s, c0z = baseZ + pz * s;
+          const c1x = c0x + ux * CROSSING_LEN, c1z = c0z + uz * CROSSING_LEN;
+          const hx = px * (STRIPE_W / 2), hz = pz * (STRIPE_W / 2);
+          crossPos.push(
+            c0x - hx, 0.034, c0z - hz, c0x + hx, 0.034, c0z + hz, c1x + hx, 0.034, c1z + hz,
+            c0x - hx, 0.034, c0z - hz, c1x + hx, 0.034, c1z + hz, c1x - hx, 0.034, c1z - hz
+          );
+        }
+      });
+    });
+    poleMesh.instanceMatrix.needsUpdate = true;
+    headMesh.instanceMatrix.needsUpdate = true;
+    lightMeshes.forEach(lm => (lm.instanceMatrix.needsUpdate = true));
+    sceneRoot.add(poleMesh, headMesh, ...lightMeshes);
+    intersectionMeshes.push(poleMesh, headMesh, ...lightMeshes);
+
+    const crossGeo = new THREE.BufferGeometry();
+    crossGeo.setAttribute("position", new THREE.Float32BufferAttribute(crossPos, 3));
+    const crossMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+    const crossMesh = new THREE.Mesh(crossGeo, crossMat);
+    sceneRoot.add(crossMesh);
+    intersectionMeshes.push(crossMesh);
+  }
+  function rebuildIntersections() {
+    if (intersectionsData) buildIntersections(intersectionsData);
+  }
+
+  function loadIntersections() {
+    return fetch("./assets/kennedy_intersecciones.json")
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar intersecciones"); return r.json(); })
+      .then(data => { buildIntersections(data); })
+      .catch(err => console.warn("No se pudieron cargar las intersecciones:", err));
+  }
+
+  // ---- Mallas reales exportadas del modelo Rhino (techos a dos aguas,
+  // techos planos con parapeto ya modelado, fachadas verificadas, agua) —
+  // formato generico {verts:[[x,y,z_metros],...], tris:[[a,b,c],...]}. ----
+  function buildTriMesh(data, color, opts) {
+    const positions = [];
+    const scenePts = data.verts.map(v => {
+      const p = toScene(v[0], v[1]);
+      return { x: p.x, y: v[2] * SCALE, z: p.z };
+    });
+    data.tris.forEach(([a, b, c]) => {
+      const pa = scenePts[a], pb = scenePts[b], pc = scenePts[c];
+      if (!pa || !pb || !pc) return;
+      positions.push(pa.x, pa.y, pa.z, pb.x, pb.y, pb.z, pc.x, pc.y, pc.z);
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0.02, side: THREE.DoubleSide, ...opts });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    sceneRoot.add(mesh);
+    return mesh;
+  }
+  function loadTriMesh(url, color, opts) {
+    return fetch(url)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + url); return r.json(); })
+      .then(data => buildTriMesh(data, color, opts))
+      .catch(err => { console.warn("No se pudo cargar la malla " + url + ":", err); return null; });
+  }
+
+  // ---- Terreno real (relieve, 0-22m de altura) extraido del modelo Rhino,
+  // en vez de un plano completamente liso. Se mantiene tambien el plano
+  // liso original, un poco mas abajo, como base/respaldo por si el
+  // terreno real no cubre alguna zona del borde. ----
+  let terrainMesh = null;
+  function loadTerrain() {
+    return loadTriMesh("./assets/kennedy_terreno.json", 0xe4e6e2, { roughness: 0.95, metalness: 0 })
+      .then(mesh => {
+        if (!mesh) return;
+        mesh.castShadow = false; // el suelo no necesita proyectar sombra sobre si mismo
+        mesh.position.y += 0.001; // apenas encima del plano liso de respaldo
+        terrainMesh = mesh;
+      });
+  }
+
+  // ---- Vehiculos: un pool de cajas 3D reutilizables ----
+  const VEH_POOL_SIZE = 2800;
+  const vehMeshes = [];
+  const vehMat = new THREE.MeshStandardMaterial({ color: 0xe2635a, roughness: 0.5, metalness: 0.15 });
+  const vehGeo = new THREE.BoxGeometry(0.18, 0.15, 0.45);
+  const vehInstanced = new THREE.InstancedMesh(vehGeo, vehMat, VEH_POOL_SIZE);
+  vehInstanced.count = 0;
+  vehInstanced.castShadow = true;
+  sceneRoot.add(vehInstanced);
+  const dummy = new THREE.Object3D();
+
+  let timesteps = [];
+  let netEdges = null; // segmentos reales de la red vial (kennedy_net.json), para el cierre de vias
+  let playing = false;
+  let currentTime = 0;
+  let speed = 2;
+  let lastFrameAt = null;
+
+  const playBtn = document.getElementById("playPause");
+  const slider = document.getElementById("timeSlider");
+  const timeLabel = document.getElementById("timeLabel");
+  const speedSelect = document.getElementById("speedSelect");
+
+  function fmtTime(t) {
+    const m = Math.floor(t / 60), s = Math.floor(t % 60);
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+
+  // =====================================================================
+  // CIERRE DE VIA CON RERUTEO REAL (portado del modulo 2D, modulo-08-sumo.js)
+  // IMPORTANTE: modelo ilustrativo/conceptual, no una re-simulacion SUMO
+  // real -- multiplica/desvia visualmente los MISMOS vehiculos grabados,
+  // pero el desvio en si SI es un camino real por Dijkstra sobre las
+  // calles existentes (kennedy_net.json), no un empujon visual al lado.
+  // =====================================================================
+  let closedEdgeIdx = null;
+  let detourMap = new Map();
+  const CLOSURE_CANDIDATES = [
+    { edgeIdx: 9847, label: "Vía crítica 1 (mayor tránsito registrado)" },
+    { edgeIdx: 11268, label: "Vía crítica 2" },
+    { edgeIdx: 8260, label: "Vía crítica 3" },
+    { edgeIdx: 9919, label: "Vía crítica 4" },
+    { edgeIdx: 10240, label: "Vía crítica 5" },
+    { edgeIdx: 9449, label: "Vía crítica 6" },
+  ];
+
+  // ---- UI de cierre de via: llenar el dropdown y manejar el boton
+  // "Cerrar" -- calcula el reruteo real (Dijkstra) sobre la red vial ya
+  // cargada y aplica el desvio a los vehiculos que pasarian cerca. ----
+  const closureIconBtn = document.getElementById("closureIconBtn");
+  const closurePanelEl = document.getElementById("closurePanel");
+  if (closureIconBtn) closureIconBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    closurePanelEl.style.display = closurePanelEl.style.display === "block" ? "none" : "block";
+  });
+  const closureSelect = document.getElementById("closureSelect");
+  if (closureSelect) {
+    CLOSURE_CANDIDATES.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = String(c.edgeIdx);
+      opt.textContent = c.label;
+      closureSelect.appendChild(opt);
+    });
+  }
+  const closureBtn = document.getElementById("closureBtn");
+  const closureStatus = document.getElementById("closureStatus");
+  if (closureBtn) closureBtn.addEventListener("click", () => {
+    const val = closureSelect ? closureSelect.value : "";
+    if (!val) {
+      closedEdgeIdx = null;
+      detourMap = new Map();
+      if (closureStatus) closureStatus.textContent = "Sin cambios — mostrando el modelo base.";
+      return;
+    }
+    if (!netEdges || !timesteps.length) {
+      if (closureStatus) closureStatus.textContent = "Todavía se está cargando la red vial, intenta de nuevo en un momento.";
+      return;
+    }
+    closedEdgeIdx = Number(val);
+    if (closureStatus) closureStatus.textContent = "Calculando desvíos reales por las calles vecinas…";
+    // El calculo de Dijkstra puede tardar un poco con muchos vehiculos --
+    // se corre despues de pintar el mensaje, para que no se sienta trabado.
+    setTimeout(() => {
+      computeRealDetours(closedEdgeIdx);
+      if (closureStatus) {
+        const label = CLOSURE_CANDIDATES.find(c => c.edgeIdx === closedEdgeIdx)?.label || "";
+        closureStatus.textContent = `${label}: cerrada. ${detourMap.size} vehículo(s) desviados por calles reales vecinas.`;
+      }
+    }, 30);
+  });
+
+  function distToSegment(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay;
+    const len2 = dx * dx + dy * dy;
+    let t = len2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    const cx = ax + t * dx, cy = ay + t * dy;
+    return Math.hypot(px - cx, py - cy);
+  }
+  function buildLocalGraphAround(closedIdx, radiusM) {
+    const closedPts = netEdges[closedIdx][1];
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    closedPts.forEach(([x, y]) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); });
+    minX -= radiusM; maxX += radiusM; minY -= radiusM; maxY += radiusM;
+    const nodes = new Map(); const adj = new Map();
+    const SNAP_M = 22;
+    const nodeKey = (x, y) => Math.round(x / SNAP_M) + "," + Math.round(y / SNAP_M);
+    const addNode = (x, y) => { const k = nodeKey(x, y); if (!nodes.has(k)) nodes.set(k, { x, y }); return k; };
+    const addEdgeBidir = (k1, k2, dist) => {
+      if (k1 === k2) return;
+      if (!adj.has(k1)) adj.set(k1, []);
+      if (!adj.has(k2)) adj.set(k2, []);
+      adj.get(k1).push({ to: k2, dist });
+      adj.get(k2).push({ to: k1, dist });
+    };
+    netEdges.forEach(([, pts], edgeIdx) => {
+      if (edgeIdx === closedIdx) return;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+        const inside = (ax >= minX && ax <= maxX && ay >= minY && ay <= maxY) || (bx >= minX && bx <= maxX && by >= minY && by <= maxY);
+        if (!inside) continue;
+        const dist = Math.hypot(bx - ax, by - ay);
+        if (dist > 0) addEdgeBidir(addNode(ax, ay), addNode(bx, by), dist);
+      }
+    });
+    return { nodes, adj, nodeKey };
+  }
+  function findNearestGraphNode(graph, x, y) {
+    let best = null, bestD = Infinity;
+    graph.nodes.forEach((p, key) => {
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (d < bestD) { bestD = d; best = key; }
+    });
+    return best;
+  }
+  function dijkstraPath(graph, startKey, endKey) {
+    const dist = new Map([[startKey, 0]]);
+    const prev = new Map();
+    const visited = new Set();
+    const heap = [[0, startKey]];
+    const heapPush = (item) => {
+      heap.push(item);
+      let i = heap.length - 1;
+      while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }
+    };
+    const heapPop = () => {
+      const top = heap[0]; const last = heap.pop();
+      if (heap.length) {
+        heap[0] = last; let i = 0;
+        while (true) {
+          let l = 2 * i + 1, r = 2 * i + 2, s = i;
+          if (l < heap.length && heap[l][0] < heap[s][0]) s = l;
+          if (r < heap.length && heap[r][0] < heap[s][0]) s = r;
+          if (s === i) break;
+          [heap[s], heap[i]] = [heap[i], heap[s]]; i = s;
+        }
+      }
+      return top;
+    };
+    while (heap.length) {
+      const [d, u] = heapPop();
+      if (visited.has(u)) continue;
+      visited.add(u);
+      if (u === endKey) break;
+      (graph.adj.get(u) || []).forEach(({ to, dist: w }) => {
+        const nd = d + w;
+        if (nd < (dist.get(to) ?? Infinity)) { dist.set(to, nd); prev.set(to, u); heapPush([nd, to]); }
+      });
+    }
+    if (!dist.has(endKey)) return null;
+    const path = []; let cur = endKey;
+    while (cur !== undefined) { path.push(graph.nodes.get(cur)); if (cur === startKey) break; cur = prev.get(cur); }
+    return path.reverse();
+  }
+  const DETOUR_THRESHOLD_M = 45, DETOUR_MAX_VEHICLES = 180;
+  function computeRealDetours(closedIdx) {
+    detourMap = new Map();
+    if (!netEdges || !timesteps.length) return;
+    const graph = buildLocalGraphAround(closedIdx, 900);
+    const closedPts = netEdges[closedIdx][1];
+    const near = new Map();
+    timesteps.forEach((step) => {
+      step.vehicles.forEach((v) => {
+        let minD = Infinity;
+        for (let i = 0; i < closedPts.length - 1; i++) {
+          const d = distToSegment(v.x, v.y, closedPts[i][0], closedPts[i][1], closedPts[i + 1][0], closedPts[i + 1][1]);
+          if (d < minD) minD = d;
+        }
+        if (minD < DETOUR_THRESHOLD_M) {
+          if (!near.has(v.id)) near.set(v.id, []);
+          near.get(v.id).push({ time: step.time, x: v.x, y: v.y });
+        }
+      });
+    });
+    let count = 0;
+    for (const [id, samples] of near) {
+      if (count >= DETOUR_MAX_VEHICLES) break;
+      samples.sort((a, b) => a.time - b.time);
+      const first = samples[0], last = samples[samples.length - 1];
+      const entryStart = findNearestGraphNode(graph, first.x, first.y);
+      const exitEnd = findNearestGraphNode(graph, last.x, last.y);
+      if (!entryStart || !exitEnd || entryStart === exitEnd) continue;
+      const path = dijkstraPath(graph, entryStart, exitEnd);
+      if (!path || path.length < 2) continue;
+      let totalDist = 0;
+      for (let i = 0; i < path.length - 1; i++) totalDist += Math.hypot(path[i + 1].x - path[i].x, path[i + 1].y - path[i].y);
+      detourMap.set(id, { fromTime: first.time, toTime: last.time, path, totalDist });
+      count++;
+    }
+  }
+  function detourPositionAt(detour, t) {
+    const span = detour.toTime - detour.fromTime || 1;
+    const frac = Math.max(0, Math.min(1, (t - detour.fromTime) / span));
+    const targetDist = frac * detour.totalDist;
+    let acc = 0;
+    for (let i = 0; i < detour.path.length - 1; i++) {
+      const a = detour.path[i], b = detour.path[i + 1];
+      const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+      if (acc + segLen >= targetDist) {
+        const segFrac = segLen > 0 ? (targetDist - acc) / segLen : 0;
+        return { x: a.x + (b.x - a.x) * segFrac, y: a.y + (b.y - a.y) * segFrac };
+      }
+      acc += segLen;
+    }
+    const lastP = detour.path[detour.path.length - 1];
+    return { x: lastP.x, y: lastP.y };
+  }
+  function applyClosureDetour(baseVehicles, t) {
+    if (closedEdgeIdx == null || !detourMap.size) return baseVehicles;
+    return baseVehicles.map((v) => {
+      const detour = detourMap.get(v.id);
+      if (detour && t >= detour.fromTime && t <= detour.toTime) {
+        const p = detourPositionAt(detour, t);
+        return { id: v.id, x: p.x, y: p.y };
+      }
+      return v;
+    });
+  }
+
+  let lastAngle = {}; // rumbo persistente por vehiculo, para no perderlo cuando esta detenido
+  function vehiclesAtTime(t) {
+    if (!timesteps.length) return [];
+    if (t <= timesteps[0].time) return applyClosureDetour(timesteps[0].vehicles.map(v => ({ id: v.id, x: v.x, y: v.y })), t);
+    const last = timesteps[timesteps.length - 1];
+    if (t >= last.time) return applyClosureDetour(last.vehicles.map(v => ({ id: v.id, x: v.x, y: v.y })), t);
+    let lo = 0, hi = timesteps.length - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (timesteps[mid].time <= t) lo = mid; else hi = mid;
+    }
+    const a = timesteps[lo], b = timesteps[hi];
+    const frac = (t - a.time) / (b.time - a.time || 1);
+    const bMap = {}; b.vehicles.forEach(v => bMap[v.id] = v);
+    const interpolated = a.vehicles.map(v => {
+      const bv = bMap[v.id];
+      if (!bv) return { id: v.id, x: v.x, y: v.y };
+      // El rumbo se calcula con el DESPLAZAMIENTO REAL entre 2 pasos de
+      // la simulacion (no entre cuadros de animacion): si el vehiculo esta
+      // detenido o casi detenido en una fila (semaforo, trancon), ese
+      // vector es casi cero y dar un angulo con eso sale ruidoso/al azar
+      // (los carros en diagonal de la captura). Solo se actualiza el
+      // angulo cuando el vehiculo se movio una distancia real
+      // significativa; si no, se mantiene el ultimo rumbo conocido.
+      const pa = toScene(v.x, v.y), pb = toScene(bv.x, bv.y);
+      const dx = pb.x - pa.x, dz = pb.z - pa.z;
+      if (Math.hypot(dx, dz) > 0.05) lastAngle[v.id] = Math.atan2(dx, dz);
+      return { id: v.id, x: v.x + (bv.x - v.x) * frac, y: v.y + (bv.y - v.y) * frac };
+    });
+    return applyClosureDetour(interpolated, t);
+  }
+
+  function renderVehiclesAt(t) {
+    const vehicles = vehiclesAtTime(t);
+    const n = Math.min(vehicles.length, VEH_POOL_SIZE);
+    for (let i = 0; i < n; i++) {
+      const v = vehicles[i];
+      const p = toScene(v.x, v.y);
+      const angle = lastAngle[v.id] || 0;
+      dummy.position.set(p.x, 0.1, p.z);
+      dummy.rotation.set(0, angle, 0);
+      dummy.updateMatrix();
+      vehInstanced.setMatrixAt(i, dummy.matrix);
+    }
+    vehInstanced.count = n;
+    vehInstanced.instanceMatrix.needsUpdate = true;
+    computeLiveNoiseField(vehicles, performance.now());
+  }
+
+  function finishLoadingTimesteps() {
+    const totalTime = timesteps.length ? timesteps[timesteps.length - 1].time : 0;
+    slider.max = String(Math.round(totalTime));
+    slider.disabled = false;
+    playBtn.disabled = false;
+    setStatus("", false);
+    timeLabel.textContent = `00:00 / ${fmtTime(totalTime)}`;
+    renderVehiclesAt(0);
+  }
+
+  function loadVehicles() {
+    return fetch(VEHICULOS_JSON_URL)
+      .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + VEHICULOS_JSON_URL); return r.json(); })
+      .then(data => {
+        timesteps = data.map(([time, vehicles]) => ({ time, vehicles: vehicles.map(([id, x, y]) => ({ id, x, y })) }));
+        finishLoadingTimesteps();
+      })
+      .catch(err => {
+        console.warn(err);
+        setStatus("Red vial cargada. No se encontraron las trayectorias de vehículos (assets/kennedy_vehiculos.json).", true);
+      });
+  }
+
+  fetch(NET_URL)
+    .then(r => { if (!r.ok) throw new Error("no se pudo cargar " + NET_URL); return r.json(); })
+    .then(data => {
+      netEdges = data.edges; // se guarda para el cierre de vias con reruteo real (Dijkstra)
+      netCenter = { x: (data.bbox[0] + data.bbox[2]) / 2, y: (data.bbox[1] + data.bbox[3]) / 2 };
+      buildGround(data.bbox);
+      buildNoiseGround(data.bbox);
+      buildRoads(data.edges);
+      const w = (data.bbox[2] - data.bbox[0]) * SCALE;
+      const h = (data.bbox[3] - data.bbox[1]) * SCALE;
+      sceneExtentW = w; sceneExtentH = h;
+      viewSize = Math.max(w, h) * 0.14;
+      resize();
+      setAxonometricView(w);
+      setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
+      loadBuildings();
+      loadTrees();
+      // loadNoise(); // reemplazado por el campo de ruido EN VIVO (computeLiveNoiseField), calculado a partir de la posicion real de los vehiculos
+      buildBirds();
+      loadWaterBodies();
+      loadManzanas();
+      loadParques();
+      // loadIntersections(); // quitado: semaforos/cruces peatonales, a pedido del usuario
+      loadTriMesh("./assets/kennedy_roofs_flat.json", 0xffffff);    // techos planos con parapeto ya modelado
+      loadTriMesh("./assets/kennedy_facades.json", 0xa05a41);       // fachadas verificadas con StreetView
+      // loadTerrain(); // quitado a pedido del usuario, vuelve al plano liso
+      return loadVehicles();
+    })
+    .catch(err => {
+      console.error(err);
+      setStatus("No se pudo cargar la red vial (assets/kennedy_net.json). Revisa que el archivo esté disponible.");
+    });
+
+  // ---- Controles de reproduccion ----
+  playBtn.addEventListener("click", () => {
+    playing = !playing;
+    playBtn.innerHTML = playing ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+    lastFrameAt = null;
+  });
+  slider.addEventListener("input", () => {
+    currentTime = parseFloat(slider.value);
+    renderVehiclesAt(currentTime);
+    timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(parseFloat(slider.max))}`;
+  });
+  speedSelect.addEventListener("change", () => { speed = parseFloat(speedSelect.value); });
+
+  // ---- Vista axonometrica fija: 45 grados de elevacion (bloqueado en
+  // los controles) y 45 grados de acimut, proyeccion en paralelo (sin
+  // fuga de perspectiva). ----
+  function setAxonometricView(distance) {
+    // Vista inicial fija que el usuario dejo lista (posicion, objetivo y
+    // zoom exactos), en vez de calcularla a partir del tamano de la red.
+    // Se verifico que la elevacion sigue siendo exactamente 45° (proyeccion
+    // paralela/axonometrica intacta).
+    camera.position.set(56.88, 700.96, 649.09);
+    controls.target.set(178.42, -54.42, -96.45);
+    camera.zoom = 1.0;
+    camera.updateProjectionMatrix();
+  }
+
+  // ---- Botones de vista ----
+  document.getElementById("viewReset").addEventListener("click", () => setAxonometricView(400));
+
+  // ---- Rotacion manual del mapa completo (X/Y/Z), para que el usuario
+  const noiseAmbienceAudio = document.getElementById("noiseAmbienceAudio");
+  const noiseMuteBtn = document.getElementById("noiseMuteBtn");
+  if (noiseMuteBtn) noiseMuteBtn.addEventListener("click", () => {
+    if (!noiseAmbienceAudio) return;
+    noiseAmbienceAudio.muted = !noiseAmbienceAudio.muted;
+    noiseMuteBtn.innerHTML = noiseAmbienceAudio.muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+  });
+  document.getElementById("noiseToggle").addEventListener("click", (e) => {
+    if (!noiseMesh) return;
+    noiseMesh.visible = !noiseMesh.visible;
+    e.target.classList.toggle("active", noiseMesh.visible);
+    e.target.innerHTML = noiseMesh.visible ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+    // mismo audio real de la simulacion 2D (sumo-traffic-ambience.mp3)
+    if (noiseAmbienceAudio) {
+      if (noiseMesh.visible) noiseAmbienceAudio.play().catch(() => {});
+      else noiseAmbienceAudio.pause();
+    }
+    const legend = document.getElementById("noiseLegend");
+    if (legend) {
+      if (noiseMesh.visible) {
+        legend.style.display = "block";
+        legend.classList.remove("pop-in"); void legend.offsetWidth; // reinicia la animacion cada vez
+        legend.classList.add("pop-in");
+      } else {
+        legend.style.display = "none";
+        legend.classList.remove("pop-in");
+      }
+    }
+  });
+  document.getElementById("bioToggle").addEventListener("click", (e) => {
+    if (!birdsGroup) return;
+    birdsGroup.visible = !birdsGroup.visible;
+    e.target.classList.toggle("active", birdsGroup.visible);
+    e.target.innerHTML = birdsGroup.visible ? '<i class="fa-solid fa-dove" style="opacity:.45;"></i>' : '<i class="fa-solid fa-dove"></i>';
+    const panel = document.getElementById("bioPanel");
+    if (panel) {
+      panel.style.display = birdsGroup.visible ? "block" : "none";
+      if (birdsGroup.visible) { panel.classList.remove("pop-in"); void panel.offsetWidth; panel.classList.add("pop-in"); }
+    }
+    if (birdsGroup.visible) {
+      rebuildBirdTreesWithBoost(Number(document.getElementById("bioVegSlider")?.value || 0));
+      // Las mirlas se crean antes de que los arboles atractores esten
+      // listos, asi que ninguna pudo nacer "ya posada" -- apenas los
+      // arboles estan disponibles (primera vez que se abre el panel), se
+      // fuerza a una porcion de las mirlas YA EXISTENTES a aparecer de
+      // una vez posadas en un arbol real, para que se vea variedad de
+      // estados desde el primer instante (no solo con el tiempo).
+      if (allAttractorsFlat.length && !birdsSnappedToTrees) {
+        birdsSnappedToTrees = true;
+        birds.forEach((b, i) => {
+          if (b.residente || i % 4 !== 0) return; // 1 de cada 4, sin tocar las del refugio
+          const arbol = allAttractorsFlat[Math.floor(Math.random() * allAttractorsFlat.length)];
+          b.x = arbol.x; b.y = arbol.y; b.vx = 0; b.vy = 0;
+          b.rest = 1 + Math.random() * 2; b.restColor = arbol.meta.color;
+          b.landedAt = { x: arbol.x, y: arbol.y, arbolRef: arbol };
+          b.lastTree = arbol; b.targetTree = null;
+          litUpMarker(arbol);
+        });
+      }
+    }
+    if (attractorMarkersGroup) attractorMarkersGroup.visible = birdsGroup.visible;
+  });
+  // Las mirlas totales = lo que el usuario puso en su propio slider, MAS
+  // un extra que crece con la cobertura vegetal (mas arboles atractores
+  // -> mas mirlas tiene sentido que haya) -- por ahi 5 mirlas mas por
+  // cada 20% de aumento en la cobertura.
+  let birdBaseFromSlider = 90;
+  function extraMirlasPorCobertura(vegBoost) {
+    return vegBoost > 0 ? Math.round(vegBoost / 20) * 5 : 0;
+  }
+  function aplicarTotalMirlas(vegBoost) {
+    const total = Math.max(5, birdBaseFromSlider + extraMirlasPorCobertura(vegBoost));
+    setBirdCount(total);
+    const bioBirdSliderEl = document.getElementById("bioBirdSlider");
+    const bioBirdCountValEl = document.getElementById("bioBirdCountVal");
+    if (bioBirdSliderEl) bioBirdSliderEl.value = Math.min(200, total);
+    if (bioBirdCountValEl) bioBirdCountValEl.textContent = total;
+  }
+  const bioBirdSlider = document.getElementById("bioBirdSlider");
+  const bioBirdCountVal = document.getElementById("bioBirdCountVal");
+  if (bioBirdSlider) bioBirdSlider.addEventListener("input", () => {
+    birdBaseFromSlider = Number(bioBirdSlider.value);
+    const vegBoostActual = Number(document.getElementById("bioVegSlider")?.value || 0);
+    aplicarTotalMirlas(vegBoostActual);
+  });
+  const bioVegSlider = document.getElementById("bioVegSlider");
+  const bioVegVal = document.getElementById("bioVegVal");
+  if (bioVegSlider) bioVegSlider.addEventListener("input", () => {
+    rebuildBirdTreesWithBoost(Number(bioVegSlider.value));
+    if (bioVegVal) bioVegVal.textContent = `+${bioVegSlider.value}%`;
+    aplicarTotalMirlas(Number(bioVegSlider.value));
+  });
+
+  // ---- Reloj climatico anual del Humedal El Burro ----
+  const MESES_NOMBRE = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  const humedalMesSlider = document.getElementById("humedalMes");
+  const humedalMesVal = document.getElementById("humedalMesVal");
+  const humedalDatos = document.getElementById("humedalDatos");
+  const humedalBar = document.getElementById("humedalBar");
+  const humedalPctLabel = document.getElementById("humedalPctLabel");
+  const humedalHa = document.getElementById("humedalHa");
+  function applyHumedalMes(mes) {
+    const d = setHumedalMes(mes);
+    humedalMesVal.textContent = MESES_NOMBRE[mes - 1];
+    if (d) {
+      humedalDatos.textContent = `Profundidad: ${d.profundidad_m.toFixed(2)} m`;
+      humedalPctLabel.textContent = `+${d.expansion_pct.toFixed(1)}%`;
+      humedalBar.style.width = Math.min(100, d.expansion_pct / 50 * 100) + "%";
+      humedalHa.textContent = d.area_ha != null ? d.area_ha.toFixed(2) : "—";
+    }
+  }
+  humedalMesSlider.addEventListener("input", () => applyHumedalMes(parseInt(humedalMesSlider.value, 10)));
+  let humedalPlaying = false, humedalPlayTimer = null;
+  document.getElementById("humedalPlay").addEventListener("click", (e) => {
+    humedalPlaying = !humedalPlaying;
+    if (humedalPlaying) {
+      e.target.textContent = "⏸ Detener";
+      humedalPlayTimer = setInterval(() => {
+        let mes = parseInt(humedalMesSlider.value, 10) + 1;
+        if (mes > 12) mes = 1;
+        humedalMesSlider.value = String(mes);
+        applyHumedalMes(mes);
+      }, 900);
+    } else {
+      e.target.textContent = "▶ Reproducir año completo";
+      clearInterval(humedalPlayTimer);
+    }
+  });
+
+  // Reorientar las tarjetas de los arboles hacia la camara cuando gira,
+  // limitado en frecuencia para no recalcular 120 mil matrices por cuadro.
+  let lastTreeBillboardUpdate = 0;
+  controls.addEventListener("change", () => {
+    const now = performance.now();
+    if (now - lastTreeBillboardUpdate < 120) return;
+    lastTreeBillboardUpdate = now;
+    updateTreeBillboards();
+  });
+  // La camara (posicion, hacia donde mira, zoom) tambien se refleja en el
+  // cuadro de coordenadas, para poder acomodar el angulo y el zoom que se
+  // quiera y copiar la vista completa (corte + camara), no solo el corte.
+  let lastCamOutputUpdate = 0;
+  controls.addEventListener("change", () => {
+    const now = performance.now();
+    if (now - lastCamOutputUpdate < 100) return;
+    lastCamOutputUpdate = now;
+    if (typeof updateSectionBox === "function") updateSectionBox();
+  });
+
+  // ---- Herramienta de dibujo: clic para ir marcando puntos sobre el
+  // mapa (como la pluma de Photoshop), y mostrar las coordenadas REALES
+  // (mismo sistema que usan los demas archivos de datos) para copiar y
+  // pegar, por ejemplo para trazar una nueva zona verde a mano. ----
+  const raycaster = new THREE.Raycaster();
+  // ---- Clic en un arbol: muestra su informacion (especie, altura) ----
+  const mouseNdc = new THREE.Vector2();
+  const treeInfo = document.getElementById("treeInfo");
+  const treeInfoName = document.getElementById("treeInfoName");
+  const treeInfoDetails = document.getElementById("treeInfoDetails");
+  document.getElementById("treeInfoClose").addEventListener("click", () => treeInfo.classList.remove("show"));
+
+  let downAt = null;
+  renderer.domElement.addEventListener("pointerdown", (e) => { downAt = { x: e.clientX, y: e.clientY }; });
+  renderer.domElement.addEventListener("pointerup", (e) => {
+    if (!downAt) return;
+    const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
+    downAt = null;
+    if (moved > 6) return; // fue un arrastre de camara, no un clic
+    if (!treeMeshes.length) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouseNdc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouseNdc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouseNdc, camera);
+    let best = null;
+    treeMeshes.forEach(tm => {
+      const hits = raycaster.intersectObject(tm.mesh);
+      if (hits.length && (!best || hits[0].distance < best.distance)) {
+        best = { distance: hits[0].distance, data: tm.data[hits[0].instanceId] };
+      }
+    });
+    if (best) {
+      const [, , hMeters, nombre] = best.data;
+      treeInfoName.textContent = nombre;
+      treeInfoDetails.textContent = `Altura aproximada: ${hMeters.toFixed(1)} m`;
+      treeInfo.classList.add("show");
+    } else {
+      treeInfo.classList.remove("show");
+    }
+  });
+
+  // ---- Loop de animacion ----
+  // ---- Caja de seccion: 6 planos de recorte, igual que en Corte
+  // axonometrico. Recorte por shader (visual, en vivo); para copiar las
+  // coordenadas exactas que se estan viendo. ----
+  const SECTION_Y_MAX = 10;
+  let sectionBoxActive = true;
+  function sceneToReal(x, z) { return [x / SCALE + netCenter.x, -z / SCALE + netCenter.y]; }
+  const secRot = document.getElementById("secRot"), secRotVal = document.getElementById("secRotVal");
+  const secXMin = document.getElementById("secXMin"), secXMax = document.getElementById("secXMax");
+  const secYMin = document.getElementById("secYMin"), secYMax = document.getElementById("secYMax");
+  const secZMin = document.getElementById("secZMin"), secZMax = document.getElementById("secZMax");
+  const secXMinVal = document.getElementById("secXMinVal"), secXMaxVal = document.getElementById("secXMaxVal");
+  const secYMinVal = document.getElementById("secYMinVal"), secYMaxVal = document.getElementById("secYMaxVal");
+  const secZMinVal = document.getElementById("secZMinVal"), secZMaxVal = document.getElementById("secZMaxVal");
+  const sectionBoxOutput = document.getElementById("sectionBoxOutput");
+  function updateSectionBox() {
+    if (!secXMin) return;
+    const halfW = sceneExtentW / 2 * 1.4, halfH = sceneExtentH / 2 * 1.4;
+    const xMin = -halfW + (parseFloat(secXMin.value) / 100) * (2 * halfW);
+    const xMax = -halfW + (parseFloat(secXMax.value) / 100) * (2 * halfW);
+    const zMin = -halfH + (parseFloat(secZMin.value) / 100) * (2 * halfH);
+    const zMax = -halfH + (parseFloat(secZMax.value) / 100) * (2 * halfH);
+    const yMin = (parseFloat(secYMin.value) / 100) * SECTION_Y_MAX;
+    const yMax = (parseFloat(secYMax.value) / 100) * SECTION_Y_MAX;
+    // Rotacion de la caja: en vez de cortar siempre alineado a los ejes
+    // X/Z del mundo, los 4 planos horizontales giran junto con un angulo
+    // elegido, para poder alinear el corte con cualquier calle o eje
+    // diagonal (no solo horizontal/vertical).
+    const rot = secRot ? parseFloat(secRot.value) : 0;
+    const rad = rot * Math.PI / 180;
+    const ux = Math.cos(rad), uz = Math.sin(rad); // eje U (el "X" girado)
+    const vx = -Math.sin(rad), vz = Math.cos(rad); // eje V (el "Z" girado), perpendicular a U
+    if (secRotVal) secRotVal.textContent = rot + "°";
+    if (sectionBoxActive) {
+      secPlanes.xMin.normal.set(ux, 0, uz); secPlanes.xMin.constant = -xMin;
+      secPlanes.xMax.normal.set(-ux, 0, -uz); secPlanes.xMax.constant = xMax;
+      secPlanes.yMin.constant = -yMin; secPlanes.yMax.constant = yMax;
+      secPlanes.zMin.normal.set(vx, 0, vz); secPlanes.zMin.constant = -zMin;
+      secPlanes.zMax.normal.set(-vx, 0, -vz); secPlanes.zMax.constant = zMax;
+    } else {
+      Object.values(secPlanes).forEach(p => (p.constant = 1e6));
+    }
+    secXMinVal.textContent = secXMin.value + "%"; secXMaxVal.textContent = secXMax.value + "%";
+    secYMinVal.textContent = secYMin.value + "%"; secYMaxVal.textContent = secYMax.value + "%";
+    secZMinVal.textContent = secZMin.value + "%"; secZMaxVal.textContent = secZMax.value + "%";
+    const r0 = sceneToReal(xMin, zMin), r1 = sceneToReal(xMax, zMax);
+    sectionBoxOutput.value =
+      `Rotación: ${rot}°\n` +
+      `U (a lo largo del giro): ${secXMin.value}% a ${secXMax.value}%\n` +
+      `Y (altura, m): ${(yMin / SCALE).toFixed(1)} a ${(yMax / SCALE).toFixed(1)}\n` +
+      `V (perpendicular): ${secZMin.value}% a ${secZMax.value}%\n` +
+      `(referencia sin girar — real ${Math.round(Math.min(r0[0], r1[0]))} a ${Math.round(Math.max(r0[0], r1[0]))} / ${Math.round(Math.min(r0[1], r1[1]))} a ${Math.round(Math.max(r0[1], r1[1]))})\n` +
+      `--- Cámara ---\n` +
+      `Proyección: ${camera.isOrthographicCamera ? "ortográfica (axonométrica)" : "perspectiva"}\n` +
+      `Posición: ${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)}\n` +
+      `Mira hacia: ${controls.target.x.toFixed(1)}, ${controls.target.y.toFixed(1)}, ${controls.target.z.toFixed(1)}\n` +
+      (camera.isOrthographicCamera ? `Zoom: ${camera.zoom.toFixed(2)}` : `FOV: ${camera.fov.toFixed(1)}°`);
+  }
+  if (secXMin) {
+    [secXMin, secXMax, secYMin, secYMax, secZMin, secZMax, secRot].forEach(el => {
+      if (el) el.addEventListener("input", updateSectionBox);
+    });
+    const sectionBoxToggle = document.getElementById("sectionBoxToggle");
+    if (sectionBoxToggle) sectionBoxToggle.addEventListener("click", () => {
+      sectionBoxActive = !sectionBoxActive;
+      sectionBoxToggle.classList.toggle("active", sectionBoxActive);
+      sectionBoxToggle.textContent = sectionBoxActive ? "✂️ Desactivar caja de sección" : "✂️ Activar caja de sección";
+      updateSectionBox();
+    });
+    const sectionBoxReset = document.getElementById("sectionBoxReset");
+    if (sectionBoxReset) sectionBoxReset.addEventListener("click", () => {
+      secXMin.value = 0; secXMax.value = 100; secYMin.value = 0; secYMax.value = 100; secZMin.value = 0; secZMax.value = 100;
+      if (secRot) secRot.value = 0;
+      updateSectionBox();
+    });
+    const sectionBoxCopy = document.getElementById("sectionBoxCopy");
+    if (sectionBoxCopy) sectionBoxCopy.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(sectionBoxOutput.value); sectionBoxCopy.textContent = "✅ Copiado"; setTimeout(() => { sectionBoxCopy.textContent = "📋 Copiar coordenadas"; }, 1600); } catch (e) {}
+    });
+    updateSectionBox();
+  }
+
+  function animate(now) {
+    requestAnimationFrame(animate);
+    if (playing && timesteps.length) {
+      if (lastFrameAt == null) lastFrameAt = now;
+      const dt = (now - lastFrameAt) / 1000;
+      lastFrameAt = now;
+      currentTime += dt * speed;
+      const maxT = parseFloat(slider.max) || 0;
+      if (currentTime > maxT) currentTime = 0;
+      slider.value = String(Math.round(currentTime));
+      timeLabel.textContent = `${fmtTime(currentTime)} / ${fmtTime(maxT)}`;
+      renderVehiclesAt(currentTime);
+    }
+    // Lineas de borde de edificios: opacidad FIJA y baja, no cambia con
+    // el zoom (asi no se ven gruesas/densas cuando no se esta haciendo
+    // zoom, y no cambian de aspecto al acercar/alejar la camara).
+    // Agua con movimiento: se desplaza lentamente la textura de color Y
+    // la capa de relieve (bump) a velocidades/escalas DISTINTAS entre si,
+    // simulando dos capas de oleaje superpuestas.
+    if (waterTexRef) {
+      waterTexRef.offset.x = (now * 0.000018) % 1;
+      waterTexRef.offset.y = (now * 0.000012) % 1;
+    }
+    if (waterBumpRef) {
+      waterBumpRef.offset.x = (now * -0.000027) % 1;
+      waterBumpRef.offset.y = (now * 0.000021) % 1;
+    }
+    updateBirds(now);
+    updateAttractorMarkerGlow(now);
+    const rainDt = lastRainTs ? Math.min(0.05, (now - lastRainTs) / 1000) : 0;
+    lastRainTs = now;
+    updateRain(rainDt);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  // ---- Corte del Humedal: vista en perspectiva con coordenadas fijas ----
+  const sectionCanvas = document.getElementById("sectionCanvas");
+  const sectionWrap = document.getElementById("sectionWrap");
+  const sectionRot = document.getElementById("sectionRot");
+  const sectionRotVal = document.getElementById("sectionRotVal");
+  const sectionStraightenBtn = document.getElementById("sectionStraightenBtn");
+  const sectionCoordsOutput = document.getElementById("sectionCoordsOutput");
+  const goCorteBtn = document.getElementById("goCorteBtn");
+  const sectionCamera = new THREE.PerspectiveCamera(55, 1, 0.5, 5000);
+  let sectionRenderer = null;
+  if (sectionCanvas) {
+    sectionRenderer = new THREE.WebGLRenderer({ canvas: sectionCanvas, antialias: true, alpha: true });
+    sectionRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    sectionRenderer.localClippingEnabled = true;
+    sectionRenderer.setClearColor(0x0b0c0f, 1);
+  }
+  // Plano de corte fijo (se actualiza con la rotación)
+  const cutPlane = new THREE.Plane(new THREE.Vector3(1, 0, 0), 1e6);
+  let cutRotAngle = 54;
+  // Líneas más gruesas solo en la vista del corte
+  const origEdgeOpacity = buildingEdgeMat ? buildingEdgeMat.opacity : 0.14;
+  if (buildingEdgeMat) buildingEdgeMat.opacity = 0.30; // buildingEdgeMat aun puede ser null aqui (los edificios cargan despues, de forma asincrona); se aplica mas abajo cuando ya existe
+
+  function updateCutView() {
+    if (!sectionRenderer) return;
+    const rad = cutRotAngle * Math.PI / 180;
+    cutPlane.normal.set(Math.cos(rad), 0, Math.sin(rad));
+    cutPlane.constant = 0;
+    sectionRenderer.clippingPlanes = [cutPlane];
+    // Cámara en perspectiva con coordenadas fijas
+    sectionCamera.position.set(102.0, 17.7, 38.4);
+    sectionCamera.up.set(0, 1, 0);
+    sectionCamera.lookAt(249.7, 10.5, -75.6);
+    sectionCamera.fov = 55;
+    sectionCamera.updateProjectionMatrix();
+    // Actualizar coordenadas mostradas
+    if (sectionCoordsOutput) {
+      sectionCoordsOutput.value =
+        `Rotación: ${cutRotAngle}°\n` +
+        `U (a lo largo del giro): 48% a 62%\n` +
+        `Y (altura, m): 0.0 a 100.0\n` +
+        `V (perpendicular): 14% a 30%\n` +
+        `(referencia sin girar — real 5042 a 7136 / 4933 a 6349)\n` +
+        `--- Cámara ---\n` +
+        `Proyección: perspectiva\n` +
+        `Posición: ${sectionCamera.position.x.toFixed(1)}, ${sectionCamera.position.y.toFixed(1)}, ${sectionCamera.position.z.toFixed(1)}\n` +
+        `Mira hacia: 249.7, 10.5, -75.6\n` +
+        `FOV: 55.0°`;
+    }
+  }
+  function resizeCutView() {
+    if (!sectionRenderer || !sectionCanvas) return;
+    const rect = sectionCanvas.getBoundingClientRect();
+    const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
+    sectionRenderer.setSize(w, h, false);
+    sectionCamera.aspect = w / h;
+    sectionCamera.updateProjectionMatrix();
+  }
+  if (sectionRot) sectionRot.addEventListener("input", () => {
+    cutRotAngle = parseFloat(sectionRot.value);
+    if (sectionRotVal) sectionRotVal.textContent = cutRotAngle + "°";
+    updateCutView();
+  });
+  if (sectionStraightenBtn) sectionStraightenBtn.addEventListener("click", () => {
+    cutRotAngle = 0;
+    if (sectionRot) sectionRot.value = 0;
+    if (sectionRotVal) sectionRotVal.textContent = "0°";
+    updateCutView();
+  });
+  if (goCorteBtn) goCorteBtn.addEventListener("click", () => {
+    if (sectionWrap) {
+      const isHidden = sectionWrap.style.display === "none";
+      sectionWrap.style.display = isHidden ? "block" : "none";
+      goCorteBtn.textContent = isHidden ? "✂️ Ocultar corte" : "✂️ Ver corte del Humedal";
+      if (isHidden) {
+        resizeCutView();
+        updateCutView();
+      }
+    }
+  });
+
+  resize();
+  requestAnimationFrame(animate);
+})();

@@ -1,0 +1,96 @@
+131: let currentBoxRealBounds = null; // rango real (X/Y) de la caja de seccion actual, para que ruido/mirlas trabajen solo ahi
+537: // MAPA DE RUIDO EN VIVO (igual logica que modulo-08-3d.js, pero
+541: // MAPA DE RUIDO EN VIVO — IGUAL ESTÉTICA Y LÓGICA QUE modulo-08-3d.js
+547: const NOISE_ALPHA = 0.42;
+548: const NOISE_BUF_W = 260, NOISE_BUF_H = 180; // misma resolucion que modulo-08-3d: mancha suave y continua
+549: const NOISE_COLOR_STOPS = [
+554: function noiseColorAt(t) {
+556: for (let i = 0; i < NOISE_COLOR_STOPS.length - 1; i++) {
+557: const a = NOISE_COLOR_STOPS[i], b = NOISE_COLOR_STOPS[i + 1];
+563: return NOISE_COLOR_STOPS[NOISE_COLOR_STOPS.length - 1].rgb;
+565: let noiseMesh = null, noiseTexture = null, noiseGroundW = 0, noiseGroundH = 0, noiseOriginX = 0, noiseOriginY = 0;
+566: const noiseBufCanvas = document.createElement("canvas");
+567: noiseBufCanvas.width = NOISE_BUF_W; noiseBufCanvas.height = NOISE_BUF_H;
+568: const noiseBufCtx = noiseBufCanvas.getContext("2d", { willReadFrequently: true });
+569: let noiseFieldImg = null;
+571: function buildNoiseGround(bbox) {
+572: noiseOriginX = bbox[0]; noiseOriginY = bbox[1];
+573: noiseGroundW = bbox[2] - bbox[0]; noiseGroundH = bbox[3] - bbox[1];
+577: noiseTexture = new THREE.CanvasTexture(noiseBufCanvas);
+579: map: noiseTexture,
+591: noiseMesh = mesh;
+594: function rebuildNoiseGround() {
+596: // ya cortan el plano de ruido de Three.js de forma exacta y automatica
+599: const NOISE_VEH_RADIUS_M = 55;
+600: let lastNoiseCompute = 0;
+601: let noiseOn = false;
+603: function computeLiveNoiseField(vehicles, now) {
+604: if (!noiseGroundW || (now - lastNoiseCompute < 140)) return;
+605: lastNoiseCompute = now;
+606: noiseBufCtx.clearRect(0, 0, NOISE_BUF_W, NOISE_BUF_H);
+607: noiseBufCtx.globalCompositeOperation = "lighter";
+608: const sx = NOISE_BUF_W / noiseGroundW, sy = NOISE_BUF_H / noiseGroundH;
+609: const blobR = NOISE_VEH_RADIUS_M * sx;
+611: const bx = (v.x - noiseOriginX) * sx, by = NOISE_BUF_H - (v.y - noiseOriginY) * sy;
+612: const grad = noiseBufCtx.createRadialGradient(bx, by, 0, bx, by, blobR);
+615: noiseBufCtx.fillStyle = grad;
+616: noiseBufCtx.beginPath(); noiseBufCtx.arc(bx, by, blobR, 0, Math.PI * 2); noiseBufCtx.fill();
+618: noiseBufCtx.globalCompositeOperation = "source-over";
+619: const img = noiseBufCtx.getImageData(0, 0, NOISE_BUF_W, NOISE_BUF_H);
+625: const [r, g, b] = noiseColorAt(t);
+627: data[i + 3] = Math.round(NOISE_ALPHA * 255); // alpha SIEMPRE el mismo, solo cambia el color
+629: noiseFieldImg = img;
+630: if (noiseMesh && noiseMesh.visible) {
+631: noiseBufCtx.putImageData(img, 0, 0);
+632: noiseTexture.needsUpdate = true;
+636: const NOISE_DB_BASE = 40, NOISE_DB_SPAN = 52;
+637: function noiseDbAt(x, y) {
+638: if (!noiseFieldImg || !noiseGroundW) return NOISE_DB_BASE;
+639: const bx = Math.floor(((x - noiseOriginX) / noiseGroundW) * NOISE_BUF_W);
+640: const by = Math.floor(NOISE_BUF_H - ((y - noiseOriginY) / noiseGroundH) * NOISE_BUF_H);
+641: if (bx < 0 || by < 0 || bx >= NOISE_BUF_W || by >= NOISE_BUF_H) return NOISE_DB_BASE;
+642: const idx = (by * NOISE_BUF_W + bx) * 4;
+643: const raw = noiseFieldImg.data[idx + 3] / 255;
+644: const bright = (noiseFieldImg.data[idx] + noiseFieldImg.data[idx + 1] + noiseFieldImg.data[idx + 2]) / (3 * 255);
+645: if (raw < 0.01) return NOISE_DB_BASE;
+647: return NOISE_DB_BASE + NOISE_DB_SPAN * Math.max(0, Math.min(1, t * 1.6));
+649: function noiseEscapeDir(x, y) {
+650: const paso = (noiseGroundW / NOISE_BUF_W) * 3;
+651: const gx = noiseDbAt(x + paso, y) - noiseDbAt(x - paso, y);
+652: const gy = noiseDbAt(x, y + paso) - noiseDbAt(x, y - paso);
+667: const BIRD_REST_SPEED = 1.0, BIRD_NOISE_DB = 60, BIRD_K_REP = 4.2, BIRD_COUNT = 50;
+823: // referencia, se evalua el ruido en la posicion actual Y un poco por
+827: // encima del ruido.
+828: let exceso = Math.max(0, noiseDbAt(b.x, b.y) - BIRD_NOISE_DB);
+833: const e = Math.max(0, noiseDbAt(ax, ay) - BIRD_NOISE_DB) * (1 - k * 0.15);
+838: const u = noiseEscapeDir(rx, ry);
+1244: // vector es casi cero y dar un angulo con eso sale ruidoso/al azar
+1299: buildNoiseGround(data.bbox);
+1354: document.getElementById("noiseToggleBtn").addEventListener("click", (e) => {
+1355: noiseOn = !noiseOn;
+1356: if (noiseMesh) noiseMesh.visible = noiseOn;
+1357: e.target.classList.toggle("active", noiseOn);
+1358: e.target.textContent = noiseOn ? "🔊 Ocultar ruido" : "🔊 Mostrar ruido";
+1453: if ((noiseOn || birdOn) && timesteps.length) computeLiveNoiseField(vehiclesAtTime(currentTime), now); // fuera del "if playing": el ruido se sigue viendo aunque este en pausa
+1517: currentBoxRealBounds = { // rango REAL (mismo sistema que los datos) de la caja actual, para que el ruido y las mirlas trabajen solo dentro de esta area, no en toda la ciudad
+1525: rebuildNoiseGround();
+1768: const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
+1783: // 1. Escala Natural: base arquitectónica 100% limpia, CERO carros, CERO ruido, CERO mirlas
+1784: if (noiseMesh) noiseMesh.visible = false;
+1816: if (noiseMesh) noiseMesh.visible = origNoiseVis;
+2145: // Captura fotográfica de la base limpia (cero carros, cero ruido, cero mirlas)
+2147: const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
+2152: if (noiseMesh) noiseMesh.visible = false;
+2161: if (noiseMesh) noiseMesh.visible = origNoiseVis;
+2373: const origNoiseVis = noiseMesh ? noiseMesh.visible : false;
+2378: if (noiseMesh) noiseMesh.visible = false;
+2387: if (noiseMesh) noiseMesh.visible = origNoiseVis;
+2395: const tNoise = document.getElementById("techNoiseImg"); if (tNoise) tNoise.src = fotoBase;
+2416: const cvs = document.getElementById("techNoiseCanvas");
+2417: if (!cvs || !rawNoiseData) return;
+2435: // Dibujar el mapa de calor de ruido en el canvas
+2436: for (let i = 0; i < rawNoiseData.length; i += 2) {
+2437: const pt = projectPointToLayer(rawNoiseData[i], rawNoiseData[i+1], 1.0, w, h);
+2440: const noiseLevel = Math.sin(pt.x * 0.05 + techTime) * 0.5 + 0.5; // Simulación de pulsos de ruido
+2441: const radius = 10 + noiseLevel * 15;
+2442: const alpha = 0.15 + noiseLevel * 0.2;

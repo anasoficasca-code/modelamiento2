@@ -1,0 +1,74 @@
+diff --git a/modulo-10-corte.js b/modulo-10-corte.js
+index 8a69294..2d9b829 100644
+--- a/modulo-10-corte.js
++++ b/modulo-10-corte.js
+@@ -96,10 +96,10 @@
+       if (typeof updateBotBox === 'function') updateBotBox();
+       sectionRenderer.localClippingEnabled = false;
+       sectionRenderer.clippingPlanes = botClipPlanesArr;
+-      sectionCamera.position.set(152.7, 6.8, -12.5);
++      sectionCamera.position.set(163.0, 6.8, -21.2);
+       sectionCamera.up.set(0, 1, 0);
+-      sectionCamera.lookAt(187.6, 2.1, -36.8);
+-      sectionCamera.fov = 18; // solo se agranda el contenido (mas zoom), el tamaño del panel no se toca
++      sectionCamera.lookAt(182.4, 4.2, -35.7);
++      sectionCamera.fov = 12; // solo se agranda el contenido (mas zoom), el tamaño del panel no se toca
+       sectionCamera.zoom = 1.0;
+       if (!sectionControls) {
+         sectionControls = new THREE.OrbitControls(sectionCamera, sectionCanvas2);
+@@ -107,7 +107,7 @@
+         sectionControls.dampingFactor = 0.15;
+         sectionControls.addEventListener("change", updateBotBox);
+       }
+-      if (sectionControls) sectionControls.target.set(187.6, 2.1, -36.8);
++      if (sectionControls) sectionControls.target.set(182.4, 4.2, -35.7);
+       resizeSectionView();
+       sectionCamera.updateProjectionMatrix();
+     }
+@@ -304,11 +304,11 @@
+   // transform ADICIONAL sobre el contenido, encima del encuadre base
+   // (fitEscalaOverlays), para poder agrandar/achicar y mover sin romper
+   // el encaje inicial. ----
+-  let escalaScale = 1.20, escalaOffX = 0, escalaOffY = 0;
++  let escalaScale = 1.20, escalaOffX = 40, escalaOffY = -20;
+   function applyEscalaTransform() {
+     ["naturalExplodeOverlay", "culturalExplodeOverlay", "techExplodeOverlay"].forEach(id => {
+       const el = document.getElementById(id);
+-      if (!el || el.style.display === "none") return;
++      if (!el) return;
+       el.style.transform = `translate(${escalaOffX}px, ${escalaOffY}px) scale(${escalaScale})`;
+       el.style.transformOrigin = "center center";
+     });
+@@ -3658,7 +3658,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
+     const origVehCount = vehInstanced ? vehInstanced.count : 0;
+ 
+     const origBg = scene.background;
+-    scene.background = new THREE.Color(0xffffff);
+ 
+     // 1. CAPA BASE (Sin ruido, sin carros)
+     if (noiseMesh) noiseMesh.visible = false;
+@@ -3666,7 +3665,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
+     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
+     if (roadMat) roadMat.color.set(0x9099a3);
+ 
+-    renderer.render(scene, camera);
+     const fotoBase = captureBaseWithContext(); // mismo contexto clarito + area de estudio que en Natural
+ 
+     // Captura de CONTEXTO (camara alejada), igual que en Escala natural,
+@@ -5304,8 +5302,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
+     if (vehInstanced) { vehInstanced.visible = false; vehInstanced.count = 0; }
+     if (roadMat) roadMat.color.set(0x9099a3);
+ 
+-    scene.background = new THREE.Color(0xffffff);
+-    renderer.render(scene, camera);
+     const fotoBase = captureBaseWithContext(); // mismo contexto clarito + area de estudio que en Natural
+ 
+     // Captura de CONTEXTO (camara alejada), igual que en Escala natural.
+@@ -6415,6 +6411,6 @@ const secRot = document.getElementById("secRot"), secRotVal = document.getElemen
+     window.addEventListener("pointermove", e => { if (!dragPt) return; dragPt.pl.pts[dragPt.i] = localPt(e); redraw(); });
+     window.addEventListener("pointerup", () => { dragPt = null; });
+   })();
+-
++  applyEscalaTransform();
+ })();
+ 

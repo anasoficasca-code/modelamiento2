@@ -4,6 +4,9 @@
   width: 80px;
   min-width: 80px;
   min-height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: none;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -14,6 +17,7 @@
   color: #dfe8e5;
   z-index: 50;
 }
+.app > .sidebar.sidebar-icons-only::-webkit-scrollbar { display: none; }
 .app > .sidebar.sidebar-icons-only .brand-icon {
   width: 42px;
   height: 42px;
@@ -116,4 +120,30 @@
   }
   .app > .sidebar.sidebar-icons-only .brand-icon { margin-bottom: 22px; }
   .app > .sidebar.sidebar-icons-only .icon-nav-item::after { left: 48px; }
+}
+@media (max-height: 760px) {
+  /* pantallas cortas (celulares en general): con marca + 14 iconos no
+  caben todos a tamano normal - se reducen icono y espaciado para que
+  quepan la mayoria sin scroll, y el scroll (ya habilitado arriba) cubre
+  el resto sin que ningun icono quede inaccesible/invisible */
+  .app > .sidebar.sidebar-icons-only { padding: 10px 0 12px; }
+  .app > .sidebar.sidebar-icons-only .brand-icon { margin-bottom: 14px; }
+  .app > .sidebar.sidebar-icons-only .icon-nav,
+  .app > .sidebar.sidebar-icons-only .icon-nav-footer { gap: 6px; }
+  .app > .sidebar.sidebar-icons-only .brand-icon,
+  .app > .sidebar.sidebar-icons-only .icon-nav-item {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+  }
+}
+@media (max-height: 620px) {
+  .app > .sidebar.sidebar-icons-only .brand-icon,
+  .app > .sidebar.sidebar-icons-only .icon-nav-item {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+  .app > .sidebar.sidebar-icons-only .icon-nav,
+  .app > .sidebar.sidebar-icons-only .icon-nav-footer { gap: 4px; }
 }
