@@ -14,41 +14,41 @@
       id: "gemelos",
       name: "Gemelos Digitales y Simulación Computacional",
       short: "Gemelos Digitales",
-      color: "#4e8d8a",
+      color: "#ff4438",
       bg: "#e0f2fe",
-      stroke: "#4e8d8a"
+      stroke: "#ff4438"
     },
     cronosistemas: {
       id: "cronosistemas",
       name: "Cronosistemas y Temporalidad Social",
       short: "Cronosistemas",
-      color: "#c08a3e",
+      color: "#c6e32e",
       bg: "#e0f2fe",
-      stroke: "#c08a3e"
+      stroke: "#c6e32e"
     },
     sets: {
       id: "sets",
       name: "Sistemas Socioecológicos y Tecnológicos (SETS)",
       short: "SETS",
-      color: "#7a8b6f",
+      color: "#3fd06a",
       bg: "#e0f2fe",
-      stroke: "#7a8b6f"
+      stroke: "#3fd06a"
     },
     sintaxis: {
       id: "sintaxis",
       name: "Sintaxis Espacial y Economía de Movimiento",
       short: "Sintaxis Espacial",
-      color: "#8a8f96",
+      color: "#37c8d8",
       bg: "#bae6fd",
-      stroke: "#8a8f96"
+      stroke: "#37c8d8"
     },
     metabolismo: {
       id: "metabolismo",
       name: "Metabolismo Urbano",
       short: "Metabolismo Urbano",
-      color: "#b0503a",
+      color: "#3f7de0",
       bg: "#e0f2fe",
-      stroke: "#b0503a"
+      stroke: "#3f7de0"
     }
   };
 
@@ -408,11 +408,14 @@
     // Texto perimetral derecho: "MODELO DE COMPLEJIDAD URBANA"
     outerLayer.append("text")
       .attr("class", "macro-outer-label")
+      .style("opacity", 0)
       .append("textPath")
       .attr("href", "#tp-outer-title")
       .attr("startOffset", "50%")
       .attr("text-anchor", "middle")
       .text("MODELO DE COMPLEJIDAD URBANA");
+    outerLayer.select(".macro-outer-label")
+      .transition().delay(2700).duration(700).style("opacity", 1);
 
     // Botón circular superior de cierre / reset (✕)
     const closeGroup = outerLayer.append("g")
@@ -445,11 +448,14 @@
 
       cg.append("text")
         .attr("class", "macro-label-text")
+        .style("opacity", 0)
         .append("textPath")
         .attr("href", "#tp-" + cluster.id)
         .attr("startOffset", cluster.startOffset || "50%")
         .attr("text-anchor", "middle")
         .text(cluster.label);
+      cg.select(".macro-label-text")
+        .transition().delay(2400).duration(600).style("opacity", 1);
     });
   }
 
@@ -489,7 +495,7 @@
     linkElements = linkLayer.selectAll(".net-link")
       .data(resolvedLinks)
       .join("path")
-      .attr("class", "net-link")
+      .attr("class", l => "net-link m-" + l.source.macro)
       .attr("d", linkPath);
     // Los enlaces aparecen cuando las bolas ya se acomodaron
     linkLayer.classed("entering", true);
@@ -551,11 +557,10 @@
       .attr("r", d => d.r)
       .style("animation-delay", (d, i) => `${((i % 6) * 0.55).toFixed(2)}s`);
 
-    // Círculo principal del nodo (borde según su macromodelo; style para imponerse al CSS base)
+    // Círculo principal del nodo (borde según su macromodelo vía clase CSS)
     nodeElements.append("circle")
-      .attr("class", "node-circle")
+      .attr("class", d => "node-circle mac-" + d.macro)
       .attr("r", d => d.r)
-      .style("stroke", d => (MACROMODELS[d.macro] || {}).stroke || "#8a8578")
       .attr("filter", "url(#nodeShadow)");
 
     // Rótulo de texto con cálculo de tamaño dinámico para evitar desbordamientos
@@ -594,10 +599,44 @@
         }
       });
 
-      // El rotulo aparece con su bola
-      textEl.style("opacity", 0)
-        .transition().delay(300 + i * 110 + 800).duration(500)
-        .style("opacity", 1);
+      // Revelado letra por letra: cada caracter aparece en secuencia
+      (function revealLetters() {
+        const baseDelay = 300 + i * 110 + 800;
+        const rowSels = textEl.selectAll("tspan").nodes();
+        rowSels.forEach((rowNode, ri) => {
+          const rowSel = d3.select(rowNode);
+          const str = rows[ri] ? rows[ri].text : "";
+          const y = rowSel.attr("y");
+          const rfs = rowSel.style("font-size") || (fontSize + "px");
+          const isIcon = rows[ri] && rows[ri].icon;
+          rowSel.text(null);
+          if (!str) return;
+          const chars = [...str];
+          const probes = chars.map(ch => {
+            const p = textEl.append("tspan").attr("x", -5000).attr("y", y)
+              .attr("text-anchor", "start").style("font-size", rfs)
+              .text(ch === " " ? " " : ch);
+            if (isIcon) p.style("font-family", "'Font Awesome 6 Free'").style("font-weight", "900");
+            return p;
+          });
+          const ws = probes.map(p => {
+            let w = 0;
+            try { w = p.node().getComputedTextLength(); } catch (e) { w = fontSize * 0.6; }
+            return w;
+          });
+          probes.forEach(p => p.remove());
+          let x = -ws.reduce((a, b) => a + b, 0) / 2;
+          chars.forEach((ch, ci) => {
+            const c = textEl.append("tspan")
+              .attr("x", x.toFixed(1)).attr("y", y).attr("text-anchor", "start")
+              .style("font-size", rfs).style("opacity", 0)
+              .text(ch === " " ? " " : ch);
+            if (isIcon) c.style("font-family", "'Font Awesome 6 Free'").style("font-weight", "900");
+            c.transition().delay(baseDelay + ri * 130 + ci * 26).duration(280).style("opacity", 1);
+            x += ws[ci];
+          });
+        });
+      })();
 
       // Medición exacta y auto-ajuste de escala si excede el área segura del círculo
       try {
@@ -788,7 +827,7 @@
   svg.call(zoomBehavior);
 
   function resetZoom() {
-    const scale = Math.min(width / VB_SIZE, height / VB_SIZE) * 0.92;
+    const scale = Math.min(width / VB_SIZE, height / VB_SIZE) * 1.12;
     const tx = (width - VB_SIZE * scale) / 2;
     const ty = (height - VB_SIZE * scale) / 2;
 
