@@ -521,6 +521,15 @@
   }
   .diagram-close-btn circle { fill: #1c1a17; }
   .toolbar-top { display: none !important; }
+  .vaca-chip {
+    position: absolute; top: 132px; left: 18px; z-index: 6;
+    padding: 8px 14px; border-radius: 20px; cursor: pointer; white-space: nowrap;
+    background: transparent; color: #9fd8d4; font-size: 11px; font-weight: 700;
+    border: 1px solid rgba(78, 141, 138, 0.55); display: flex; align-items: center; gap: 6px;
+    transition: all .15s ease;
+  }
+  .vaca-chip:hover { background: rgba(78, 141, 138, 0.15); color: #d8f3f0; }
+  .vaca-chip.armed { background: rgba(78, 141, 138, 0.25); color: #ffffff; border-color: #4e8d8a; box-shadow: 0 0 10px rgba(78, 141, 138, 0.5); }
 </style>
 </head>
 <body>
@@ -554,6 +563,11 @@
       </h1>
       <p>Articulación sistémica de modelos de simulación, metabolismo urbano, sintaxis espacial y cronosistemas en el territorio de Kennedy.</p>
     </div>
+
+    <!-- Paso previo del búho: primero aquí, luego cualquier bola -->
+    <button type="button" class="vaca-chip" id="humedalVacaBtn" title="Primero pulsa aquí; luego cualquier bola muestra el búho">
+      <i class="fa-solid fa-water"></i> Humedal La Vaca
+    </button>
 
     <!-- Top Toolbar Actions -->
     <div class="toolbar-top">

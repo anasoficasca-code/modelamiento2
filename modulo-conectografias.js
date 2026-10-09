@@ -546,8 +546,11 @@
       )
       .on("click", (ev, d) => {
         ev.stopPropagation();
-        if (owlDemoPending && typeof showOwlDrawer === "function") {
+        if (owlDemoPending && owlArmed && typeof showOwlDrawer === "function") {
           owlDemoPending = false;
+          owlArmed = false;
+          const vb = document.getElementById("humedalVacaBtn");
+          if (vb) vb.classList.remove("armed");
           focusNode(d);
           showOwlDrawer(d);
           setTimeout(() => highlightNeighborhood(d), 2600);
@@ -746,6 +749,7 @@
   // Regla del buho (como en humedalburro): el primer clic en cualquier
   // bola muestra el buho sabanero con zoom, y a los 2,6 s abre su sub-red.
   let owlDemoPending = true;
+  let owlArmed = false;
   const OWL_INFO = {
     code: "AVE-031",
     name: "Búho sabanero",
@@ -821,6 +825,16 @@
 
     infoDrawer.classList.add("open");
   }
+
+  // Paso previo obligatorio: primero Humedal La Vaca, luego cualquier bola muestra el buho
+  const humedalVacaBtn = document.getElementById("humedalVacaBtn");
+  if (humedalVacaBtn) humedalVacaBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    owlArmed = true;
+    owlDemoPending = true;
+    humedalVacaBtn.classList.add("armed");
+    resetZoom();
+  });
 
   function selectNode(d) {
     selectedNodeId = d.id;
