@@ -1780,6 +1780,199 @@
     if (initTicks > 40) clearInterval(initTimer);
   }, 80);
   updateNetPositions();
+  // ======================================================================
+  // RED 3D DE PROBLEMATICAS (introduccion) + MATERIALIZAR AL TERRITORIO
+  // Igual que la red biotica de referencia: primero se ve la red girando
+  // en 3D con todas las problematicas y sus causas; al "Materializar", la
+  // red explota, el territorio se arma con particulas que vuelan desde la
+  // nube y cada problema aterriza en su coordenada real. Al terminar queda
+  // la axonometria con las burbujas tal como estaba.
+  // ======================================================================
+  (function setupRedIntro() {
+    try {
+    const AXO = { pos: new THREE.Vector3(212.25, 475.68, 958.82), target: new THREE.Vector3(144.45, 24.68, -5.88), zoom: 1.55 };
+    const OFFSET = AXO.pos.clone().sub(AXO.target);
+    const C = AXO.target.clone().add(new THREE.Vector3(0, 70, 0)); // centro de la red flotando sobre el territorio
+    const SWARM = { pos: C.clone().add(OFFSET), target: C.clone(), zoom: 1.9 }; // la red llena bien la pantalla
+    const htmlLayers = [netGooLayer, netSvg, netLabelLayer].filter(Boolean);
+    const introGroup = new THREE.Group(); scene.add(introGroup);
+
+    // ---- nodos (problematicas y causas) ----
+    const nodes = []; // { mesh, swarm:Vector3, land:Vector3, color, macro }
+    const visibles = MACRO.filter(m => SUBNETS[m.id] && SUBNETS[m.id].nodes.some(n => !deletedNodeIds.has(n.id) && n.x != null));
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    visibles.forEach((m, i) => {
+      const yy = 1 - (i / Math.max(1, visibles.length - 1)) * 2, r = Math.sqrt(1 - yy * yy), th = golden * i;
+      const sw = new THREE.Vector3(Math.cos(th) * r * 66, yy * 44, Math.sin(th) * r * 66);
+      const lp = toScene(m.x, m.y);
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(4.2, 24, 16), new THREE.MeshBasicMaterial({ color: m.color, transparent: true, opacity: 0.95 }));
+      introGroup.add(mesh);
+      const node = { mesh, swarm: sw, land: new THREE.Vector3(lp.x, 18, lp.z), color: m.color, macro: true, id: m.id };
+      nodes.push(node);
+      // etiqueta flotante de la problematica
+      const cv = document.createElement("canvas"); cv.width = 512; cv.height = 96; const c = cv.getContext("2d");
+      c.font = "700 30px 'Segoe UI', sans-serif"; c.fillStyle = "#1f2937"; // texto oscuro: el fondo de la escena es claro c.textAlign = "center"; c.textBaseline = "middle";
+      const words = m.corto.split(" "); let l1 = "", l2 = ""; words.forEach(wd => { if ((l1 + " " + wd).trim().length <= 26 && !l2) l1 = (l1 + " " + wd).trim(); else l2 = (l2 + " " + wd).trim(); });
+      c.fillText(l1, 256, l2 ? 30 : 48); if (l2) c.fillText(l2, 256, 68);
+      const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false }));
+      spr.scale.set(40, 7.5, 1); introGroup.add(spr); node.label = spr;
+      SUBNETS[m.id].nodes.forEach(n => {
+        if (deletedNodeIds.has(n.id) || n.x == null) return;
+        const dir = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+        const sws = sw.clone().add(dir.multiplyScalar(15 + Math.random() * 12));
+        const p = toScene(n.x, n.y);
+        const sm = new THREE.Mesh(new THREE.SphereGeometry(2.1, 16, 12), new THREE.MeshBasicMaterial({ color: m.color, transparent: true, opacity: 0.9 }));
+        introGroup.add(sm);
+        nodes.push({ mesh: sm, swarm: sws, land: new THREE.Vector3(p.x, getNodeElevation(n.id), p.z), color: m.color, macro: false, id: n.id, parent: node });
+      });
+    });
+    const byId = {}; nodes.forEach(n => byId[n.id] = n);
+    // ---- conexiones: problematica -> causa, y causa -> causa (relaciones) ----
+    const pairs = [];
+    nodes.forEach(n => { if (!n.macro) pairs.push([n.parent, n]); });
+    Object.keys(SUBNETS).forEach(mid => (SUBNETS[mid].rel || []).forEach(r => { if (byId[r.from] && byId[r.to]) pairs.push([byId[r.from], byId[r.to]]); }));
+    const linePos = new Float32Array(pairs.length * 6), lineCol = new Float32Array(pairs.length * 6);
+    pairs.forEach((pr, i) => { const col = new THREE.Color(pr[0].color); for (let k = 0; k < 2; k++) lineCol.set([col.r, col.g, col.b], i * 6 + k * 3); });
+    const lineGeo = new THREE.BufferGeometry();
+    lineGeo.setAttribute("position", new THREE.BufferAttribute(linePos, 3)); lineGeo.setAttribute("color", new THREE.BufferAttribute(lineCol, 3));
+    const lines = new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.55 }));
+    introGroup.add(lines);
+
+    // ---- particulas del territorio (se crean al materializar, desde las mallas reales) ----
+    let particles = null;
+    const pUniforms = { uMorph: { value: 0 }, uTime: { value: 0 }, uAlpha: { value: 1 }, uCenter: { value: C } };
+    function buildParticles() {
+      if (particles) return;
+      const pos = [], sw = [], col = [], ph = [];
+      const MAX = 16000;
+      const metas = [];
+      sceneRoot.traverse(o => { if ((o.isMesh || o.isLineSegments || o.isLine) && o.geometry && o.geometry.attributes.position && o.visible) metas.push(o); });
+      const total = metas.reduce((s, o) => s + o.geometry.attributes.position.count, 0) || 1;
+      const v = new THREE.Vector3();
+      metas.forEach(o => {
+        const a = o.geometry.attributes.position, take = Math.max(1, Math.round(MAX * a.count / total)), step = Math.max(1, Math.floor(a.count / take));
+        const mc = o.material && o.material.color ? o.material.color : new THREE.Color(0xcccccc);
+        o.updateMatrixWorld();
+        for (let i = 0; i < a.count; i += step) {
+          v.fromBufferAttribute(a, i).applyMatrix4(o.matrixWorld);
+          if (!isFinite(v.x)) continue;
+          pos.push(v.x, v.y + 0.2, v.z);
+          const d = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(40 + Math.random() * 70);
+          sw.push(C.x + d.x, C.y + d.y * 0.7, C.z + d.z);
+          col.push(Math.min(1, mc.r * 0.9 + 0.1), Math.min(1, mc.g * 0.9 + 0.1), Math.min(1, mc.b * 0.9 + 0.1));
+          ph.push(Math.random() * 6.28);
+        }
+      });
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("aSwarm", new THREE.Float32BufferAttribute(sw, 3));
+      g.setAttribute("aColor", new THREE.Float32BufferAttribute(col, 3)); g.setAttribute("aPhase", new THREE.Float32BufferAttribute(ph, 1));
+      const mat = new THREE.ShaderMaterial({
+        uniforms: pUniforms, transparent: true, depthWrite: false,
+        vertexShader: `
+          uniform float uMorph; uniform float uTime; uniform vec3 uCenter;
+          attribute vec3 aSwarm; attribute vec3 aColor; attribute float aPhase;
+          varying vec3 vColor; varying float vA;
+          void main() {
+            vColor = aColor;
+            float e = smoothstep(0.0, 1.0, uMorph);
+            float blast = sin(uMorph * 3.14159265);
+            vec3 s = aSwarm - uCenter; float ang = uTime * 0.25 + aPhase * 0.05;
+            s = vec3(s.x * cos(ang) - s.z * sin(ang), s.y, s.x * sin(ang) + s.z * cos(ang)) + uCenter;
+            vec3 dir = normalize(aSwarm - uCenter + vec3(0.001));
+            s += dir * blast * (40.0 + sin(aPhase * 3.0) * 18.0);
+            float sw = (1.0 - e) * (length(position.xz - uCenter.xz) * 0.004 + sin(uTime + aPhase) * 0.4);
+            vec3 t = position; t.xz = vec2(t.x * cos(sw) - t.z * sin(sw), t.x * sin(sw) + t.z * cos(sw));
+            vec3 p = mix(s, t, e);
+            vec4 mv = modelViewMatrix * vec4(p, 1.0);
+            gl_Position = projectionMatrix * mv;
+            gl_PointSize = 2.4 + blast * 2.2;
+            vA = 0.35 + 0.55 * e + blast * 0.3;
+          }`,
+        fragmentShader: `
+          uniform float uAlpha; varying vec3 vColor; varying float vA;
+          void main() { vec2 c = gl_PointCoord - 0.5; float d = length(c); if (d > 0.5) discard; gl_FragColor = vec4(vColor, smoothstep(0.5, 0.1, d) * vA * uAlpha); }`
+      });
+      particles = new THREE.Points(g, mat); scene.add(particles);
+    }
+
+    // ---- estado y animacion ----
+    let morph = 0, anim = null, inTerritory = false, t0 = performance.now();
+    const ease = x => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    function setTerritoryVisible(on) {
+      sceneRoot.visible = on;
+      htmlLayers.forEach(l => { l.style.transition = "opacity .6s ease"; l.style.opacity = on ? "1" : "0"; l.style.pointerEvents = on ? "" : "none"; });
+    }
+    function applyCamera(k) {
+      const a = SWARM, b = AXO;
+      camera.position.lerpVectors(a.pos, b.pos, k); controls.target.lerpVectors(a.target, b.target, k);
+      camera.zoom = a.zoom + (b.zoom - a.zoom) * k; camera.updateProjectionMatrix();
+    }
+    function frame(now) {
+      requestAnimationFrame(frame);
+      const time = (now - t0) / 1000; pUniforms.uTime.value = time;
+      if (anim) {
+        const k = Math.min(1, (now - anim.start) / anim.dur);
+        morph = anim.from + (anim.to - anim.from) * ease(k);
+        pUniforms.uMorph.value = morph;
+        applyCamera(ease(k) * (anim.to > anim.from ? 1 : 0) + (anim.to > anim.from ? 0 : 1 - ease(k)));
+        if (k >= 1) {
+          const llego = anim.to > 0.5; anim = null;
+          if (llego) { // aterrizo: aparece la axonometria real y la red se desvanece
+            setTerritoryVisible(true); inTerritory = true; btn.textContent = "VOLVER A RED";
+            let f = 1; const fade = () => { f -= 0.04; pUniforms.uAlpha.value = Math.max(0, f); nodes.forEach(n => { n.mesh.material.opacity = Math.max(0, f); }); lines.material.opacity = 0.55 * Math.max(0, f); if (f > 0) requestAnimationFrame(fade); else { introGroup.visible = false; if (particles) particles.visible = false; } }; fade();
+          } else { btn.textContent = "MATERIALIZAR"; if (particles) particles.visible = false; }
+        }
+      }
+      if (!introGroup.visible) return;
+      const rot = morph < 0.02 ? time * 0.18 : 0; // gira mientras es red
+      const blast = Math.sin(morph * Math.PI), e = morph;
+      nodes.forEach(n => {
+        const s = n.swarm.clone(); const cs = Math.cos(rot), sn = Math.sin(rot);
+        const sx = s.x * cs - s.z * sn, sz = s.x * sn + s.z * cs; s.set(sx, s.y + Math.sin(time * 1.2 + sx) * 0.8, sz).add(C);
+        const p = s.lerp(n.land, e);
+        p.add(n.swarm.clone().normalize().multiplyScalar(blast * 26));
+        n.mesh.position.copy(p); n.mesh.scale.setScalar(1 + blast * 0.6);
+        if (n.label) { n.label.position.set(p.x, p.y + 7, p.z); n.label.material.opacity = 1 - e; }
+      });
+      pairs.forEach((pr, i) => { const a = pr[0].mesh.position, b = pr[1].mesh.position; linePos.set([a.x, a.y, a.z, b.x, b.y, b.z], i * 6); });
+      lineGeo.attributes.position.needsUpdate = true;
+    }
+
+    // ---- boton ----
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.textContent = "MATERIALIZAR";
+    btn.style.cssText = "position:absolute; left:50%; bottom:28px; transform:translateX(-50%); z-index:30; padding:11px 26px; border-radius:999px; border:1px solid rgba(255,255,255,.35); background:rgba(10,12,14,.82); color:#fff; font:700 12px 'Segoe UI',sans-serif; letter-spacing:.16em; cursor:pointer; backdrop-filter:blur(6px);";
+    (document.getElementById("sceneWrap") || wrap || document.body).appendChild(btn);
+    const hint = document.createElement("div");
+    hint.textContent = "Red de problemáticas de Kennedy · arrastra para girar";
+    hint.style.cssText = "position:absolute; left:50%; bottom:74px; transform:translateX(-50%); z-index:30; font:600 11px 'Segoe UI',sans-serif; color:rgba(255,255,255,.75); letter-spacing:.06em; pointer-events:none; transition:opacity .6s;";
+    (document.getElementById("sceneWrap") || wrap || document.body).appendChild(hint);
+    btn.addEventListener("click", () => {
+      if (anim) return;
+      if (!inTerritory) {
+        buildParticles(); particles.visible = true; pUniforms.uAlpha.value = 1; introGroup.visible = true;
+        nodes.forEach(n => { n.mesh.material.opacity = n.macro ? 0.95 : 0.9; }); lines.material.opacity = 0.55;
+        hint.style.opacity = "0";
+        anim = { from: 0, to: 1, start: performance.now(), dur: 3200 };
+      } else {
+        setTerritoryVisible(false); inTerritory = false; introGroup.visible = true; hint.style.opacity = "1";
+        nodes.forEach(n => { n.mesh.material.opacity = n.macro ? 0.95 : 0.9; }); lines.material.opacity = 0.55;
+        if (particles) { particles.visible = true; pUniforms.uAlpha.value = 1; }
+        anim = { from: 1, to: 0, start: performance.now(), dur: 2600 };
+      }
+    });
+
+    // mientras se esta en la red, la vista axonometrica que se aplica al
+    // terminar de cargar el mapa no debe sacar la camara de la red
+    const axoOriginal = setAxonometricView;
+    setAxonometricView = function () { axoOriginal(); if (!inTerritory && !anim) applyCamera(0); };
+    // arranque: red 3D girando, sin territorio ni burbujas
+    setTerritoryVisible(false);
+    setTimeout(() => { if (!inTerritory && !anim) applyCamera(0); }, 400);
+    requestAnimationFrame(frame);
+    } catch (err) { console.warn('Red 3D de problematicas:', err); }
+  })();
+
 })();
 
 // ============================================================
