@@ -546,6 +546,13 @@
       )
       .on("click", (ev, d) => {
         ev.stopPropagation();
+        if (owlDemoPending && typeof showOwlDrawer === "function") {
+          owlDemoPending = false;
+          focusNode(d);
+          showOwlDrawer(d);
+          setTimeout(() => highlightNeighborhood(d), 2600);
+          return;
+        }
         selectNode(d);
       })
       .on("mouseenter", (ev, d) => highlightNeighborhood(d))
@@ -735,6 +742,85 @@
   const infoDrawer = document.getElementById("infoDrawer");
   const drawerBody = document.getElementById("drawerBody");
   const drawerClose = document.getElementById("drawerClose");
+
+  // Regla del buho (como en humedalburro): el primer clic en cualquier
+  // bola muestra el buho sabanero con zoom, y a los 2,6 s abre su sub-red.
+  let owlDemoPending = true;
+  const OWL_INFO = {
+    code: "AVE-031",
+    name: "Búho sabanero",
+    sciname: "Asio flammeus bogotensis",
+    macro: "sets",
+    desc: "Consumidor secundario del humedal: controla roedores e insectos en los juncales de El Burro y La Vaca.",
+    loc: "Humedal El Burro y La Vaca (Kennedy).",
+    alert: "Sensible a pérdida de juncales y contaminación hídrica."
+  };
+
+  function showOwlDrawer(d) {
+    selectedNodeId = d.id;
+    highlightNeighborhood(d);
+
+    const connectedNodes = [];
+    resolvedLinks.forEach(l => {
+      if (l.source.id === d.id) connectedNodes.push(l.target);
+      if (l.target.id === d.id) connectedNodes.push(l.source);
+    });
+
+    const connectedHtml = connectedNodes.map(cn => {
+      const cMacro = MACROMODELS[cn.macro] || { short: cn.macro };
+      return `
+        <div class="connected-pill" data-target="${cn.id}">
+          <div>
+            <b>${cn.name.replace(/\n/g, " ")}</b>
+            <div style="font-size: 10px; color: #64748b;">${cMacro.short}</div>
+          </div>
+          <i class="fa-solid fa-arrow-right" style="font-size: 11px;"></i>
+        </div>
+      `;
+    }).join("");
+
+    drawerBody.innerHTML = `
+      <div class="drawer-macro" style="color: #3fd06a;">
+        <i class="fa-solid fa-feather"></i> ${OWL_INFO.code} · Avifauna de humedal
+      </div>
+      <h3 class="drawer-title">${OWL_INFO.name}</h3>
+      <div style="font-size: 11.5px; font-style: italic; color: #8b98a8; margin: -10px 0 14px;">${OWL_INFO.sciname}</div>
+
+      <div class="drawer-desc">
+        ${OWL_INFO.desc}
+      </div>
+
+      <div class="drawer-section">
+        <h4><i class="fa-solid fa-location-dot" style="color: #4e8d8a;"></i> Ubicación en Kennedy</h4>
+        <ul><li>${OWL_INFO.loc}</li></ul>
+      </div>
+
+      <div class="drawer-section">
+        <h4><i class="fa-solid fa-triangle-exclamation" style="color: #b0503a;"></i> Vulnerabilidad del hábitat</h4>
+        <ul><li>${OWL_INFO.alert}</li></ul>
+      </div>
+
+      <div class="drawer-section">
+        <h4><i class="fa-solid fa-diagram-project" style="color: #8a8f96;"></i> Sub-red: modelos vinculados (${connectedNodes.length})</h4>
+        <div class="connected-pill-list">
+          ${connectedHtml}
+        </div>
+      </div>
+    `;
+
+    drawerBody.querySelectorAll(".connected-pill").forEach(el => {
+      el.addEventListener("click", () => {
+        const targetId = el.getAttribute("data-target");
+        const targetNode = nodeMap.get(targetId);
+        if (targetNode) {
+          selectNode(targetNode);
+          focusNode(targetNode);
+        }
+      });
+    });
+
+    infoDrawer.classList.add("open");
+  }
 
   function selectNode(d) {
     selectedNodeId = d.id;
