@@ -491,10 +491,17 @@
       .join("path")
       .attr("class", "net-link")
       .attr("d", linkPath);
+    // Los enlaces aparecen cuando las bolas ya se acomodaron
+    linkLayer.classed("entering", true);
+    setTimeout(() => linkLayer.classed("entering", false), 2900);
   }
 
   // --- 8. DIBUJO DE NODOS Y AJUSTE PERFECTO DE TEXTO (SIN DESBORDAMIENTO) ---
   let nodeElements;
+
+  // Entrada animada: todo nace del centro del diagrama
+  const ENTER_X = 480, ENTER_Y = 520;
+  const enterDelay = (d, i) => 300 + i * 110;
 
   // Icono vectorial (Font Awesome) por modelo: primera fila del rotulo
   const FA_ICONS = {
@@ -552,7 +559,7 @@
       .attr("filter", "url(#nodeShadow)");
 
     // Rótulo de texto con cálculo de tamaño dinámico para evitar desbordamientos
-    nodeElements.each(function (d) {
+    nodeElements.each(function (d, i) {
       const g = d3.select(this);
       const textEl = g.append("text")
         .attr("class", "node-text" + (d.large ? " large" : ""))
@@ -587,10 +594,14 @@
         }
       });
 
+      // El rotulo aparece con su bola
+      textEl.style("opacity", 0)
+        .transition().delay(300 + i * 110 + 800).duration(500)
+        .style("opacity", 1);
+
       // Medición exacta y auto-ajuste de escala si excede el área segura del círculo
       try {
-        const bbox = textEl.node().getBBox();
-        const maxAllowedWidth = d.r * 1.76;
+        const bbox = textEl.node().getBBox();        const maxAllowedWidth = d.r * 1.76;
         const maxAllowedHeight = d.r * 1.72;
 
         if (bbox.width > maxAllowedWidth || bbox.height > maxAllowedHeight) {
@@ -611,6 +622,26 @@
         // En caso de SSR o render sin DOM activo
       }
     });
+
+    // Entrada: las bolas salen del centro una por una y luego se forman los circulos
+    nodeElements
+      .attr("transform", `translate(${ENTER_X}, ${ENTER_Y})`)
+      .style("opacity", 0)
+      .transition()
+      .delay(enterDelay)
+      .duration(900)
+      .ease(d3.easeCubicOut)
+      .attr("transform", d => `translate(${d.x}, ${d.y})`)
+      .style("opacity", 1);
+    nodeElements.select(".node-circle")
+      .attr("r", 0)
+      .transition()
+      .delay((d, i) => 300 + i * 110 + 450)
+      .duration(650)
+      .ease(d3.easeCubicOut)
+      .attr("r", d => d.r);
+    // Limpia el estilo en linea para no romper el resaltado/dim posterior
+    setTimeout(() => nodeElements.style("opacity", null), 3600);
   }
 
   // --- 9. INTERACTIVIDAD: DRAGGING ---
@@ -946,8 +977,9 @@
   resetZoom();
 
   // Flujo activo desde el arranque: la red se ve viva sin pulsar nada.
+  // Arranca cuando termina la entrada para no pelear con la animacion inicial.
   simFlowBtn.classList.add("active");
   simFlowBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Detener Flujos';
-  animateParticles();
+  setTimeout(animateParticles, 3500);
 
 })();
