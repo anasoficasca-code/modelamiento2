@@ -498,6 +498,15 @@
   .net-node:hover .node-circle { stroke: #a5f3fc; filter: drop-shadow(0 0 16px rgba(34, 211, 238, 0.65)); }
   .net-node.active .node-circle { stroke: #a5f3fc; filter: drop-shadow(0 0 0 5px rgba(34, 211, 238, 0.3)) drop-shadow(0 0 18px rgba(34, 211, 238, 0.6)); }
   .node-text { fill: #eaf6fb; }
+  .node-halo {
+    fill: none; stroke: rgba(34, 211, 238, 0.55); stroke-width: 1.5;
+    transform-box: fill-box; transform-origin: center;
+    animation: haloBreathe 3.2s ease-in-out infinite; pointer-events: none;
+  }
+  @keyframes haloBreathe {
+    0%, 100% { transform: scale(1); opacity: 0.55; }
+    50% { transform: scale(1.16); opacity: 0; }
+  }
   .diagram-close-btn circle { fill: #0e7490; }
 </style>
 </head>

@@ -496,6 +496,28 @@
   // --- 8. DIBUJO DE NODOS Y AJUSTE PERFECTO DE TEXTO (SIN DESBORDAMIENTO) ---
   let nodeElements;
 
+  // Icono tematico por modelo (se dibuja como primera linea del rotulo)
+  const NODE_ICONS = {
+    escenarios_hipoteticos: "🔮",
+    flujos_materiales_energia: "⚡",
+    perturbaciones_contingencia: "🌊",
+    ciclos_actividad_ocupacion: "🕐",
+    pulsos_demanda_horas_pico: "📈",
+    simulacion_agentes: "👥",
+    estres_microclimatico: "🌡️",
+    reconfiguracion_redes: "🕸️",
+    coevolucion_territorio_sociedad: "🌱",
+    vulnerabilidad_resiliencia: "🛡️",
+    simbiosis_ecoindustrial: "🏭",
+    modelo_eleccion: "🧭",
+    profundidad_convexidad: "📐",
+    autoorganizacion_morfologica: "🧬",
+    friccion_flujos_transporte: "🚚",
+    metabolismo_movilidad_viales: "🛣️",
+    entradas_salidas_recursos: "🔄",
+    gestion_residuos_emisiones: "♻️"
+  };
+
   function drawNodes() {
     nodeElements = nodeLayer.selectAll(".net-node")
       .data(NODES_DATA)
@@ -516,6 +538,12 @@
       .on("mouseenter", (ev, d) => highlightNeighborhood(d))
       .on("mouseleave", resetHighlight);
 
+    // Halo que "respira" detras del circulo principal (no toca posiciones)
+    nodeElements.append("circle")
+      .attr("class", "node-halo")
+      .attr("r", d => d.r)
+      .style("animation-delay", (d, i) => `${((i % 6) * 0.55).toFixed(2)}s`);
+
     // Círculo principal del nodo
     nodeElements.append("circle")
       .attr("class", "node-circle")
@@ -529,7 +557,9 @@
         .attr("class", "node-text" + (d.large ? " large" : ""))
         .attr("text-anchor", "middle");
 
-      const lines = d.lines || d.name.split("\n");
+      const baseLines = d.lines || d.name.split("\n");
+      const icon = NODE_ICONS[d.id];
+      const lines = icon ? [icon, ...baseLines] : baseLines;
       const numLines = lines.length;
 
       // Tamaño de fuente base según tamaño del nodo y cantidad de líneas
@@ -542,10 +572,11 @@
       let totalOffset = ((numLines - 1) * lineHeight) / 2;
 
       lines.forEach((line, i) => {
-        textEl.append("tspan")
+        const ts = textEl.append("tspan")
           .attr("x", 0)
           .attr("y", -totalOffset + i * lineHeight)
           .text(line);
+        if (icon && i === 0) ts.style("font-size", (fontSize * 1.35).toFixed(1) + "px");
       });
 
       // Medición exacta y auto-ajuste de escala si excede el área segura del círculo
