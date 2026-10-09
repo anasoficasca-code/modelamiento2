@@ -469,8 +469,8 @@
   });
 
   function linkPath(d) {
-    const sx = d.source.x, sy = d.source.y;
-    const tx = d.target.x, ty = d.target.y;
+    const sx = d.source._px ?? d.source.x, sy = d.source._py ?? d.source.y;
+    const tx = d.target._px ?? d.target.x, ty = d.target._py ?? d.target.y;
     const dx = tx - sx, dy = ty - sy;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
@@ -495,6 +495,28 @@
 
   // --- 8. DIBUJO DE NODOS Y AJUSTE PERFECTO DE TEXTO (SIN DESBORDAMIENTO) ---
   let nodeElements;
+
+  // Icono vectorial (Font Awesome) por modelo: primera fila del rotulo
+  const FA_ICONS = {
+    escenarios_hipoteticos: "\uf06e",
+    flujos_materiales_energia: "\uf0eb",
+    perturbaciones_contingencia: "\uf071",
+    ciclos_actividad_ocupacion: "\uf017",
+    pulsos_demanda_horas_pico: "\uf201",
+    simulacion_agentes: "\uf0c0",
+    estres_microclimatico: "\uf2c9",
+    reconfiguracion_redes: "\uf6ff",
+    coevolucion_territorio_sociedad: "\uf4d8",
+    vulnerabilidad_resiliencia: "\uf3ed",
+    simbiosis_ecoindustrial: "\uf275",
+    modelo_eleccion: "\uf14e",
+    profundidad_convexidad: "\uf546",
+    autoorganizacion_morfologica: "\uf471",
+    friccion_flujos_transporte: "\uf0d1",
+    metabolismo_movilidad_viales: "\uf018",
+    entradas_salidas_recursos: "\uf021",
+    gestion_residuos_emisiones: "\uf1b8"
+  };
 
   function drawNodes() {
     nodeElements = nodeLayer.selectAll(".net-node")
@@ -536,8 +558,12 @@
         .attr("class", "node-text" + (d.large ? " large" : ""))
         .attr("text-anchor", "middle");
 
-      const lines = d.lines || d.name.split("\n");
-      const numLines = lines.length;
+      const baseLines = d.lines || d.name.split("\n");
+      const faIcon = FA_ICONS[d.id];
+      const rows = faIcon
+        ? [{ icon: true, text: faIcon }, ...baseLines.map(t => ({ icon: false, text: t }))]
+        : baseLines.map(t => ({ icon: false, text: t }));
+      const numLines = rows.length;
 
       // Tamaño de fuente base según tamaño del nodo y cantidad de líneas
       let fontSize = d.large ? 12 : (d.r <= 41 ? 7.6 : (d.r <= 46 ? 8.2 : 9.0));
@@ -548,11 +574,17 @@
       let lineHeight = fontSize * 1.22;
       let totalOffset = ((numLines - 1) * lineHeight) / 2;
 
-      lines.forEach((line, i) => {
-        textEl.append("tspan")
+      rows.forEach((row, i) => {
+        const ts = textEl.append("tspan")
           .attr("x", 0)
           .attr("y", -totalOffset + i * lineHeight)
-          .text(line);
+          .text(row.text);
+        if (row.icon) {
+          ts.style("font-family", "'Font Awesome 6 Free'")
+            .style("font-weight", "900")
+            .style("font-size", (fontSize * 1.45).toFixed(1) + "px")
+            .style("fill", "#cfc7b4");
+        }
       });
 
       // Medición exacta y auto-ajuste de escala si excede el área segura del círculo
@@ -569,7 +601,9 @@
             lineHeight = fontSize * 1.20;
             totalOffset = ((numLines - 1) * lineHeight) / 2;
             textEl.selectAll("tspan").each(function (t, i) {
-              d3.select(this).attr("y", -totalOffset + i * lineHeight);
+              const sel = d3.select(this);
+              sel.attr("y", -totalOffset + i * lineHeight);
+              if (rows[i] && rows[i].icon) sel.style("font-size", (fontSize * 1.45).toFixed(1) + "px");
             });
           }
         }
@@ -844,16 +878,24 @@
     .data(particles)
     .join("circle")
     .attr("class", "link-particle active")
-    .attr("r", d => d.r)
-    .attr("fill", (d, i) => i % 2 ? "#c05a3c" : "#6fb3ad");
+    .attr("r", d => d.r);
 
-  function animateParticles() {
+  function animateParticles(now) {
+    const tSec = (now || performance.now()) / 1000;
+    // Deriva suave: cada nodo flota alrededor de su posicion (la red "respira")
+    NODES_DATA.forEach((n, i) => {
+      const a = 2.2 + (i % 4) * 0.9;
+      n._px = n.x + Math.sin(tSec * (0.35 + (i % 5) * 0.07) + i * 1.7) * a;
+      n._py = n.y + Math.cos(tSec * (0.30 + (i % 3) * 0.09) + i * 2.3) * a;
+    });
+    nodeElements.attr("transform", d => `translate(${d._px}, ${d._py})`);
+    linkElements.attr("d", linkPath);
     particles.forEach(p => {
       p.t += p.speed;
       if (p.t > 1) p.t = 0;
 
-      const sx = p.link.source.x, sy = p.link.source.y;
-      const tx = p.link.target.x, ty = p.link.target.y;
+      const sx = p.link.source._px ?? p.link.source.x, sy = p.link.source._py ?? p.link.source.y;
+      const tx = p.link.target._px ?? p.link.target.x, ty = p.link.target._py ?? p.link.target.y;
       const dx = tx - sx, dy = ty - sy;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
       const curvature = Math.min(22, dist * 0.08);
