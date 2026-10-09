@@ -14,41 +14,41 @@
       id: "gemelos",
       name: "Gemelos Digitales y Simulación Computacional",
       short: "Gemelos Digitales",
-      color: "#0284c7",
+      color: "#4e8d8a",
       bg: "#e0f2fe",
-      stroke: "#38bdf8"
+      stroke: "#4e8d8a"
     },
     cronosistemas: {
       id: "cronosistemas",
       name: "Cronosistemas y Temporalidad Social",
       short: "Cronosistemas",
-      color: "#0369a1",
+      color: "#c08a3e",
       bg: "#e0f2fe",
-      stroke: "#0284c7"
+      stroke: "#c08a3e"
     },
     sets: {
       id: "sets",
       name: "Sistemas Socioecológicos y Tecnológicos (SETS)",
       short: "SETS",
-      color: "#0284c7",
+      color: "#7a8b6f",
       bg: "#e0f2fe",
-      stroke: "#38bdf8"
+      stroke: "#7a8b6f"
     },
     sintaxis: {
       id: "sintaxis",
       name: "Sintaxis Espacial y Economía de Movimiento",
       short: "Sintaxis Espacial",
-      color: "#0369a1",
+      color: "#8a8f96",
       bg: "#bae6fd",
-      stroke: "#0ea5e9"
+      stroke: "#8a8f96"
     },
     metabolismo: {
       id: "metabolismo",
       name: "Metabolismo Urbano",
       short: "Metabolismo Urbano",
-      color: "#0369a1",
+      color: "#b0503a",
       bg: "#e0f2fe",
-      stroke: "#0284c7"
+      stroke: "#b0503a"
     }
   };
 
@@ -355,9 +355,9 @@
     .attr("cx", "45%")
     .attr("cy", "40%")
     .attr("r", "55%");
-  nodeGrad.append("stop").attr("offset", "0%").attr("stop-color", "#164e63");
-  nodeGrad.append("stop").attr("offset", "60%").attr("stop-color", "#0c2f3d");
-  nodeGrad.append("stop").attr("offset", "100%").attr("stop-color", "#071b24");
+  nodeGrad.append("stop").attr("offset", "0%").attr("stop-color", "#241d15");
+  nodeGrad.append("stop").attr("offset", "60%").attr("stop-color", "#14110d");
+  nodeGrad.append("stop").attr("offset", "100%").attr("stop-color", "#0a0908");
 
   // Sombra suave para nodos
   const filter = defs.append("filter")
@@ -365,10 +365,10 @@
     .attr("x", "-25%").attr("y", "-25%")
     .attr("width", "150%").attr("height", "150%");
   filter.append("feDropShadow")
-    .attr("dx", "0").attr("dy", "0")
-    .attr("stdDeviation", "5")
-    .attr("flood-color", "#22d3ee")
-    .attr("flood-opacity", "0.45");
+    .attr("dx", "0").attr("dy", "2")
+    .attr("stdDeviation", "4")
+    .attr("flood-color", "#000000")
+    .attr("flood-opacity", "0.6");
 
   // Grupo raíz de Zoom & Pan
   const root = svg.append("g").attr("class", "zoom-root");
@@ -496,28 +496,6 @@
   // --- 8. DIBUJO DE NODOS Y AJUSTE PERFECTO DE TEXTO (SIN DESBORDAMIENTO) ---
   let nodeElements;
 
-  // Icono tematico por modelo (se dibuja como primera linea del rotulo)
-  const NODE_ICONS = {
-    escenarios_hipoteticos: "🔮",
-    flujos_materiales_energia: "⚡",
-    perturbaciones_contingencia: "🌊",
-    ciclos_actividad_ocupacion: "🕐",
-    pulsos_demanda_horas_pico: "📈",
-    simulacion_agentes: "👥",
-    estres_microclimatico: "🌡️",
-    reconfiguracion_redes: "🕸️",
-    coevolucion_territorio_sociedad: "🌱",
-    vulnerabilidad_resiliencia: "🛡️",
-    simbiosis_ecoindustrial: "🏭",
-    modelo_eleccion: "🧭",
-    profundidad_convexidad: "📐",
-    autoorganizacion_morfologica: "🧬",
-    friccion_flujos_transporte: "🚚",
-    metabolismo_movilidad_viales: "🛣️",
-    entradas_salidas_recursos: "🔄",
-    gestion_residuos_emisiones: "♻️"
-  };
-
   function drawNodes() {
     nodeElements = nodeLayer.selectAll(".net-node")
       .data(NODES_DATA)
@@ -544,10 +522,11 @@
       .attr("r", d => d.r)
       .style("animation-delay", (d, i) => `${((i % 6) * 0.55).toFixed(2)}s`);
 
-    // Círculo principal del nodo
+    // Círculo principal del nodo (borde según su macromodelo; style para imponerse al CSS base)
     nodeElements.append("circle")
       .attr("class", "node-circle")
       .attr("r", d => d.r)
+      .style("stroke", d => (MACROMODELS[d.macro] || {}).stroke || "#8a8578")
       .attr("filter", "url(#nodeShadow)");
 
     // Rótulo de texto con cálculo de tamaño dinámico para evitar desbordamientos
@@ -557,9 +536,7 @@
         .attr("class", "node-text" + (d.large ? " large" : ""))
         .attr("text-anchor", "middle");
 
-      const baseLines = d.lines || d.name.split("\n");
-      const icon = NODE_ICONS[d.id];
-      const lines = icon ? [icon, ...baseLines] : baseLines;
+      const lines = d.lines || d.name.split("\n");
       const numLines = lines.length;
 
       // Tamaño de fuente base según tamaño del nodo y cantidad de líneas
@@ -572,11 +549,10 @@
       let totalOffset = ((numLines - 1) * lineHeight) / 2;
 
       lines.forEach((line, i) => {
-        const ts = textEl.append("tspan")
+        textEl.append("tspan")
           .attr("x", 0)
           .attr("y", -totalOffset + i * lineHeight)
           .text(line);
-        if (icon && i === 0) ts.style("font-size", (fontSize * 1.35).toFixed(1) + "px");
       });
 
       // Medición exacta y auto-ajuste de escala si excede el área segura del círculo
@@ -666,7 +642,7 @@
       if (l.target.id === d.id) connectedNodes.push(l.source);
     });
 
-    const macroMeta = MACROMODELS[d.macro] || { name: d.macro, color: "#0284c7" };
+    const macroMeta = MACROMODELS[d.macro] || { name: d.macro, color: "#8a8578" };
 
     const inputsHtml = (d.inputs || []).map(i => `<li>${i}</li>`).join("");
     const outputsHtml = (d.outputs || []).map(o => `<li>${o}</li>`).join("");
@@ -695,17 +671,17 @@
       </div>
 
       <div class="drawer-section">
-        <h4><i class="fa-solid fa-arrow-right-to-bracket" style="color: #0284c7;"></i> Variables de Entrada (Inputs)</h4>
+        <h4><i class="fa-solid fa-arrow-right-to-bracket" style="color: #4e8d8a;"></i> Variables de Entrada (Inputs)</h4>
         <ul>${inputsHtml}</ul>
       </div>
 
       <div class="drawer-section">
-        <h4><i class="fa-solid fa-arrow-up-right-from-square" style="color: #10b981;"></i> Resultados y Salidas (Outputs)</h4>
+        <h4><i class="fa-solid fa-arrow-up-right-from-square" style="color: #7a8b6f;"></i> Resultados y Salidas (Outputs)</h4>
         <ul>${outputsHtml}</ul>
       </div>
 
       <div class="drawer-section">
-        <h4><i class="fa-solid fa-diagram-project" style="color: #6366f1;"></i> Modelos Vinculados Directamente (${connectedNodes.length})</h4>
+        <h4><i class="fa-solid fa-diagram-project" style="color: #8a8f96;"></i> Modelos Vinculados Directamente (${connectedNodes.length})</h4>
         <div class="connected-pill-list">
           ${connectedHtml}
         </div>
@@ -869,7 +845,7 @@
     .join("circle")
     .attr("class", "link-particle active")
     .attr("r", d => d.r)
-    .attr("fill", "#a5f3fc");
+    .attr("fill", (d, i) => i % 2 ? "#c05a3c" : "#6fb3ad");
 
   function animateParticles() {
     particles.forEach(p => {
