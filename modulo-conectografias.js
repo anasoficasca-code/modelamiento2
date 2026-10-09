@@ -355,9 +355,9 @@
     .attr("cx", "45%")
     .attr("cy", "40%")
     .attr("r", "55%");
-  nodeGrad.append("stop").attr("offset", "0%").attr("stop-color", "#ebf7fd");
-  nodeGrad.append("stop").attr("offset", "65%").attr("stop-color", "#c3e6f8");
-  nodeGrad.append("stop").attr("offset", "100%").attr("stop-color", "#a6d6f2");
+  nodeGrad.append("stop").attr("offset", "0%").attr("stop-color", "#164e63");
+  nodeGrad.append("stop").attr("offset", "60%").attr("stop-color", "#0c2f3d");
+  nodeGrad.append("stop").attr("offset", "100%").attr("stop-color", "#071b24");
 
   // Sombra suave para nodos
   const filter = defs.append("filter")
@@ -365,10 +365,10 @@
     .attr("x", "-25%").attr("y", "-25%")
     .attr("width", "150%").attr("height", "150%");
   filter.append("feDropShadow")
-    .attr("dx", "0").attr("dy", "3")
-    .attr("stdDeviation", "4")
-    .attr("flood-color", "#0284c7")
-    .attr("flood-opacity", "0.18");
+    .attr("dx", "0").attr("dy", "0")
+    .attr("stdDeviation", "5")
+    .attr("flood-color", "#22d3ee")
+    .attr("flood-opacity", "0.45");
 
   // Grupo raíz de Zoom & Pan
   const root = svg.append("g").attr("class", "zoom-root");
@@ -818,25 +818,27 @@
 
   // --- 16. SIMULACIÓN DE FLUJOS (PARTICLE ANIMATION) ---
   const simFlowBtn = document.getElementById("simFlowBtn");
-  let isSimulating = false;
+  let isSimulating = true;
   let animFrameId = null;
   const particles = [];
 
   resolvedLinks.forEach((link, idx) => {
-    particles.push({
-      link: link,
-      t: (idx * 0.15) % 1,
-      speed: 0.003 + (idx % 3) * 0.0015,
-      r: 3.5
-    });
+    for (let k = 0; k < 2; k++) {
+      particles.push({
+        link: link,
+        t: ((idx * 2 + k) * 0.23) % 1,
+        speed: 0.006 + ((idx + k) % 4) * 0.002,
+        r: 3 + ((idx + k) % 3) * 0.7
+      });
+    }
   });
 
   const particleCircles = particleLayer.selectAll(".link-particle")
     .data(particles)
     .join("circle")
-    .attr("class", "link-particle")
+    .attr("class", "link-particle active")
     .attr("r", d => d.r)
-    .attr("fill", "#0284c7");
+    .attr("fill", "#a5f3fc");
 
   function animateParticles() {
     particles.forEach(p => {
@@ -893,5 +895,10 @@
   drawLinks();
   drawNodes();
   resetZoom();
+
+  // Flujo activo desde el arranque: la red se ve viva sin pulsar nada.
+  simFlowBtn.classList.add("active");
+  simFlowBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Detener Flujos';
+  animateParticles();
 
 })();
