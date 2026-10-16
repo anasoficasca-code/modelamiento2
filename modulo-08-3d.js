@@ -116,7 +116,7 @@
     controls.update();
     resize();
     camera.updateProjectionMatrix();
-    perspToggleBtn.textContent = usingPersp ? "📏 Ver en axonométrica" : "📐 Ver en perspectiva";
+    perspToggleBtn.innerHTML = usingPersp ? '<i class="fa-solid fa-ruler-combined"></i> Ver en axonométrica' : '<i class="fa-solid fa-cube"></i> Ver en perspectiva';
     if (typeof updateSectionBox === "function") updateSectionBox(); // refrescar el cuadro de coordenadas con la nueva proyeccion
   });
 
@@ -473,7 +473,11 @@
       .then(data => {
         buildTrees(data);
         allTreesData = data;
-        birdTreesGrid = buildBirdTreeGrid(sampleAttractorTrees(data, 0));
+        const muestraInicial = sampleAttractorTrees(data, 0);
+        birdTreesGrid = buildBirdTreeGrid(muestraInicial);
+        updateVegSpeciesBars(muestraInicial);
+        const cEl = document.getElementById("bioVegCount");
+        if (cEl) cEl.textContent = muestraInicial.length.toLocaleString("es-CO");
       })
       .catch(err => console.warn("No se pudieron cargar los árboles:", err));
   }
@@ -1398,6 +1402,28 @@
     allAttractorsFlat = attractors;
     const countEl = document.getElementById("bioVegCount");
     if (countEl) countEl.textContent = attractors.length.toLocaleString("es-CO");
+    updateVegSpeciesBars(attractors);
+  }
+  // Barras por especie del panel de cobertura vegetal: la escala es el
+  // maximo que alcanza cada especie con +400%, asi las barras crecen o
+  // se achican con el slider sobre una referencia fija.
+  let vegSpeciesMax = null;
+  function updateVegSpeciesBars(attractors) {
+    if (!allTreesData) return;
+    if (!vegSpeciesMax) {
+      vegSpeciesMax = {};
+      sampleAttractorTrees(allTreesData, 400).forEach(a => { vegSpeciesMax[a.meta.key] = (vegSpeciesMax[a.meta.key] || 0) + 1; });
+    }
+    const porEspecie = {};
+    attractors.forEach(a => { porEspecie[a.meta.key] = (porEspecie[a.meta.key] || 0) + 1; });
+    const tope = Math.max(1, ...Object.values(vegSpeciesMax));
+    ["sauco", "capuli", "urapan"].forEach(k => {
+      const n = porEspecie[k] || 0;
+      const c = document.getElementById("vegCount-" + k);
+      const bar = document.getElementById("vegBar-" + k);
+      if (c) c.textContent = n.toLocaleString("es-CO");
+      if (bar) bar.style.width = (n / tope * 100).toFixed(1) + "%";
+    });
   }
   function setBirdCount(n) {
     const target = Math.max(1, Math.round(n));
@@ -2529,9 +2555,19 @@
   const bioVegVal = document.getElementById("bioVegVal");
   if (bioVegSlider) bioVegSlider.addEventListener("input", () => {
     rebuildBirdTreesWithBoost(Number(bioVegSlider.value));
-    if (bioVegVal) bioVegVal.textContent = `+${bioVegSlider.value}%`;
-    aplicarTotalMirlas(Number(bioVegSlider.value));
+    const v = Number(bioVegSlider.value);
+    if (bioVegVal) {
+      bioVegVal.textContent = v > 0 ? `+${v}%` : v < 0 ? `−${Math.abs(v)}%` : "0%";
+      bioVegVal.classList.remove("bump"); void bioVegVal.offsetWidth; bioVegVal.classList.add("bump");
+    }
+    document.querySelectorAll(".veg-presets button").forEach(b => b.classList.toggle("on", Number(b.dataset.veg) === v));
+    aplicarTotalMirlas(v);
   });
+  document.querySelectorAll(".veg-presets button").forEach(b => b.addEventListener("click", () => {
+    if (!bioVegSlider) return;
+    bioVegSlider.value = b.dataset.veg;
+    bioVegSlider.dispatchEvent(new Event("input"));
+  }));
 
   // ---- Reloj climatico anual del Humedal El Burro ----
   const MESES_NOMBRE = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -2556,7 +2592,7 @@
   document.getElementById("humedalPlay").addEventListener("click", (e) => {
     humedalPlaying = !humedalPlaying;
     if (humedalPlaying) {
-      e.target.textContent = "⏸ Detener";
+      e.currentTarget.innerHTML = '<i class="fa-solid fa-pause"></i> Detener';
       humedalPlayTimer = setInterval(() => {
         let mes = parseInt(humedalMesSlider.value, 10) + 1;
         if (mes > 12) mes = 1;
@@ -2564,10 +2600,47 @@
         applyHumedalMes(mes);
       }, 900);
     } else {
-      e.target.textContent = "▶ Reproducir año completo";
+      e.currentTarget.innerHTML = '<i class="fa-solid fa-play"></i> Reproducir año completo';
       clearInterval(humedalPlayTimer);
     }
   });
+
+  // Arranque automatico de las simulaciones: transito, ruido, mirlas y
+  // ciclo anual del humedal. El plano de usos del suelo (edificios de
+  // colores) NO se prende solo. Cada una arranca apenas sus propios datos
+  // estan listos, sin esperar a las demas.
+  (function autoArranque() {
+    const listo = { humedal: false, mirlas: false, transito: false };
+    const revisar = setInterval(() => {
+      if (!listo.humedal) {
+        listo.humedal = true;
+        if (!humedalPlaying) document.getElementById("humedalPlay").click();
+      }
+      if (!listo.mirlas && allTreesData && birdsGroup) {
+        listo.mirlas = true;
+        if (!birdsGroup.visible) document.getElementById("bioToggle").click();
+      }
+      if (!listo.transito && timesteps.length && noiseMesh) {
+        listo.transito = true;
+        if (!playing) playBtn.click();
+        if (!noiseMesh.visible) document.getElementById("noiseToggle").click();
+      }
+      if (listo.humedal && listo.mirlas && listo.transito) clearInterval(revisar);
+    }, 300);
+    setTimeout(() => clearInterval(revisar), 180000);
+    // el navegador bloquea el audio hasta el primer gesto del usuario:
+    // apenas toque la pagina, arranca el sonido si el ruido sigue prendido
+    const audio = document.getElementById("noiseAmbienceAudio");
+    const activarAudio = () => {
+      if (audio && noiseMesh && noiseMesh.visible && audio.paused) audio.play().catch(() => {});
+      if (noiseMesh && noiseMesh.visible) {
+        window.removeEventListener("pointerdown", activarAudio);
+        window.removeEventListener("keydown", activarAudio);
+      }
+    };
+    window.addEventListener("pointerdown", activarAudio);
+    window.addEventListener("keydown", activarAudio);
+  })();
 
   // Reorientar las tarjetas de los arboles hacia la camara cuando gira,
   // limitado en frecuencia para no recalcular 120 mil matrices por cuadro.
@@ -2696,7 +2769,7 @@
     if (sectionBoxToggle) sectionBoxToggle.addEventListener("click", () => {
       sectionBoxActive = !sectionBoxActive;
       sectionBoxToggle.classList.toggle("active", sectionBoxActive);
-      sectionBoxToggle.textContent = sectionBoxActive ? "✂️ Desactivar caja de sección" : "✂️ Activar caja de sección";
+      sectionBoxToggle.textContent = sectionBoxActive ? "Desactivar caja de sección" : "Activar caja de sección";
       updateSectionBox();
     });
     const sectionBoxReset = document.getElementById("sectionBoxReset");
@@ -2707,7 +2780,7 @@
     });
     const sectionBoxCopy = document.getElementById("sectionBoxCopy");
     if (sectionBoxCopy) sectionBoxCopy.addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(sectionBoxOutput.value); sectionBoxCopy.textContent = "✅ Copiado"; setTimeout(() => { sectionBoxCopy.textContent = "📋 Copiar coordenadas"; }, 1600); } catch (e) {}
+      try { await navigator.clipboard.writeText(sectionBoxOutput.value); sectionBoxCopy.textContent = "Copiado"; setTimeout(() => { sectionBoxCopy.textContent = "Copiar coordenadas"; }, 1600); } catch (e) {}
     });
     updateSectionBox();
   }
@@ -2820,7 +2893,7 @@
     if (sectionWrap) {
       const isHidden = sectionWrap.style.display === "none";
       sectionWrap.style.display = isHidden ? "block" : "none";
-      goCorteBtn.textContent = isHidden ? "✂️ Ocultar corte" : "✂️ Ver corte del Humedal";
+      goCorteBtn.innerHTML = isHidden ? '<i class="fa-solid fa-scissors"></i> Ocultar corte' : '<i class="fa-solid fa-scissors"></i> Ver corte del Humedal';
       if (isHidden) {
         resizeCutView();
         updateCutView();
