@@ -2452,8 +2452,7 @@
   document.getElementById("noiseToggle").addEventListener("click", (e) => {
     if (!noiseMesh) return;
     noiseMesh.visible = !noiseMesh.visible;
-    e.target.classList.toggle("active", noiseMesh.visible);
-    e.target.innerHTML = noiseMesh.visible ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+    e.currentTarget.classList.toggle("active", noiseMesh.visible);
     // mismo audio real de la simulacion 2D (sumo-traffic-ambience.mp3)
     if (noiseAmbienceAudio) {
       if (noiseMesh.visible) noiseAmbienceAudio.play().catch(() => {});
@@ -2474,8 +2473,7 @@
   document.getElementById("bioToggle").addEventListener("click", (e) => {
     if (!birdsGroup) return;
     birdsGroup.visible = !birdsGroup.visible;
-    e.target.classList.toggle("active", birdsGroup.visible);
-    e.target.innerHTML = birdsGroup.visible ? '<i class="fa-solid fa-dove" style="opacity:.45;"></i>' : '<i class="fa-solid fa-dove"></i>';
+    e.currentTarget.classList.toggle("active", birdsGroup.visible);
     const panel = document.getElementById("bioPanel");
     if (panel) {
       panel.style.display = birdsGroup.visible ? "block" : "none";

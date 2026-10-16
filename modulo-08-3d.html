@@ -165,6 +165,91 @@
   #noiseLegend.pop-in .noise-legend-row:nth-child(4) { animation-delay: 0.20s; }
   #noiseLegend.pop-in .noise-legend-row:nth-child(5) { animation-delay: 0.26s; }
   #noiseLegend.pop-in .noise-legend-row:nth-child(6) { animation-delay: 0.32s; }
+  /* Panel derecho: ruido, mirlas y humedal */
+  .side-panel{
+    top:178px; width:256px; padding:14px; gap:0;
+    max-height:calc(100vh - 196px); overflow-y:auto;
+    background:rgba(16,19,23,.94); border-radius:12px;
+    font-family:Inter,Arial,sans-serif; color:var(--ink);
+    scrollbar-width:thin;
+  }
+  .sp-toggles{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:4px; }
+  .sp-toggle{
+    display:flex; align-items:center; justify-content:center; gap:7px;
+    height:34px; border-radius:8px; border:1px solid var(--panel-border);
+    background:transparent; color:var(--ink-dim); font:500 12px/1 Inter,Arial,sans-serif; cursor:pointer;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .sp-toggle i{ font-size:12px; pointer-events:none; }
+  .sp-toggle span{ pointer-events:none; }
+  .sp-toggle:hover{ color:var(--ink); border-color:rgba(255,255,255,.24); }
+  .sp-toggle.active{ background:rgba(36,200,189,.14); border-color:var(--accent); color:var(--accent); }
+  .sp-toggle:focus-visible, .sp-icon-btn:focus-visible, .sp-play:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .sp-section{ padding:14px 0 2px; margin-top:10px; border-top:1px solid rgba(255,255,255,.08); }
+  .sp-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+  .sp-head h2{ margin:0; font:600 12.5px/1.25 Inter,Arial,sans-serif; color:var(--ink); }
+  .sp-sub{ margin:-7px 0 10px; font-size:11px; color:var(--ink-dim); }
+  .sp-icon-btn{
+    width:26px; height:26px; flex:none; border-radius:50%; border:1px solid var(--panel-border);
+    background:transparent; color:var(--ink-dim); font-size:11px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .sp-icon-btn:hover{ color:var(--ink); }
+  .sp-note{ margin:8px 0 0; font-size:10.5px; line-height:1.45; color:var(--ink-dim); }
+
+  .noise-scale{ display:flex; height:10px; border-radius:3px; overflow:hidden; }
+  .noise-scale i{ flex:1; display:block; }
+  .noise-ticks{
+    display:grid; grid-template-columns:repeat(6,1fr); margin-top:5px;
+    font-size:10.5px; color:var(--ink-dim); font-variant-numeric:tabular-nums;
+  }
+  .noise-ticks span{ transform:translateX(50%); text-align:center; }
+  .noise-ticks span:first-child{ grid-column:1; }
+
+  .sp-slider{ display:block; margin-bottom:10px; }
+  .sp-slider-top{ display:flex; justify-content:space-between; align-items:baseline; font-size:11.5px; color:var(--ink-dim); margin-bottom:5px; }
+  .sp-slider-top b{ font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .side-panel input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; height:16px; margin:0; background:transparent; cursor:pointer;
+  }
+  .side-panel input[type=range]::-webkit-slider-runnable-track{ height:3px; border-radius:2px; background:rgba(255,255,255,.16); }
+  .side-panel input[type=range]::-moz-range-track{ height:3px; border-radius:2px; background:rgba(255,255,255,.16); }
+  .side-panel input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:13px; height:13px; margin-top:-5px; border-radius:50%;
+    background:var(--accent); border:2px solid #101317;
+  }
+  .side-panel input[type=range]::-moz-range-thumb{ width:11px; height:11px; border-radius:50%; background:var(--accent); border:2px solid #101317; }
+  .side-panel input.sp-range-water::-webkit-slider-thumb{ background:#4fb3ff; }
+  .side-panel input.sp-range-water::-moz-range-thumb{ background:#4fb3ff; }
+
+  .sp-species{ list-style:none; margin:4px 0 0; padding:0; display:flex; flex-direction:column; gap:7px; }
+  .sp-species li{ display:flex; gap:8px; font-size:11px; line-height:1.4; color:var(--ink-dim); }
+  .sp-species li i{ width:8px; height:8px; border-radius:50%; flex:none; margin-top:4px; }
+  .sp-species b{ color:var(--ink); font-weight:600; margin-right:3px; }
+
+  .sp-month{ font-size:12px; font-weight:600; color:#4fb3ff; min-width:28px; text-align:right; }
+  .humedal-figures{ display:flex; align-items:flex-end; gap:14px; margin-top:12px; }
+  .humedal-bar-wrap{ flex:1; min-width:0; }
+  .humedal-track{ height:4px; border-radius:2px; background:rgba(255,255,255,.1); overflow:hidden; }
+  #humedalBar{ height:100%; width:0%; border-radius:2px; background:#4fb3ff; transition:width .4s cubic-bezier(.22,1,.36,1); }
+  .humedal-ha{ flex:none; display:flex; align-items:baseline; gap:3px; }
+  .humedal-ha b{ font-size:20px; font-weight:600; letter-spacing:-.02em; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1; }
+  .humedal-ha span{ font-size:11px; color:var(--ink-dim); }
+  .sp-play{
+    width:100%; margin-top:12px; padding:8px; border-radius:8px; border:1px solid var(--panel-border);
+    background:transparent; color:var(--ink); font:500 11.5px/1 Inter,Arial,sans-serif; cursor:pointer;
+  }
+  .sp-play:hover{ background:rgba(255,255,255,.06); }
+
+  @media (max-width: 700px){
+    .side-panel{
+      top:auto; right:10px; left:auto; bottom:80px; width:min(236px, calc(100vw - 96px));
+      max-height:38vh; padding:12px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #noiseLegend.pop-in, #noiseLegend.pop-in .noise-legend-row, #bioPanel.pop-in{ animation:none !important; opacity:1 !important; }
+  }
 </style>
 </head>
 <body>
@@ -308,69 +393,67 @@
       <textarea id="sectionCoordsOutput" readonly style="display:none; position:absolute; top:28px; right:10px; width:210px; height:76px; font:9.5px monospace; background:rgba(255,255,255,.06); color:var(--ink); border:1px solid var(--panel-border); border-radius:6px; padding:5px; resize:none; pointer-events:none;"></textarea>
     </div>
 
-    <div class="rotate-panel" id="rotatePanel">
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="noiseToggle" title="Mapa de ruido" style="width:34px; height:34px; border-radius:50%; padding:0; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fa-solid fa-volume-high"></i></button>
-      </div>
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="noiseMuteBtn" title="Silenciar/activar sonido" style="flex:none; width:auto; padding:0 10px;"><i class="fa-solid fa-volume-high"></i></button>
+    <div class="rotate-panel side-panel" id="rotatePanel">
+      <div class="sp-toggles">
+        <button type="button" id="noiseToggle" class="sp-toggle" title="Mostrar mapa de ruido"><i class="fa-solid fa-volume-high"></i><span>Ruido</span></button>
+        <button type="button" id="bioToggle" class="sp-toggle" title="Mostrar mirlas y árboles atractores"><i class="fa-solid fa-dove"></i><span>Mirlas</span></button>
       </div>
       <audio id="noiseAmbienceAudio" src="./assets/sumo-traffic-ambience.mp3" loop preload="auto"></audio>
-      <div id="noiseLegend" style="display:none; margin-top:6px; padding:10px 12px; border-radius:8px; background:#00052e; border:1px solid #1b2550; font-family:'Segoe UI',sans-serif;">
-        <div style="font:700 10px/1 'IBM Plex Mono',monospace; letter-spacing:.07em; color:#6b7aa8; text-transform:uppercase; margin-bottom:8px;">Nivel de ruido</div>
-        <div style="display:flex; flex-direction:column; gap:5px;">
-          <div class="noise-legend-row" style="display:flex; align-items:center; gap:7px; font-size:10.5px; color:#cbd3dc;"><i style="width:14px; height:14px; border-radius:3px; background:rgb(117,114,85); flex:none;"></i> &lt; 50 dB(A)</div>
-          <div class="noise-legend-row" style="display:flex; align-items:center; gap:7px; font-size:10.5px; color:#cbd3dc;"><i style="width:14px; height:14px; border-radius:3px; background:rgb(117,104,42); flex:none;"></i> 50 – 60</div>
-          <div class="noise-legend-row" style="display:flex; align-items:center; gap:7px; font-size:10.5px; color:#cbd3dc;"><i style="width:14px; height:14px; border-radius:3px; background:rgb(117,85,42); flex:none;"></i> 60 – 70</div>
-          <div class="noise-legend-row" style="display:flex; align-items:center; gap:7px; font-size:10.5px; color:#cbd3dc;"><i style="width:14px; height:14px; border-radius:3px; background:rgb(113,62,10); flex:none;"></i> 70 – 80</div>
-          <div class="noise-legend-row" style="display:flex; align-items:center; gap:7px; font-size:10.5px; color:#cbd3dc;"><i style="width:14px; height:14px; border-radius:3px; background:rgb(107,41,20); flex:none;"></i> 80 – 90</div>
-          <div class="noise-legend-row" style="display:flex; align-items:center; gap:7px; font-size:10.5px; color:#cbd3dc;"><i style="width:14px; height:14px; border-radius:3px; background:rgb(99,30,30); flex:none;"></i> &gt; 90 dB(A)</div>
+
+      <section id="noiseLegend" class="sp-section" style="display:none;">
+        <header class="sp-head">
+          <h2>Nivel de ruido</h2>
+          <button type="button" id="noiseMuteBtn" class="sp-icon-btn" title="Silenciar o activar el sonido del tráfico"><i class="fa-solid fa-volume-high"></i></button>
+        </header>
+        <div class="noise-scale">
+          <i class="noise-legend-row" style="background:rgb(255,247,179);"></i>
+          <i class="noise-legend-row" style="background:rgb(255,224,76);"></i>
+          <i class="noise-legend-row" style="background:rgb(255,179,77);"></i>
+          <i class="noise-legend-row" style="background:rgb(245,124,0);"></i>
+          <i class="noise-legend-row" style="background:rgb(230,74,25);"></i>
+          <i class="noise-legend-row" style="background:rgb(211,47,47);"></i>
         </div>
-      </div>
-      <div class="rotate-row rotate-buttons">
-        <button type="button" id="bioToggle" title="Mirlas y árboles atractores" style="width:34px; height:34px; border-radius:50%; padding:0; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fa-solid fa-dove"></i></button>
-      </div>
-      <div id="bioPanel" style="display:none; margin-top:6px; padding:12px 12px 10px; border-top:1px solid var(--panel-border); background:#00052e; border-radius:8px; border:1px solid #1b2550; font-family:'Segoe UI',sans-serif; color:#cbd3dc;">
-        <div style="font:700 10px/1 'IBM Plex Mono',monospace; letter-spacing:.07em; color:#6b7aa8; text-transform:uppercase; margin-bottom:8px;">Mirlas (Turdus fuscater) y árboles atractores</div>
-        <div style="display:flex; justify-content:space-between; font-size:10.5px; margin-bottom:3px;">
-          <span>Número de mirlas</span><span id="bioBirdCountVal" style="color:#8fd4c8;">90</span>
-        </div>
-        <input type="range" id="bioBirdSlider" min="5" max="200" value="90" step="1" style="width:100%; margin-bottom:8px;">
-        <div style="display:flex; justify-content:space-between; font-size:10.5px; margin-bottom:3px;">
-          <span>Aumentar cobertura vegetal</span><span id="bioVegVal" style="color:#8fd4c8;">+0%</span>
-        </div>
-        <input type="range" id="bioVegSlider" min="-80" max="400" value="0" step="5" style="width:100%; margin-bottom:6px;">
-        <div style="font-size:9.5px; color:#8b96a5; line-height:1.4; margin-bottom:8px;">Árboles atractores activos: <span id="bioVegCount">—</span> — todos reales del Arbolado Urbano de Kennedy (hay 12.935 de estas tres especies; el modelo trabaja con una muestra repartida y esta barra la amplía).</div>
-        <div style="font-size:9.5px; color:#8b96a5; margin-bottom:8px;">Umbral crítico de 60 dB(A) (Caltrans).</div>
-        <div style="display:flex; flex-direction:column; gap:4px; font-size:10px;">
-          <div><span style="color:#b06bff; font-weight:700;">Saúco</span> · alimento favorito (bayas): cambian bruscamente el rumbo</div>
-          <div><span style="color:#ff5fa8; font-weight:700;">Capulí</span> · atractor intermedio por frutos andinos</div>
-          <div><span style="color:#25d0a0; font-weight:700;">Urapán</span> · sin frutos comestibles: solo percha para descansar</div>
-        </div>
-      </div>
-      <div style="margin-top:6px; padding:12px 12px 10px; border-top:1px solid var(--panel-border); background:#00052e; border-radius:8px; border:1px solid #1b2550;">
-        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px;">
-          <span style="font:700 10px/1 'IBM Plex Mono',monospace; letter-spacing:.09em; color:#6b7aa8; text-transform:uppercase;">Humedal El Burro</span>
-          <span id="humedalMesVal" style="font:700 11px/1 'IBM Plex Mono',monospace; letter-spacing:.06em; color:#34fcff;">ENE</span>
-        </div>
-        <input type="range" id="humedalMes" min="1" max="12" value="1" step="1" style="width:100%; accent-color:#0428cb; margin:0 0 10px; height:14px;">
-        <div id="humedalDiagram" style="display:flex; gap:14px; align-items:flex-end;">
-          <div style="flex:1;">
-            <div style="display:flex; justify-content:space-between; font:400 9px/1 'IBM Plex Mono',monospace; letter-spacing:.06em; color:#6b7aa8; margin-bottom:5px; text-transform:uppercase;">
-              <span>Espejo de agua</span><span id="humedalPctLabel" style="color:#afb4db;">—</span>
-            </div>
-            <div style="height:4px; border-radius:2px; background:#111a45; overflow:hidden;">
-              <div id="humedalBar" style="height:100%; width:0%; border-radius:2px; background:linear-gradient(90deg,#0428cb,#34fcff); box-shadow:0 0 8px 0 rgba(52,252,255,.5); transition:width .4s cubic-bezier(.22,1,.36,1);"></div>
-            </div>
+        <div class="noise-ticks"><span>50</span><span>60</span><span>70</span><span>80</span><span>90</span></div>
+        <p class="sp-note">dB(A). Menos de 50 a la izquierda, más de 90 a la derecha.</p>
+      </section>
+
+      <section id="bioPanel" class="sp-section" style="display:none;">
+        <header class="sp-head">
+          <h2>Mirlas y árboles atractores</h2>
+        </header>
+        <p class="sp-sub"><em>Turdus fuscater</em></p>
+        <label class="sp-slider">
+          <span class="sp-slider-top"><span>Número de mirlas</span><b id="bioBirdCountVal">90</b></span>
+          <input type="range" id="bioBirdSlider" min="5" max="200" value="90" step="1">
+        </label>
+        <label class="sp-slider">
+          <span class="sp-slider-top"><span>Cobertura vegetal</span><b id="bioVegVal">+0%</b></span>
+          <input type="range" id="bioVegSlider" min="-80" max="400" value="0" step="5">
+        </label>
+        <ul class="sp-species">
+          <li><i style="background:#b06bff;"></i><span><b>Saúco</b> alimento favorito (bayas); cambian bruscamente el rumbo</span></li>
+          <li><i style="background:#ff5fa8;"></i><span><b>Capulí</b> atractor intermedio por frutos andinos</span></li>
+          <li><i style="background:#25d0a0;"></i><span><b>Urapán</b> sin frutos comestibles; solo percha para descansar</span></li>
+        </ul>
+        <p class="sp-note">Árboles atractores activos: <span id="bioVegCount">—</span>, todos reales del Arbolado Urbano de Kennedy (12.935 de estas tres especies; el modelo usa una muestra repartida y la barra la amplía). Umbral crítico de ruido: 60 dB(A) (Caltrans).</p>
+      </section>
+
+      <section class="sp-section sp-humedal">
+        <header class="sp-head">
+          <h2>Humedal El Burro</h2>
+          <span id="humedalMesVal" class="sp-month">Ene</span>
+        </header>
+        <input type="range" id="humedalMes" class="sp-range-water" min="1" max="12" value="1" step="1">
+        <div id="humedalDiagram" class="humedal-figures">
+          <div class="humedal-bar-wrap">
+            <div class="sp-slider-top"><span>Espejo de agua</span><b id="humedalPctLabel">—</b></div>
+            <div class="humedal-track"><div id="humedalBar"></div></div>
           </div>
-          <div style="text-align:right; flex:none;">
-            <div id="humedalHa" style="font:700 17px/1 'IBM Plex Mono',monospace; letter-spacing:-.02em; color:#ffffff;">—</div>
-            <div style="font:400 8px/1 'IBM Plex Mono',monospace; letter-spacing:.08em; color:#6b7aa8; margin-top:3px; text-transform:uppercase;">hectáreas</div>
-          </div>
+          <div class="humedal-ha"><b id="humedalHa">—</b><span>ha</span></div>
         </div>
-        <p style="margin:8px 0 0; font:400 9.5px/1.4 'IBM Plex Mono',monospace; color:#6b7aa8;" id="humedalDatos"></p>
-        <button type="button" id="humedalPlay" style="width:100%; margin-top:10px; padding:7px; border-radius:6px; border:1px solid #223066; background:transparent; color:#34fcff; font:700 9.5px/1 'IBM Plex Mono',monospace; letter-spacing:.08em; text-transform:uppercase; cursor:pointer;">▶ Reproducir año completo</button>
-      </div>
+        <p class="sp-note" id="humedalDatos"></p>
+        <button type="button" id="humedalPlay" class="sp-play">▶ Reproducir año completo</button>
+      </section>
     </div>
 
     <div class="legend" style="display:none;">
@@ -412,6 +495,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-08-3d.js?v=73"></script>
+<script src="modulo-08-3d.js?v=74"></script>
 </body>
 </html>
