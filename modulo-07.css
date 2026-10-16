@@ -5313,8 +5313,10 @@ body.module02-reference-page::before { content: ""; position: fixed; inset: -18%
 .map-network-node:hover, .map-network-node.selected { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) { .map-network-node { animation: none !important; } }
 
-/* Puentes orgánicos tipo burbuja pegada: reemplazan por completo las líneas rectas */
-.map-network-stage > svg line { display: none !important; }
+/* Puentes orgánicos tipo burbuja pegada: reemplazan por completo las líneas rectas.
+   OJO: solo en la red de 6 burbujas. La red integrada de 30 dinámicas SÍ usa
+   líneas rectas, y esta regla se las estaba escondiendo. */
+.map-network-stage:not(.is-full-dynamics-active) > svg line { display: none !important; }
 .map-network-stage > svg .map-network-bonds { pointer-events: none; overflow: visible; }
 .map-network-stage > svg .map-network-bond-group { pointer-events: none; }
 .map-network-stage > svg .map-network-bond-soft,
@@ -5753,6 +5755,19 @@ body.module02-reference-page::before { content: ""; position: fixed; inset: -18%
   50% { box-shadow: 0 0 0 14px rgba(255,209,102,0); }
 }
 .map-network-stage.center-hub-exploding .map-network-center-hub { opacity: 0; transition: opacity .3s ease; }
+.show-full-network-fixed-btn {
+  position: absolute; left: 16px; bottom: 16px; z-index: 20; display: flex; align-items: center; gap: 8px;
+  padding: 11px 18px; border-radius: 999px; border: 2px solid #ffd166; background: rgba(7,12,15,.95);
+  color: #ffd166; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,.5), 0 0 0 0 rgba(255,209,102,.4);
+  animation: full-network-btn-pulse 2.2s ease-in-out infinite;
+}
+.show-full-network-fixed-btn i { font-size: 15px; }
+.show-full-network-fixed-btn:hover { background: rgba(255,209,102,.22); animation-play-state: paused; }
+@keyframes full-network-btn-pulse {
+  0%, 100% { box-shadow: 0 6px 20px rgba(0,0,0,.5), 0 0 0 0 rgba(255,209,102,.4); }
+  50% { box-shadow: 0 6px 20px rgba(0,0,0,.5), 0 0 0 10px rgba(255,209,102,0); }
+}
 
 /* Redondez definitiva de TODAS las bolitas, sin excepción — selector con
    id para ganarle a cualquier regla más específica que las deforme. */
@@ -5869,6 +5884,56 @@ body.module02-reference-page::before { content: ""; position: fixed; inset: -18%
 .kennedy-anchor-left { transform: translate(0%, -50%); }
 .kennedy-anchor-right { transform: translate(-100%, -50%); }
 @media (max-width: 760px) { .kennedy-info-box { width: 138px; padding: 6px 7px; } }
+
+/* Botón "Propósito" dentro de la caja. La caja tiene pointer-events:none,
+   así que el botón vuelve a activarlos solo para él. */
+.kennedy-info-box .kennedy-purpose-btn {
+  pointer-events: auto; cursor: pointer;
+  margin-top: 6px; display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 7px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--node-color, #fff) 70%, transparent);
+  background: color-mix(in srgb, var(--node-color, #fff) 18%, rgba(4,6,8,.9));
+  color: #f2f6f9; font-size: 6.5px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .3px; line-height: 1;
+}
+.kennedy-info-box .kennedy-purpose-btn:hover {
+  background: color-mix(in srgb, var(--node-color, #fff) 34%, rgba(4,6,8,.9));
+}
+.kennedy-info-box .kennedy-purpose-btn i { font-size: 6.5px; color: var(--node-color, #fff); }
+
+/* Popup del propósito: pequeño y justo al lado de su caja (hermano de la
+   caja, corrido el ancho de la caja hacia el lado en que ella crece). */
+.kennedy-info-box, .kennedy-purpose-pop { --kbox-w: 188px; }
+.kennedy-purpose-pop {
+  position: absolute; z-index: 8; width: 176px;
+  pointer-events: auto;
+  background: rgba(4,6,8,0.96);
+  border: 1px solid color-mix(in srgb, var(--node-color, #fff) 65%, transparent);
+  border-radius: 6px; padding: 8px 9px 9px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.55);
+}
+.kennedy-purpose-pop.kennedy-anchor-left { transform: translate(calc(var(--kbox-w) + 10px), -50%); }
+.kennedy-purpose-pop.kennedy-anchor-right { transform: translate(calc(-100% - var(--kbox-w) - 10px), -50%); }
+.kennedy-purpose-pop .kennedy-purpose-close {
+  position: absolute; top: 4px; right: 4px; cursor: pointer;
+  width: 14px; height: 14px; display: grid; place-items: center;
+  border: 0; border-radius: 4px; background: transparent; color: #9fb0bd; font-size: 8px;
+}
+.kennedy-purpose-pop .kennedy-purpose-close:hover { color: #fff; background: rgba(255,255,255,.12); }
+.kennedy-purpose-pop .kennedy-purpose-label {
+  margin: 0 0 2px; color: var(--node-color, #fff);
+  font-size: 6.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px;
+}
+.kennedy-purpose-pop .kennedy-purpose-main {
+  margin: 0 0 6px; color: #f2f6f9; font-size: 8px; font-weight: 700; line-height: 1.25;
+}
+.kennedy-purpose-pop .kennedy-purpose-text {
+  margin: 0; color: #cfd6dc; font-size: 7px; line-height: 1.4;
+}
+@media (max-width: 760px) {
+  .kennedy-info-box, .kennedy-purpose-pop { --kbox-w: 138px; }
+  .kennedy-purpose-pop { width: 146px; }
+}
 .kennedy-info-box .kennedy-title-line {
   color: var(--node-color, #fff); font-size: 8.5px; font-weight: 800; line-height: 1.2;
   margin: 0 0 5px; text-transform: uppercase; letter-spacing: .2px;
@@ -5988,11 +6053,42 @@ body.module02-reference-page::before { content: ""; position: fixed; inset: -18%
   color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
   text-shadow: 0 1px 4px rgba(0,0,0,.8);
 }
+/* El texto de cada relación va AL LADO del diagrama, nunca encima: antes
+   se posaba sobre las bolas de abajo y las tapaba. */
+/* El hexágono va CENTRADO en la sección: la columna del texto tiene a su
+   izquierda un hueco del mismo ancho, así el diagrama queda en el eje de la
+   página y el texto de cada relación aparece al lado sin desplazarlo. */
+.bubble-net-wrap {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 620px) 300px;
+  grid-template-areas: "hueco diagrama texto";
+  justify-content: center;
+  gap: 22px;
+  align-items: center;
+  max-width: 1300px;
+  aspect-ratio: auto;
+}
+.bubble-net-wrap > .bubble-net-svg { grid-area: diagrama; }
+.bubble-net-wrap > .visible-network-tooltip { grid-area: texto; }
+.bubble-net-svg {
+  position: relative; inset: auto; width: 100%; height: auto;
+  aspect-ratio: 560 / 512;
+}
 .visible-network-tooltip {
-  position: absolute; z-index: 5; left: 50%; bottom: 8px; transform: translateX(-50%);
-  width: min(92%, 360px); background: rgba(6,10,10,.98); border: 1px solid #76fff0;
-  border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 12px; line-height: 1.5;
+  position: relative; z-index: 5; left: auto; bottom: auto; transform: none;
+  width: 100%; background: rgba(6,10,10,.98); border: 1px solid #76fff0;
+  border-radius: 8px; padding: 12px 15px; color: #fff; font-size: 12px; line-height: 1.55;
+  white-space: pre-line;
   box-shadow: 0 10px 24px rgba(0,0,0,.6);
+}
+.visible-network-tooltip[hidden] { display: none; }
+@media (max-width: 1180px) {
+  /* sin espacio para las tres columnas, el texto pasa debajo del diagrama */
+  .bubble-net-wrap {
+    grid-template-columns: minmax(0, 620px);
+    grid-template-areas: "diagrama" "texto";
+    justify-content: center;
+  }
 }
 @media (max-width: 620px) {
   .bubble-node-label i { font-size: 15px; }
@@ -6124,8 +6220,8 @@ body.module02-reference-page::before { content: ""; position: fixed; inset: -18%
 
 /* ===== Red "¿Qué queremos hacer visible?": relaciones vivas y legibles ===== */
 .visible-elements-section .bubble-net-wrap {
-  max-width: 700px;
-  aspect-ratio: 560 / 500;
+  max-width: 1300px;
+  aspect-ratio: auto;   /* el diagrama va a la izquierda y el texto al lado */
   margin: 28px auto 34px;
 }
 .visible-elements-section .bubble-net-svg {
@@ -6784,3 +6880,1915 @@ body.module02-reference-page::before { content: ""; position: fixed; inset: -18%
 @keyframes m7ComponentIn { 0% { opacity: 0; transform: translate(-50%,-50%) scale(.2); } 70% { opacity: 1; transform: translate(-50%,-50%) scale(1.08); } 100% { opacity: 1; transform: translate(-50%,-50%) scale(1); } }
 @keyframes m7LinkIn { to { opacity: 1; } }
 @keyframes m7CorePulse { 50% { transform: scale(1.15); opacity: .55; } }
+
+
+/* =========================================================================
+   ESTILOS: RED COMPLETA DE DINÁMICA URBANA (30 ELEMENTOS Y FLUJOS VIVOS)
+   ========================================================================= */
+
+.map-network-stage.is-full-dynamics-active {
+  background: radial-gradient(circle at 50% 50%, rgba(70,214,208,0.08) 0%, rgba(5,10,14,0.95) 100%), #030708;
+}
+
+/* Header Pill Flotante */
+.full-dynamics-top-bar {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(10, 18, 22, 0.88);
+  border: 1px solid rgba(70, 214, 208, 0.45);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(70, 214, 208, 0.2);
+  color: #f2ece3;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+  animation: top-bar-slide 0.45s ease-out;
+}
+.full-dynamics-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #46d6d0;
+  box-shadow: 0 0 10px #46d6d0;
+  animation: dot-pulse 1.8s infinite;
+}
+.full-dynamics-sub {
+  color: #9aa8a6;
+  font-weight: 500;
+}
+@keyframes top-bar-slide {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes dot-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+/* Badges de Centros de Sistema */
+.full-cluster-badge {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(8, 14, 18, 0.75);
+  border: 1px solid var(--sys-color, #46d6d0);
+  color: var(--sys-color, #46d6d0);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  opacity: 0.65;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  transition: opacity 0.3s;
+}
+.full-cluster-badge i {
+  font-size: 10px;
+}
+
+/* Nodos Dinámicos Individuales (30 nodos) */
+.full-dynamic-node {
+  position: absolute;
+  left: var(--node-x);
+  top: var(--node-y);
+  transform: translate(-50%, -50%) scale(0.2);
+  opacity: 0;
+  z-index: 6;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(20,30,36,0.95), rgba(6,10,12,0.98));
+  border: 2px solid var(--node-color, #46d6d0);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7), inset 0 0 10px rgba(0,0,0,0.8), 0 0 12px rgba(0,0,0,0.4);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.25s, border-color 0.25s, opacity 0.35s;
+  animation: node-burst-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards var(--node-delay, 0ms);
+}
+.full-node-icon {
+  font-size: 15px;
+  color: var(--node-color, #46d6d0);
+  margin-bottom: 2px;
+  line-height: 1;
+  transition: transform 0.25s;
+}
+.full-node-label {
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #f2ece3;
+  text-shadow: 0 1px 4px #000000;
+  font-family: 'Inter', sans-serif;
+  pointer-events: none;
+}
+.full-dynamic-node:hover {
+  transform: translate(-50%, -50%) scale(1.18);
+  z-index: 12;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.8), 0 0 22px var(--node-color, #46d6d0);
+  border-color: #ffffff;
+}
+.full-dynamic-node:hover .full-node-icon {
+  transform: scale(1.15);
+}
+.full-dynamic-node.is-active {
+  transform: translate(-50%, -50%) scale(1.22);
+  z-index: 15;
+  border-color: #ffd166 !important;
+  box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.4), 0 0 30px #ffd166 !important;
+  background: radial-gradient(circle at 35% 35%, rgba(35,45,55,0.98), rgba(10,15,20,1));
+}
+.full-dynamic-node.is-connected {
+  border-color: #ffffff;
+  box-shadow: 0 0 16px var(--node-color, #46d6d0), 0 0 0 2px rgba(255,255,255,0.5);
+  animation: connected-glow 1.5s infinite alternate;
+}
+@keyframes node-burst-in {
+  from { transform: translate(-50%, -50%) scale(0.1); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+@keyframes connected-glow {
+  from { transform: translate(-50%, -50%) scale(1.02); }
+  to { transform: translate(-50%, -50%) scale(1.1); }
+}
+
+/* Líneas Intra-Sistema y Cruzadas */
+.full-intra-link {
+  stroke: var(--node-color, #46d6d0);
+  stroke-width: 0.22;
+  stroke-opacity: 0.32;
+  stroke-dasharray: 0.8, 0.8;
+}
+.full-cross-flow-path {
+  fill: none;
+  stroke: none;
+}
+.full-cross-link {
+  fill: none;
+  stroke: rgba(255, 209, 102, 0.32);
+  stroke-width: 0.28;
+  transition: stroke 0.3s, stroke-width 0.3s, stroke-opacity 0.3s;
+}
+.full-cross-pulse {
+  filter: drop-shadow(0 0 3px #ffd166);
+}
+.full-cross-group.is-highlighted .full-cross-link {
+  stroke: #ffd166;
+  stroke-width: 0.65;
+  stroke-opacity: 0.95;
+  filter: drop-shadow(0 0 5px #ffd166);
+}
+
+/* Botón Central Modo Expandido */
+.map-network-center-hub.is-expanded-mode {
+  border-color: #46d6d0;
+  color: #46d6d0;
+  background: radial-gradient(circle, rgba(70,214,208,0.25), rgba(6,12,16,0.92));
+  animation: center-hub-pulse-cyan 2.4s ease-in-out infinite;
+}
+.map-network-center-hub.is-expanded-mode:hover {
+  background: radial-gradient(circle, rgba(70,214,208,0.45), rgba(6,12,16,0.98));
+  transform: translate(-50%, -50%) scale(1.1);
+  color: #ffffff;
+}
+.map-network-corner-hub.is-expanded-mode {
+  border-color: #46d6d0;
+  color: #46d6d0;
+}
+@keyframes center-hub-pulse-cyan {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(70,214,208,0.4); }
+  50% { box-shadow: 0 0 0 14px rgba(70,214,208,0); }
+}
+
+/* Tarjeta Flotante de Detalle Dinámico */
+.full-dynamics-detail-card {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: min(92vw, 360px);
+  z-index: 25;
+  background: rgba(10, 16, 20, 0.94);
+  border: 1.5px solid rgba(70, 214, 208, 0.55);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 24px rgba(70, 214, 208, 0.25);
+  backdrop-filter: blur(14px);
+  color: #f2ece3;
+  animation: card-pop-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes card-pop-in {
+  from { opacity: 0; transform: translateY(15px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.full-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.full-detail-sys-badge {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.full-detail-close {
+  background: transparent;
+  border: none;
+  color: #9aa8a6;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.full-detail-close:hover {
+  color: #ffffff;
+}
+.full-detail-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.full-detail-desc {
+  margin: 0 0 12px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #c8d4d0;
+}
+.full-detail-connections {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 8px;
+}
+.full-detail-connections strong {
+  display: block;
+  font-size: 10px;
+  color: #ffd166;
+  margin-bottom: 6px;
+}
+.full-detail-tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.full-detail-tag {
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--tag-color, #46d6d0);
+  color: #f2ece3;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.2s, transform 0.2s;
+}
+.full-detail-tag:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+.full-detail-tag i {
+  color: var(--tag-color, #46d6d0);
+}
+
+/* Satélites de subsistema individual */
+.bubble-explode-satellite {
+  cursor: pointer;
+  pointer-events: auto !important;
+}
+.bubble-explode-satellite:hover {
+  transform: translate(var(--final-x), var(--final-y)) translate(-50%, -50%) scale(1.14) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.8), 0 0 16px var(--node-color, #46d6d0);
+  z-index: 10;
+}
+
+
+/* =========================================================================
+   ESTILOS: POPUP MODAL RED COMPLETA (URBAN DYNAMICS MODAL)
+   ========================================================================= */
+
+.combined-network-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999 !important;
+  background: rgba(3, 6, 8, 0.92);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease-out;
+}
+.combined-network-overlay.exploded {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.full-dynamics-modal-panel {
+  width: min(96vw, 1100px) !important;
+  height: min(92vh, 880px) !important;
+  background: #060b0e !important;
+  border: 1.5px solid rgba(70, 214, 208, 0.45) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(70, 214, 208, 0.2) !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  transform: scale(0.96);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1.15);
+}
+.combined-network-overlay.exploded .full-dynamics-modal-panel {
+  transform: scale(1);
+}
+
+.full-modal-heading-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.full-modal-heading-left strong {
+  font-size: 13.5px;
+  letter-spacing: 0.04em;
+  color: #f2ece3;
+}
+.full-modal-heading-left i {
+  color: #46d6d0;
+  font-size: 15px;
+}
+
+.full-modal-stage-wrap {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+}
+
+.modal-inner-stage {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  background: radial-gradient(circle at 50% 50%, rgba(70, 214, 208, 0.06) 0%, rgba(4, 8, 10, 0.98) 100%) !important;
+}
+
+
+/* =========================================================================
+   DISEÑO NEÓN + FONDO NEGRO FLAT: NODOS DINÁMICOS DEL TERRITORIO
+   ========================================================================= */
+
+/* Nodos dinámicos individuales (30 elementos) */
+.full-dynamic-node {
+  position: absolute;
+  left: var(--node-x);
+  top: var(--node-y);
+  transform: translate(-50%, -50%) scale(0.2);
+  opacity: 0;
+  z-index: 6;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #000000 !important;
+  border: 2px solid var(--node-color, #46d6d0) !important;
+  box-shadow: 0 0 16px var(--node-color, #46d6d0), 0 8px 24px rgba(0, 0, 0, 0.95), inset 0 0 10px rgba(0, 0, 0, 0.9) !important;
+  color: #ffffff !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px;
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.25s, border-color 0.25s, opacity 0.35s;
+  animation: node-burst-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards var(--node-delay, 0ms);
+}
+
+.full-node-icon {
+  font-size: 15px !important;
+  color: var(--node-color, #46d6d0) !important;
+  margin-bottom: 2px;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px var(--node-color, #46d6d0));
+  transition: transform 0.25s;
+}
+
+.full-node-label {
+  font-size: 8px !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 4px #000000, 0 0 2px #000000 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  pointer-events: none;
+}
+
+.full-dynamic-node:hover {
+  transform: translate(-50%, -50%) scale(1.18);
+  z-index: 14;
+  background: #000000 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 26px var(--node-color, #46d6d0), 0 0 40px var(--node-color, #46d6d0), 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node:hover .full-node-icon {
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 10px #ffffff);
+}
+
+.full-dynamic-node.is-active {
+  transform: translate(-50%, -50%) scale(1.22);
+  z-index: 18;
+  background: #000000 !important;
+  border-color: #ffd166 !important;
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.4), 0 0 30px #ffd166, 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node.is-connected {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 18px var(--node-color, #46d6d0), 0 0 0 2px rgba(255, 255, 255, 0.6) !important;
+  animation: connected-glow 1.4s infinite alternate;
+}
+
+/* Satélites de explosión individual (al hacer clic en una sola bola) */
+.bubble-explode-satellite {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: #000000 !important;
+  border: 2px solid var(--node-color, #46d6d0) !important;
+  box-shadow: 0 0 16px var(--node-color, #46d6d0), 0 8px 20px rgba(0,0,0,0.9) !important;
+  color: #ffffff !important;
+  font-size: 8.5px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px;
+  line-height: 1.15;
+  text-shadow: 0 1px 4px #000000;
+  cursor: pointer;
+  z-index: 12;
+  transform: translate(var(--origin-x), var(--origin-y)) translate(-50%, -50%) scale(0.1);
+  opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.35s ease;
+  transition-delay: var(--explode-delay, 0ms);
+  pointer-events: auto !important;
+}
+
+.bubble-explode-satellite i {
+  font-size: 15px;
+  color: var(--node-color, #46d6d0);
+  margin-bottom: 2px;
+  filter: drop-shadow(0 0 6px var(--node-color, #46d6d0));
+}
+
+.bubble-explode-satellite span {
+  color: #ffffff;
+  font-size: 8px;
+}
+
+.bubble-explode-satellite.exploded {
+  transform: translate(var(--final-x), var(--final-y)) translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+.bubble-explode-satellite:hover {
+  transform: translate(var(--final-x), var(--final-y)) translate(-50%, -50%) scale(1.15) !important;
+  box-shadow: 0 0 28px var(--node-color, #46d6d0), 0 12px 28px rgba(0,0,0,1) !important;
+}
+
+/* Nodos SVG en caso de fallback */
+.combined-node circle {
+  fill: #000000 !important;
+  stroke: var(--node-color, #46d6d0) !important;
+  stroke-width: 2 !important;
+  filter: drop-shadow(0 0 8px var(--node-color, #46d6d0)) !important;
+}
+
+.combined-sat-label {
+  color: #ffffff !important;
+  text-shadow: 0 1px 4px #000000 !important;
+  font-weight: 700 !important;
+}
+
+
+/* =========================================================================
+   DISEÑO NEÓN + FONDO NEGRO FLAT: NODOS DINÁMICOS DEL TERRITORIO
+   ========================================================================= */
+
+.map-network-stage.is-full-dynamics-active {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 860px;
+  background: radial-gradient(circle at 50% 50%, rgba(70,214,208,0.08) 0%, rgba(5,10,14,0.98) 100%), #000000 !important;
+}
+
+/* SVG de líneas */
+.map-network-stage.is-full-dynamics-active svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Header Pill Superior */
+.full-dynamics-top-bar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 22px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.92);
+  border: 1.5px solid rgba(70, 214, 208, 0.5);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(70, 214, 208, 0.25);
+  color: #ffffff;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+.full-dynamics-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #46d6d0;
+  box-shadow: 0 0 12px #46d6d0;
+}
+.full-dynamics-sub {
+  color: #9aa8a6;
+  font-weight: 500;
+}
+
+/* Badges de Centros de Sistema */
+.full-cluster-badge {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  background: #000000;
+  border: 1px solid var(--sys-color, #46d6d0);
+  color: var(--sys-color, #46d6d0);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.6);
+}
+.full-cluster-badge i {
+  font-size: 11px;
+}
+
+/* Nodos dinámicos individuales (30 elementos) - NEGRO FLAT + CONTORNO NEÓN */
+.full-dynamic-node {
+  position: absolute;
+  left: var(--node-x);
+  top: var(--node-y);
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  z-index: 6;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #000000 !important;
+  border: 2px solid var(--node-color, #46d6d0) !important;
+  box-shadow: 0 0 16px var(--node-color, #46d6d0), 0 8px 24px rgba(0, 0, 0, 0.95), inset 0 0 10px rgba(0, 0, 0, 0.9) !important;
+  color: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 4px !important;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.25s, border-color 0.25s;
+}
+
+.full-node-icon {
+  font-size: 16px !important;
+  color: var(--node-color, #46d6d0) !important;
+  margin-bottom: 2px;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px var(--node-color, #46d6d0));
+  transition: transform 0.25s;
+}
+
+.full-node-label {
+  font-size: 8.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 4px #000000, 0 0 3px #000000 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  pointer-events: none;
+}
+
+.full-dynamic-node:hover {
+  transform: translate(-50%, -50%) scale(1.18);
+  z-index: 15;
+  background: #000000 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 28px var(--node-color, #46d6d0), 0 0 45px var(--node-color, #46d6d0), 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node:hover .full-node-icon {
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 10px #ffffff);
+}
+
+.full-dynamic-node.is-active {
+  transform: translate(-50%, -50%) scale(1.22);
+  z-index: 20;
+  background: #000000 !important;
+  border-color: #ffd166 !important;
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.5), 0 0 32px #ffd166, 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node.is-connected {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 20px var(--node-color, #46d6d0), 0 0 0 2px rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Líneas Intra-Sistema y Cruzadas */
+.full-intra-link {
+  stroke: var(--node-color, #46d6d0);
+  stroke-width: 0.28;
+  stroke-opacity: 0.38;
+  stroke-dasharray: 0.8, 0.8;
+}
+.full-cross-flow-path {
+  fill: none;
+  stroke: none;
+}
+.full-cross-link {
+  fill: none;
+  stroke: rgba(255, 209, 102, 0.38);
+  stroke-width: 0.32;
+  transition: stroke 0.3s, stroke-width 0.3s, stroke-opacity 0.3s;
+}
+.full-cross-pulse {
+  filter: drop-shadow(0 0 4px #ffd166);
+}
+.full-cross-group.is-highlighted .full-cross-link {
+  stroke: #ffd166;
+  stroke-width: 0.75;
+  stroke-opacity: 1;
+  filter: drop-shadow(0 0 6px #ffd166);
+}
+
+/* Botón Central Modo Expandido */
+.map-network-center-hub.is-expanded-mode {
+  border-color: #46d6d0 !important;
+  color: #46d6d0 !important;
+  background: radial-gradient(circle, rgba(70,214,208,0.2), #000000) !important;
+  box-shadow: 0 0 20px rgba(70, 214, 208, 0.4), inset 0 0 12px rgba(0,0,0,0.9) !important;
+}
+.map-network-center-hub.is-expanded-mode:hover {
+  background: radial-gradient(circle, rgba(70,214,208,0.4), #000000) !important;
+  transform: translate(-50%, -50%) scale(1.1);
+  color: #ffffff !important;
+  box-shadow: 0 0 30px #46d6d0, inset 0 0 14px rgba(0,0,0,0.9) !important;
+}
+
+/* Tarjeta Flotante de Detalle Dinámico */
+.full-dynamics-detail-card {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  width: min(92vw, 360px);
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.95);
+  border: 1.5px solid rgba(70, 214, 208, 0.6);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.95), 0 0 25px rgba(70, 214, 208, 0.3);
+  backdrop-filter: blur(16px);
+  color: #f2ece3;
+}
+.full-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.full-detail-sys-badge {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.full-detail-close {
+  background: transparent;
+  border: none;
+  color: #9aa8a6;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.full-detail-close:hover {
+  color: #ffffff;
+}
+.full-detail-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.full-detail-desc {
+  margin: 0 0 12px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #c8d4d0;
+}
+.full-detail-connections {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 8px;
+}
+.full-detail-connections strong {
+  display: block;
+  font-size: 10px;
+  color: #ffd166;
+  margin-bottom: 6px;
+}
+.full-detail-tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.full-detail-tag {
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #000000;
+  border: 1px solid var(--tag-color, #46d6d0);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.5);
+  transition: background 0.2s, transform 0.2s;
+}
+.full-detail-tag:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+.full-detail-tag i {
+  color: var(--tag-color, #46d6d0);
+}
+
+/* Satélites de explosión individual */
+.bubble-explode-satellite {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: #000000 !important;
+  border: 2px solid var(--node-color, #46d6d0) !important;
+  box-shadow: 0 0 16px var(--node-color, #46d6d0), 0 8px 20px rgba(0,0,0,0.9) !important;
+  color: #ffffff !important;
+  font-size: 8.5px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px;
+  line-height: 1.15;
+  text-shadow: 0 1px 4px #000000;
+  cursor: pointer;
+  z-index: 12;
+  transform: translate(var(--origin-x), var(--origin-y)) translate(-50%, -50%) scale(0.1);
+  opacity: 0;
+  transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.3s ease;
+  transition-delay: var(--explode-delay, 0ms);
+  pointer-events: auto !important;
+}
+
+.bubble-explode-satellite i {
+  font-size: 15px;
+  color: var(--node-color, #46d6d0);
+  margin-bottom: 2px;
+  filter: drop-shadow(0 0 6px var(--node-color, #46d6d0));
+}
+
+.bubble-explode-satellite span {
+  color: #ffffff;
+  font-size: 8px;
+}
+
+.bubble-explode-satellite.exploded {
+  transform: translate(var(--final-x), var(--final-y)) translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+.bubble-explode-satellite:hover {
+  transform: translate(var(--final-x), var(--final-y)) translate(-50%, -50%) scale(1.15) !important;
+  box-shadow: 0 0 28px var(--node-color, #46d6d0), 0 12px 28px rgba(0,0,0,1) !important;
+}
+
+/* ---------- Animación de CIERRE de la red completa: las 30 dinámicas se
+   encogen y desvanecen hacia su punto de origen (con escalonado), antes
+   de que se vuelva a mostrar la vista de 6 subsistemas. ---------- */
+.full-dynamics-closing .full-dynamic-node {
+  transition: transform .42s cubic-bezier(.4,0,.6,1) var(--node-delay, 0ms), opacity .32s ease var(--node-delay, 0ms) !important;
+  transform: translate(-50%, -50%) scale(.1) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.full-dynamics-closing .full-cluster-badge,
+.full-dynamics-closing .full-dynamics-top-bar,
+.full-dynamics-closing .full-intra-layer,
+.full-dynamics-closing .full-cross-layer {
+  transition: opacity .3s ease !important;
+  opacity: 0 !important;
+}
+.full-dynamics-closing .map-network-center-hub,
+.full-dynamics-closing .show-full-network-fixed-btn.is-expanded-mode {
+  transition: opacity .2s ease !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+
+/* =========================================================================
+   RED COMPLETA UNIFICADA DE DINÁMICA URBANA (30 NODOS EN 1 SOLA RED)
+   ========================================================================= */
+
+/* SVG de líneas: SIEMPRE VISIBLE Y DE ALTO CONTRASTE */
+.map-network-stage svg,
+.territory-network-plain svg {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  opacity: 1 !important;
+}
+
+.map-network-stage svg *,
+.territory-network-plain svg * {
+  pointer-events: none !important;
+}
+
+.full-unified-link {
+  stroke-width: 0.75 !important;
+  stroke-opacity: 0.9 !important;
+  filter: drop-shadow(0 0 4px rgba(255, 209, 102, 0.6)) !important;
+  transition: stroke 0.3s, stroke-width 0.3s, stroke-opacity 0.3s;
+}
+
+.full-unified-flow-path {
+  fill: none;
+  stroke: none;
+}
+
+.full-unified-pulse {
+  filter: drop-shadow(0 0 8px #ffd166) !important;
+}
+
+.full-unified-group:hover .full-unified-link,
+.full-unified-group.is-highlighted .full-unified-link {
+  stroke: #ffd166 !important;
+  stroke-width: 1.4 !important;
+  stroke-opacity: 1 !important;
+  filter: drop-shadow(0 0 12px #ffd166) !important;
+}
+
+/* Escenario de Red Completa */
+.map-network-stage.is-full-dynamics-active {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 860px !important;
+  background: radial-gradient(circle at 50% 50%, rgba(70,214,208,0.06) 0%, rgba(3,6,8,0.98) 100%), #000000 !important;
+}
+
+/* 30 NODOS DINÁMICOS: FLAT NEGRO + CONTORNO NEÓN CON BLOOM PROGRESSIVO */
+.full-dynamic-node {
+  position: absolute !important;
+  left: var(--node-x) !important;
+  top: var(--node-y) !important;
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  z-index: 100 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  width: 72px !important;
+  height: 72px !important;
+  border-radius: 50% !important;
+  background: #000000 !important;
+  border: 2px solid var(--node-color, #46d6d0) !important;
+  box-shadow: 0 0 16px var(--node-color, #46d6d0), 0 8px 24px rgba(0, 0, 0, 0.95), inset 0 0 10px rgba(0, 0, 0, 0.9) !important;
+  color: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 4px !important;
+  animation: node-bloom-in 0.55s cubic-bezier(0.16, 1, 0.3, 1.18) var(--node-delay, 0ms) both !important;
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.25s, border-color 0.25s !important;
+}
+
+@keyframes node-bloom-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.1);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.full-dynamic-node:hover {
+  transform: translate(-50%, -50%) scale(1.18) !important;
+  z-index: 150 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 28px var(--node-color, #46d6d0), 0 0 45px var(--node-color, #46d6d0), 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node.is-active {
+  transform: translate(-50%, -50%) scale(1.22) !important;
+  z-index: 200 !important;
+  border-color: #ffd166 !important;
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.5), 0 0 32px #ffd166, 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node.is-connected {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 20px var(--node-color, #46d6d0), 0 0 0 2px rgba(255, 255, 255, 0.7) !important;
+}
+
+/* ANIMACIÓN DE EXPLOSIÓN DE LOS 7 NODOS INICIALES */
+.map-network-stage.is-stage-exploding .map-network-node {
+  transform: scale(2.2) translate(calc(var(--node-x, 0) * 0.4), calc(var(--node-y, 0) * 0.4)) !important;
+  opacity: 0 !important;
+  filter: blur(14px) brightness(2.8) !important;
+  transition: transform 0.38s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 0.35s ease, filter 0.35s ease !important;
+}
+
+.map-network-stage.is-stage-exploding .map-network-center-hub {
+  transform: translate(-50%, -50%) scale(1.8) !important;
+  opacity: 0 !important;
+  filter: blur(10px) brightness(2.8) !important;
+  transition: transform 0.38s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 0.35s ease, filter 0.35s ease !important;
+}
+
+.map-network-stage.is-stage-exploding .map-network-bonds,
+.map-network-stage.is-stage-exploding .map-network-flows {
+  opacity: 0 !important;
+  transition: opacity 0.25s ease !important;
+}
+
+/* BOTÓN CENTRAL */
+.map-network-center-hub {
+  position: absolute !important;
+  left: 50% !important;
+  top: 48% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 999 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  width: 94px !important;
+  height: 94px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  border: 2.5px solid #ffd166 !important;
+  background: #000000 !important;
+  box-shadow: 0 0 26px rgba(255, 209, 102, 0.7), 0 8px 32px rgba(0, 0, 0, 0.95), inset 0 0 16px rgba(0, 0, 0, 0.9) !important;
+  color: #ffd166 !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+  text-align: center !important;
+  letter-spacing: 0.02em !important;
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.25s, border-color 0.25s !important;
+  animation: center-hub-neon-pulse 2.2s ease-in-out infinite !important;
+  user-select: none !important;
+}
+
+.map-network-center-hub.is-expanded-mode {
+  border-color: #46d6d0 !important;
+  color: #46d6d0 !important;
+  background: #000000 !important;
+  box-shadow: 0 0 26px rgba(70, 214, 208, 0.7), 0 8px 32px rgba(0, 0, 0, 0.95), inset 0 0 16px rgba(0, 0, 0, 0.9) !important;
+  animation: center-hub-cyan-pulse 2.2s ease-in-out infinite !important;
+}
+
+
+/* =========================================================================
+   SISTEMA DE ANIMACIÓN HIPER-EXPLOSIVA Y RED VIVA 100% INTERCONECTADA
+   ========================================================================= */
+
+/* 1. ANIMACIÓN DE EXPLOSIÓN: ONDA EXPANSIVA Y DETONACIÓN DE LOS 7 NODOS */
+.map-network-stage.is-stage-exploding::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid #ffd166;
+  box-shadow: 0 0 50px #ffd166, inset 0 0 30px #46d6d0;
+  animation: shockwave-detonate 0.45s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+  pointer-events: none;
+  z-index: 998;
+}
+
+@keyframes shockwave-detonate {
+  0% {
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 1;
+    border-width: 8px;
+  }
+  50% {
+    opacity: 0.9;
+    border-width: 4px;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(4.5);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+.map-network-stage.is-stage-exploding .map-network-node {
+  transform: scale(3.0) translate(calc(var(--node-x, 0) * 0.7), calc(var(--node-y, 0) * 0.7)) rotate(15deg) !important;
+  opacity: 0 !important;
+  filter: blur(18px) brightness(3.5) drop-shadow(0 0 40px #ffd166) !important;
+  transition: transform 0.45s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.4s ease, filter 0.4s ease !important;
+}
+
+.map-network-stage.is-stage-exploding .map-network-center-hub {
+  transform: translate(-50%, -50%) scale(2.6) rotate(-20deg) !important;
+  opacity: 0 !important;
+  filter: blur(16px) brightness(3.5) drop-shadow(0 0 45px #46d6d0) !important;
+  transition: transform 0.45s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.4s ease, filter 0.4s ease !important;
+}
+
+.map-network-stage.is-stage-exploding .map-network-bonds,
+.map-network-stage.is-stage-exploding .map-network-flows {
+  opacity: 0 !important;
+  transition: opacity 0.25s ease !important;
+}
+
+/* 2. ANIMACIÓN DE CIERRE / IMPLOSIÓN */
+.map-network-stage.is-stage-imploding .full-dynamic-node {
+  left: 50% !important;
+  top: 48% !important;
+  transform: translate(-50%, -50%) scale(0.05) rotate(25deg) !important;
+  opacity: 0 !important;
+  filter: blur(10px) brightness(2) !important;
+  transition: left 0.35s cubic-bezier(0.8, 0.1, 0.2, 1), top 0.35s cubic-bezier(0.8, 0.1, 0.2, 1), transform 0.35s cubic-bezier(0.8, 0.1, 0.2, 1), opacity 0.3s ease, filter 0.3s ease !important;
+}
+
+.map-network-stage.is-stage-imploding svg {
+  opacity: 0 !important;
+  transition: opacity 0.25s ease !important;
+}
+
+/* 3. ESCENARIO DE RED COMPLETA UNIFICADA */
+.map-network-stage.is-full-dynamics-active {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 860px !important;
+  background: radial-gradient(circle at 50% 50%, rgba(70,214,208,0.08) 0%, rgba(3,6,8,0.98) 100%), #000000 !important;
+}
+
+/* 4. MALLA LÁSER DE LÍNEAS INTERCONECTADAS */
+.map-network-stage.is-full-dynamics-active svg {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  opacity: 1 !important;
+  animation: svg-laser-ignite 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+@keyframes svg-laser-ignite {
+  0% {
+    opacity: 0;
+    filter: drop-shadow(0 0 15px #ffd166) brightness(2.5);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 25px #ffd166) brightness(2.0);
+  }
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(255, 209, 102, 0.6)) brightness(1);
+  }
+}
+
+.full-unified-link {
+  stroke-width: 0.75 !important;
+  stroke-opacity: 0.9 !important;
+  filter: drop-shadow(0 0 4px rgba(255, 209, 102, 0.6)) !important;
+  transition: stroke 0.3s, stroke-width 0.3s, stroke-opacity 0.3s;
+}
+
+.full-unified-flow-path {
+  fill: none;
+  stroke: none;
+}
+
+.full-unified-pulse {
+  filter: drop-shadow(0 0 9px #ffd166) !important;
+}
+
+.full-unified-group:hover .full-unified-link,
+.full-unified-group.is-highlighted .full-unified-link {
+  stroke: #ffd166 !important;
+  stroke-width: 1.5 !important;
+  stroke-opacity: 1 !important;
+  filter: drop-shadow(0 0 14px #ffd166) !important;
+}
+
+/* 5. 30 NODOS DINÁMICOS: APARICIÓN METEÓRICA CON REBOTE ELÁSTICO (SUPER-BLOOM) */
+.full-dynamic-node {
+  position: absolute !important;
+  left: var(--node-x) !important;
+  top: var(--node-y) !important;
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  z-index: 100 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  width: 72px !important;
+  height: 72px !important;
+  border-radius: 50% !important;
+  background: #000000 !important;
+  border: 2px solid var(--node-color, #46d6d0) !important;
+  box-shadow: 0 0 16px var(--node-color, #46d6d0), 0 8px 24px rgba(0, 0, 0, 0.95), inset 0 0 10px rgba(0, 0, 0, 0.9) !important;
+  color: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 4px !important;
+  animation: dynamic-node-super-bloom 0.68s cubic-bezier(0.12, 1.25, 0.28, 1.1) var(--node-delay, 0ms) both !important;
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.25s, border-color 0.25s !important;
+}
+
+@keyframes dynamic-node-super-bloom {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.05) rotate(-25deg);
+    filter: brightness(3.5) drop-shadow(0 0 30px #ffffff);
+  }
+  65% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.28) rotate(6deg);
+    filter: brightness(1.7) drop-shadow(0 0 25px var(--node-color, #46d6d0));
+  }
+  85% {
+    transform: translate(-50%, -50%) scale(0.94) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    filter: brightness(1) drop-shadow(0 0 16px var(--node-color, #46d6d0));
+  }
+}
+
+.full-dynamic-node:hover {
+  transform: translate(-50%, -50%) scale(1.22) !important;
+  z-index: 150 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 32px var(--node-color, #46d6d0), 0 0 50px var(--node-color, #46d6d0), 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node.is-active {
+  transform: translate(-50%, -50%) scale(1.26) !important;
+  z-index: 200 !important;
+  border-color: #ffd166 !important;
+  box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.6), 0 0 38px #ffd166, 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node.is-connected {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 22px var(--node-color, #46d6d0), 0 0 0 2.5px rgba(255, 255, 255, 0.8) !important;
+}
+
+
+/* =========================================================================
+   LÍNEAS 100% VISIBLES Y ANIMACIÓN DE DESEMPAQUE ESPACIAL ESPECTACULAR
+   ========================================================================= */
+
+/* SVG de líneas: SIEMPRE VISIBLE, COLORIDO Y DE ALTO CONTRASTE */
+.map-network-stage svg,
+.territory-network-plain svg {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  opacity: 1 !important;
+}
+
+.map-network-stage svg *,
+.territory-network-plain svg * {
+  pointer-events: none !important;
+}
+
+.full-unified-link {
+  stroke-width: 0.8 !important;
+  stroke-linecap: round !important;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 3px currentColor) !important;
+  transition: stroke 0.3s, stroke-width 0.3s, opacity 0.3s;
+}
+
+.full-unified-flow-path {
+  fill: none;
+  stroke: none;
+}
+
+.full-unified-pulse {
+  filter: drop-shadow(0 0 8px #ffd166) !important;
+}
+
+.full-unified-group:hover .full-unified-link,
+.full-unified-group.is-highlighted .full-unified-link {
+  stroke: #ffd166 !important;
+  stroke-width: 1.6 !important;
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 12px #ffd166) !important;
+}
+
+/* Escenario de Red Completa */
+.map-network-stage.is-full-dynamics-active {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 860px !important;
+  background: radial-gradient(circle at 50% 50%, rgba(70,214,208,0.08) 0%, rgba(3,6,8,0.98) 100%), #000000 !important;
+}
+
+/* 30 NODOS DINÁMICOS: DESEMPAQUE ESPACIAL ORGÁNICO DESDE LOS 6 SUBSISTEMAS */
+.full-dynamic-node {
+  position: absolute !important;
+  left: var(--node-x) !important;
+  top: var(--node-y) !important;
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  z-index: 100 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  width: 72px !important;
+  height: 72px !important;
+  border-radius: 50% !important;
+  background: #000000 !important;
+  border: 2px solid var(--node-color, #46d6d0) !important;
+  box-shadow: 0 0 16px var(--node-color, #46d6d0), 0 8px 24px rgba(0, 0, 0, 0.95), inset 0 0 10px rgba(0, 0, 0, 0.9) !important;
+  color: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 4px !important;
+  animation: dynamic-spatial-unpack 0.65s cubic-bezier(0.16, 1.18, 0.3, 1) var(--node-delay, 0ms) both !important;
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.25s, border-color 0.25s !important;
+}
+
+@keyframes dynamic-spatial-unpack {
+  0% {
+    left: var(--origin-x, 50%) !important;
+    top: var(--origin-y, 48%) !important;
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  75% {
+    transform: translate(-50%, -50%) scale(1.18);
+  }
+  100% {
+    left: var(--node-x) !important;
+    top: var(--node-y) !important;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.full-dynamic-node:hover {
+  transform: translate(-50%, -50%) scale(1.2) !important;
+  z-index: 150 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 28px var(--node-color, #46d6d0), 0 0 45px var(--node-color, #46d6d0), 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node.is-active {
+  transform: translate(-50%, -50%) scale(1.24) !important;
+  z-index: 200 !important;
+  border-color: #ffd166 !important;
+  box-shadow: 0 0 0 3.5px rgba(255, 209, 102, 0.6), 0 0 36px #ffd166, 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node.is-connected {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 22px var(--node-color, #46d6d0), 0 0 0 2px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* ANIMACIÓN DE EXPLOSIÓN DE LOS 7 NODOS AL ACTIVAR LA RED COMPLETA */
+.map-network-stage.is-stage-exploding .map-network-node {
+  transform: scale(2.5) translate(calc(var(--node-x, 0) * 0.5), calc(var(--node-y, 0) * 0.5)) !important;
+  opacity: 0 !important;
+  filter: blur(14px) brightness(3) drop-shadow(0 0 35px #ffd166) !important;
+  transition: transform 0.4s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 0.35s ease, filter 0.35s ease !important;
+}
+
+.map-network-stage.is-stage-exploding .map-network-center-hub {
+  transform: translate(-50%, -50%) scale(2.0) !important;
+  opacity: 0 !important;
+  filter: blur(12px) brightness(3) drop-shadow(0 0 40px #46d6d0) !important;
+  transition: transform 0.4s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 0.35s ease, filter 0.35s ease !important;
+}
+
+.map-network-stage.is-stage-exploding .map-network-bonds,
+.map-network-stage.is-stage-exploding .map-network-flows {
+  opacity: 0 !important;
+  transition: opacity 0.25s ease !important;
+}
+
+/* ANIMACIÓN DE CIERRE / IMPLOSIÓN */
+.map-network-stage.is-stage-imploding .full-dynamic-node {
+  left: var(--origin-x, 50%) !important;
+  top: var(--origin-y, 48%) !important;
+  transform: translate(-50%, -50%) scale(0.1) !important;
+  opacity: 0 !important;
+  transition: left 0.32s cubic-bezier(0.8, 0.1, 0.2, 1), top 0.32s cubic-bezier(0.8, 0.1, 0.2, 1), transform 0.32s cubic-bezier(0.8, 0.1, 0.2, 1), opacity 0.28s ease !important;
+}
+
+.map-network-stage.is-stage-imploding svg {
+  opacity: 0 !important;
+  transition: opacity 0.25s ease !important;
+}
+
+
+/* =========================================================================
+   ANIMACIÓN SUAVE, NATURAL Y RED COMPLETA EQUILIBRADA (SIN EFECTOS BRUSCOS)
+   ========================================================================= */
+
+/* SVG de líneas: SIEMPRE VISIBLE, NÍTIDO Y DE ALTO CONTRASTE */
+.map-network-stage svg,
+.territory-network-plain svg {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  opacity: 1 !important;
+}
+
+.map-network-stage svg *,
+.territory-network-plain svg * {
+  pointer-events: none !important;
+}
+
+.full-unified-link {
+  stroke-width: 0.8 !important;
+  stroke-linecap: round !important;
+  opacity: 0.82;
+  filter: drop-shadow(0 0 3px currentColor) !important;
+  transition: stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease;
+}
+
+.full-unified-flow-path {
+  fill: none;
+  stroke: none;
+}
+
+.full-unified-pulse {
+  filter: drop-shadow(0 0 6px #ffd166) !important;
+}
+
+.full-unified-group:hover .full-unified-link,
+.full-unified-group.is-highlighted .full-unified-link {
+  stroke: #ffd166 !important;
+  stroke-width: 1.5 !important;
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 10px #ffd166) !important;
+}
+
+/* Escenario de Red Completa */
+.map-network-stage.is-full-dynamics-active {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 860px !important;
+  background: radial-gradient(circle at 50% 50%, rgba(70,214,208,0.06) 0%, rgba(3,6,8,0.98) 100%), #000000 !important;
+}
+
+/* 1. ANIMACIÓN SUAVE DE SALIDA DE LOS 7 NODOS INICIALES (FADE OUT ELEGANTE) */
+.map-network-stage.is-stage-fading-out .map-network-node {
+  transform: scale(1.28) translate(calc(var(--node-x, 0) * 0.15), calc(var(--node-y, 0) * 0.15)) !important;
+  opacity: 0 !important;
+  filter: blur(8px) !important;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease, filter 0.3s ease !important;
+}
+
+.map-network-stage.is-stage-fading-out .map-network-center-hub {
+  transform: translate(-50%, -50%) scale(1.25) !important;
+  opacity: 0 !important;
+  filter: blur(6px) !important;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease, filter 0.3s ease !important;
+}
+
+.map-network-stage.is-stage-fading-out .map-network-bonds,
+.map-network-stage.is-stage-fading-out .map-network-flows {
+  opacity: 0 !important;
+  transition: opacity 0.25s ease !important;
+}
+
+/* 2. ANIMACIÓN DE CIERRE / RETORNO SUAVE A LOS 6 SISTEMAS */
+.map-network-stage.is-stage-imploding .full-dynamic-node {
+  left: var(--origin-x, 50%) !important;
+  top: var(--origin-y, 48%) !important;
+  transform: translate(-50%, -50%) scale(0.2) !important;
+  opacity: 0 !important;
+  transition: left 0.32s cubic-bezier(0.7, 0, 0.3, 1), top 0.32s cubic-bezier(0.7, 0, 0.3, 1), transform 0.32s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.28s ease !important;
+}
+
+.map-network-stage.is-stage-imploding svg {
+  opacity: 0 !important;
+  transition: opacity 0.25s ease !important;
+}
+
+/* 3. 30 NODOS DINÁMICOS: DESEMPAQUE ESPACIAL SUAVE Y NATURAL */
+.full-dynamic-node {
+  position: absolute !important;
+  left: var(--node-x) !important;
+  top: var(--node-y) !important;
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  z-index: 100 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  width: 72px !important;
+  height: 72px !important;
+  border-radius: 50% !important;
+  background: #000000 !important;
+  border: 2px solid var(--node-color, #46d6d0) !important;
+  box-shadow: 0 0 16px var(--node-color, #46d6d0), 0 8px 24px rgba(0, 0, 0, 0.95), inset 0 0 10px rgba(0, 0, 0, 0.9) !important;
+  color: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 4px !important;
+  animation: smooth-subsystem-unpack 0.68s cubic-bezier(0.22, 1, 0.36, 1) var(--node-delay, 0ms) both !important;
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.25s, border-color 0.25s !important;
+}
+
+@keyframes smooth-subsystem-unpack {
+  0% {
+    left: var(--origin-x, 50%) !important;
+    top: var(--origin-y, 48%) !important;
+    transform: translate(-50%, -50%) scale(0.25);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    left: var(--node-x) !important;
+    top: var(--node-y) !important;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.full-dynamic-node:hover {
+  transform: translate(-50%, -50%) scale(1.18) !important;
+  z-index: 150 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 28px var(--node-color, #46d6d0), 0 0 45px var(--node-color, #46d6d0), 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node.is-active {
+  transform: translate(-50%, -50%) scale(1.22) !important;
+  z-index: 200 !important;
+  border-color: #ffd166 !important;
+  box-shadow: 0 0 0 3.5px rgba(255, 209, 102, 0.6), 0 0 36px #ffd166, 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node.is-connected {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 20px var(--node-color, #46d6d0), 0 0 0 2px rgba(255, 255, 255, 0.8) !important;
+}
+
+
+/* =========================================================================
+   RED INTEGRADA SIN HUECO CENTRAL Y LÍNEAS LIMPIAS (SIN PUNTOS EN MOVIMIENTO)
+   ========================================================================= */
+
+/* SVG de líneas: SIEMPRE VISIBLE, NÍTIDO Y DE ALTO CONTRASTE */
+.map-network-stage svg,
+.territory-network-plain svg {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  opacity: 1 !important;
+}
+
+.map-network-stage svg *,
+.territory-network-plain svg * {
+  pointer-events: none !important;
+}
+
+.full-unified-link {
+  stroke-width: 0.85 !important;
+  stroke-linecap: round !important;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 3px currentColor) !important;
+  transition: stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease;
+}
+
+.full-unified-group:hover .full-unified-link,
+.full-unified-group.is-highlighted .full-unified-link {
+  stroke: #ffd166 !important;
+  stroke-width: 1.6 !important;
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 10px #ffd166) !important;
+}
+
+/* Escenario de Red Completa */
+.map-network-stage.is-full-dynamics-active {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 860px !important;
+  background: radial-gradient(circle at 50% 50%, rgba(70,214,208,0.06) 0%, rgba(3,6,8,0.98) 100%), #000000 !important;
+}
+
+/* Botón flotante superior para volver a los 6 sistemas */
+.map-network-back-pill {
+  position: absolute !important;
+  top: 16px !important;
+  right: 18px !important;
+  z-index: 999 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 16px !important;
+  border-radius: 30px !important;
+  background: #000000 !important;
+  border: 1.8px solid #46d6d0 !important;
+  color: #46d6d0 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  box-shadow: 0 0 18px rgba(70, 214, 208, 0.4), 0 6px 16px rgba(0, 0, 0, 0.8) !important;
+  transition: transform 0.2s ease, border-color 0.2s, box-shadow 0.2s, color 0.2s !important;
+}
+
+.map-network-back-pill:hover {
+  transform: scale(1.06) !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 26px rgba(70, 214, 208, 0.7), 0 8px 24px rgba(0, 0, 0, 1) !important;
+}
+
+/* 1. ANIMACIÓN SUAVE DE SALIDA DE LOS 7 NODOS INICIALES (FADE OUT) */
+.map-network-stage.is-stage-fading-out .map-network-node {
+  transform: scale(1.28) translate(calc(var(--node-x, 0) * 0.15), calc(var(--node-y, 0) * 0.15)) !important;
+  opacity: 0 !important;
+  filter: blur(8px) !important;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease, filter 0.3s ease !important;
+}
+
+.map-network-stage.is-stage-fading-out .map-network-center-hub {
+  transform: translate(-50%, -50%) scale(1.25) !important;
+  opacity: 0 !important;
+  filter: blur(6px) !important;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease, filter 0.3s ease !important;
+}
+
+.map-network-stage.is-stage-fading-out .map-network-bonds,
+.map-network-stage.is-stage-fading-out .map-network-flows {
+  opacity: 0 !important;
+  transition: opacity 0.25s ease !important;
+}
+
+/* 2. ANIMACIÓN DE CIERRE / RETORNO SUAVE A LOS 6 SISTEMAS */
+.map-network-stage.is-stage-imploding .full-dynamic-node {
+  left: var(--origin-x, 50%) !important;
+  top: var(--origin-y, 48%) !important;
+  transform: translate(-50%, -50%) scale(0.2) !important;
+  opacity: 0 !important;
+  transition: left 0.32s cubic-bezier(0.7, 0, 0.3, 1), top 0.32s cubic-bezier(0.7, 0, 0.3, 1), transform 0.32s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.28s ease !important;
+}
+
+.map-network-stage.is-stage-imploding svg {
+  opacity: 0 !important;
+  transition: opacity 0.25s ease !important;
+}
+
+/* 3. 30 NODOS DINÁMICOS: DESEMPAQUE ESPACIAL SUAVE Y NATURAL */
+.full-dynamic-node {
+  position: absolute !important;
+  left: var(--node-x) !important;
+  top: var(--node-y) !important;
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  z-index: 100 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  width: 72px !important;
+  height: 72px !important;
+  border-radius: 50% !important;
+  background: #000000 !important;
+  border: 2px solid var(--node-color, #46d6d0) !important;
+  box-shadow: 0 0 16px var(--node-color, #46d6d0), 0 8px 24px rgba(0, 0, 0, 0.95), inset 0 0 10px rgba(0, 0, 0, 0.9) !important;
+  color: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 4px !important;
+  animation: smooth-subsystem-unpack 0.82s cubic-bezier(0.22, 1, 0.36, 1) var(--node-delay, 0ms) both !important;
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.25s, border-color 0.25s !important;
+}
+
+@keyframes smooth-subsystem-unpack {
+  0% {
+    left: var(--origin-x, 50%) !important;
+    top: var(--origin-y, 48%) !important;
+    transform: translate(-50%, -50%) scale(0.25);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    left: var(--node-x) !important;
+    top: var(--node-y) !important;
+    transform: translate(-50%, -50%) scale(var(--node-scale, 1));
+    opacity: 1;
+  }
+}
+
+.full-dynamic-node:hover {
+  transform: translate(-50%, -50%) scale(calc(var(--node-scale, 1) * 1.18)) !important;
+  z-index: 150 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 28px var(--node-color, #46d6d0), 0 0 45px var(--node-color, #46d6d0), 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node.is-active {
+  transform: translate(-50%, -50%) scale(calc(var(--node-scale, 1) * 1.22)) !important;
+  z-index: 200 !important;
+  border-color: #ffd166 !important;
+  box-shadow: 0 0 0 3.5px rgba(255, 209, 102, 0.6), 0 0 36px #ffd166, 0 12px 30px rgba(0,0,0,1) !important;
+}
+
+.full-dynamic-node.is-connected {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 20px var(--node-color, #46d6d0), 0 0 0 2px rgba(255, 255, 255, 0.8) !important;
+}
+
+
+/* ---------- Conexiones de la red integrada de 30 dinámicas ----------
+   Líneas rectas, pero legibles: finas y apagadas de base (antes eran
+   gruesas y con brillo, y la red se veía como un panal), y la lectura se
+   hace con el cursor: al señalar un nodo se encienden SOLO sus conexiones
+   y el resto de la red se apaga. */
+.map-network-stage.is-full-dynamics-active svg line.full-unified-link {
+  display: block !important;
+  stroke: var(--link-color, #8ea3b5) !important;
+  stroke-width: 0.34 !important;
+  stroke-opacity: 0.55 !important;
+  stroke-linecap: round !important;
+  stroke-dasharray: none !important;
+  animation: none !important;
+  filter: none !important;
+  vector-effect: non-scaling-stroke;
+  transition: stroke-opacity .22s ease, stroke-width .22s ease, stroke .22s ease;
+}
+/* Cada relación aparece en su turno, ya completa: línea continua que se
+   enciende (el trazo progresivo con stroke-dasharray se veía punteado en
+   pantalla, porque el trazo no escala con el lienzo). */
+.map-network-stage.is-full-dynamics-active svg line.full-unified-link {
+  stroke-dasharray: none !important;
+  animation: full-link-fade .5s ease var(--link-delay, 0ms) both !important;
+}
+
+.map-network-stage.is-full-dynamics-active svg line.full-unified-link.is-cross {
+  stroke: #8896a6 !important;
+  stroke-opacity: 0.34 !important;
+}
+/* con un nodo señalado o activo, el resto de la red se apaga */
+.map-network-stage.is-full-dynamics-active.has-selection svg line.full-unified-link,
+.map-network-stage.is-full-dynamics-active.has-hover svg line.full-unified-link {
+  stroke-opacity: 0.05 !important;
+}
+.map-network-stage.is-full-dynamics-active.has-selection svg g.full-unified-group.is-highlighted line.full-unified-link,
+.map-network-stage.is-full-dynamics-active.has-hover svg g.full-unified-group.is-hovered line.full-unified-link {
+  stroke: #ffd166 !important;
+  stroke-width: 0.6 !important;
+  stroke-opacity: 1 !important;
+  filter: drop-shadow(0 0 4px rgba(255, 209, 102, .55)) !important;
+}
+/* los nodos que no participan se atenúan (con !important: las reglas de
+   arriba fijan opacity:1 !important y si no, la atenuación no ocurría) */
+.map-network-stage.is-full-dynamics-active.has-selection .full-dynamic-node:not(.is-active):not(.is-connected),
+.map-network-stage.is-full-dynamics-active.has-hover .full-dynamic-node:not(.is-near) {
+  opacity: 0.22 !important;
+  filter: saturate(.5);
+}
+.map-network-stage.is-full-dynamics-active .full-dynamic-node {
+  transition: opacity .22s ease, filter .22s ease, transform .18s cubic-bezier(.34,1.4,.5,1),
+              box-shadow .22s ease, border-color .22s ease;
+}
+/* mientras se arrastra un nodo: el cursor cambia y no hay transición de
+   posición que retrase el movimiento */
+.map-network-stage.is-full-dynamics-active .full-dynamic-node.is-dragging {
+  cursor: grabbing !important;
+  z-index: 220 !important;
+  transform: translate(-50%, -50%) scale(1.14) !important;
+}
+.map-network-stage.is-dragging-node svg line.full-unified-link { transition: none !important; }
+.map-network-stage.is-dragging-node .full-dynamic-node { transition: opacity .22s ease !important; }
+
+/* ==========================================================
+   Red completa: tamaño por número de relaciones
+   Cada dinámica lleva --node-scale (0.70 a 1.42) según cuántas
+   relaciones vigentes tiene, así se ve cuáles sostienen la red.
+   ========================================================== */
+.full-dynamic-node {
+  width: calc(60px * var(--node-scale, 1)) !important;
+  height: calc(60px * var(--node-scale, 1)) !important;
+  padding: 3px !important;
+  animation-name: node-burst-in-escala !important;
+}
+@keyframes node-burst-in-escala {
+  from { transform: translate(-50%, -50%) scale(0.12); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+.full-dynamic-node:hover {
+  transform: translate(-50%, -50%) scale(1.16) !important;
+}
+.full-dynamic-node.is-active {
+  transform: translate(-50%, -50%) scale(1.2) !important;
+}
+.full-dynamic-node .full-node-label {
+  font-size: max(6.6px, calc(8.2px * var(--node-scale, 1))) !important;
+  line-height: 1.06 !important;
+  /* el nombre se queda dentro de la bola: parte la palabra si le hace falta
+     y nunca sobresale del círculo */
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  hyphens: auto !important;
+  max-width: 100% !important;
+  display: block !important;
+}
+.full-dynamic-node { overflow: hidden !important; }
+.full-dynamic-node .full-node-icon {
+  font-size: max(10px, calc(15px * var(--node-scale, 1))) !important;
+  margin-bottom: 1px !important;
+}
+
+/* En pantalla de teléfono el tablero es angosto: las mismas bolitas, más
+   pequeñas, para que no se monten unas sobre otras. */
+@media (max-width: 780px) {
+  .full-dynamic-node {
+    width: calc(28px * var(--node-scale, 1)) !important;
+    height: calc(28px * var(--node-scale, 1)) !important;
+    padding: 0 !important;
+    border-width: 1.4px !important;
+  }
+  /* a este tamaño el rótulo no se puede leer: queda el icono, y el nombre
+     aparece al tocar la bolita */
+  .full-dynamic-node .full-node-label { display: none !important; }
+  .full-dynamic-node .full-node-icon {
+    font-size: max(8px, calc(11px * var(--node-scale, 1))) !important;
+    margin-bottom: 0 !important;
+  }
+  /* el rótulo del tablero y el botón de volver no caben en la misma línea:
+     el botón arriba y el rótulo debajo */
+  .map-network-stage.is-full-dynamics-active .map-network-back-pill {
+    top: 8px !important;
+    right: 8px !important;
+    padding: 5px 10px !important;
+    font-size: 9.5px !important;
+  }
+  /* en el teléfono el rótulo tapaba las bolitas: el botón de volver ya
+     dice en qué vista estamos */
+  .full-dynamics-top-bar { display: none; }
+}
+
+/* ==========================================================
+   Módulo 07 · Ajustes de la vista de subsistemas
+   ========================================================== */
+/* La bolita del centro ("Ver red completa") queda menos brillante que los
+   seis subsistemas: es un acceso, no un subsistema más. */
+.map-network-center-hub {
+  opacity: .55;
+  transition: opacity .25s ease, transform .25s ease, background .25s ease;
+}
+.map-network-center-hub:hover,
+.map-network-center-hub:focus-visible { opacity: 1; }
+
+/* Entrada de la red completa: primero aparecen las dinámicas, una tras
+   otra, y solo después se van dibujando las relaciones. */
+@keyframes full-link-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-network-stage.is-full-dynamics-active .full-unified-link {
+    animation: none !important;
+  }
+}

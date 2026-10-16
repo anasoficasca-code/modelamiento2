@@ -1199,6 +1199,7 @@ function isComponenteConectadoADinamico(id) {
 /* -------- situaciones -------- */
 function renderSituacionesRow() {
   const row = document.getElementById("situacionesRow");
+  if (!row) return;   // el módulo puede cargarse sin la sección de la red
   row.innerHTML = SITUACIONES.map(s => `
     <button class="situacion-btn" data-sit="${s.id}" onclick="setSituacion('${s.id}')">
       <i class="fa-solid ${s.icon}"></i> ${s.label}
@@ -1224,10 +1225,12 @@ function setSituacion(id) {
 
 /* -------- stats -------- */
 function updateStats() {
-  document.getElementById("statComponentes").textContent = BASE_NODES.length;
-  document.getElementById("statActores").textContent = agencyOn ? ACTOR_NODES.length : "—";
-  document.getElementById("statMediadores").textContent = agencyOn ? MEDIADOR_NODES.length : "—";
-  document.getElementById("statRelaciones").textContent = allActiveEdges().length;
+  // El módulo puede cargarse sin la sección de la red (y sin sus contadores).
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set("statComponentes", BASE_NODES.length);
+  set("statActores", agencyOn ? ACTOR_NODES.length : "—");
+  set("statMediadores", agencyOn ? MEDIADOR_NODES.length : "—");
+  set("statRelaciones", allActiveEdges().length);
 }
 
 /* -------- mini-viz "Lectura Dinámica" del hero (decorativo) -------- */
@@ -1259,6 +1262,61 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("edgeInfoClose")?.addEventListener("click", hideEdgeInfo);
   document.getElementById("findingsToggle")?.addEventListener("click", () => toggleFindingsPanel());
   document.getElementById("findingsClose")?.addEventListener("click", () => toggleFindingsPanel(false));
+  const noiseFormulaModal = document.getElementById("noiseFormulaModal");
+  const abrirFormulaModal = () => { if (noiseFormulaModal) noiseFormulaModal.hidden = false; };
+  const cerrarFormulaModal = () => { if (noiseFormulaModal) noiseFormulaModal.hidden = true; };
+  document.getElementById("noiseFormulaToggle")?.addEventListener("click", abrirFormulaModal);
+  document.getElementById("noiseFormulaModalClose")?.addEventListener("click", cerrarFormulaModal);
+  document.getElementById("noiseFormulaModalBackdrop")?.addEventListener("click", cerrarFormulaModal);
+
+  // Fórmula propia de cada agente, al hacer clic en su tarjeta dentro de
+  // "Agentes" — la misma matemática que ya usa la simulación, no una
+  // aparte inventada solo para mostrar.
+  const AGENT_FORMULAS = {
+    vehiculos: {
+      title: '<i class="fa-solid fa-car"></i> Vehículos — acústica',
+      body: `
+        <div class="formula-display">
+          <span>L = A + B·log<sub>10</sub></span>
+          <span class="formula-paren">(</span>
+          <span class="formula-frac"><span class="formula-frac-num">v</span><span class="formula-frac-den">v<sub>ref</sub></span></span>
+          <span class="formula-paren">)</span>
+          <span>+ ΔL</span>
+        </div>
+      `,
+    },
+    mirlas: {
+      title: '<i class="fa-solid fa-dove"></i> Mirlas — fuerza de escape',
+      body: `
+        <div class="formula-display">
+          <span>F<sub>rep</sub> = −K·(L<sub>ruido</sub> − 60)</span>
+        </div>
+      `,
+    },
+  };
+  const agentFormulaModal = document.getElementById("agentFormulaModal");
+  const abrirAgentFormula = (agente) => {
+    const datos = AGENT_FORMULAS[agente];
+    if (!datos || !agentFormulaModal) return;
+    document.getElementById("agentFormulaModalTitle").innerHTML = datos.title;
+    document.getElementById("agentFormulaModalBody").innerHTML = datos.body;
+    agentFormulaModal.hidden = false;
+  };
+  const cerrarAgentFormula = () => { if (agentFormulaModal) agentFormulaModal.hidden = true; };
+  document.querySelectorAll(".sumo-agent-col[data-agent]").forEach((col) => {
+    col.addEventListener("click", () => abrirAgentFormula(col.dataset.agent));
+    col.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrirAgentFormula(col.dataset.agent); }
+    });
+  });
+  document.getElementById("agentFormulaModalClose")?.addEventListener("click", cerrarAgentFormula);
+  document.getElementById("agentFormulaModalBackdrop")?.addEventListener("click", cerrarAgentFormula);
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (noiseFormulaModal && !noiseFormulaModal.hidden) cerrarFormulaModal();
+    if (agentFormulaModal && !agentFormulaModal.hidden) cerrarAgentFormula();
+  });
   window.addEventListener("resize", () => {
     const svg = document.getElementById("readerViz");
     if (svg) { svg.setAttribute("width", svg.clientWidth); svg.setAttribute("height", svg.clientHeight); }

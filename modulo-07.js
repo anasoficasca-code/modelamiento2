@@ -1581,12 +1581,12 @@
       { id: "socioeconomico", label: "Sistema socioeconómico y de ocupación", color: "#e58d62", description: "Viviendas, actividades económicas, servicios, equipamientos, usos del suelo y población." }
     ];
     const submodelRows = [
-      { name: "Modelo de Manejo de Agua y Drenaje", purpose: "Comprender las dinámicas de permeabilidad de los suelos y el funcionamiento del drenaje hídrico natural frente a los flujos de escorrentía en el territorio urbano de Bogotá.", parts: "Sistema hídrico + sistema físico-urbano + sistema institucional de gestión.", partsPurpose: "Sí", partsWhy: "El sistema hídrico y la infraestructura no tienen propósitos propios, pero el sistema institucional sí tiene objetivos y decide sobre mantenimiento, drenaje, residuos y obras.", totalPurpose: "Sí", totalWhy: "Analiza cómo circula el agua y cómo las obras, los residuos y las decisiones de manejo modifican ese flujo.", category: "Socioecológico dinámico", process: "Cambian la lluvia, el nivel del agua, la escorrentía, los sedimentos, la capacidad de almacenamiento, el estado del canal y las acciones de mantenimiento." },
-      { name: "Modelo de Conservación de Especies y Hábitats", purpose: "Analizar la estructura de los ecosistemas urbanos (cerros, ríos y humedales) y las condiciones físicas reales que posibilitan la migración, reproducción y supervivencia de las especies nativas de la ciudad.", parts: "Sistema biótico + sistema hídrico + sistema físico-urbano.", partsPurpose: "Sí", partsWhy: "El sistema biótico incluye organismos que actúan para alimentarse, refugiarse y reproducirse; los sistemas hídrico y físico-urbano afectan las condiciones en que actúan.", totalPurpose: "Sí", totalWhy: "Analiza cómo el agua, la vegetación, el refugio, el ruido y los edificios influyen en la llegada, permanencia, alimentación y salida de las especies.", category: "Ecológico dinámico", process: "Cambian el nivel del agua, la vegetación, los refugios, la disponibilidad de alimento, la presencia de especies invasoras y el desplazamiento de aves." },
-      { name: "Modelo de Límites y Borde Urbano", purpose: "Caracterizar las tensiones y dinámicas de ocupación informal en las periferias de Bogotá, confrontando la frontera física real de la ciudad con los límites normativos planteados por la planeación distrital.", parts: "Sistema físico-urbano + sistema socioeconómico y de ocupación + sistema hídrico + sistema biótico.", partsPurpose: "Sí", partsWhy: "El sistema físico-urbano no tiene propósito propio, pero el sistema socioeconómico incluye actores que deciden sobre construcción, ocupación y uso del suelo.", totalPurpose: "Sí", totalWhy: "Analiza cómo la urbanización, las vías, los edificios y los cerramientos modifican la relación entre el humedal y la ciudad.", category: "Sociotécnico dinámico", process: "Cambian las edificaciones, los cerramientos, las vías, los usos del suelo, los accesos, el drenaje, el ruido y la fragmentación del hábitat." },
-      { name: "Modelo de Conectividad y Redes de Transporte", purpose: "Mapear la conectividad de la malla vial general y el funcionamiento actual de los sistemas de transporte masivo que articulan los flujos de movilidad de toda la capital.", parts: "Sistema de movilidad + sistema físico-urbano + sistema social-comunitario + sistema socioeconómico y de ocupación.", partsPurpose: "Sí", partsWhy: "Los sistemas social, comunitario y de movilidad incluyen personas, usuarios, operadores y entidades que eligen recorridos, horarios y medios; la infraestructura condiciona esas decisiones.", totalPurpose: "Sí", totalWhy: "Analiza cómo las personas se desplazan entre barrios, vías, ciclorrutas, equipamientos y el humedal, y qué barreras encuentran.", category: "Sociotécnico dinámico", process: "Cambian los recorridos, los horarios, la cantidad de usuarios, los tiempos de espera, la congestión, las rutas y la accesibilidad." },
-      { name: "Modelo de Ocupación y Crecimiento Urbano", purpose: "Analizar la correspondencia real entre la densidad de población y de edificación de las manzanas de la ciudad frente a la capacidad de soporte de su infraestructura de servicios y vías.", parts: "Sistema socioeconómico y de ocupación + sistema físico-urbano + sistema de movilidad + sistema hídrico + sistema biótico.", partsPurpose: "Sí", partsWhy: "El sistema socioeconómico incluye actores que deciden sobre vivienda, actividades, inversión y uso del suelo; los demás sistemas reciben los efectos.", totalPurpose: "Sí", totalWhy: "Analiza cómo las decisiones de ocupación producen transformaciones y presiones sobre el borde, el agua, la movilidad y el hábitat.", category: "Social dinámico", process: "Cambian la población, las viviendas, las actividades, los equipamientos, los usos del suelo, la demanda de movilidad y la presión sobre el humedal." },
-      { name: "Modelo de Abastecimiento y Logística Comercial", purpose: "Comprender la estructura de las redes de distribución, los flujos de mercancías y la logística comercial que sostienen el abastecimiento alimentario diario de toda la población bogotana.", parts: "Sistema social-comunitario + sistema socioeconómico y de ocupación + sistema institucional de gestión.", partsPurpose: "Sí", partsWhy: "Todos los sistemas articulados incluyen actores con intereses, objetivos, responsabilidades y capacidad de decisión.", totalPurpose: "Sí", totalWhy: "Analiza quién usa el territorio, quién decide, qué intereses intervienen y cómo se producen acuerdos, conflictos o cambios de manejo.", category: "Social dinámico", process: "Cambian los usos, las visitas, la participación, las organizaciones activas, las demandas, los conflictos, los acuerdos y las decisiones institucionales." }
+      { id: "hidrica", name: "Modelo de Manejo de Agua y Drenaje", purpose: "Comprender las dinámicas de permeabilidad de los suelos y el funcionamiento del drenaje hídrico natural frente a los flujos de escorrentía en el territorio urbano de Bogotá.", parts: "Sistema hídrico + sistema físico-urbano + sistema institucional de gestión.", partsPurpose: "Sí", partsWhy: "El sistema hídrico y la infraestructura no tienen propósitos propios, pero el sistema institucional sí tiene objetivos y decide sobre mantenimiento, drenaje, residuos y obras.", totalPurpose: "Sí", totalWhy: "Analiza cómo circula el agua y cómo las obras, los residuos y las decisiones de manejo modifican ese flujo.", category: "Socioecológico dinámico", process: "Cambian la lluvia, el nivel del agua, la escorrentía, los sedimentos, la capacidad de almacenamiento, el estado del canal y las acciones de mantenimiento." },
+      { id: "biotica", name: "Modelo de Conservación de Especies y Hábitats", purpose: "Analizar la estructura de los ecosistemas urbanos (cerros, ríos y humedales) y las condiciones físicas reales que posibilitan la migración, reproducción y supervivencia de las especies nativas de la ciudad.", parts: "Sistema biótico + sistema hídrico + sistema físico-urbano.", partsPurpose: "Sí", partsWhy: "El sistema biótico incluye organismos que actúan para alimentarse, refugiarse y reproducirse; los sistemas hídrico y físico-urbano afectan las condiciones en que actúan.", totalPurpose: "Sí", totalWhy: "Analiza cómo el agua, la vegetación, el refugio, el ruido y los edificios influyen en la llegada, permanencia, alimentación y salida de las especies.", category: "Ecológico dinámico", process: "Cambian el nivel del agua, la vegetación, los refugios, la disponibilidad de alimento, la presencia de especies invasoras y el desplazamiento de aves." },
+      { id: "fisico", name: "Modelo de Límites y Borde Urbano", purpose: "Caracterizar las tensiones y dinámicas de ocupación informal en las periferias de Bogotá, confrontando la frontera física real de la ciudad con los límites normativos planteados por la planeación distrital.", parts: "Sistema físico-urbano + sistema socioeconómico y de ocupación + sistema hídrico + sistema biótico.", partsPurpose: "Sí", partsWhy: "El sistema físico-urbano no tiene propósito propio, pero el sistema socioeconómico incluye actores que deciden sobre construcción, ocupación y uso del suelo.", totalPurpose: "Sí", totalWhy: "Analiza cómo la urbanización, las vías, los edificios y los cerramientos modifican la relación entre el humedal y la ciudad.", category: "Sociotécnico dinámico", process: "Cambian las edificaciones, los cerramientos, las vías, los usos del suelo, los accesos, el drenaje, el ruido y la fragmentación del hábitat." },
+      { id: "movilidad", name: "Modelo de Conectividad y Redes de Transporte", purpose: "Mapear la conectividad de la malla vial general y el funcionamiento actual de los sistemas de transporte masivo que articulan los flujos de movilidad de toda la capital.", parts: "Sistema de movilidad + sistema físico-urbano + sistema social-comunitario + sistema socioeconómico y de ocupación.", partsPurpose: "Sí", partsWhy: "Los sistemas social, comunitario y de movilidad incluyen personas, usuarios, operadores y entidades que eligen recorridos, horarios y medios; la infraestructura condiciona esas decisiones.", totalPurpose: "Sí", totalWhy: "Analiza cómo las personas se desplazan entre barrios, vías, ciclorrutas, equipamientos y el humedal, y qué barreras encuentran.", category: "Sociotécnico dinámico", process: "Cambian los recorridos, los horarios, la cantidad de usuarios, los tiempos de espera, la congestión, las rutas y la accesibilidad." },
+      { id: "social", name: "Modelo de Ocupación y Crecimiento Urbano", purpose: "Analizar la correspondencia real entre la densidad de población y de edificación de las manzanas de la ciudad frente a la capacidad de soporte de su infraestructura de servicios y vías.", parts: "Sistema socioeconómico y de ocupación + sistema físico-urbano + sistema de movilidad + sistema hídrico + sistema biótico.", partsPurpose: "Sí", partsWhy: "El sistema socioeconómico incluye actores que deciden sobre vivienda, actividades, inversión y uso del suelo; los demás sistemas reciben los efectos.", totalPurpose: "Sí", totalWhy: "Analiza cómo las decisiones de ocupación producen transformaciones y presiones sobre el borde, el agua, la movilidad y el hábitat.", category: "Social dinámico", process: "Cambian la población, las viviendas, las actividades, los equipamientos, los usos del suelo, la demanda de movilidad y la presión sobre el humedal." },
+      { id: "socioeconomico", name: "Modelo de Abastecimiento y Logística Comercial", purpose: "Comprender la estructura de las redes de distribución, los flujos de mercancías y la logística comercial que sostienen el abastecimiento alimentario diario de toda la población bogotana.", parts: "Sistema social-comunitario + sistema socioeconómico y de ocupación + sistema institucional de gestión.", partsPurpose: "Sí", partsWhy: "Todos los sistemas articulados incluyen actores con intereses, objetivos, responsabilidades y capacidad de decisión.", totalPurpose: "Sí", totalWhy: "Analiza quién usa el territorio, quién decide, qué intereses intervienen y cómo se producen acuerdos, conflictos o cambios de manejo.", category: "Social dinámico", process: "Cambian los usos, las visitas, la participación, las organizaciones activas, las demandas, los conflictos, los acuerdos y las decisiones institucionales." }
     ];
 
     // Datos para el diagrama de Forrester de cada submodelo (mismo orden
@@ -1812,22 +1812,22 @@
 
       { id: "hidrica", name: "Dinámica hídrica", color: "#56b8d4", components: ["Agua", "lluvia", "suelo", "escorrentía", "sedimentos", "Canal Los Ángeles"],
         dynamics: ["Lluvia y escorrentía", "Infiltración en el suelo", "Circulación y acumulación", "Sedimentación", "Desborde en crecientes"],
-        process: "El agua circula, se acumula, disminuye o se desborda según lluvia, pendiente, suelo, sedimentos, obras y drenaje.", category: "Determinista" },
+        process: "El agua circula, se acumula, disminuye o se desborda según lluvia, pendiente, suelo, sedimentos, obras y drenaje.", category: "Determinista", partsPurpose: "No. El agua, la lluvia, el suelo, la escorrentía y los sedimentos no eligen entre alternativas ni persiguen objetivos propios.", totalPurpose: "No. El conjunto tampoco decide acumular, circular o desbordarse: eso resulta de condiciones físicas y de drenaje." },
       { id: "biotica", name: "Dinámica biótica", color: "#68d391", components: ["Aves", "arañas", "insectos", "vegetación", "hábitats"],
         dynamics: ["Reproducción y anidación", "Búsqueda de alimento", "Migración y desplazamiento", "Colonización de hábitats", "Depredación y competencia"],
-        process: "Cambian la presencia de especies, el alimento, el refugio, la reproducción y la expansión de especies invasoras.", category: "Ecológico" },
+        process: "Cambian la presencia de especies, el alimento, el refugio, la reproducción y la expansión de especies invasoras.", category: "Determinista", partsPurpose: "No. Las poblaciones responden a las condiciones del hábitat —agua, alimento, refugio— y no formulan propósitos.", totalPurpose: "No. El conjunto de organismos, vegetación y hábitats no formula una decisión colectiva." },
       { id: "fisico", name: "Sistema físico-urbano", color: "#b8c0c8", components: ["Construcciones", "vías", "edificaciones", "redes", "cerramientos", "obras"],
         dynamics: ["Construcción y mejoramiento", "Deterioro y mantenimiento", "Fragmentación del borde urbano", "Ocupación de predios", "Apertura y cierre de accesos"],
-        process: "Cambian el estado de las obras, accesos, senderos y la fragmentación del borde urbano.", category: "Determinista" },
+        process: "Cambian el estado de las obras, accesos, senderos y la fragmentación del borde urbano.", category: "Determinista", partsPurpose: "No. Las estructuras físicas funcionan según su diseño, localización, uso y mantenimiento.", totalPurpose: "No. La infraestructura no decide cómo transformarse; esas decisiones son de personas e instituciones." },
       { id: "movilidad", name: "Sistema de movilidad", color: "#f1cf5b", components: ["Desplazamientos", "rutas de transporte", "accesos", "tiempos de viaje", "conexiones"],
         dynamics: ["Desplazamiento diario", "Congestión en horas pico", "Cambio de rutas", "Espera y transbordo", "Variación de tiempos de viaje"],
-        process: "Cambian los recorridos, usuarios, horarios, tiempos de espera, congestión, ruido y accesibilidad.", category: "Social" },
+        process: "Cambian los recorridos, usuarios, horarios, tiempos de espera, congestión, ruido y accesibilidad.", category: "Determinista", partsPurpose: "No. Las rutas, los accesos y los tiempos de viaje resultan de la infraestructura y de la demanda, no de un objetivo propio.", totalPurpose: "No. El conjunto de la red no formula un propósito: opera según su trazado, su capacidad y su carga." },
       { id: "social", name: "Sistema social-comunitario", color: "#ee9a4b", components: ["Visitantes", "turismo", "grupos sociales", "formas de uso", "apropiación", "participación", "patrimonio ambiental"],
         dynamics: ["Apropiación del espacio", "Participación comunitaria", "Conflictos por el uso", "Visitas y recorridos", "Transmisión de saberes"],
-        process: "Cambian las visitas, formas de apropiación, actividades educativas, participación, acuerdos y conflictos.", category: "Social" },
+        process: "Cambian las visitas, formas de apropiación, actividades educativas, participación, acuerdos y conflictos.", category: "Social", partsPurpose: "Sí. Las personas y organizaciones deciden visitar, aprender, proteger, reclamar, participar o usar el espacio.", totalPurpose: "Sí. La comunidad se organiza alrededor de propósitos colectivos de protección, educación y exigencia institucional." },
       { id: "socioeconomico", name: "Sistema socioeconómico y de ocupación", color: "#e58d62", components: ["Viviendas", "actividades económicas", "servicios", "equipamientos", "usos del suelo", "población", "decisiones de ocupación"],
         dynamics: ["Crecimiento poblacional", "Cambio de uso del suelo", "Oferta y demanda de vivienda", "Formalización de actividades", "Presión sobre el borde"],
-        process: "Cambian la población, construcción, demanda de vivienda, servicios, actividades y presiones sobre el borde.", category: "Social" }
+        process: "Cambian la población, construcción, demanda de vivienda, servicios, actividades y presiones sobre el borde.", category: "Social", partsPurpose: "Sí. Habitantes, propietarios, empresas e instituciones deciden sobre vivienda, inversión, servicios y uso del suelo.", totalPurpose: "Sí. La totalidad se organiza para habitar, trabajar, producir, intercambiar y acceder a servicios." }
     ];
 
     // ---------- Componentes geográficos reales de cada dinámica ----------
@@ -1903,7 +1903,9 @@
           { pos: [-74.15701979872972, 4.6395972438178115], icon: "fa-road", color: "#b8c0c8", label: "Av. Ciudad de Cali",
             route: { bubbleSide: "top", boxSide: "left", offset: -6, type: "hvh", bendNear: "box" } },
         ],
-        sections: [{ system: "Modelo Determinista ⟶ Sistema Socio-Ecológico", icon: "fa-gears", submodelos: [
+        purpose: { epstein: "Explicar cómo funciona el sistema",
+                   para: "Entender cómo la construcción de calles y el ruido de los carros dañan el agua y asustan a las aves." },
+        sections: [{ icon: "fa-gears", submodelos: [
           "Desborde y Control de Crecientes.", "Transferencia de Carga y Vibración.",
           "Infiltración de Escorrentía Calzada-Borde.", "Propagación de Ruido y Presión Sonora." ] }] },
       // Submodelos redactados por mí (no me diste el texto exacto, solo me
@@ -1923,7 +1925,9 @@
           { pos: [-74.1589146050763, 4.63015596902525], icon: "fa-cart-shopping", color: "#e58d62", label: "Corabastos", hideIcon: true,
             route: { bubbleSide: "left", boxSide: "right", offset: 6, type: "hvh", bendNear: "box" } },
         ],
-        sections: [{ system: "Modelo Determinista ⟶ Sistema Ecológico", icon: "fa-gears", submodelos: [
+        purpose: { epstein: "Probar la resistencia ante emergencias",
+                   para: "Ver si la naturaleza puede autolimpiarse cuando hay picos extremos de contaminación y basura." },
+        sections: [{ icon: "fa-gears", submodelos: [
           "Ciclo de compostaje y estabilización de residuos orgánicos.", "Dinámica de reducción de carga contaminante antes del vertimiento.",
           "Flujo de recolección y separación en la fuente.", "Ciclo de control de vectores y olores." ] }] },
       // Corrida un poco a la izquierda, como pediste.
@@ -1936,7 +1940,9 @@
           { pos: [-74.1589146050763, 4.63015596902525], icon: "fa-cart-shopping", color: "#e58d62", label: "Corabastos",
             route: { bubbleSide: "bottom", boxSide: "left", offset: -4, type: "hvh", bendNear: "box" } },
         ],
-        sections: [{ system: "Modelo Social ⟶ Sistema Social", icon: "fa-people-group", submodelos: [
+        purpose: { epstein: "Ver los límites de tolerancia",
+                   para: "Calcular cuántos camiones de carga pesada pueden entrar a la vez antes de bloquear la movilidad de la zona." },
+        sections: [{ icon: "fa-people-group", submodelos: [
           "Ciclo de generación y descomposición de materia orgánica.", "Dinámica de acumulación y congestión de transporte pesado.",
           "Flujo diario de abastecimiento y distribución.", "Ciclo de producción de carga contaminante hídrica." ] }] },
       // Nueva coordenada. La línea sale de ARRIBA de la caja (no de un
@@ -1948,45 +1954,69 @@
           { pos: [-74.14541150109216, 4.631221483859855], icon: "fa-bus", color: "#f1cf5b", label: "Estación Banderas",
             route: { bubbleSide: "top", boxSide: "top", offset: -4, type: "vhv", bendNear: "box" } },
         ],
-        sections: [{ system: "Modelo Determinista ⟶ Sistema Social", icon: "fa-route", submodelos: [
+        purpose: { epstein: "Sugerir mejoras y eficiencias",
+                   para: "Encontrar la mejor organización de buses y andenes para que los pasajeros no pierdan tiempo en filas." },
+        sections: [{ icon: "fa-route", submodelos: [
           "Afluencia y transferencia de pasajeros.", "Capacidad y saturación de andenes.",
           "Frecuencia y tiempos de la flota." ] }] },
     ];
     // ---------- Sonidos ambiente por dinámica (sintetizados, sin archivos
     // externos) — cada burbuja del territorio suena distinto al tocarla:
     // el agua "corre", el pájaro "trina", el tráfico "zumba", etc. ----------
+    // =========================================================================
+    // MOTOR DE SONIDO INMERSIVO DE DINÁMICAS URBANAS (SINTETIZADOR WEBAUDIO)
+    // =========================================================================
     const DINAMICA_SOUND = (() => {
       let ctx = null, masterGain = null;
-      const getCtx = () => {
+
+      const initCtx = () => {
         if (!ctx) {
-          ctx = new (window.AudioContext || window.webkitAudioContext)();
-          // ganancia maestra baja: nada debe sobresaltar, todo suena de fondo
-          masterGain = ctx.createGain();
-          masterGain.gain.value = 0.4;
-          masterGain.connect(ctx.destination);
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) {
+            ctx = new AudioContextClass();
+            masterGain = ctx.createGain();
+            masterGain.gain.value = 0.75; // Volumen audible, claro y envolvente
+            masterGain.connect(ctx.destination);
+          }
         }
-        if (ctx.state === "suspended") ctx.resume();
+        if (ctx && ctx.state === "suspended") {
+          ctx.resume();
+        }
         return ctx;
       };
-      // ruido filtrado reutilizable (base de agua / ciudad / multitud)
+
+      // Desbloquear audio con el primer toque del usuario
+      if (typeof window !== "undefined") {
+        const unlock = () => {
+          initCtx();
+          window.removeEventListener("click", unlock);
+          window.removeEventListener("touchstart", unlock);
+        };
+        window.addEventListener("click", unlock, { once: true });
+        window.addEventListener("touchstart", unlock, { once: true });
+      }
+
       function noiseBuffer(c, seconds) {
         const buffer = c.createBuffer(1, c.sampleRate * seconds, c.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
         return buffer;
       }
-      function playFilteredNoise(c, { duration, filterFreq, filterType = "lowpass", q = 0.7, gain = 0.12, fadeIn = 0.12, fadeOut = duration, lfoRate = 0, lfoDepth = 0 }) {
+
+      function playFilteredNoise(c, { duration, filterFreq, filterType = "lowpass", q = 0.7, gain = 0.15, fadeIn = 0.08, fadeOut = duration, lfoRate = 0, lfoDepth = 0 }) {
         const src = c.createBufferSource();
         src.buffer = noiseBuffer(c, duration);
         const filter = c.createBiquadFilter();
-        filter.type = filterType; filter.frequency.value = filterFreq; filter.Q.value = q;
+        filter.type = filterType;
+        filter.frequency.value = filterFreq;
+        filter.Q.value = q;
         const g = c.createGain();
-        g.gain.setValueAtTime(0, c.currentTime);
+        g.gain.setValueAtTime(0.0001, c.currentTime);
         g.gain.linearRampToValueAtTime(gain, c.currentTime + fadeIn);
-        g.gain.linearRampToValueAtTime(0, c.currentTime + fadeOut);
-        src.connect(filter); filter.connect(g);
-        // Tremolo suave (un LFO real modulando el volumen): así el "ruido"
-        // deja de sonar plano y empieza a sentirse como agua que burbujea.
+        g.gain.linearRampToValueAtTime(0.0001, c.currentTime + fadeOut);
+        src.connect(filter);
+        filter.connect(g);
+
         if (lfoRate > 0 && lfoDepth > 0) {
           const lfo = c.createOscillator();
           lfo.frequency.value = lfoRate;
@@ -1997,93 +2027,182 @@
           lfo.start();
           lfo.stop(c.currentTime + duration + 0.05);
         }
+
         g.connect(masterGain);
-        src.start(); src.stop(c.currentTime + duration + 0.05);
+        src.start();
+        src.stop(c.currentTime + duration + 0.05);
       }
-      function playTone(c, { freq, to, duration, type = "sine", gain = 0.1, delay = 0, attack }) {
+
+      function playTone(c, { freq, to, duration, type = "sine", gain = 0.15, delay = 0, attack = 0.02 }) {
         const osc = c.createOscillator();
-        osc.type = type; osc.frequency.setValueAtTime(freq, c.currentTime + delay);
-        if (to) osc.frequency.exponentialRampToValueAtTime(to, c.currentTime + delay + duration);
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, c.currentTime + delay);
+        if (to) osc.frequency.exponentialRampToValueAtTime(Math.max(20, to), c.currentTime + delay + duration);
         const g = c.createGain();
-        const attackTime = attack ?? Math.min(0.09, duration / 3);
-        g.gain.setValueAtTime(0, c.currentTime + delay);
-        g.gain.linearRampToValueAtTime(gain, c.currentTime + delay + attackTime);
-        g.gain.linearRampToValueAtTime(0, c.currentTime + delay + duration);
-        osc.connect(g); g.connect(masterGain);
-        osc.start(c.currentTime + delay); osc.stop(c.currentTime + delay + duration + 0.05);
+        g.gain.setValueAtTime(0.0001, c.currentTime + delay);
+        g.gain.linearRampToValueAtTime(gain, c.currentTime + delay + attack);
+        g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + delay + duration);
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(c.currentTime + delay);
+        osc.stop(c.currentTime + delay + duration + 0.05);
       }
+
+      // Silbido con curva de frecuencia (para los cantos de ave): un tono que
+      // sube y baja de forma continua suena a pájaro; uno plano, a pitido.
+      function playWarble(c, { start, peak, end, duration, delay = 0, gain = 0.09, vibrato = 0 }) {
+        const osc = c.createOscillator();
+        osc.type = "sine";
+        const t0 = c.currentTime + delay;
+        const curva = new Float32Array(24);
+        for (let i = 0; i < curva.length; i++) {
+          const k = i / (curva.length - 1);
+          const base = k < 0.45
+            ? start + (peak - start) * (k / 0.45)
+            : peak + (end - peak) * ((k - 0.45) / 0.55);
+          curva[i] = base * (vibrato ? 1 + Math.sin(k * Math.PI * 2 * vibrato) * 0.018 : 1);
+        }
+        osc.frequency.setValueCurveAtTime(curva, t0, duration);
+        const g = c.createGain();
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(gain, t0 + duration * 0.18);
+        g.gain.linearRampToValueAtTime(gain * 0.85, t0 + duration * 0.7);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+        osc.connect(g); g.connect(masterGain);
+        osc.start(t0); osc.stop(t0 + duration + 0.05);
+      }
+
       const players = {
-        // Dinámica hídrica: agua de verdad — varias capas de ruido filtrado
-        // (caudal grave, burbujeo medio, chispeo agudo) con un tremolo
-        // lento en cada una para que se sienta que fluye, más gotitas
-        // sueltas de agua esparcidas; dura varios segundos, sin prisa.
-        // Dinámica hídrica: un pequeño sonido de río, nada más — una sola
-        // capa de agua corriendo, simple y corta.
+        // 1. Dinámica hídrica: agua corriendo. Ruido de banda ancha filtrado
+        //    y modulado lentamente (el "shhh" continuo del cauce) más unas
+        //    pocas burbujas graves. Sin tonos agudos: el agua no pita.
         hidrica: (c) => {
-          // Lluvia leve: ruido fino, irregular y corto; no es un río ni una melodía.
-          const dur = 3.1;
-          playFilteredNoise(c, { duration: dur, filterFreq: 4200, filterType: "highpass", q: 0.35, gain: 0.018, fadeIn: 0.55, fadeOut: dur, lfoRate: 0.62, lfoDepth: 0.28 });
-          playFilteredNoise(c, { duration: dur * 0.72, filterFreq: 1700, filterType: "bandpass", q: 0.42, gain: 0.012, fadeIn: 0.7, fadeOut: dur * 0.72, lfoRate: 0.38, lfoDepth: 0.22 });
-          [0.34, 0.92, 1.58, 2.28].forEach((delay, i) => playTone(c, { freq: 1450 + (i % 2) * 260, to: 1050 + (i % 3) * 120, duration: 0.045, type: "sine", gain: 0.008, delay, attack: 0.008 }));
+          const dur = 2.6;
+          playFilteredNoise(c, { duration: dur, filterFreq: 900, filterType: "bandpass", q: 0.45, gain: 0.13, fadeIn: 0.35, fadeOut: dur, lfoRate: 0.5, lfoDepth: 0.3 });
+          playFilteredNoise(c, { duration: dur, filterFreq: 2600, filterType: "highpass", q: 0.3, gain: 0.05, fadeIn: 0.5, fadeOut: dur, lfoRate: 0.8, lfoDepth: 0.4 });
+          playFilteredNoise(c, { duration: dur * 0.9, filterFreq: 320, filterType: "lowpass", gain: 0.07, fadeIn: 0.4, fadeOut: dur * 0.9 });
+          // burbujas: tonos cortos que caen de tono, muy suaves
+          [0.35, 0.95, 1.6, 2.05].forEach((delay, i) => {
+            playTone(c, { freq: 520 + i * 60, to: 240, duration: 0.14, type: "sine", gain: 0.05, delay, attack: 0.015 });
+          });
         },
-        // Dinámica biótica: dos pajaritos conversando entre la vegetación —
-        // trinos con variación natural de tono y ritmo, no siempre iguales
-        // Dinámica biótica: sonido leve de pajaritos y naturaleza — solo
-        // un par de trinos suaves, nada exagerado, más un fondo muy tenue
-        // de "ambiente natural" (hoja/viento apenas perceptible).
+
+        // 2. Dinámica biótica: canto de mirla. Notas aflautadas que suben y
+        //    bajan, con vibrato y silencios entre frases, sobre un fondo muy
+        //    tenue de hojas.
         biotica: (c) => {
-          // Trinos breves y desiguales, con caída de tono para evitar el efecto de silbido humano.
-          const chirp = (delay, baseFreq, calls) => {
-            let t = delay;
-            for (let i = 0; i < calls; i++) {
-              const f = baseFreq + Math.random() * 220;
-              const dur = 0.055 + Math.random() * 0.035;
-              playTone(c, { freq: f, to: f * 0.72, duration: dur, type: "triangle", gain: 0.026, delay: t, attack: 0.012 });
-              t += dur + 0.075 + Math.random() * 0.08;
-            }
-          };
-          chirp(0.08, 2850, 3);
-          chirp(0.92, 2200, 2);
-          playFilteredNoise(c, { duration: 1.9, filterFreq: 3600, filterType: "bandpass", q: 0.8, gain: 0.009, fadeIn: 0.4, fadeOut: 1.9 });
+          playWarble(c, { start: 1750, peak: 2450, end: 1950, duration: 0.30, delay: 0.10, gain: 0.085, vibrato: 5 });
+          playWarble(c, { start: 2200, peak: 2750, end: 2100, duration: 0.24, delay: 0.52, gain: 0.075, vibrato: 4 });
+          playWarble(c, { start: 1600, peak: 2150, end: 1500, duration: 0.34, delay: 0.95, gain: 0.08, vibrato: 6 });
+          playWarble(c, { start: 2400, peak: 2950, end: 2300, duration: 0.22, delay: 1.45, gain: 0.06, vibrato: 4 });
+          playWarble(c, { start: 1850, peak: 2300, end: 1700, duration: 0.28, delay: 1.80, gain: 0.055, vibrato: 5 });
+          // hojas movidas por el viento, apenas audibles
+          playFilteredNoise(c, { duration: 2.4, filterFreq: 5200, filterType: "highpass", q: 0.3, gain: 0.022, fadeIn: 0.6, fadeOut: 2.4, lfoRate: 0.6, lfoDepth: 0.5 });
         },
-        // Sistema físico-urbano: zumbido de ciudad lejana, muy suave y
-        // sostenido — sin bocinas ni golpes, solo un fondo urbano tenue
-        // Sistema físico-urbano: sonido de ciudad — capas de tráfico
-        // lejano y murmullo urbano, con tremolo suave, sin bocinas
+
+        // 3. Sistema físico-urbano: la calle de fondo. Rumor grave y continuo
+        //    de tráfico lejano, sin campanas ni golpes: presente pero no
+        //    estridente, para poder oírlo varias veces sin cansar.
         fisico: (c) => {
-          // Trancón lejano: motor ralentí + pulsos lentos de tráfico, sin bocinas.
-          const dur = 3.2;
-          playFilteredNoise(c, { duration: dur, filterFreq: 250, filterType: "lowpass", gain: 0.055, fadeIn: 0.5, fadeOut: dur, lfoRate: 0.12, lfoDepth: 0.38 });
-          [0.35, 1.15, 2.0].forEach((delay, i) => playTone(c, { freq: 58 + i * 7, to: 72 + i * 8, duration: 0.38, type: "triangle", gain: 0.022, delay, attack: 0.12 }));
-          playFilteredNoise(c, { duration: dur * 0.7, filterFreq: 620, filterType: "bandpass", q: 0.5, gain: 0.012, fadeIn: 0.7, fadeOut: dur * 0.7, lfoRate: 0.2, lfoDepth: 0.25 });
+          const dur = 2.4;
+          playFilteredNoise(c, { duration: dur, filterFreq: 260, filterType: "lowpass", gain: 0.14, fadeIn: 0.5, fadeOut: dur, lfoRate: 0.35, lfoDepth: 0.25 });
+          playFilteredNoise(c, { duration: dur, filterFreq: 700, filterType: "bandpass", q: 0.4, gain: 0.05, fadeIn: 0.6, fadeOut: dur, lfoRate: 0.7, lfoDepth: 0.4 });
+          playTone(c, { freq: 82, duration: dur, type: "sine", gain: 0.05, attack: 0.7 });
         },
-        // Sistema de movilidad: motor de fondo suave, sin bocina
+
+        // 4. Sistema de movilidad: un vehículo que pasa. La banda de ruido se
+        //    abre y se cierra (efecto de paso) sobre un motor grave.
         movilidad: (c) => {
-          playTone(c, { freq: 85, duration: 1.1, type: "triangle", gain: 0.06, attack: 0.25 });
-          playFilteredNoise(c, { duration: 1.1, filterFreq: 700, filterType: "lowpass", gain: 0.04, fadeIn: 0.2, fadeOut: 1.1 });
+          playFilteredNoise(c, { duration: 1.8, filterFreq: 1100, filterType: "bandpass", q: 0.5, gain: 0.11, fadeIn: 0.55, fadeOut: 1.8 });
+          playTone(c, { freq: 95, to: 150, duration: 1.2, type: "sine", gain: 0.10, attack: 0.35 });
+          playTone(c, { freq: 190, to: 130, duration: 1.0, type: "triangle", gain: 0.05, delay: 0.5, attack: 0.3 });
         },
-        // Sistema social-comunitario: murmullo cálido de voces (acorde suave)
+
+        // 5. Sistema social-comunitario: voces de plaza. Pulsos suaves de
+        //    ruido filtrado (el murmullo) con un acorde cálido detrás.
         social: (c) => {
-          [220, 277, 330].forEach((freq, i) => playTone(c, { freq, duration: 0.8, type: "triangle", gain: 0.04, delay: i * 0.05, attack: 0.15 }));
-          playFilteredNoise(c, { duration: 0.9, filterFreq: 1400, filterType: "bandpass", q: 0.6, gain: 0.03, fadeOut: 0.9 });
+          [0, 0.28, 0.62, 0.95, 1.35].forEach((delay, i) => {
+            playFilteredNoise(c, { duration: 0.5, filterFreq: 700 + (i % 3) * 260, filterType: "bandpass", q: 1.6, gain: 0.055, fadeIn: 0.12, fadeOut: 0.5 });
+          });
+          [196.0, 261.6, 329.6].forEach((freq, i) => {
+            playTone(c, { freq, duration: 1.8, type: "sine", gain: 0.055, delay: i * 0.1, attack: 0.35 });
+          });
         },
-        // Sistema socioeconómico y de ocupación: dos tonos suaves tipo aviso
+
+        // 6. Sistema socioeconómico: mercado. Golpes secos de madera, como
+        //    cajas y pesas en una plaza, sin brillo metálico.
         socioeconomico: (c) => {
-          playTone(c, { freq: 660, duration: 0.22, type: "sine", gain: 0.07, attack: 0.06 });
-          playTone(c, { freq: 880, duration: 0.3, type: "sine", gain: 0.07, delay: 0.18, attack: 0.06 });
+          [0, 0.22, 0.46, 0.72].forEach((delay, i) => {
+            playTone(c, { freq: 330 - i * 30, to: 150, duration: 0.16, type: "triangle", gain: 0.09, delay, attack: 0.005 });
+            playFilteredNoise(c, { duration: 0.12, filterFreq: 1500, filterType: "bandpass", q: 2.2, gain: 0.04, fadeIn: 0.005, fadeOut: 0.12 });
+          });
+          playFilteredNoise(c, { duration: 1.6, filterFreq: 800, filterType: "bandpass", q: 0.8, gain: 0.035, fadeIn: 0.4, fadeOut: 1.6 });
         },
+
+        // 7. Expansión completa (al abrir la red completa): un acorde que se
+        //    abre, suave.
+        expansion: (c) => {
+          [196, 261.6, 392, 523.2].forEach((freq, i) => {
+            playTone(c, { freq, duration: 1.8, type: "sine", gain: 0.075, delay: i * 0.12, attack: 0.25 });
+          });
+          playFilteredNoise(c, { duration: 2.0, filterFreq: 2200, filterType: "bandpass", q: 0.6, gain: 0.04, fadeIn: 0.5, fadeOut: 2.0 });
+        }
       };
+
       return {
         play(id) {
           try {
-            const c = getCtx();
-            (players[id] || (() => {}))(c);
-          } catch (err) { /* audio no disponible: seguimos sin sonido */ }
+            const c = initCtx();
+            if (!c) return;
+            const soundKey = (id || "hidrica").toLowerCase();
+            const player = players[soundKey] || players[soundKey.replace(/sistema-|dinámica-/g, "")] || players.hidrica;
+            player(c);
+          } catch (err) {
+            console.warn("Audio play warning:", err);
+          }
         }
       };
     })();
 
-    const renderTerritoryNetwork = () => {
+    
+    // Event delegation indestructible para el hub central de la red completa
+    document.addEventListener("click", (e) => {
+      const hubBtn = e.target.closest("#mapNetworkCenterHub, .map-network-center-hub");
+      if (hubBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const stageTarget = document.getElementById("territoryNetworkPlain");
+        if (!stageTarget) return;
+
+        if (hubBtn.classList.contains("is-expanded-mode")) {
+          // Volver a los 6 sistemas
+          try { DINAMICA_SOUND.play("expansion"); } catch (err) {}
+          const stage = stageTarget.querySelector(".map-network-stage");
+          if (stage) {
+            stage.classList.add("is-stage-imploding");
+            window.setTimeout(() => {
+              renderMapNetwork("systems", true, stageTarget, false);
+            }, 320);
+          } else {
+            renderMapNetwork("systems", true, stageTarget, false);
+          }
+        } else {
+          // Abrir red completa con transición suave
+          try { DINAMICA_SOUND.play("expansion"); } catch (err) {}
+          const stage = stageTarget.querySelector(".map-network-stage");
+          if (stage) {
+            stage.classList.add("is-stage-fading-out");
+            window.setTimeout(() => {
+              renderFullSubsystemsNetworkInPlace(stageTarget);
+            }, 320);
+          } else {
+            renderFullSubsystemsNetworkInPlace(stageTarget);
+          }
+        }
+      }
+    }, true);
+
+const renderTerritoryNetwork = () => {
       const view = document.getElementById("submodelsView");
       if (!view) return;
       const positions = [[12,18],[50,8],[88,18],[88,78],[50,91],[12,78]];
@@ -2221,6 +2340,7 @@
       });
     }
     directSubsystemsBtn?.addEventListener("click", () => { openSubmodelsFromDirectButton("subsystems"); showPlainNetwork("systems", directSubsystemsBtn); });
+    document.getElementById("showFullSubsystemsNetworkBtn")?.addEventListener("click", (event) => { window.__openFullSubsystemsNetwork?.(event); });
     directSubmodelsBtn?.addEventListener("click", () => { openSubmodelsFromDirectButton("submodels"); showPlainNetwork("submodels", directSubmodelsBtn); });
     directCartographyBtn?.addEventListener("click", showCartography);
     renderSubmodelsView("subsystems");
@@ -2571,185 +2691,487 @@
     // Igual que showCombinedNetworkModal, pero en vez de abrir un modal
     // aparte, reemplaza el contenido DENTRO del mismo panel donde estaban
     // las 6 bolas — así da la sensación de que las 6 se convierten en 30.
-    function renderFullSubsystemsNetworkInPlace(target) {
-      const W = 900, H = 900, cx = W / 2, cy = H / 2;
-      // Los 6 "orígenes" (donde estaba cada bola de sistema) quedan más
-      // cerca entre sí que antes, y cada racimo se esparce con más radio y
-      // un poco de variación aleatoria en ángulo/distancia — así no se ve
-      // como 6 flores rígidas y separadas, sino como una red más orgánica
-      // donde los bordes entre sistemas se mezclan un poco.
-      const clusterR = 210;
-      const clusters = territorySystems.map((sys, i) => {
-        const angle = (i / territorySystems.length) * Math.PI * 2 - Math.PI / 2;
-        return { ...sys, cx: cx + clusterR * Math.cos(angle), cy: cy + clusterR * Math.sin(angle) };
-      });
-      let svgParts = [];
-      let nodeIndex = 0;
-      const allDynamicNodes = [];
-      let seed = 7; // aleatoriedad reproducible (misma forma cada vez que se abre)
-      const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-      clusters.forEach((cl) => {
-        const items = cl.dynamics || cl.components;
-        const baseR = 128;
-        const nodesHere = items.map((label, i) => {
-          const evenAngle = (i / items.length) * Math.PI * 2 - Math.PI / 2;
-          const angle = evenAngle + (rand() - 0.5) * 0.55; // variación orgánica del ángulo
-          const r = baseR + (rand() - 0.5) * 56; // variación orgánica del radio
-          return { label, x: cl.cx + r * Math.cos(angle), y: cl.cy + r * Math.sin(angle), color: cl.color, sysId: cl.id, originX: cl.cx, originY: cl.cy };
-        });
-        allDynamicNodes.push(...nodesHere);
-      });
-      // Relajación suave entre TODAS las bolitas (no solo dentro de su
-      // propio racimo) para que nadie quede encimada ni pegada — y de paso
-      // esto ayuda a que los bordes entre sistemas se entremezclen un poco.
-      const nodeR2 = 26, GAP = 6;
-      for (let pass = 0; pass < 120; pass++) {
-        for (let i = 0; i < allDynamicNodes.length; i++) {
-          for (let j = i + 1; j < allDynamicNodes.length; j++) {
-            const a = allDynamicNodes[i], b = allDynamicNodes[j];
-            const dx = b.x - a.x, dy = b.y - a.y;
-            const dist = Math.hypot(dx, dy) || 0.01;
-            const minDist = nodeR2 * 2 + GAP;
-            if (dist < minDist) {
-              const push = (minDist - dist) / 2;
-              const ux = dx / dist, uy = dy / dist;
-              a.x -= ux * push; a.y -= uy * push;
-              b.x += ux * push; b.y += uy * push;
-            }
-          }
-        }
-      }
-      clusters.forEach((cl) => {
-        const items = cl.dynamics || cl.components;
-        const nodesHere = allDynamicNodes.filter((n) => n.sysId === cl.id);
-        for (let i = 0; i < nodesHere.length; i++) {
-          for (let j = i + 1; j < nodesHere.length; j++) {
-            svgParts.push(`<line x1="${nodesHere[i].x}" y1="${nodesHere[i].y}" x2="${nodesHere[j].x}" y2="${nodesHere[j].y}" class="combined-sat-line" style="--node-color:${cl.color}"/>`);
-          }
-        }
-      });
-      const KEYWORDS = [
-        ["desplazamiento", "accesos", "rutas", "recorridos"],
-        ["escorrentía", "infiltración", "agua", "sedimentación"],
-        ["vivienda", "ocupación", "uso del suelo", "construcción", "predios"],
-        ["hábitats", "colonización", "vegetación"],
-        ["conflictos", "presión", "apropiación"],
-      ];
-      const crossLines = [];
-      for (let i = 0; i < allDynamicNodes.length; i++) {
-        for (let j = i + 1; j < allDynamicNodes.length; j++) {
-          const a = allDynamicNodes[i], b = allDynamicNodes[j];
-          if (a.sysId === b.sysId) continue;
-          const shared = KEYWORDS.some((group) => group.some((k) => a.label.toLowerCase().includes(k)) && group.some((k) => b.label.toLowerCase().includes(k)));
-          if (shared) crossLines.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="combined-cross-line"/>`);
-        }
-      }
-      svgParts.push(...crossLines);
-      const dynCircles = allDynamicNodes.map((n) => {
-        const dx = (n.originX - n.x).toFixed(1), dy = (n.originY - n.y).toFixed(1);
-        return `<g class="combined-node combined-sat-node" style="--node-color:${n.color};--node-i:${nodeIndex++};--dx:${dx}px;--dy:${dy}px;transform-origin:${n.x}px ${n.y}px;">` +
-          `<circle cx="${n.x}" cy="${n.y}" r="${nodeR2}"/>` +
-          `<foreignObject x="${n.x - nodeR2 + 3}" y="${n.y - nodeR2 + 3}" width="${(nodeR2 - 3) * 2}" height="${(nodeR2 - 3) * 2}"><div xmlns="http://www.w3.org/1999/xhtml" class="combined-sat-label">${n.label}</div></foreignObject>` +
-          `</g>`;
-      }).join("");
-      target.innerHTML = `<div class="inplace-full-network">
-        <button type="button" id="backToSixSystemsBtn" class="back-to-six-btn"><i class="fa-solid fa-arrow-left"></i> Volver a los 6 subsistemas</button>
-        <svg viewBox="0 0 ${W} ${H}" class="combined-network-svg">
-          <g class="combined-lines">${svgParts.join("")}</g>
-          <g class="combined-nodes">${dynCircles}</g>
-        </svg>
-      </div>`;
-      requestAnimationFrame(() => target.querySelector(".inplace-full-network")?.classList.add("exploded"));
-      target.querySelector("#backToSixSystemsBtn")?.addEventListener("click", (event) => {
-        event.stopPropagation();
-        showPlainNetwork("systems", directSubsystemsBtn);
-      });
-    }
+    // =========================================================================
+    // RED COMPLETA DE DINÁMICA URBANA (30 ELEMENTOS Y FLUJOS VIVOS)
+    // =========================================================================
+    // =========================================================================
+    // RED COMPLETA UNIFICADA DE DINÁMICA URBANA (30 ELEMENTOS VIVOS EN 1 SOLA RED)
+    // =========================================================================
+    // =========================================================================
+    // RED COMPLETA UNIFICADA DE DINÁMICA URBANA (30 ELEMENTOS TOTALMENTE INTERCONECTADOS)
+    // =========================================================================
+    // =========================================================================
+    // RED COMPLETA UNIFICADA DE DINÁMICA URBANA (30 ELEMENTOS VIVOS TOTALMENTE CONECTADOS)
+    // =========================================================================
+    // =========================================================================
+    // RED COMPLETA UNIFICADA DE DINÁMICA URBANA (30 ELEMENTOS VIVOS EN 6 SECTORES)
+    // =========================================================================
+    // =========================================================================
+    // RED COMPLETA INTEGRADA DE DINÁMICA URBANA (30 NODOS INTEGRADOS SIN HUECO CENTRAL)
+    // =========================================================================
+    const PARENT_SYSTEM_CENTERS = {
+      hidrica: { x: 23, y: 40 },
+      biotica: { x: 43, y: 16 },
+      fisico: { x: 67, y: 16 },
+      movilidad: { x: 82, y: 42 },
+      social: { x: 68, y: 76 },
+      socioeconomico: { x: 30, y: 76 }
+    };
 
-    function showCombinedNetworkModal() {
-      const overlay = document.createElement("div");
-      overlay.className = "combined-network-overlay";
-      const W = 900, H = 900, cx = W / 2, cy = H / 2, clusterR = 300;
-      // Un "centro" invisible por sistema, solo para ubicar su racimo de
-      // dinámicas — no se dibuja ninguna bola ahí (ya sabemos de qué
-      // sistema es cada una por el color y por estar agrupadas).
-      const clusters = territorySystems.map((sys, i) => {
-        const angle = (i / territorySystems.length) * Math.PI * 2 - Math.PI / 2;
-        return { ...sys, cx: cx + clusterR * Math.cos(angle), cy: cy + clusterR * Math.sin(angle) };
-      });
-      let svgParts = [];
-      let nodeIndex = 0;
-      const allDynamicNodes = [];
-      // las dinámicas de cada sistema, TODAS conectadas con TODAS entre sí
-      // (malla completa, igual que en la mini-red) — se agrupan alrededor
-      // de su punto de racimo (invisible, sin bola ahí).
-      clusters.forEach((cl) => {
-        const items = cl.dynamics || cl.components;
-        const satR = 92;
-        const nodesHere = items.map((label, i) => {
-          const angle = (i / items.length) * Math.PI * 2 - Math.PI / 2;
-          return { label, x: cl.cx + satR * Math.cos(angle), y: cl.cy + satR * Math.sin(angle), color: cl.color, sysId: cl.id, originX: cl.cx, originY: cl.cy };
+    const UNIFIED_URBAN_ELEMENTS = [
+      // --- NÚCLEO CENTRAL INTEGRADO (6 hubs conectores en el corazón del mapa) ---
+      { id: "h_humedales", corto: "Agua en\nhumedales", name: "Ciclos de agua en\nhumedales y lagunas", icon: "fa-droplet", systemId: "hidrica", color: "#56b8d4", x: 42, y: 42, desc: "Ciclos hídricos, retención y amortiguamiento en los espejos de agua de El Burro y La Vaca.", connects: ["h_infiltra", "h_escorre", "b_flora", "se_vivienda", "s_cuidado", "h_desborde", "b_aves_res"] },
+      { id: "b_flora", corto: "Cobertura\nvegetal", name: "Crecimiento de la\ncobertura vegetal", icon: "fa-leaf", systemId: "biotica", color: "#68d391", x: 58, y: 38, desc: "Juncos, eneas, vegetación de ronda y árboles que estabilizan los taludes.", connects: ["h_humedales", "b_aves_res", "b_insectos", "f_impermeable", "b_aves_mig", "h_escorre"] },
+      { id: "f_impermeable", corto: "Suelo\nsellado", name: "Sellamiento del suelo\npor superficies duras", icon: "fa-layer-group", systemId: "fisico", color: "#b8c0c8", x: 62, y: 50, desc: "Asfalto y losas de concreto que impiden la infiltración pluvial.", connects: ["b_flora", "m_peatonal", "f_edificios", "f_andenes", "se_vivienda", "f_vias"] },
+      { id: "m_peatonal", corto: "Flujos\npeatonales", name: "Flujos peatonales\ncotidianos", icon: "fa-person-walking-arrow-right", systemId: "movilidad", color: "#f1cf5b", x: 56, y: 62, desc: "Caminatas cotidianas de residentes hacia estaciones, colegios y comercio.", connects: ["f_impermeable", "s_cuidado", "s_vecinos", "m_transporte", "m_ciclorrutas", "f_andenes"] },
+      { id: "s_cuidado", corto: "Trabajo de\ncuidado", name: "Trabajo de cuidado\ny voluntariado", icon: "fa-hand-holding-heart", systemId: "social", color: "#ee9a4b", x: 42, y: 62, desc: "Jornadas de siembra comunitaria, limpieza de canales y monitoreo biológico.", connects: ["m_peatonal", "se_vivienda", "s_vecinos", "s_conflictos", "h_humedales", "s_org_amb"] },
+      { id: "se_vivienda", corto: "Vivienda\ny hogares", name: "Ciclos de la vivienda\ny los hogares", icon: "fa-house-chimney", systemId: "socioeconomico", color: "#e58d62", x: 36, y: 50, desc: "Unidades habitacionales que demandan servicios, movilidad y espacios de cuidado.", connects: ["s_cuidado", "h_humedales", "f_impermeable", "se_equipamientos", "se_comercio", "h_infiltra"] },
+
+      // --- ZONA INTERMEDIA (12 nodos de transición) ---
+      { id: "h_infiltra", corto: "Agua que\ninfiltra", name: "Recarga del suelo\npor infiltración", icon: "fa-water", systemId: "hidrica", color: "#56b8d4", x: 28, y: 32, desc: "Capacidad de absorción natural del suelo y amortiguamiento freático.", connects: ["h_humedales", "h_lluvia", "h_escorre", "se_comercio", "h_desborde", "se_vivienda"] },
+      { id: "h_escorre", corto: "Agua por\ncanales", name: "Conducción del agua\npor canales", icon: "fa-arrows-split-up-and-left", systemId: "hidrica", color: "#56b8d4", x: 38, y: 22, desc: "Canal Los Ángeles y colectores que conducen el agua superficial.", connects: ["h_infiltra", "h_humedales", "h_lluvia", "b_insectos", "b_flora", "b_aves_mig"] },
+      { id: "b_insectos", corto: "Cadena\ntrófica", name: "Polinización y\ncadena trófica", icon: "fa-bug", systemId: "biotica", color: "#68d391", x: 54, y: 20, desc: "Arañas tejedoras, abejas y libélulas que sostienen la cadena trófica.", connects: ["h_escorre", "b_flora", "b_aves_mig", "b_aves_res", "b_refugio"] },
+      { id: "b_aves_res", corto: "Fauna\nresidente", name: "Ciclos de vida de\nla fauna residente", icon: "fa-crow", systemId: "biotica", color: "#68d391", x: 70, y: 34, desc: "Monjitas bogotanas, mirlas y fauna local con ciclos continuos en el ecosistema.", connects: ["b_flora", "b_insectos", "b_refugio", "f_cerramientos", "f_impermeable", "h_humedales"] },
+      { id: "f_edificios", corto: "Vivienda\nconstruida", name: "Densificación de\nla vivienda construida", icon: "fa-city", systemId: "fisico", color: "#b8c0c8", x: 76, y: 44, desc: "Conjuntos habitacionales y manzanas construidas sobre el borde del humedal.", connects: ["f_impermeable", "f_cerramientos", "f_vias", "se_vivienda", "f_andenes"] },
+      { id: "f_andenes", corto: "Espacio\npúblico", name: "Uso cotidiano del\nespacio público", icon: "fa-person-walking", systemId: "fisico", color: "#b8c0c8", x: 72, y: 58, desc: "Superficies peatonales, plazoletas y senderos perimetrales.", connects: ["f_impermeable", "f_vias", "m_peatonal", "m_transporte", "f_edificios"] },
+      { id: "m_transporte", corto: "Transporte\nmasivo", name: "Operación del\ntransporte masivo", icon: "fa-bus", systemId: "movilidad", color: "#f1cf5b", x: 70, y: 70, desc: "Flota de TransMilenio y SITP que conecta Kennedy con el resto de Bogotá.", connects: ["f_andenes", "m_peatonal", "m_estaciones", "m_congestion", "m_ciclorrutas"] },
+      { id: "m_ciclorrutas", corto: "Viajes en\nbicicleta", name: "Viajes en bicicleta\npor ciclorrutas", icon: "fa-bicycle", systemId: "movilidad", color: "#f1cf5b", x: 54, y: 76, desc: "Red de ciclorrutas de El Tintal y Av. Cali para viajes limpios de proximidad.", connects: ["m_peatonal", "m_congestion", "s_vecinos", "s_conflictos", "m_transporte"] },
+      { id: "s_vecinos", corto: "Habitar\nel barrio", name: "Habitar cotidiano\ndel barrio", icon: "fa-people-roof", systemId: "social", color: "#ee9a4b", x: 46, y: 72, desc: "Comunidades de los barrios circundantes que habitan y recorren el sector.", connects: ["m_peatonal", "s_cuidado", "m_ciclorrutas", "s_conflictos", "se_vivienda", "s_org_amb"] },
+      { id: "s_conflictos", corto: "Conflicto\nvecinal", name: "Conflicto y\nacuerdo vecinal", icon: "fa-comments", systemId: "social", color: "#ee9a4b", x: 36, y: 74, desc: "Mecanismos de resolución comunitaria frente a presiones de uso y residuos.", connects: ["s_cuidado", "s_vecinos", "m_ciclorrutas", "s_org_amb", "se_equipamientos", "se_vivienda"] },
+      { id: "se_equipamientos", corto: "Servicios\nde cuidado", name: "Servicios de cuidado\nen las manzanas", icon: "fa-building-shield", systemId: "socioeconomico", color: "#e58d62", x: 26, y: 60, desc: "Equipamientos sociales que reducen sobrecargas en las personas cuidadoras.", connects: ["se_vivienda", "s_cuidado", "s_conflictos", "se_biblioteca", "se_suelo", "se_comercio"] },
+      { id: "se_comercio", corto: "Abasto\ndiario", name: "Abastecimiento e\nintercambio diario", icon: "fa-cart-shopping", systemId: "socioeconomico", color: "#e58d62", x: 24, y: 46, desc: "Corabastos y locales de proximidad; nodos de intercambio y abastecimiento.", connects: ["se_vivienda", "h_infiltra", "se_suelo", "f_edificios", "se_equipamientos"] },
+
+      // --- PERÍMETRO EXTERIOR (12 dinámicas de borde) ---
+      { id: "h_lluvia", corto: "Lluvia\nextrema", name: "Recarga por lluvia\ny eventos extremos", icon: "fa-cloud-showers-heavy", systemId: "hidrica", color: "#56b8d4", x: 16, y: 18, desc: "Aporte pluvial constante y eventos de lluvia extrema que recargan la cuenca.", connects: ["h_infiltra", "h_escorre", "h_desborde"] },
+      { id: "h_desborde", corto: "Desborde\ny arrastre", name: "Desborde y arrastre\nde sedimentos", icon: "fa-triangle-exclamation", systemId: "hidrica", color: "#56b8d4", x: 12, y: 34, desc: "Riesgo de inundación y acumulación de sedimentos en eventos de lluvia.", connects: ["h_lluvia", "h_infiltra", "h_humedales", "se_suelo"] },
+      { id: "b_aves_mig", corto: "Migración\nde aves", name: "Migración estacional\nde aves", icon: "fa-dove", systemId: "biotica", color: "#68d391", x: 68, y: 14, desc: "Tingua azul, playeritos y especies boreales que usan el humedal como escala.", connects: ["b_insectos", "b_flora", "b_refugio", "h_escorre"] },
+      { id: "b_refugio", corto: "Refugio\ny nidos", name: "Refugio y anidación\nde la fauna", icon: "fa-shield-heart", systemId: "biotica", color: "#68d391", x: 82, y: 18, desc: "Zonas de anidación y amortiguamiento frente a las perturbaciones urbanas.", connects: ["b_aves_mig", "b_aves_res", "f_cerramientos"] },
+      { id: "f_cerramientos", corto: "Corte\ndel paso", name: "Fragmentación por\ncerramientos", icon: "fa-border-all", systemId: "fisico", color: "#b8c0c8", x: 90, y: 28, desc: "Muros y rejas perimetrales que fragmentan el hábitat pero protegen el cuerpo hídrico.", connects: ["b_refugio", "b_aves_res", "f_edificios"] },
+      { id: "f_vias", corto: "Carga\nen la vía", name: "Carga y vibración\nde la malla vial", icon: "fa-road", systemId: "fisico", color: "#b8c0c8", x: 92, y: 50, desc: "Av. Ciudad de Cali y Av. Américas; soporte de transporte y fuente de vibración.", connects: ["f_edificios", "f_andenes", "m_transporte", "f_impermeable"] },
+      { id: "m_estaciones", corto: "Transbordo\nen portales", name: "Transbordo en\nestaciones y portales", icon: "fa-door-open", systemId: "movilidad", color: "#f1cf5b", x: 88, y: 76, desc: "Portal Américas y Estación Banderas; puntos neurálgicos de transbordo masivo.", connects: ["m_transporte", "m_congestion", "m_peatonal"] },
+      { id: "m_congestion", corto: "Congestión\nvial", name: "Congestión y\ntiempos de viaje", icon: "fa-clock", systemId: "movilidad", color: "#f1cf5b", x: 76, y: 88, desc: "Fricción espacial y demoras que impactan la calidad de vida y el tiempo de cuidado.", connects: ["m_transporte", "m_estaciones", "m_ciclorrutas"] },
+      { id: "s_org_amb", corto: "Grupos\nde base", name: "Organización\nambiental de base", icon: "fa-hands-holding-circle", systemId: "social", color: "#ee9a4b", x: 32, y: 88, desc: "Colectivos ecológicos de base que defienden la conservación de los humedales.", connects: ["s_conflictos", "s_pedagogia", "s_cuidado", "s_vecinos"] },
+      { id: "s_pedagogia", corto: "Ciencia\nciudadana", name: "Aprendizaje y\nciencia ciudadana", icon: "fa-graduation-cap", systemId: "social", color: "#ee9a4b", x: 18, y: 86, desc: "Recorridos escolares, avistamiento de aves y talleres de ciencia ciudadana.", connects: ["s_org_amb", "se_biblioteca", "s_conflictos"] },
+      { id: "se_biblioteca", corto: "Vida en la\nbiblioteca", name: "Vida cultural en\nla biblioteca", icon: "fa-book-open", systemId: "socioeconomico", color: "#e58d62", x: 10, y: 72, desc: "Centro cultural y educativo de escala metropolitana contiguo al humedal.", connects: ["se_equipamientos", "s_pedagogia", "se_suelo"] },
+      { id: "se_suelo", corto: "Valor\ndel suelo", name: "Presión y valorización\ndel suelo", icon: "fa-chart-line", systemId: "socioeconomico", color: "#e58d62", x: 8, y: 52, desc: "Valorización del suelo y tensiones entre desarrollo urbano y preservación ecológica.", connects: ["se_equipamientos", "se_comercio", "se_biblioteca", "h_desborde"] },
+
+      /* --- Dos dinámicas más por sistema: solo aparecen en la red completa --- */
+      { id: "h_calidad", corto: "Calidad\ndel agua", name: "Calidad del agua\ny vertimientos", icon: "fa-flask-vial", systemId: "hidrica", color: "#56b8d4", x: 48, y: 52, soloRedCompleta: true, desc: "Cargas de aguas residuales y basuras que llegan al cuerpo de agua y cambian su química.", connects: ["h_escorre", "h_humedales", "se_comercio", "f_residuos"] },
+      { id: "h_evapo", corto: "Vapor\ny calor", name: "Evaporación y\nregulación térmica", icon: "fa-temperature-half", systemId: "hidrica", color: "#56b8d4", x: 28, y: 16, soloRedCompleta: true, desc: "El espejo de agua y la vegetación bajan la temperatura del aire del sector.", connects: ["h_humedales", "b_flora", "f_impermeable", "h_lluvia"] },
+      { id: "b_semillas", corto: "Semillas\nque viajan", name: "Dispersión de\nsemillas", icon: "fa-seedling", systemId: "biotica", color: "#68d391", x: 34, y: 6, soloRedCompleta: true, desc: "Aves e insectos mueven semillas y con eso se rehace la cobertura vegetal.", connects: ["b_flora", "b_aves_res", "b_aves_mig", "b_insectos"] },
+      { id: "b_invasoras", corto: "Especies\ninvasoras", name: "Avance de especies\ninvasoras", icon: "fa-bugs", systemId: "biotica", color: "#68d391", x: 44, y: 12, soloRedCompleta: true, desc: "Retamo, pasto kikuyo y fauna doméstica que desplazan a las especies propias del humedal.", connects: ["b_flora", "h_humedales", "b_refugio", "f_cerramientos"] },
+      { id: "f_residuos", corto: "Residuos\nsin recoger", name: "Acumulación de\nresiduos", icon: "fa-trash-can", systemId: "fisico", color: "#b8c0c8", x: 48, y: 30, soloRedCompleta: true, desc: "Escombros y basura en bordes y canales, que taponan el drenaje y atraen fauna oportunista.", connects: ["f_andenes", "s_conflictos", "h_escorre", "h_calidad"] },
+      { id: "f_ruido", corto: "Ruido\nurbano", name: "Ruido urbano\ny su propagación", icon: "fa-volume-high", systemId: "fisico", color: "#b8c0c8", x: 58, y: 8, soloRedCompleta: true, desc: "El ruido del tráfico se propaga hasta el humedal y enmascara las señales de las aves.", connects: ["f_vias", "m_transporte", "b_aves_res", "m_congestion"] },
+      { id: "m_carga", corto: "Carga\ny abasto", name: "Circulación de\ncarga y abasto", icon: "fa-truck", systemId: "movilidad", color: "#f1cf5b", x: 78, y: 7, soloRedCompleta: true, desc: "Camiones que abastecen Corabastos y el comercio local, con horarios y rutas propias.", connects: ["m_congestion", "se_comercio", "f_vias", "m_transporte"] },
+      { id: "m_informal", corto: "Transporte\ninformal", name: "Transporte informal\ny de proximidad", icon: "fa-motorcycle", systemId: "movilidad", color: "#f1cf5b", x: 84, y: 59, soloRedCompleta: true, desc: "Bicitaxis y moto-transporte que cubren el último tramo donde no llega el sistema.", connects: ["m_peatonal", "m_estaciones", "s_vecinos", "m_ciclorrutas"] },
+      { id: "s_memoria", corto: "Memoria\ndel lugar", name: "Memoria y relato\ndel humedal", icon: "fa-book-journal-whills", systemId: "social", color: "#ee9a4b", x: 88, y: 88, soloRedCompleta: true, desc: "Lo que los vecinos recuerdan y cuentan del humedal sostiene su defensa.", connects: ["s_org_amb", "s_pedagogia", "se_biblioteca", "s_vecinos"] },
+      { id: "s_seguridad", corto: "Sentirse\nseguro", name: "Percepción de\nseguridad", icon: "fa-shield-halved", systemId: "social", color: "#ee9a4b", x: 56, y: 88, soloRedCompleta: true, desc: "Sentirse o no seguro decide quién usa el borde del humedal y a qué horas.", connects: ["s_vecinos", "f_andenes", "m_peatonal", "s_conflictos"] },
+      { id: "se_informal", corto: "Economía\npopular", name: "Economía popular\ny rebusque", icon: "fa-store", systemId: "socioeconomico", color: "#e58d62", x: 6, y: 83, soloRedCompleta: true, desc: "Ventas ambulantes y oficios de calle que dependen del flujo de gente, no de un local.", connects: ["se_comercio", "s_vecinos", "m_informal", "se_equipamientos"] },
+      { id: "se_alquiler", corto: "Arriendo\ny salida", name: "Arriendo y\ndesplazamiento", icon: "fa-file-signature", systemId: "socioeconomico", color: "#e58d62", x: 24, y: 75, soloRedCompleta: true, desc: "La subida del arriendo empuja a los hogares a irse del sector.", connects: ["se_vivienda", "se_suelo", "s_conflictos", "se_informal"] },
+
+      /* --- 3 subsistemas nuevos (9 dinámicas), solo en la red completa —
+         se agregan nodos y sus propias conexiones hacia el resto de la red
+         sin tocar ninguna conexión existente. Colores iguales a los del
+         Módulo 08 para que el mismo subsistema se lea igual en toda la app. --- */
+      { id: "c_jardines", corto: "Jardines\ninfantiles", name: "Jardines\ninfantiles", icon: "fa-child-reaching", systemId: "cuidado", color: "#ee9a4b", x: 6.0, y: 62.0, soloRedCompleta: true, desc: "Primera infancia y cuidado diario en los barrios del entorno del humedal.", connects: ["s_cuidado", "se_vivienda", "c_salud_barrial"] },
+      { id: "c_salud_barrial", corto: "Salud\nbarrial", name: "Puestos de salud\nbarrial", icon: "fa-house-medical", systemId: "cuidado", color: "#ee9a4b", x: 4.0, y: 41.0, soloRedCompleta: true, desc: "Atención primaria de proximidad para las comunidades vecinas.", connects: ["s_vecinos", "se_equipamientos", "c_jardines", "c_espacio_publico"] },
+      { id: "c_espacio_publico", corto: "Plazas\ny andenes", name: "Espacio público\ny plazoletas", icon: "fa-tree-city", systemId: "cuidado", color: "#ee9a4b", x: 13.7, y: 92.5, soloRedCompleta: true, desc: "Andenes, plazoletas y zonas de encuentro que sostienen la vida cotidiana.", connects: ["m_peatonal", "f_andenes", "c_salud_barrial"] },
+
+      { id: "p_memoria_local", corto: "Memoria\ndel barrio", name: "Memoria\ndel barrio", icon: "fa-clock-rotate-left", systemId: "patrimonio", color: "#e58d62", x: 4.0, y: 10.0, soloRedCompleta: true, desc: "Relatos y archivos comunitarios sobre la transformación del territorio.", connects: ["s_org_amb", "s_pedagogia", "p_tradiciones"] },
+      { id: "p_patrimonio_construido", corto: "Patrimonio\nconstruido", name: "Patrimonio\nconstruido", icon: "fa-landmark", systemId: "patrimonio", color: "#e58d62", x: 96.0, y: 10.0, soloRedCompleta: true, desc: "Edificaciones y trazados con valor histórico o simbólico para la comunidad.", connects: ["f_edificios", "f_cerramientos", "p_memoria_local"] },
+      { id: "p_tradiciones", corto: "Saberes\nlocales", name: "Tradiciones y\nsaberes locales", icon: "fa-masks-theater", systemId: "patrimonio", color: "#e58d62", x: 50.0, y: 98.0, soloRedCompleta: true, desc: "Prácticas culturales y saberes ambientales transmitidos entre generaciones.", connects: ["s_pedagogia", "b_flora", "p_patrimonio_construido"] },
+
+      { id: "i_alcaldia_local", corto: "Alcaldía\nlocal", name: "Alcaldía\nlocal", icon: "fa-building-columns", systemId: "institucional", color: "#b8c0c8", x: 96.0, y: 62.0, soloRedCompleta: true, desc: "Gestión administrativa y presupuestal del territorio a escala local.", connects: ["s_conflictos", "se_suelo", "i_curaduria"] },
+      { id: "i_curaduria", corto: "Curaduría\ny norma", name: "Curaduría y\nnormativa", icon: "fa-stamp", systemId: "institucional", color: "#b8c0c8", x: 98.0, y: 48.0, soloRedCompleta: true, desc: "Licencias y normas urbanísticas que regulan lo que se construye.", connects: ["f_edificios", "se_suelo", "i_alcaldia_local", "i_control_ambiental"] },
+      { id: "i_control_ambiental", corto: "Control\nambiental", name: "Control y vigilancia\nambiental", icon: "fa-clipboard-check", systemId: "institucional", color: "#b8c0c8", x: 88.0, y: 97.0, soloRedCompleta: true, desc: "Inspección y seguimiento del cumplimiento de las normas ambientales.", connects: ["h_desborde", "b_refugio", "i_curaduria"] }
+    ];
+
+        // Mapeo por sistema para las explosiones individuales al hacer clic en cada bolita
+    const URBAN_DYNAMICS_DATA = {
+      hidrica: { id: "hidrica", name: "Dinámica hídrica", color: "#56b8d4", icon: "fa-droplet", elements: UNIFIED_URBAN_ELEMENTS.filter(e => e.systemId === "hidrica" && !e.soloRedCompleta) },
+      biotica: { id: "biotica", name: "Dinámica biótica", color: "#68d391", icon: "fa-seedling", elements: UNIFIED_URBAN_ELEMENTS.filter(e => e.systemId === "biotica" && !e.soloRedCompleta) },
+      fisico: { id: "fisico", name: "Sistema físico-urbano", color: "#b8c0c8", icon: "fa-building", elements: UNIFIED_URBAN_ELEMENTS.filter(e => e.systemId === "fisico" && !e.soloRedCompleta) },
+      movilidad: { id: "movilidad", name: "Sistema de movilidad", color: "#f1cf5b", icon: "fa-route", elements: UNIFIED_URBAN_ELEMENTS.filter(e => e.systemId === "movilidad" && !e.soloRedCompleta) },
+      social: { id: "social", name: "Sistema social-comunitario", color: "#ee9a4b", icon: "fa-people-group", elements: UNIFIED_URBAN_ELEMENTS.filter(e => e.systemId === "social" && !e.soloRedCompleta) },
+      socioeconomico: { id: "socioeconomico", name: "Sistema socioeconómico y de ocupación", color: "#e58d62", icon: "fa-house-chimney", elements: UNIFIED_URBAN_ELEMENTS.filter(e => e.systemId === "socioeconomico" && !e.soloRedCompleta) }
+    };
+
+    function renderFullSubsystemsNetworkInPlace(target) {
+      if (!target) return;
+      target.dataset.revealState = "complete";
+      target.classList.add("network-active");
+
+      const elementPosMap = {};
+      UNIFIED_URBAN_ELEMENTS.forEach((el) => { elementPosMap[el.id] = el; });
+
+      // La red completa se dibuja más abierta que la vista de subsistemas:
+      // son las mismas posiciones, estiradas hasta los bordes del tablero,
+      // para que las bolitas queden separadas y no se vean espichadas.
+      const POS = (function repartoAbierto() {
+        const xs = UNIFIED_URBAN_ELEMENTS.map((e) => e.x);
+        const ys = UNIFIED_URBAN_ELEMENTS.map((e) => e.y);
+        const remapear = (v, min, max, destMin, destMax) =>
+          max - min < 0.001 ? (destMin + destMax) / 2 : destMin + ((v - min) / (max - min)) * (destMax - destMin);
+        const minX = Math.min(...xs), maxX = Math.max(...xs);
+        const minY = Math.min(...ys), maxY = Math.max(...ys);
+        const mapa = {};
+        UNIFIED_URBAN_ELEMENTS.forEach((el) => {
+          mapa[el.id] = {
+            x: remapear(el.x, minX, maxX, 5, 95),
+            y: remapear(el.y, minY, maxY, 5, 95)
+          };
         });
-        for (let i = 0; i < nodesHere.length; i++) {
-          for (let j = i + 1; j < nodesHere.length; j++) {
-            svgParts.push(`<line x1="${nodesHere[i].x}" y1="${nodesHere[i].y}" x2="${nodesHere[j].x}" y2="${nodesHere[j].y}" class="combined-sat-line" style="--node-color:${cl.color}"/>`);
-          }
-        }
-        allDynamicNodes.push(...nodesHere);
+        return mapa;
+      })();
+      const posDe = (el) => POS[el.id] || { x: el.x, y: el.y };
+
+      // Generar líneas de conexión nítidas, limpias y visibles (SIN PUNTOS EN MOVIMIENTO)
+      let unifiedLinesHtml = "";
+      const drawnPairs = new Set();
+      // Ritmo de entrada: las bolitas salen de a una (PASO_NODOS) y solo
+      // cuando terminan empiezan a aparecer las relaciones (TURNO_ENLACES).
+      const PASO_NODOS = 42;
+      const TURNO_ENLACES = UNIFIED_URBAN_ELEMENTS.length * PASO_NODOS + 620;
+
+      UNIFIED_URBAN_ELEMENTS.forEach((el) => {
+        (el.connects || []).forEach((targetId) => {
+          const targetEl = elementPosMap[targetId];
+          if (!targetEl) return;
+          const pairKey = [el.id, targetId].sort().join("---");
+          if (drawnPairs.has(pairKey)) return;
+          drawnPairs.add(pairKey);
+
+          const cruzada = el.systemId !== targetEl.systemId;
+          // Cada relación aparece sola, una tras otra, después de que hayan
+          // salido todas las bolitas: --link-delay es su turno. La línea es
+          // continua (antes se dibujaba con un trazo progresivo que en
+          // pantalla se veía punteado).
+          const pa = posDe(el), pb = posDe(targetEl);
+          const turno = TURNO_ENLACES + drawnPairs.size * 24;
+          unifiedLinesHtml += `
+            <g class="full-unified-group" data-source="${el.id}" data-target="${targetId}">
+              <line x1="${pa.x.toFixed(2)}" y1="${pa.y.toFixed(2)}" x2="${pb.x.toFixed(2)}" y2="${pb.y.toFixed(2)}" class="full-unified-link${cruzada ? " is-cross" : ""}" style="--link-color:${el.color};--link-delay:${turno}ms"/>
+            </g>
+          `;
+        });
       });
-      // conexiones cruzadas por palabras en comun entre dinámicas de
-      // DISTINTOS subsistemas (heuristica simple, no exhaustiva)
-      const KEYWORDS = [
-        ["desplazamiento", "accesos", "rutas", "recorridos"],
-        ["escorrentía", "infiltración", "agua", "sedimentación"],
-        ["vivienda", "ocupación", "uso del suelo", "construcción", "predios"],
-        ["hábitats", "colonización", "vegetación"],
-        ["conflictos", "presión", "apropiación"],
-      ];
-      const crossLines = [];
-      for (let i = 0; i < allDynamicNodes.length; i++) {
-        for (let j = i + 1; j < allDynamicNodes.length; j++) {
-          const a = allDynamicNodes[i], b = allDynamicNodes[j];
-          if (a.sysId === b.sysId) continue;
-          const shared = KEYWORDS.some((group) => group.some((k) => a.label.toLowerCase().includes(k)) && group.some((k) => b.label.toLowerCase().includes(k)));
-          if (shared) crossLines.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="combined-cross-line"/>`);
-        }
-      }
-      svgParts.push(...crossLines);
-      const nodeR2 = 26;
-      const dynCircles = allDynamicNodes.map((n) => {
-        const dx = (n.originX - n.x).toFixed(1), dy = (n.originY - n.y).toFixed(1);
-        // El origen de transformación se fija con las coordenadas EXACTAS
-        // de este nodo (no con "fill-box: center", que no es confiable en
-        // todos los navegadores cuando el <g> contiene un foreignObject —
-        // eso podía hacer que todas las bolitas colapsaran en un mismo
-        // punto y solo se viera una).
-        return `<g class="combined-node combined-sat-node" style="--node-color:${n.color};--node-i:${nodeIndex++};--dx:${dx}px;--dy:${dy}px;transform-origin:${n.x}px ${n.y}px;">` +
-          `<circle cx="${n.x}" cy="${n.y}" r="${nodeR2}"/>` +
-          `<foreignObject x="${n.x - nodeR2 + 3}" y="${n.y - nodeR2 + 3}" width="${(nodeR2 - 3) * 2}" height="${(nodeR2 - 3) * 2}"><div xmlns="http://www.w3.org/1999/xhtml" class="combined-sat-label">${n.label}</div></foreignObject>` +
-          `</g>`;
+
+      // Cuántas relaciones vigentes tiene cada dinámica: las más conectadas se
+      // dibujan más grandes, para que se vea de un golpe cuáles sostienen la red.
+      const gradoElemento = {};
+      UNIFIED_URBAN_ELEMENTS.forEach((el) => { gradoElemento[el.id] = 0; });
+      drawnPairs.forEach((par) => {
+        const [a, b] = par.split("---");
+        if (gradoElemento[a] !== undefined) gradoElemento[a]++;
+        if (gradoElemento[b] !== undefined) gradoElemento[b]++;
+      });
+      const gradoMax = Math.max(1, ...Object.values(gradoElemento));
+      const gradoMin = Math.min(...Object.values(gradoElemento));
+
+      // La red se arma desde sus nodos más fuertes: primero las dinámicas con
+      // más relaciones y después las de los bordes.
+      const ordenAparicion = {};
+      UNIFIED_URBAN_ELEMENTS.slice()
+        .sort((a, b) => (gradoElemento[b.id] - gradoElemento[a.id]) || a.id.localeCompare(b.id))
+        .forEach((el, i) => { ordenAparicion[el.id] = i; });
+
+      // Render de las dinámicas de la red completa
+      const nodesHtml = UNIFIED_URBAN_ELEMENTS.map((el) => {
+        // en la bola va el nombre corto; el completo sigue en la ficha y en
+        // el tooltip, para que quepa dentro del círculo sin salirse
+        const formattedName = (el.corto || el.name).replace(/\n/g, "<br>");
+        const parentCenter = PARENT_SYSTEM_CENTERS[el.systemId] || { x: 50, y: 48 };
+        const pos = posDe(el);
+        // El tamaño va por número de relaciones, con diferencia visible: la
+        // más suelta queda en 0.86 y la que sostiene la red en 1.34.
+        const t = gradoMax > gradoMin ? (gradoElemento[el.id] - gradoMin) / (gradoMax - gradoMin) : 0;
+        const escala = (0.86 + t * 0.48).toFixed(3);
+        return `
+          <button type="button" class="full-dynamic-node" data-elem-id="${el.id}" data-sys-id="${el.systemId}"
+            style="--node-x:${pos.x.toFixed(2)}%;--node-y:${pos.y.toFixed(2)}%;--origin-x:${parentCenter.x}%;--origin-y:${parentCenter.y}%;--node-color:${el.color};--node-delay:${ordenAparicion[el.id] * PASO_NODOS}ms;--node-scale:${escala};"
+            title="${el.name.replace(/\n/g, ' ')} · ${gradoElemento[el.id]} relaciones">
+            <i class="fa-solid ${el.icon} full-node-icon"></i>
+            <span class="full-node-label" lang="es">${formattedName}</span>
+          </button>
+        `;
       }).join("");
-      overlay.innerHTML = `
-        <div class="combined-network-panel">
-          <div class="combined-network-heading">
-            <strong><i class="fa-solid fa-diagram-project"></i> Red completa: ciclos y dinámicas de los 6 subsistemas</strong>
-            <button type="button" class="subsystem-panel-close" id="closeCombinedNetworkBtn" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-          <div class="combined-network-scroll">
-            <svg viewBox="0 0 ${W} ${H}" class="combined-network-svg">
-              <g class="combined-lines">${svgParts.join("")}</g>
-              <g class="combined-nodes">${dynCircles}</g>
-            </svg>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-      // Explosión: todos los nodos arrancan encogidos en el centro, y en
-      // el siguiente frame "explotan" hacia su posición final, con un
-      // pequeño retraso por nodo para que se vea como una expansión.
-      requestAnimationFrame(() => overlay.classList.add("exploded"));
-      const close = () => overlay.remove();
-      overlay.querySelector("#closeCombinedNetworkBtn")?.addEventListener("click", close);
-      overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
+
+      // Botón flotante para regresar a 6 sistemas (elegante en la esquina superior)
+      const centerToggleHtml = `
+        <button type="button" id="mapNetworkCenterHub" class="map-network-back-pill is-expanded-mode" aria-label="Volver a los 6 subsistemas">
+          <i class="fa-solid fa-arrow-rotate-left"></i>
+          <span>Volver a 6 subsistemas</span>
+        </button>
+      `;
+
+      target.innerHTML = `
+        <div class="map-network-stage systems-network is-full-dynamics-active">
+          ${centerToggleHtml}
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <g class="full-unified-layer">${unifiedLinesHtml}</g>
+          </svg>
+          ${nodesHtml}
+          <div id="fullDynamicsDetailCard" class="full-dynamics-detail-card" style="display:none;"></div>
+        </div>
+      `;
+
+      // El nombre tiene que caber DENTRO de la bola: se mide el texto ya
+      // dibujado y se le baja la letra hasta que entre en el cuadrado que
+      // cabe dentro del círculo. Si aun así no entra, el nombre le gana el
+      // puesto al icono. Se mide con offsetWidth/scrollHeight (medidas de
+      // maquetación) para que la animación de entrada, que escala la bola,
+      // no falsee la medida.
+      const ajustarRotulosDentroDeLaBola = () => {
+        target.querySelectorAll(".full-dynamic-node").forEach((btn) => {
+          const rotulo = btn.querySelector(".full-node-label");
+          if (!rotulo || !btn.offsetWidth) return;
+          if (getComputedStyle(rotulo).display === "none") return;   // en teléfono va solo el icono
+          const icono = btn.querySelector(".full-node-icon");
+          if (icono) icono.style.display = "";
+          const r = btn.offsetWidth / 2 - 2.5;                        // radio útil, sin el borde
+          const altoIcono = () => (icono && getComputedStyle(icono).display !== "none" ? icono.offsetHeight + 1 : 0);
+          // Dentro de un círculo el texto puede ser más ancho de lo que
+          // parece: cuanto más bajo el bloque de texto, más ancho cabe.
+          // anchoQueCabe() es el ancho máximo a la altura que ocupa el texto.
+          const anchoQueCabe = (alto) => 2 * Math.sqrt(Math.max(1, r * r - (alto / 2) * (alto / 2))) - 2;
+          const cabe = () => {
+            for (let k = 0; k < 3; k++) {
+              const total = altoIcono() + rotulo.scrollHeight;
+              if (total > 2 * r - 1) return false;
+              rotulo.style.maxWidth = anchoQueCabe(total).toFixed(1) + "px";
+            }
+            const total = altoIcono() + rotulo.scrollHeight;
+            return total <= 2 * r - 1 && rotulo.scrollWidth <= parseFloat(rotulo.style.maxWidth) + 0.5;
+          };
+          rotulo.style.lineHeight = "1.05";
+          let f = parseFloat(getComputedStyle(rotulo).fontSize) || 8;
+          let vueltas = 0;
+          while (!cabe() && f > 6.6 && vueltas++ < 30) {
+            f -= 0.2;
+            rotulo.style.setProperty("font-size", f.toFixed(2) + "px", "important");
+          }
+          if (!cabe() && icono) icono.style.display = "none";         // manda el nombre
+          vueltas = 0;
+          while (!cabe() && f > 5.4 && vueltas++ < 30) {
+            f -= 0.2;
+            rotulo.style.setProperty("font-size", f.toFixed(2) + "px", "important");
+          }
+        });
+      };
+      ajustarRotulosDentroDeLaBola();
+      if (document.fonts && document.fonts.ready) {
+        // con la tipografía ya cargada las medidas cambian: se repite el ajuste
+        document.fonts.ready.then(ajustarRotulosDentroDeLaBola).catch(() => {});
+      }
+
+      // Listener para volver a 6 sistemas con transición suave
+      const backToOverview = (e) => {
+        e.stopPropagation();
+        try { DINAMICA_SOUND.play("expansion"); } catch (err) {}
+        const stageEl = target.querySelector(".map-network-stage");
+        if (stageEl) {
+          stageEl.classList.add("is-stage-imploding");
+          window.setTimeout(() => {
+            renderMapNetwork("systems", true, target, false);
+          }, 320);
+        } else {
+          renderMapNetwork("systems", true, target, false);
+        }
+      };
+      target.querySelector("#mapNetworkCenterHub")?.addEventListener("click", backToOverview);
+
+      // Interactividad de los 30 nodos
+      // ---------- Física ligera: arrastrar un nodo mueve a sus conectados ----------
+      // Muelles a lo largo de cada conexión (con la distancia inicial como
+      // reposo) + un muelle suave a la posición original, para que la red se
+      // deforme al tirar de un nodo y luego se reacomode sola.
+      (function iniciarFisica() {
+        const escenario = target.querySelector(".map-network-stage");
+        if (!escenario) return;
+        const nodos = UNIFIED_URBAN_ELEMENTS.map((el) => ({
+          id: el.id, x: posDe(el).x, y: posDe(el).y, hx: posDe(el).x, hy: posDe(el).y, vx: 0, vy: 0,
+          dom: target.querySelector(`.full-dynamic-node[data-elem-id="${el.id}"]`)
+        }));
+        const porId = {}; nodos.forEach((n) => { porId[n.id] = n; });
+        const enlaces = [];
+        target.querySelectorAll(".full-unified-group").forEach((g) => {
+          const a = porId[g.dataset.source], b = porId[g.dataset.target];
+          const linea = g.querySelector("line");
+          if (!a || !b || !linea) return;
+          enlaces.push({ a, b, linea });
+        });
+        let arrastrado = null, raf = 0, corriendo = false;
+        // el lienzo no es cuadrado: se corrige la proporción para que los
+        // muelles no se vean estirados en un eje
+        const proporcion = () => { const r = escenario.getBoundingClientRect(); return (r.width / Math.max(1, r.height)) || 1; };
+
+        function pintar() {
+          nodos.forEach((n) => {
+            if (!n.dom) return;
+            n.dom.style.setProperty("--node-x", n.x.toFixed(2) + "%");
+            n.dom.style.setProperty("--node-y", n.y.toFixed(2) + "%");
+          });
+          enlaces.forEach((e) => {
+            e.linea.setAttribute("x1", e.a.x.toFixed(2));
+            e.linea.setAttribute("y1", e.a.y.toFixed(2));
+            e.linea.setAttribute("x2", e.b.x.toFixed(2));
+            e.linea.setAttribute("y2", e.b.y.toFixed(2));
+          });
+        }
+        function paso() {
+          const ar = proporcion();
+          const K_ENLACE = 0.055, K_CASA = 0.012, AMORT = 0.9;
+          enlaces.forEach((e) => {
+            const dx = (e.b.x - e.a.x) * ar, dy = e.b.y - e.a.y;
+            const d = Math.hypot(dx, dy) || 0.001;
+            // reposo = la distancia que tenían en el reparto original, medida
+            // en las mismas unidades corregidas por la proporción del lienzo
+            const reposo = Math.hypot((e.b.hx - e.a.hx) * ar, e.b.hy - e.a.hy) || 0.001;
+            const f = K_ENLACE * (d - reposo);
+            const ux = dx / d, uy = dy / d;
+            if (e.a !== arrastrado) { e.a.vx += (ux * f) / ar; e.a.vy += uy * f; }
+            if (e.b !== arrastrado) { e.b.vx -= (ux * f) / ar; e.b.vy -= uy * f; }
+          });
+          let movimiento = 0;
+          nodos.forEach((n) => {
+            if (n === arrastrado) { n.vx = 0; n.vy = 0; return; }
+            n.vx += (n.hx - n.x) * K_CASA;
+            n.vy += (n.hy - n.y) * K_CASA;
+            n.vx *= AMORT; n.vy *= AMORT;
+            n.x = Math.max(3, Math.min(97, n.x + n.vx));
+            n.y = Math.max(4, Math.min(96, n.y + n.vy));
+            movimiento += Math.abs(n.vx) + Math.abs(n.vy);
+          });
+          pintar();
+          if (arrastrado || movimiento > 0.02) { raf = requestAnimationFrame(paso); }
+          else { corriendo = false; }
+        }
+        function arrancar() { if (!corriendo) { corriendo = true; raf = requestAnimationFrame(paso); } }
+
+        nodos.forEach((n) => {
+          if (!n.dom) return;
+          n.dom.addEventListener("pointerdown", (ev) => {
+            ev.preventDefault();
+            arrastrado = n;
+            n.dom.setPointerCapture?.(ev.pointerId);
+            n.dom.classList.add("is-dragging");
+            escenario.classList.add("is-dragging-node");
+            n.movido = 0;
+            arrancar();
+          });
+          n.dom.addEventListener("pointermove", (ev) => {
+            if (arrastrado !== n) return;
+            const r = escenario.getBoundingClientRect();
+            const nx = ((ev.clientX - r.left) / r.width) * 100;
+            const ny = ((ev.clientY - r.top) / r.height) * 100;
+            n.movido = (n.movido || 0) + Math.abs(nx - n.x) + Math.abs(ny - n.y);
+            n.x = Math.max(3, Math.min(97, nx));
+            n.y = Math.max(4, Math.min(96, ny));
+            arrancar();
+          });
+          const soltar = (ev) => {
+            if (arrastrado !== n) return;
+            arrastrado = null;
+            n.dom.releasePointerCapture?.(ev.pointerId);
+            n.dom.classList.remove("is-dragging");
+            escenario.classList.remove("is-dragging-node");
+            // si de verdad se arrastró, se evita que cuente como clic
+            if ((n.movido || 0) > 1.2) { n.dom.dataset.suppressClick = "1"; window.setTimeout(() => { delete n.dom.dataset.suppressClick; }, 60); }
+            arrancar();
+          };
+          n.dom.addEventListener("pointerup", soltar);
+          n.dom.addEventListener("pointercancel", soltar);
+        });
+      })();
+
+      // Pasar el cursor por un nodo enciende solo sus conexiones (sin abrir
+      // la ficha): es la forma de leer la red sin tener que hacer clic.
+      const stageEl = () => target.querySelector(".map-network-stage");
+      target.querySelectorAll(".full-dynamic-node").forEach((btn) => {
+        btn.addEventListener("mouseenter", () => {
+          const stage = stageEl();
+          if (!stage || stage.classList.contains("has-selection")) return;
+          const elemId = btn.dataset.elemId;
+          stage.classList.add("has-hover");
+          target.querySelectorAll(".full-unified-group").forEach((g) => {
+            g.classList.toggle("is-hovered", g.dataset.source === elemId || g.dataset.target === elemId);
+          });
+          const dato = elementPosMap[elemId];
+          target.querySelectorAll(".full-dynamic-node").forEach((n) => {
+            const vecino = dato?.connects?.includes(n.dataset.elemId) || elementPosMap[n.dataset.elemId]?.connects?.includes(elemId);
+            n.classList.toggle("is-near", n === btn || !!vecino);
+          });
+        });
+        btn.addEventListener("mouseleave", () => {
+          const stage = stageEl();
+          if (!stage) return;
+          stage.classList.remove("has-hover");
+          target.querySelectorAll(".full-unified-group").forEach((g) => g.classList.remove("is-hovered"));
+          target.querySelectorAll(".full-dynamic-node").forEach((n) => n.classList.remove("is-near"));
+        });
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (btn.dataset.suppressClick) return;   // venía de arrastrar el nodo
+          const elemId = btn.dataset.elemId;
+          const nodeData = elementPosMap[elemId];
+          if (!nodeData) return;
+
+          try { DINAMICA_SOUND.play(nodeData.systemId); } catch (err) {}
+
+          target.querySelectorAll(".full-dynamic-node").forEach((n) => {
+            n.classList.toggle("is-active", n === btn);
+            const isConnected = nodeData.connects?.includes(n.dataset.elemId) || elementPosMap[n.dataset.elemId]?.connects?.includes(elemId);
+            n.classList.toggle("is-connected", isConnected);
+          });
+
+          target.querySelectorAll(".full-unified-group").forEach((group) => {
+            const s = group.dataset.source, t = group.dataset.target;
+            const matches = s === elemId || t === elemId;
+            group.classList.toggle("is-highlighted", matches);
+          });
+          target.querySelector(".map-network-stage")?.classList.add("has-selection");
+
+          const card = target.querySelector("#fullDynamicsDetailCard");
+          if (card) {
+            const connectsHtml = (nodeData.connects || []).map((cId) => {
+              const cData = elementPosMap[cId];
+              if (!cData) return "";
+              return `<span class="full-detail-tag" data-tag-target="${cId}" style="--tag-color:${cData.color};"><i class="fa-solid ${cData.icon}"></i> ${cData.name.replace(/\n/g, ' ')}</span>`;
+            }).join("");
+
+            card.innerHTML = `
+              <div class="full-detail-head">
+                <div class="full-detail-sys-badge" style="background:${nodeData.color}22;color:${nodeData.color};border:1px solid ${nodeData.color}55;">
+                  <i class="fa-solid ${nodeData.icon}"></i> ${nodeData.systemId.toUpperCase()}
+                </div>
+                <button type="button" class="full-detail-close" aria-label="Cerrar">&times;</button>
+              </div>
+              <h4 class="full-detail-title" style="color:${nodeData.color};"><i class="fa-solid ${nodeData.icon}"></i> ${nodeData.name.replace(/\n/g, ' ')}</h4>
+              <p class="full-detail-desc">${nodeData.desc}</p>
+              <div class="full-detail-connections">
+                <strong><i class="fa-solid fa-arrows-split-up-and-left"></i> Relaciones territoriales directas:</strong>
+                <div class="full-detail-tags-wrap">${connectsHtml}</div>
+              </div>
+            `;
+            card.style.display = "block";
+            card.querySelector(".full-detail-close")?.addEventListener("click", (closeEv) => {
+              closeEv.stopPropagation();
+              card.style.display = "none";
+              target.querySelectorAll(".full-dynamic-node").forEach((n) => n.classList.remove("is-active", "is-connected"));
+              target.querySelectorAll(".full-unified-group").forEach((g) => g.classList.remove("is-highlighted"));
+              target.querySelector(".map-network-stage")?.classList.remove("has-selection");
+            });
+
+            card.querySelectorAll(".full-detail-tag").forEach((tag) => {
+              tag.addEventListener("click", (tagEv) => {
+                tagEv.stopPropagation();
+                const targetBtn = target.querySelector(`.full-dynamic-node[data-elem-id="${tag.dataset.tagTarget}"]`);
+                targetBtn?.click();
+              });
+            });
+          }
+        });
+      });
     }
 
     const buildHidricaDiagramHtml = (row) => {
@@ -3004,7 +3426,7 @@
       }).join("");
       const sectionsHtml = box.sections.map((section) => {
         const items = section.submodelos.map((s) => `<li><i class="fa-solid ${section.icon} kennedy-item-icon" aria-hidden="true"></i>${s}</li>`).join("");
-        return `<div class="kennedy-section"><p class="kennedy-mainline">${section.system} <span class="kennedy-arrow">⟹</span> Sub-modelos:</p><ul>${items}</ul></div>`;
+        return `<div class="kennedy-section"><p class="kennedy-mainline">Sub-modelos:</p><ul>${items}</ul></div>`;
       }).join("");
       // La caja "crece" hacia el lado que sí cabe en la pantalla (a la
       // derecha del nodo si está en la mitad izquierda del mapa, a la
@@ -3012,7 +3434,15 @@
       // recorte contra el borde del contenedor.
       const anchorClass = boxPos[0] > 50 ? "kennedy-anchor-right" : "kennedy-anchor-left";
       const modelIconsHtml = `<div class="kennedy-model-icons"><i class="fa-regular fa-circle-dot"></i><i class="fa-regular fa-compass"></i><i class="fa-regular fa-hourglass-half"></i></div>`;
-      return `<div class="kennedy-info-box ${anchorClass}" id="kennedy-box-${i}" style="left:${boxPos[0]}%;top:${boxPos[1]}%;--node-color:${box.color}"><i class="kennedy-watermark-icon fa-solid ${box.icon}" aria-hidden="true"></i>${modelIconsHtml}<h4 class="kennedy-title-line">${box.title}</h4>${sectionsHtml}</div>${nodesHtml}`;
+      const purposeBtnHtml = box.purpose
+        ? `<button type="button" class="kennedy-purpose-btn" data-purpose-index="${i}"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> Propósito</button>`
+        : "";
+      // El popup NO va dentro de la caja: la caja tiene overflow:hidden y lo
+      // recortaría. Va como hermano, en la misma coordenada, corrido al lado.
+      const purposePopHtml = box.purpose
+        ? `<div class="kennedy-purpose-pop ${anchorClass}" id="kennedy-purpose-${i}" style="left:${boxPos[0]}%;top:${boxPos[1]}%;--node-color:${box.color}" hidden><button type="button" class="kennedy-purpose-close" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button><p class="kennedy-purpose-label">Propósito de Epstein</p><p class="kennedy-purpose-main">${box.purpose.epstein}</p><p class="kennedy-purpose-label">Para qué sirve</p><p class="kennedy-purpose-text">${box.purpose.para}</p></div>`
+        : "";
+      return `<div class="kennedy-info-box ${anchorClass}" id="kennedy-box-${i}" style="left:${boxPos[0]}%;top:${boxPos[1]}%;--node-color:${box.color}"><i class="kennedy-watermark-icon fa-solid ${box.icon}" aria-hidden="true"></i>${modelIconsHtml}<h4 class="kennedy-title-line">${box.title}</h4>${sectionsHtml}${purposeBtnHtml}</div>${purposePopHtml}${nodesHtml}`;
     }).join("");
     const updateTextBoxes = () => {
       const stage = subsystemBubbles?.querySelector(".systems-network svg .map-network-flows");
@@ -3089,6 +3519,10 @@
       const centerHubHtml = (systems && isPlainView && !hideAllSystemBubbles)
         ? `<button type="button" id="mapNetworkCenterHub" class="map-network-center-hub" aria-label="Explotar los 6 subsistemas y ver la red completa"><i class="fa-solid fa-burst"></i><span>Ver red<br>completa</span></button>`
         : "";
+      // El botón fijo abajo a la izquierda hace lo mismo que el del centro
+      // (queda como una segunda forma de activarlo); solo se muestra junto
+      // con las 6 bolas de sistemas, no mientras están las 30 dinámicas.
+      
       if (hideAllSystemBubbles) declutteredPositions = computeDeclutteredPositions();
       const kennedyBoxesHtml = hideAllSystemBubbles ? buildPhenomenaHtml() + buildTextBoxesHtml() : "";
       const relationPairs = hideAllSystemBubbles ? [] : (systems
@@ -3154,18 +3588,16 @@
       if (hideAllSystemBubbles) requestAnimationFrame(() => updateTextBoxes());
       const openFullNetwork = (event) => {
         event?.stopPropagation();
-        // Secuencia: 1) se esconden las líneas que conectan las 6 bolas,
-        // 2) las 6 bolas explotan, 3) se reemplaza el panel por las 30
-        // dinámicas (que a su vez tienen su propia mini-secuencia interna:
-        // nacen pegadas al punto de su sistema y luego se reacomodan).
-        const stageEl = target.querySelector(".map-network-stage");
-        stageEl?.querySelectorAll(".map-network-flows, .map-network-bonds").forEach((g) => g.classList.add("fading-out"));
-        window.setTimeout(() => {
-          stageEl?.classList.add("center-hub-exploding");
+        try { DINAMICA_SOUND.play("expansion"); } catch (err) {}
+        const stage = target.querySelector(".map-network-stage");
+        if (stage) {
+          stage.classList.add("is-stage-fading-out");
           window.setTimeout(() => {
             renderFullSubsystemsNetworkInPlace(target);
-          }, 560);
-        }, 320);
+          }, 320);
+        } else {
+          renderFullSubsystemsNetworkInPlace(target);
+        }
       };
       window.__openFullSubsystemsNetwork = openFullNetwork;
       target.querySelector("#mapNetworkCenterHub")?.addEventListener("click", openFullNetwork);
@@ -3182,7 +3614,7 @@
         // hizo clic, sin abrir ningún modal.
         target.querySelectorAll(".bubble-explode-satellite").forEach((n) => n.remove());
         try {
-          const items = row.dynamics || row.components;
+          const items = row.dynamics || row.components || (row.parts ? row.parts.split(/\s*\+\s*|\s*,\s*/) : null);
           if (items && items.length) {
             const stageRect = target.getBoundingClientRect();
             const btnRect = button.getBoundingClientRect();
@@ -3191,8 +3623,11 @@
             const satR = Math.max(70, btnRect.width * 1.3);
             const satHalf = 39; // mitad del tamaño de cada bolita (78px), para no dejar que se corte en el borde
             const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
-            items.forEach((label, i) => {
-              const angle = (i / items.length) * Math.PI * 2 - Math.PI / 2;
+            const sysKey = ["hidrica", "biotica", "fisico", "movilidad", "social", "socioeconomico"][Number(button.dataset.mapNetworkIndex)];
+            const dynSys = sysKey && URBAN_DYNAMICS_DATA[sysKey];
+            const elemList = dynSys ? dynSys.elements : (items || []).map(text => ({ name: text, icon: "fa-circle-dot", desc: text }));
+            elemList.forEach((el, i) => {
+              const angle = (i / elemList.length) * Math.PI * 2 - Math.PI / 2;
               const finalX = clamp(originX + satR * Math.cos(angle), satHalf, stageRect.width - satHalf);
               const finalY = clamp(originY + satR * Math.sin(angle), satHalf, stageRect.height - satHalf);
               const sat = document.createElement("div");
@@ -3203,7 +3638,12 @@
               sat.style.setProperty("--final-x", `${finalX}px`);
               sat.style.setProperty("--final-y", `${finalY}px`);
               sat.style.setProperty("--explode-delay", `${i * 55}ms`);
-              sat.textContent = label;
+              sat.innerHTML = `<i class="fa-solid ${el.icon || 'fa-circle-dot'}"></i><span>${(el.name || el).replace(/\n/g, ' ')}</span>`;
+              sat.title = el.desc || (el.name || el);
+              sat.addEventListener("click", (satEv) => {
+                satEv.stopPropagation();
+                DINAMICA_SOUND.play(sysKey || "hidrica");
+              });
               target.appendChild(sat);
             });
             requestAnimationFrame(() => {
@@ -3266,7 +3706,9 @@
           purpose.style.setProperty("--bubble-color", color);
           const forresterBtnHtml = !systems ? `<button type="button" class="forrester-open-btn" id="openForresterBtn"><i class="fa-solid fa-diagram-project"></i> Ver diagrama de Forrester</button>` : "";
           const purposeHtml = row.purpose ? `<p class="panel-scope-label">PROPÓSITO</p><p class="panel-specific-reading">${row.purpose}</p>` : "";
-          const systemTypeHtml = row.category ? `<p class="panel-scope-label">TIPO DE SISTEMA</p><p class="panel-specific-reading"><b>${row.category}</b></p><p class="panel-scope-label">¿LAS PARTES TIENEN PROPÓSITO?</p><p class="panel-specific-reading"><b>${row.partsPurpose}</b></p><p class="panel-scope-label">¿EL TODO TIENE PROPÓSITO?</p><p class="panel-specific-reading"><b>${row.totalPurpose}</b></p>` : "";
+          const partsPurposeHtml = row.partsPurpose ? `<p class="panel-scope-label">¿LAS PARTES TIENEN PROPÓSITO?</p><p class="panel-specific-reading"><b>${row.partsPurpose}</b></p>` : "";
+          const totalPurposeHtml = row.totalPurpose ? `<p class="panel-scope-label">¿EL TODO TIENE PROPÓSITO?</p><p class="panel-specific-reading"><b>${row.totalPurpose}</b></p>` : "";
+          const systemTypeHtml = row.category ? `<p class="panel-scope-label">TIPO DE SISTEMA</p><p class="panel-specific-reading"><b>${row.category}</b></p>${partsPurposeHtml}${totalPurposeHtml}` : "";
           purpose.innerHTML = `<div class="subsystem-panel-heading"><strong><i class="fa-solid fa-arrows-rotate"></i> ${label(row)}</strong><button type="button" class="subsystem-panel-close" aria-label="Cerrar panel"><i class="fa-solid fa-xmark"></i></button></div>${purposeHtml}${systemTypeHtml}${forresterBtnHtml}`;
           target.append(purpose);
           purpose.querySelector("#openForresterBtn")?.addEventListener("click", (event) => { event.stopPropagation(); showForresterModal(Number(button.dataset.mapNetworkIndex), label(row), color); });
@@ -3278,6 +3720,21 @@
         }
       }));
       if (hideAllSystemBubbles) {
+        // Botón "Propósito" de cada caja: abre su popup al lado y cierra el
+        // de las demás cajas (solo uno abierto a la vez).
+        const closeAllPurposePops = () => target.querySelectorAll(".kennedy-purpose-pop").forEach((pop) => { pop.hidden = true; });
+        target.querySelectorAll(".kennedy-purpose-btn").forEach((button) => button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const pop = target.querySelector(`#kennedy-purpose-${button.dataset.purposeIndex}`);
+          if (!pop) return;
+          const wasOpen = !pop.hidden;
+          closeAllPurposePops();
+          pop.hidden = wasOpen;
+        }));
+        target.querySelectorAll(".kennedy-purpose-close").forEach((button) => button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          button.closest(".kennedy-purpose-pop").hidden = true;
+        }));
         // Los nodos de lugar tienen su propio click porque el listener general
         // de la red los deja pasar. El audio vuelve a dispararse aquí, al
         // igual que en las burbujas de subsistemas y submodelos.

@@ -1,0 +1,65 @@
+const TREES_URL = "./assets/kennedy_trees_real.json";
+// Todo el contenido del mapa (vias, edificios, arboles, agua, vehiculos)
+// ---- Arboles: se dibujan como "billboards cruzados" (2 tarjetas
+// perpendiculares) con una foto real de un arbol (fondo quitado),
+let treeMeshes = [];
+let treeInstanceData = null; // {x,z,w,h} por instancia, para recalcular el billboard al girar la camara
+let treeMesh = null; // la tarjeta con la foto (para el detalle realista)
+function buildTrees(trees) {
+const treeTex = new THREE.TextureLoader().load("./assets/arbol_real4.png");
+// mirar siempre hacia la camara (ver updateTreeBillboards), y como
+map: treeTex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.95,
+const mesh = new THREE.InstancedMesh(planeGeo, mat, trees.length);
+treeMesh = mesh;
+treeInstanceData = new Array(trees.length);
+trees.forEach((t, i) => {
+treeInstanceData[i] = { x: p.x, z: p.z, w, h };
+treeMeshes = [{ mesh, data: trees }];
+updateTreeBillboards();
+function updateTreeBillboards() {
+if (!treeMesh || !treeInstanceData) return;
+for (let i = 0; i < treeInstanceData.length; i++) {
+const d = treeInstanceData[i];
+treeMesh.setMatrixAt(i, dummyT.matrix);
+treeMesh.instanceMatrix.needsUpdate = true;
+function loadTrees() {
+return fetch(TREES_URL)
+.then(r => { if (!r.ok) throw new Error("no se pudo cargar " + TREES_URL); return r.json(); })
+buildTrees(data);
+birdTreesGrid = buildBirdTreeGrid(sampleAttractorTrees(data));
+// usan los arboles/mirlas), para que las mirlas huyan del ruido de
+// atraidas por arboles reales de 3 especies (Sauco, Cerezo/capuli,
+// Urapan-Fresno) del Arbolado Urbano real de Kennedy, huyendo de las
+const BIRD_TREE_SPECIES = {
+let birds = [], birdTreesGrid = null, birdOn = false, birdsGroup = null;
+function sampleAttractorTrees(trees) {
+trees.forEach(t => {
+const meta = BIRD_TREE_SPECIES[t[3]];
+const BIRD_CELL = 25; // metros reales por celda de la rejilla de arboles
+function buildBirdTreeGrid(attractors) {
+function bestTreeNear(grid, x, y) {
+return best ? { arbol: best, dist: bestDist } : null;
+const hallazgo = birdTreesGrid ? bestTreeNear(birdTreesGrid, b.x, b.y) : null;
+const { arbol, dist } = hallazgo;
+const ux = (arbol.x - b.x) / dist, uy = (arbol.y - b.y) / dist;
+const esSauco = arbol.meta.key === "sauco";
+const fuerza = arbol.meta.weight * (esSauco ? 20 : 11);
+b.rest = 2 + Math.random(); b.restColor = arbol.meta.color; b.cooldown = 7; b.landedAt = { x: arbol.x, y: arbol.y };
+loadTrees();
+loadTriMesh("./assets/kennedy_facades.json", 0xa05a41);       // fachadas verificadas con StreetView
+// Reorientar las tarjetas de los arboles hacia la camara cuando gira,
+let lastTreeBillboardUpdate = 0;
+if (now - lastTreeBillboardUpdate < 120) return;
+lastTreeBillboardUpdate = now;
+updateTreeBillboards();
+// ---- Clic en un arbol: muestra su informacion (especie, altura) ----
+const treeInfo = document.getElementById("treeInfo");
+const treeInfoName = document.getElementById("treeInfoName");
+const treeInfoDetails = document.getElementById("treeInfoDetails");
+document.getElementById("treeInfoClose").addEventListener("click", () => treeInfo.classList.remove("show"));
+if (!treeMeshes.length) return;
+treeMeshes.forEach(tm => {
+treeInfoName.textContent = nombre;
+treeInfoDetails.textContent = `Altura aproximada: ${hMeters.toFixed(1)} m`;
+treeInfo.classList.add("show");
+treeInfo.classList.remove("show");
