@@ -289,7 +289,54 @@
   #bioVegVal.bump{ animation:vegBump .35s ease-out; }
   @keyframes vegBump{ 0%{ transform:translateY(2px); opacity:.6; } 100%{ transform:none; opacity:1; } }
   .view-buttons button i, #goCorteBtn i{ margin-right:5px; }
-</style>
+  /* ===== Celular: barra de módulos arriba en horizontal, botones como íconos, paneles a lo ancho ===== */
+  @media (max-width: 700px), (max-height: 500px) and (max-width: 950px){
+    html,body{ height:100%; overflow:hidden; }
+    .app{ flex-direction:column; height:100vh; height:100dvh; min-height:0; }
+    .app > .sidebar.sidebar-icons-only{
+      position:relative !important; width:100% !important; height:50px !important; min-height:50px; flex:none;
+      flex-direction:row !important; align-items:center; padding:0 8px !important; gap:4px; overflow-x:auto; overflow-y:hidden; top:auto !important; left:auto !important;
+    }
+    .app > .sidebar.sidebar-icons-only .brand-icon{ margin:0 6px 0 0 !important; flex:none; width:36px !important; height:36px !important; }
+    .app > .sidebar.sidebar-icons-only .icon-nav{ flex-direction:row !important; gap:2px !important; flex:none; }
+    .app > .sidebar.sidebar-icons-only .icon-nav-item{ width:36px !important; height:36px !important; flex:none; }
+    .app > .sidebar.sidebar-icons-only .icon-nav-item::after{ display:none !important; }
+    .main{ flex:1; min-height:0; }
+
+    #closureWrap{ top:10px !important; left:10px !important; }
+    #closurePanel{ width:min(240px, calc(100vw - 20px)) !important; }
+    .hud-title{ top:12px; left:54px; right:60px; }
+    .hud-title h1{ font-size:12.5px; line-height:1.25; }
+    .hud-title p{ display:none; }
+
+    /* botones de vista: columna de íconos a la derecha */
+    #goCorteBtn, .view-buttons > *{ width:38px !important; height:38px !important; padding:0 !important; border-radius:50% !important; font-size:0 !important; display:flex !important; align-items:center; justify-content:center; gap:0 !important; }
+    #goCorteBtn i, .view-buttons > * i{ font-size:14px; margin:0 !important; }
+    #goCorteBtn{ top:10px; right:10px; }
+    .view-buttons > a{ background:rgba(17,20,24,.9) !important; color:#EAC119 !important; }
+    .view-buttons{ top:58px; right:10px; gap:6px; }
+    .view-buttons > #alinearPlanoBtn[style*="none"]{ display:none !important; }
+
+    /* panel de ruido, mirlas y humedal: abajo a lo ancho, con scroll */
+    .side-panel{ top:auto !important; left:10px !important; right:10px !important; width:auto !important; bottom:66px; max-height:32vh; padding:10px 12px; }
+    .sp-section{ padding-top:10px; margin-top:8px; }
+    .veg-readout b{ font-size:22px; }
+
+    .controls-bar{ left:10px; right:10px; bottom:10px; transform:none; max-width:none; gap:8px; padding:7px 10px; }
+    .controls-bar input[type=range]{ flex:1; width:auto; min-width:0; }
+    .controls-bar .time-label{ font-size:10px; }
+    .controls-bar button{ flex:none; }
+
+    #usosSueloLegend{ top:60px !important; bottom:auto !important; left:10px !important; width:min(230px, calc(100vw - 70px)) !important; max-height:calc(100% - 60px - 32vh - 90px); overflow-y:auto; }
+    #alinearPlanoPanel{ left:10px !important; right:10px !important; width:auto !important; }
+    #sectionWrap{ left:0 !important; height:30% !important; }
+    .draw-panel{ left:10px; right:10px; width:auto; top:60px; }
+    .legend{ left:10px; bottom:70px; }
+  }
+  @media (max-height: 500px) and (max-width: 950px){ /* celular acostado: panel a la derecha, junto a los íconos */
+    .side-panel{ left:auto !important; width:min(270px, 42vw) !important; top:10px !important; right:58px !important; bottom:62px; max-height:none; }
+    .controls-bar{ right:calc(min(270px, 42vw) + 68px); }
+  }</style>
 </head>
 <body>
 <script>
@@ -356,7 +403,7 @@
 
     <div class="view-buttons">
       <a href="modulo-08-render.html" style="padding:8px 12px; border-radius:9px; border:1px solid #EAC119; background:rgba(234,193,25,.18); color:#fff; font-size:11.5px; text-decoration:none; font-weight:700; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-camera"></i> Render 3D Fotorrealista</a>
-      <button type="button" id="viewReset">Restablecer vista axonométrica</button>
+      <button type="button" id="viewReset" title="Restablecer vista axonométrica"><i class="fa-solid fa-rotate-left"></i> Restablecer vista axonométrica</button>
       <button type="button" id="perspToggle"><i class="fa-solid fa-cube"></i> Ver en perspectiva</button>
       <button type="button" id="usosSueloBtn" title="Ver plano de usos" style="width:34px; height:34px; border-radius:50%; padding:0; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fa-solid fa-map"></i></button>
       <button type="button" id="alinearPlanoBtn" style="display:none;"><i class="fa-solid fa-location-crosshairs"></i> Alinear plano (arrastrar)</button>
