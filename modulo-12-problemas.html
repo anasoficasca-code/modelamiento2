@@ -227,9 +227,13 @@
     html.rapot-v2 #netSvg .net-line{ animation:none; }
     html.rapot-v2 .net-blob{ animation:none; }
   }
+  /* ?conecto=1 (abierto desde la red de problemas): solo la axonometría con las burbujas */
+  html.m12-conecto .sidebar, html.m12-conecto .hud-title, html.m12-conecto .view-buttons, html.m12-conecto #deleteNodeBtn{ display:none !important; }
+  html.m12-conecto .status-overlay{ background:rgba(11,12,15,.35); }
 </style>
 </head>
 <body>
+<script>if(/[?&]conecto=1/.test(location.search))document.documentElement.classList.add("m12-conecto");</script>
 <script>
 /* Transicion de llegada desde el hub "Problemas" (problemas.html).
    Sin parametros ?from=problemas en la URL, este bloque no hace nada:
@@ -460,6 +464,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="modulo-12-problemas.js?v=37"></script>
+<script src="modulo-12-problemas.js?v=38"></script>
 </body>
 </html>

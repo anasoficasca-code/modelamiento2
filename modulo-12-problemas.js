@@ -4,6 +4,21 @@
 // (assets/kennedy_net.json y assets/kennedy_vehiculos.json).
 // =====================================================================
 (() => {
+  // ?conecto=1: lo abre la red de problemas (anasoficasca-code.github.io/red-de-problemas, botón «Conectografía»).
+  // Arranca ya materializado, sin menús, y cada causa toma el color del problema de esa red en el que se clasifica
+  // (A dependencia de alimentos externos, B crecimiento poblacional, C valorización del suelo, D especulación,
+  // E gestión de residuos sólidos, F centralización de servicios). Sin el parámetro, el módulo funciona igual que siempre.
+  const CONECTO = new URLSearchParams(location.search).get("conecto") === "1";
+  const CLS_COL = { A:"#a3b845", B:"#d9bf6e", C:"#dba73a", D:"#d4553f", E:"#a77b5a", F:"#ee8a45" };
+  const CLS_ICO = { A:"fa-truck", B:"fa-users", C:"fa-house-chimney", D:"fa-sack-dollar", E:"fa-trash-can", F:"fa-circle-nodes" };
+  const CLS = { s1_1:"A",s1_2:"F",s1_3:"A",s1_4:"F",s1_5:"F",
+    s2_1:"E",s2_2:"E",s2_3:"E",s2_4:"E",s2_5:"E",s2_6:"E",s2_7:"E",s2_8:"E",s2_9:"E",s2_10:"E",s2_11:"E",
+    s3_1:"A",s3_2:"A",s3_3:"F",s3_4:"A",s3_5:"F",s3_6:"F",s3_7:"F",s3_8:"F",
+    s4_1:"B",s4_2:"D",s4_3:"C",s4_4:"B",s4_5:"B",s4_6:"D",s4_7:"B",s4_8:"B",s4_9:"B",
+    s5_1:"F",s5_2:"D",s5_3:"F",s5_4:"F",s5_5:"C",
+    s6_1:"E",s6_2:"A",s6_3:"E",s6_4:"E",s6_5:"E" };
+  const clsCol = (id, fallback) => (CONECTO && CLS[id]) ? CLS_COL[CLS[id]] : fallback;
+  if (CONECTO) document.documentElement.classList.add("m12-conecto");
   const NET_URL = "./assets/kennedy_net.json";
   const VEHICULOS_JSON_URL = "./assets/kennedy_vehiculos.json";
   const BUILDINGS_URL = "./assets/kennedy_buildings.json";
@@ -1517,13 +1532,13 @@
     const subEls = { blobs: {}, lines: [], labels: {} };
     sub.nodes.forEach(n => {
       const diameter = getSubNodeDiameter(n.id);
-      const blob = makeBlob(diameter, m.color);
+      const blob = makeBlob(diameter, clsCol(n.id, m.color));
       blob.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(mId, n.id); });
       blob.addEventListener("pointerdown", (e) => startDrag(n, getNodeElevation(n.id), e));
       subEls.blobs[n.id] = blob;
       const stem = document.createElementNS("http://www.w3.org/2000/svg", "line");
       stem.setAttribute("class", "net-stem");
-      stem.setAttribute("stroke", m.color);
+      stem.setAttribute("stroke", clsCol(n.id, m.color));
       stem.setAttribute("stroke-width", "1");
       stem.setAttribute("stroke-opacity", "0.35");
       stem.setAttribute("stroke-dasharray", "2 3");
@@ -1531,6 +1546,7 @@
       subEls.stems = subEls.stems || {};
       subEls.stems[n.id] = stem;
       const label = makeLabel(n.t, diameter, n.id, mId);
+      if (CONECTO && CLS[n.id]) { label.dataset.shortHtml = '<i class="fa-solid ' + CLS_ICO[CLS[n.id]] + '" style="font-size:15px; color:#fff;"></i>'; label.innerHTML = label.dataset.shortHtml; }
       label.addEventListener("click", (e) => { e.stopPropagation(); openCausePanel(mId, n.id); });
       label.addEventListener("pointerdown", (e) => startDrag(n, getNodeElevation(n.id), e));
       subEls.labels[n.id] = label;
@@ -1541,11 +1557,11 @@
   // Renderizar TODAS las líneas de conexión (internas + inter-redes)
   const allRelList = [];
   Object.keys(SUBNETS).forEach(mId => {
-    SUBNETS[mId].rel.forEach(r => allRelList.push({ ...r, color: macroById[mId].color }));
+    SUBNETS[mId].rel.forEach(r => allRelList.push({ ...r, color: clsCol(r.from, macroById[mId].color) }));
   });
   INTER_NETWORK_REL.forEach(r => {
     const fromNode = allNodesById[r.from];
-    const color = fromNode ? macroById[fromNode.macroId].color : "#24c8bd";
+    const color = clsCol(r.from, fromNode ? macroById[fromNode.macroId].color : "#24c8bd");
     allRelList.push({ ...r, color });
   });
 
@@ -1553,7 +1569,12 @@
   allRelList.forEach(r => {
     const a = allNodesById[r.from], b = allNodesById[r.to];
     if (!a || !b) return;
-    const line = svgEl("line", { class: "net-line", stroke: r.color, "stroke-width": 2.2, "stroke-opacity": 0.85, "marker-end": "url(#netArrow)" });
+    let mk = "netArrow";
+    if (CONECTO) { // una punta de flecha por color
+      mk = "netArrow_" + r.color.slice(1);
+      if (!document.getElementById(mk)) { const mm = svgEl("marker", { id: mk, viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto-start-reverse" }); mm.appendChild(svgEl("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: r.color })); arrowDefs.appendChild(mm); }
+    }
+    const line = svgEl("line", { class: "net-line", stroke: r.color, "stroke-width": 2.2, "stroke-opacity": 0.85, "marker-end": "url(#" + mk + ")" });
     netSvg.insertBefore(line, netSvg.firstChild);
     interLinesGroup.lines.push({ el: line, from: a, to: b, fromId: r.from, toId: r.to });
     const polText = svgEl("text", { class: "net-pol", "text-anchor": "middle", "dominant-baseline": "central", "font-size": 14, "font-weight": 800, fill: "#fff", stroke: "#0b0c0f", "stroke-width": 3, "paint-order": "stroke" });
@@ -1967,6 +1988,12 @@
     const axoOriginal = setAxonometricView;
     setAxonometricView = function () { axoOriginal(); if (!inTerritory && !anim) applyCamera(0); };
     // arranque: red 3D girando, sin territorio ni burbujas
+    if (CONECTO) { // abierto desde la red de problemas: directo a la axonometría con las burbujas
+      inTerritory = true; introGroup.visible = false; btn.style.display = "none"; hint.style.display = "none";
+      setTerritoryVisible(true); requestAnimationFrame(frame);
+      try { parent.postMessage("m12:listo", "*"); } catch (e) {}
+      return;
+    }
     setTerritoryVisible(false);
     setTimeout(() => { if (!inTerritory && !anim) applyCamera(0); }, 400);
     requestAnimationFrame(frame);
