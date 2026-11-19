@@ -721,8 +721,11 @@
   // ---- Vehiculos: un pool de cajas 3D reutilizables ----
   const VEH_POOL_SIZE = 2800;
   const vehMeshes = [];
-  const vehMat = new THREE.MeshStandardMaterial({ color: 0xe2635a, roughness: 0.5, metalness: 0.15 });
-  const vehGeo = new THREE.BoxGeometry(0.18, 0.15, 0.45);
+  const vehMat = CONECTO
+    ? new THREE.MeshStandardMaterial({ color: 0xf4f8ff, emissive: 0xdfeaff, emissiveIntensity: 0.85, roughness: 0.4, metalness: 0 })
+    : new THREE.MeshStandardMaterial({ color: 0xe2635a, roughness: 0.5, metalness: 0.15 });
+  // en ?conecto=1 los carros se agrandan para que la simulación se lea a la escala de la axonometría
+  const vehGeo = CONECTO ? new THREE.BoxGeometry(0.5, 0.36, 1.25) : new THREE.BoxGeometry(0.18, 0.15, 0.45);
   const vehInstanced = new THREE.InstancedMesh(vehGeo, vehMat, VEH_POOL_SIZE);
   vehInstanced.count = 0;
   vehInstanced.castShadow = true;
@@ -783,7 +786,7 @@
       const v = vehicles[i];
       const p = toScene(v.x, v.y);
       const angle = lastAngle[v.id] || 0;
-      dummy.position.set(p.x, 0.1, p.z);
+      dummy.position.set(p.x, CONECTO ? 0.2 : 0.1, p.z);
       dummy.rotation.set(0, angle, 0);
       dummy.updateMatrix();
       vehInstanced.setMatrixAt(i, dummy.matrix);
@@ -850,6 +853,39 @@
       console.error(err);
       setStatus("No se pudo cargar la red vial (assets/kennedy_net.json). Revisa que el archivo esté disponible.");
     });
+
+  // ---- ?conecto=1: territorio en modo oscuro ----
+  // Los modelos cargan por partes, así que cada segundo (durante el primer minuto) se oscurecen los materiales nuevos:
+  // suelo casi negro, edificios y techos gris oscuro, vías algo más claras que el suelo, agua y parques apagados,
+  // líneas (vías, bordes, manzanas) claras y tenues. Los carros quedan como luces.
+  if (CONECTO) {
+    const BG = 0x0b0d10;
+    scene.background = new THREE.Color(BG);
+    if (scene.fog) scene.fog.color = new THREE.Color(BG);
+    ambient.intensity = 0.7; sun.intensity = 0.55;
+    const hsl = { h: 0, s: 0, l: 0 };
+    const oscurece = (o) => {
+      if (o === vehInstanced) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      mats.forEach(m => {
+        if (!m || !m.color || m.userData.oscuro) return;
+        m.userData.oscuro = true;
+        if (o === groundMesh || o === terrainMesh) { m.color.setHex(0x0d1013); return; }
+        m.color.getHSL(hsl);
+        if (o.isLine || o.isLineSegments) {
+          m.color.setHSL(hsl.h, hsl.s * 0.4, 0.3 + (1 - hsl.l) * 0.35);
+          if (m.transparent) m.opacity = Math.min(0.5, Math.max(m.opacity, 0.12));
+        } else {
+          m.color.setHSL(hsl.h, hsl.s * 0.75, 0.035 + hsl.l * 0.21);
+          if (m.emissive) m.emissive.setHex(0x000000);
+        }
+        m.needsUpdate = true;
+      });
+    };
+    let vueltas = 0;
+    const pasada = () => { sceneRoot.traverse(o => { if ((o.isMesh || o.isLine || o.isLineSegments || o.isPoints) && o.material) oscurece(o); }); if (++vueltas < 60) setTimeout(pasada, 1000); };
+    pasada();
+  }
 
   // ---- Controles de reproduccion ----
   playBtn.addEventListener("click", () => {
