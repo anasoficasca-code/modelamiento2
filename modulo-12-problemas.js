@@ -16,7 +16,8 @@
     s3_1:"A",s3_2:"A",s3_3:"F",s3_4:"A",s3_5:"F",s3_6:"F",s3_7:"F",s3_8:"F",
     s4_1:"B",s4_2:"D",s4_3:"C",s4_4:"B",s4_5:"B",s4_6:"D",s4_7:"B",s4_8:"B",s4_9:"B",
     s5_1:"F",s5_2:"D",s5_3:"F",s5_4:"F",s5_5:"C",
-    s6_1:"E",s6_2:"A",s6_3:"E",s6_4:"E",s6_5:"E" };
+    s6_1:"E",s6_2:"A",s6_3:"E",s6_4:"E",s6_5:"E",
+    s8_1:"D", s8_2:"B", s8_3:"E" };
   const clsCol = (id, fallback) => (CONECTO && CLS[id]) ? CLS_COL[CLS[id]] : fallback;
   if (CONECTO) document.documentElement.classList.add("m12-conecto");
   const NET_URL = "./assets/kennedy_net.json";
@@ -874,10 +875,11 @@
         m.color.getHSL(hsl);
         if (o.isLine || o.isLineSegments) {
           m.color.setHSL(hsl.h, hsl.s * 0.35, 0.55 + (1 - hsl.l) * 0.3);
-          if (m.transparent) m.opacity = Math.min(0.7, Math.max(m.opacity * 2.2, 0.3));
+          if (m.transparent) m.opacity = m.opacity < 0.1 ? 0.07 : Math.min(0.7, Math.max(m.opacity * 2.2, 0.3)); // bordes de edificios: finos y tenues
         } else {
-          const natural = hsl.s > 0.08 && ((hsl.h > 0.17 && hsl.h < 0.45) || (hsl.h > 0.5 && hsl.h < 0.7)); // parques y agua conservan su color
-          if (natural) m.color.setHSL(hsl.h, Math.min(1, hsl.s * 1.1), 0.05 + hsl.l * 0.2);
+          const natural = hsl.s > 0.08 && ((hsl.h > 0.1 && hsl.h < 0.45) || (hsl.h > 0.5 && hsl.h < 0.7)); // parques y agua conservan su color
+          if (natural && hsl.h < 0.45) { m.color.setHSL(0.29, 0.4, 0.09 + hsl.l * 0.15); if (m.transparent) m.opacity = Math.max(m.opacity, 0.92); } // verde mas fuerte
+          else if (natural) m.color.setHSL(hsl.h, Math.max(0.38, Math.min(1, hsl.s * 1.35)), 0.07 + hsl.l * 0.24); // azul un poco mas vivo
           else m.color.setHSL(0.6, 0.08, 0.05 + hsl.l * 0.22); // edificios, techos y fachadas: gris frio neutro
           if (m.emissive) m.emissive.setHex(0x000000);
         }
@@ -913,6 +915,7 @@
     camera.position.set(212.25, 475.68, 958.82);
     controls.target.set(144.45, 24.68, -5.88);
     camera.zoom = 1.55; // un poco mas de zoom que antes (1.23), se veia muy lejos
+    if (CONECTO) { camera.position.x += 46; controls.target.x += 46; camera.zoom = 1.2; } // entra el sector Bavaria
     viewSize = 190.0;
     resize();
     camera.updateProjectionMatrix();
@@ -1192,6 +1195,25 @@
       ],
     },
   };
+
+  // ?conecto=1: se integra el sector Bavaria (predio de ~71 ha al oriente de la localidad; ubicación del hito
+  // «Bavaria» de la red de problemas, lugares.json: x 2119 / z -1067 m desde el centro de la nube = local 9307 / 3112).
+  if (CONECTO) {
+    const bav = { id:"n8", corto:"Sector Bavaria", full:"Sector Bavaria: suelo en engorde, torres en altura y residuos", color:"#d4553f", x:9307.0, y:3112.5 };
+    MACRO.push(bav); macroById.n8 = bav;
+    SUBNETS.n8 = {
+      nodes:[
+        { id:"s8_1", t:"Predio de Bavaria en engorde: suelo retenido a la espera de valorización", x:9330.0, y:2930.0 },
+        { id:"s8_2", t:"Torres de vivienda en altura en el sector de Bavaria", x:8990.0, y:3330.0 },
+        { id:"s8_3", t:"Acumulación de residuos y escombros en el predio sin uso y sus bordes", x:9660.0, y:3330.0 },
+      ],
+      rel:[
+        { from:"s8_1", to:"s8_2", pol:"+" },
+        { from:"s8_1", to:"s8_3", pol:"+" },
+        { from:"s8_2", to:"s8_3", pol:"+" },
+      ],
+    };
+  }
 
   // Anti-overlap pass: repulsión garantizada entre todas las bolas para que NINGUNA bola se toque ni solape entre sí
   const allSubNodesList = [];
