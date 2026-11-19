@@ -839,6 +839,12 @@
       resize();
       setAxonometricView(w);
       setStatus("Red cargada. Cargando edificios y trayectorias de vehículos…");
+      if (CONECTO) { // los edificios primero, sin competir con el resto por la conexión
+        return loadBuildings()
+          .then(() => Promise.all([loadTriMesh("./assets/kennedy_roofs_flat.json", 0xffffff), loadTriMesh("./assets/kennedy_facades.json", 0xa05a41), loadWaterBodies(), loadParques()]))
+          .then(() => Promise.all([loadTrees(), loadManzanas()]))
+          .then(() => loadVehicles());
+      }
       loadBuildings();
       loadTrees();
       loadWaterBodies();
@@ -878,8 +884,8 @@
           if (m.transparent) m.opacity = m.opacity < 0.1 ? 0.07 : Math.min(0.7, Math.max(m.opacity * 2.2, 0.3)); // bordes de edificios: finos y tenues
         } else {
           const natural = hsl.s > 0.08 && ((hsl.h > 0.1 && hsl.h < 0.45) || (hsl.h > 0.5 && hsl.h < 0.7)); // parques y agua conservan su color
-          if (natural && hsl.h < 0.45) { m.color.setHSL(0.29, 0.4, 0.09 + hsl.l * 0.15); if (m.transparent) m.opacity = Math.max(m.opacity, 0.92); } // verde mas fuerte
-          else if (natural) m.color.setHSL(hsl.h, Math.max(0.38, Math.min(1, hsl.s * 1.35)), 0.07 + hsl.l * 0.24); // azul un poco mas vivo
+          if (natural && hsl.h < 0.45) { m.color.setHSL(0.39, 0.3, 0.1 + hsl.l * 0.13); /* verde bosque sobrio */ if (m.transparent) m.opacity = Math.max(m.opacity, 0.92); } // verde mas fuerte
+          else if (natural) m.color.setHSL(0.55, 0.42, 0.12 + hsl.l * 0.16); // azul petróleo
           else m.color.setHSL(0.6, 0.08, 0.05 + hsl.l * 0.22); // edificios, techos y fachadas: gris frio neutro
           if (m.emissive) m.emissive.setHex(0x000000);
         }
