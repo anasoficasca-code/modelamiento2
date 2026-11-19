@@ -10,7 +10,7 @@
   // E gestión de residuos sólidos, F centralización de servicios). Sin el parámetro, el módulo funciona igual que siempre.
   const CONECTO = new URLSearchParams(location.search).get("conecto") === "1";
   const CLS_COL = { A:"#a3b845", B:"#d9bf6e", C:"#dba73a", D:"#d4553f", E:"#a77b5a", F:"#ee8a45" };
-  const CLS_ICO = { A:"fa-truck", B:"fa-users", C:"fa-house-chimney", D:"fa-sack-dollar", E:"fa-trash-can", F:"fa-circle-nodes" };
+  const CLS_ICO = { A:"fa-truck", B:"fa-users", C:"fa-house-chimney", D:"fa-sack-dollar", E:"fa-trash-can", F:"fa-sitemap" };
   const CLS = { s1_1:"A",s1_2:"F",s1_3:"A",s1_4:"F",s1_5:"F",
     s2_1:"E",s2_2:"E",s2_3:"E",s2_4:"E",s2_5:"E",s2_6:"E",s2_7:"E",s2_8:"E",s2_9:"E",s2_10:"E",s2_11:"E",
     s3_1:"A",s3_2:"A",s3_3:"F",s3_4:"A",s3_5:"F",s3_6:"F",s3_7:"F",s3_8:"F",
