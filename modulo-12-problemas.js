@@ -862,7 +862,7 @@
     const BG = 0x0b0d10;
     scene.background = new THREE.Color(BG);
     if (scene.fog) scene.fog.color = new THREE.Color(BG);
-    ambient.intensity = 0.7; sun.intensity = 0.55;
+    ambient.intensity = 0.95; sun.intensity = 1.05;
     const hsl = { h: 0, s: 0, l: 0 };
     const oscurece = (o) => {
       if (o === vehInstanced) return;
@@ -873,10 +873,12 @@
         if (o === groundMesh || o === terrainMesh) { m.color.setHex(0x0d1013); return; }
         m.color.getHSL(hsl);
         if (o.isLine || o.isLineSegments) {
-          m.color.setHSL(hsl.h, hsl.s * 0.4, 0.3 + (1 - hsl.l) * 0.35);
-          if (m.transparent) m.opacity = Math.min(0.5, Math.max(m.opacity, 0.12));
+          m.color.setHSL(hsl.h, hsl.s * 0.35, 0.55 + (1 - hsl.l) * 0.3);
+          if (m.transparent) m.opacity = Math.min(0.7, Math.max(m.opacity * 2.2, 0.3));
         } else {
-          m.color.setHSL(hsl.h, hsl.s * 0.75, 0.035 + hsl.l * 0.21);
+          const natural = hsl.s > 0.08 && ((hsl.h > 0.17 && hsl.h < 0.45) || (hsl.h > 0.5 && hsl.h < 0.7)); // parques y agua conservan su color
+          if (natural) m.color.setHSL(hsl.h, Math.min(1, hsl.s * 1.1), 0.05 + hsl.l * 0.2);
+          else m.color.setHSL(0.6, 0.08, 0.05 + hsl.l * 0.22); // edificios, techos y fachadas: gris frio neutro
           if (m.emissive) m.emissive.setHex(0x000000);
         }
         m.needsUpdate = true;
