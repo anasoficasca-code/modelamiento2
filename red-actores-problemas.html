@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Red de actores y problemas — Corabastos y su entorno</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root{
+    --bg:#0b0f17; --bg-2:#0e1420; --ink:#e8ecf1; --ink-dim:#8b96a5;
+    --panel:rgba(255,255,255,.05); --panel-border:rgba(255,255,255,.12);
+    --actor:#5ec8e0;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:radial-gradient(120% 100% at 50% 0%, var(--bg-2), var(--bg) 60%);
+    color:var(--ink); font-family:'Inter',sans-serif; overflow:hidden;
+  }
+  header{
+    position:fixed; top:0; left:0; right:0; z-index:5; padding:18px 26px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    background:linear-gradient(180deg, rgba(11,15,23,.92), rgba(11,15,23,0));
+    pointer-events:none;
+  }
+  header > * { pointer-events:auto; }
+  header h1{ font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600; margin:0; }
+  header p{ margin:2px 0 0; font-size:12px; color:var(--ink-dim); }
+  a.back-link{
+    display:flex; align-items:center; gap:7px; color:var(--ink-dim); text-decoration:none; font-size:12.5px;
+    padding:8px 14px; border-radius:999px; border:1px solid var(--panel-border); background:var(--panel);
+    transition:color .2s ease, border-color .2s ease;
+  }
+  a.back-link:hover{ color:var(--ink); border-color:rgba(255,255,255,.3); }
+
+  .legend{
+    position:fixed; bottom:16px; left:16px; z-index:5; display:flex; flex-wrap:wrap; gap:8px 14px; max-width:min(560px,60vw);
+    padding:12px 16px; border-radius:12px; background:var(--panel); border:1px solid var(--panel-border);
+    backdrop-filter:blur(10px); font-size:11px; color:var(--ink-dim);
+  }
+  .legend b{ width:100%; color:var(--ink); font-size:11.5px; font-weight:600; margin-bottom:2px; }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .legend i{ width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0; }
+
+  svg{ width:100vw; height:100vh; display:block; cursor:grab; }
+  svg:active{ cursor:grabbing; }
+  .link{ stroke:rgba(148,163,184,.35); stroke-width:1.4; }
+  .link.hi{ stroke:#fff; stroke-width:2.2; opacity:1 !important; }
+  .node{ cursor:pointer; }
+  .node circle.ring{ fill:#0a0e14; stroke-width:2; transition:filter .2s ease; }
+  .node:hover circle.ring{ filter:brightness(1.35); }
+  .node.dim circle.ring{ opacity:.22; }
+  .node.dim text{ opacity:.22; }
+  .node text{ fill:var(--ink); font-size:11px; font-weight:600; text-anchor:middle; pointer-events:none; paint-order:stroke; stroke:#05070a; stroke-width:3px; stroke-linejoin:round; }
+  .node .sub{ font-size:8.5px; font-weight:500; fill:var(--ink-dim); stroke:none; }
+  .link.dim{ opacity:.05; }
+
+  .panel{
+    position:fixed; top:0; right:0; bottom:0; z-index:10; width:min(380px,92vw);
+    background:rgba(9,13,18,.97); border-left:1px solid var(--panel-border); backdrop-filter:blur(14px);
+    padding:26px 24px; overflow-y:auto; transform:translateX(100%); transition:transform .32s cubic-bezier(.2,.8,.2,1);
+  }
+  .panel.open{ transform:translateX(0); }
+  .panel-close{
+    position:absolute; top:18px; right:18px; width:30px; height:30px; border-radius:50%; border:1px solid var(--panel-border);
+    background:var(--panel); color:var(--ink-dim); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .panel-close:hover{ color:var(--ink); background:rgba(255,255,255,.12); }
+  .panel-kind{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin:0 0 6px; }
+  .panel h2{ font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:600; margin:0 30px 16px 0; line-height:1.35; }
+  .panel .badge-row{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
+  .panel .badge{ font-size:11px; padding:4px 10px; border-radius:999px; border:1px solid; }
+  .panel .block{ margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,.08); }
+  .panel .block b{ display:block; font-size:11.5px; color:var(--ink-dim); font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em; }
+  .panel .block p{ margin:0; font-size:14px; line-height:1.55; }
+  .panel .actor-list{ display:flex; flex-direction:column; gap:8px; }
+  .panel .actor-chip{ display:flex; align-items:center; gap:9px; padding:9px 12px; border-radius:10px; background:rgba(94,200,224,.08); border:1px solid rgba(94,200,224,.25); font-size:13px; cursor:pointer; }
+  .panel .actor-chip:hover{ background:rgba(94,200,224,.16); }
+  .panel .problem-list{ display:flex; flex-direction:column; gap:8px; }
+  .panel .problem-chip{ display:flex; align-items:center; gap:9px; padding:9px 12px; border-radius:10px; border:1px solid; cursor:pointer; font-size:13px; }
+  @media (prefers-reduced-motion: reduce){ .node, .link, .panel{ transition:none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Red de actores y problemas</h1>
+    <p>Corabastos y su entorno — quién sostiene cada dinámica y qué síntomas produce</p>
+  </div>
+  <a class="back-link" href="./index.html"><i class="fa-solid fa-arrow-left"></i>&nbsp; Volver</a>
+</header>
+
+<svg id="stage"></svg>
+
+<div class="legend" id="legend"><b>Indicadores</b></div>
+
+<aside class="panel" id="panel">
+  <button class="panel-close" id="panelClose">✕</button>
+  <div id="panelBody"></div>
+</aside>
+
+<script>
+(() => {
+  const ROLE_COLOR = { actor: "#5ec8e0", problema: "#ef4444", causa: "#eab308", efecto: "#22c55e" };
+  const INDICATORS = {
+    "Rojo":    "#ef4444", "Naranja": "#f97316", "Marrón": "#92400e", "Azul": "#3b82f6",
+    "Verde":   "#22c55e", "Amarillo":"#eab308", "Gris":   "#9ca3af"
+  };
+
+  const PROBLEMS = [
+    { id:"p1", name:"Congestión y Colapso Logístico Vial", actors:["Corabastos","Transportadores de Carga Pesada"],
+      causa:"Ingreso masivo y simultáneo de tractocamiones, sumado a la falta de patios de parqueo oficiales y operación sin gestión interna.",
+      efectos:[{ind:"Rojo", texto:"Filas kilométricas y parálisis total del tráfico en las avenidas Ciudad de Cali y Boyacá; bloqueo absoluto de intersecciones en horas pico."}] },
+    { id:"p2", name:"Deterioro y Fractura de la Malla Vial", actors:["Transportadores de Carga Pesada","Propietarios de Bodegas"],
+      causa:"Estacionamiento prolongado de vehículos pesados en vías secundarias y tránsito constante de camiones con sobrepeso.",
+      efectos:[{ind:"Naranja", texto:"Hundimiento severo del asfalto, fractura de pavimentos y andenes destruidos por invasión de vehículos."}] },
+    { id:"p3", name:"Saturación de Residuos Orgánicos y Lixiviados", actors:["Corabastos","Comercio Informal / Ventas Ambulantes"],
+      causa:"Operación comercial masiva sin centros logísticos de subproductos y desecho directo de empaques o restos al espacio público.",
+      efectos:[{ind:"Marrón", texto:"Toneladas de residuos orgánicos podridos en las esquinas, acumulación de lixiviados tóxicos corriendo hacia los sumideros y puntos críticos de basura."}] },
+    { id:"p4", name:"Fragmentación Ecológica e Impermeabilización del Suelo", actors:["Propietarios de Bodegas","Operadores Logísticos Locales"],
+      causa:"Rellenos de escombros, pavimentación masiva de lotes baldíos y expansión desordenada sobre las franjas de ronda de los cuerpos de agua.",
+      efectos:[
+        {ind:"Azul", texto:"Suelos completamente impermeabilizados e inundaciones severas por escorrentía."},
+        {ind:"Verde", texto:"Aislamiento absoluto de la fauna nativa, ruptura de corredores ecológicos y eutrofización acelerada en los humedales."}
+      ] },
+    { id:"p5", name:"Privatización y Bloqueo del Espacio Público Peatonal", actors:["Comercio Informal / Ventas Ambulantes","Propietarios de Bodegas"],
+      causa:"Ocupación permanente de la sección transversal del andén para exhibir mercancía o maniobrar carga pesada con montacargas.",
+      efectos:[{ind:"Amarillo", texto:"Desaparición total del corredor peatonal, bajísima caminabilidad y peatones obligados a arriesgar su vida caminando por la calzada vehicular."}] },
+    { id:"p6", name:"Contaminación Visual, Eólica y Particulada", actors:["Recicladores Informales de Oficio","Transportadores de Carga Pesada"],
+      causa:"Manipulación y clasificación de materiales reciclables directamente sobre el espacio público, combinada con la alta concentración de motores diésel encendidos.",
+      efectos:[{ind:"Gris", texto:"Regueros de plásticos ligeros volando hacia calles y canales por el viento, material particulado denso y contaminación visual severa en separadores viales."}] },
+    { id:"p7", name:"Déficit, Abandono y Degradación de Equipamientos", actors:["Comunidad Local / Redes Vecinales","Instituciones Distritales"],
+      causa:"Falta histórica de inversión estatal, abandono institucional crónico y ausencia de mantenimiento en centros zonales.",
+      efectos:[
+        {ind:"Rojo", texto:"Parques y centros comunales oscuros, vandalizados y apropiados por dinámicas delictivas."},
+        {ind:"Verde", texto:"Respuesta comunitaria mediante la creación de huertas urbanas, redes de cuidado y limpieza autogestionada de bordes ecológicos."}
+      ] },
+  ];
+
+  const actorNames = [...new Set(PROBLEMS.flatMap(p => p.actors))];
+  const actorNodes = actorNames.map(name => ({ id:"actor:"+name, kind:"actor", name }));
+  const problemNodes = PROBLEMS.map(p => ({ actors:p.actors, id:"prob:"+p.id, kind:"problema", name:p.name, pid:p.id }));
+  const causaNodes = PROBLEMS.map(p => ({ id:"causa:"+p.id, kind:"causa", name:p.causa.length>60 ? p.causa.slice(0,58)+"…" : p.causa, full:p.causa, pid:p.id }));
+  const efectoNodes = [];
+  PROBLEMS.forEach(p => p.efectos.forEach((e,i) => efectoNodes.push({ id:`efecto:${p.id}:${i}`, kind:"efecto", name:e.texto.length>55 ? e.texto.slice(0,53)+"…" : e.texto, full:e.texto, ind:e.ind, pid:p.id })));
+  const nodes = [...actorNodes, ...problemNodes, ...causaNodes, ...efectoNodes];
+
+  // Todo queda conectado: actor<->problema, problema<->causa, problema<->efecto.
+  // Nada flota suelto: cada causa y cada efecto pertenece a exactamente un
+  // problema, y cada problema tiene siempre al menos 2 actores + 1 causa +
+  // 1 o 2 efectos.
+  const links = [];
+  PROBLEMS.forEach(p => {
+    p.actors.forEach(a => links.push({ source:"actor:"+a, target:"prob:"+p.id, kind:"actor-prob" }));
+    links.push({ source:"prob:"+p.id, target:"causa:"+p.id, kind:"prob-causa" });
+    p.efectos.forEach((e,i) => links.push({ source:"prob:"+p.id, target:`efecto:${p.id}:${i}`, kind:"prob-efecto" }));
+  });
+
+  const deg = {};
+  links.forEach(l => { deg[l.source]=(deg[l.source]||0)+1; deg[l.target]=(deg[l.target]||0)+1; });
+  nodes.forEach(n => {
+    n.deg = deg[n.id]||0;
+    n.color = ROLE_COLOR[n.kind];
+    n.r = n.kind==="actor" ? Math.max(30, Math.min(58, 26+n.deg*7)) : n.kind==="problema" ? Math.max(40, Math.min(58, 34+n.deg*4)) : 26;
+  });
+
+  const svg = d3.select("#stage");
+  const W = window.innerWidth, H = window.innerHeight;
+  const root = svg.append("g");
+  svg.call(d3.zoom().scaleExtent([0.35,2.5]).on("zoom", e => root.attr("transform", e.transform)));
+
+  const sim = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(links).id(d=>d.id).distance(d => d.kind==="actor-prob" ? 160 : 95).strength(0.6))
+    .force("charge", d3.forceManyBody().strength(d => d.kind==="actor" ? -900 : d.kind==="problema" ? -700 : -220))
+    .force("center", d3.forceCenter(W/2, H/2))
+    .force("collide", d3.forceCollide().radius(d => d.r + 26).strength(1));
+
+  const linkSel = root.append("g").selectAll("line").data(links).join("line").attr("class","link");
+  const nodeSel = root.append("g").selectAll("g").data(nodes).join("g")
+    .attr("class", d => "node " + d.kind)
+    .call(d3.drag()
+      .on("start", (e,d) => { if(!e.active) sim.alphaTarget(0.25).restart(); d.fx=d.x; d.fy=d.y; })
+      .on("drag", (e,d) => { d.fx=e.x; d.fy=e.y; })
+      .on("end", (e,d) => { if(!e.active) sim.alphaTarget(0); d.fx=null; d.fy=null; }));
+
+  nodeSel.append("circle").attr("class","ring")
+    .attr("r", d => d.r)
+    .attr("stroke", d => d.color);
+  nodeSel.append("text").attr("dy","-0.15em")
+    .each(function(d){
+      const maxChars = d.kind==="actor" || d.kind==="problema" ? 14 : 11;
+      const words = d.name.split(" ");
+      const lines = [""];
+      words.forEach(w => { const i=lines.length-1; if ((lines[i]+" "+w).trim().length<=maxChars || !lines[i]) lines[i]=(lines[i]+" "+w).trim(); else lines.push(w); });
+      const t = d3.select(this);
+      const maxLines = d.kind==="actor"||d.kind==="problema" ? 3 : 4;
+      lines.slice(0,maxLines).forEach((line,i) => t.append("tspan").attr("x",0).attr("dy", i===0? -((Math.min(lines.length,maxLines)-1)*5.2)+"px" : "10.4px").text(line));
+    });
+  nodeSel.filter(d=>d.kind==="efecto").append("text").attr("class","sub").attr("dy", d => d.r + 13).text(d => d.ind);
+
+  nodeSel.on("click", (event, d) => { event.stopPropagation(); openPanel(d); highlight(d); });
+  svg.on("click", () => { closePanel(); highlight(null); });
+
+  function highlight(d){
+    if (!d) { nodeSel.classed("dim", false); linkSel.classed("dim", false).classed("hi", false); return; }
+    const connected = new Set([d.id]);
+    links.forEach(l => { if (l.source.id===d.id) connected.add(l.target.id); if (l.target.id===d.id) connected.add(l.source.id); });
+    nodeSel.classed("dim", n => !connected.has(n.id));
+    linkSel.classed("dim", l => l.source.id!==d.id && l.target.id!==d.id).classed("hi", l => l.source.id===d.id || l.target.id===d.id);
+  }
+
+  function nodeById(id){ return nodes.find(n=>n.id===id); }
+  function problemaDe(pid){ return nodeById("prob:"+pid); }
+
+  const KIND_LABEL = { actor:"Actor", problema:"Problema", causa:"Causa", efecto:"Efecto / síntoma" };
+
+  function openPanel(d){
+    const panel = document.getElementById("panel"), body = document.getElementById("panelBody");
+    const p = PROBLEMS.find(x => x.id === d.pid);
+    if (d.kind === "problema") {
+      const causaN = nodeById("causa:"+d.pid);
+      const efectoNs = nodes.filter(n => n.kind==="efecto" && n.pid===d.pid);
+      body.innerHTML = `
+        <p class="panel-kind" style="color:${ROLE_COLOR.problema}">Problema</p>
+        <h2>${d.name}</h2>
+        <div class="block"><b>Causa</b><div class="problem-chip" style="border-color:${ROLE_COLOR.causa};color:${ROLE_COLOR.causa}" data-goto="${causaN.id}">${causaN.full}</div></div>
+        <div class="block"><b>Efectos / síntomas</b><div class="actor-list">
+          ${efectoNs.map(e => `<div class="problem-chip" style="border-color:${ROLE_COLOR.efecto};color:${ROLE_COLOR.efecto}" data-goto="${e.id}"><span class="badge" style="border-color:${INDICATORS[e.ind]};color:${INDICATORS[e.ind]};margin-right:6px">${e.ind}</span>${e.full}</div>`).join("")}
+        </div></div>
+        <div class="block"><b>Actores involucrados</b><div class="actor-list">
+          ${p.actors.map(a => `<div class="actor-chip" data-goto="actor:${a}"><i class="fa-solid fa-user-group"></i> ${a}</div>`).join("")}
+        </div></div>`;
+    } else if (d.kind === "actor") {
+      const related = PROBLEMS.filter(pp => pp.actors.includes(d.name));
+      body.innerHTML = `
+        <p class="panel-kind" style="color:${ROLE_COLOR.actor}">Actor</p>
+        <h2>${d.name}</h2>
+        <div class="block"><b>Problemas en los que interviene (${related.length})</b><div class="problem-list">
+          ${related.map(pp => `<div class="problem-chip" style="border-color:${ROLE_COLOR.problema};color:${ROLE_COLOR.problema}" data-goto="prob:${pp.id}">${pp.name}</div>`).join("")}
+        </div></div>`;
+    } else if (d.kind === "causa") {
+      const prob = problemaDe(d.pid);
+      body.innerHTML = `
+        <p class="panel-kind" style="color:${ROLE_COLOR.causa}">Causa</p>
+        <h2>${d.full}</h2>
+        <div class="block"><b>Del problema</b><div class="problem-chip" style="border-color:${ROLE_COLOR.problema};color:${ROLE_COLOR.problema}" data-goto="${prob.id}">${prob.name}</div></div>`;
+    } else { // efecto
+      const prob = problemaDe(d.pid);
+      body.innerHTML = `
+        <p class="panel-kind" style="color:${ROLE_COLOR.efecto}">Efecto / síntoma</p>
+        <div class="badge-row"><span class="badge" style="border-color:${INDICATORS[d.ind]};color:${INDICATORS[d.ind]}">${d.ind}</span></div>
+        <h2>${d.full}</h2>
+        <div class="block"><b>Del problema</b><div class="problem-chip" style="border-color:${ROLE_COLOR.problema};color:${ROLE_COLOR.problema}" data-goto="${prob.id}">${prob.name}</div></div>`;
+    }
+    body.querySelectorAll("[data-goto]").forEach(el => el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const target = nodeById(el.dataset.goto);
+      if (target) { openPanel(target); highlight(target); }
+    }));
+    panel.classList.add("open");
+  }
+  function closePanel(){ document.getElementById("panel").classList.remove("open"); }
+  document.getElementById("panelClose").addEventListener("click", (e)=>{ e.stopPropagation(); closePanel(); highlight(null); });
+
+  // Leyenda: primero los 4 roles (el color principal de cada bola), luego
+  // los colores de indicador (solo aparecen como etiqueta chiquita en los
+  // efectos, para no perder esa informacion).
+  const legend = document.getElementById("legend");
+  legend.innerHTML = "<b>Tipo de nodo</b>";
+  Object.entries(ROLE_COLOR).forEach(([name,color]) => {
+    const span = document.createElement("span");
+    span.innerHTML = `<i style="background:${color}"></i>${name.charAt(0).toUpperCase()+name.slice(1)}`;
+    legend.appendChild(span);
+  });
+  const legend2 = document.createElement("b");
+  legend2.textContent = "Indicador del efecto";
+  legend2.style.marginTop = "6px";
+  legend.appendChild(legend2);
+  Object.entries(INDICATORS).forEach(([name,color]) => {
+    const span = document.createElement("span");
+    span.innerHTML = `<i style="background:${color}"></i>${name}`;
+    legend.appendChild(span);
+  });
+
+  sim.on("tick", () => {
+      linkSel.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y).attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);
+      nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
+    });
+})();
+</script>
+</body>
+</html>

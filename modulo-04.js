@@ -372,18 +372,18 @@ document.querySelectorAll('.tab').forEach(btn => {
     7: 'Alcanzar el Desarrollo Rural Sostenible. El Distrito Capital busca conciliar la necesidad de generar mayor valor agregado en las prácticas agrícolas, pecuarias y turísticas que se desarrollan en suelo rural, con la exigencia de preservación ambiental de sus áreas protegidas de importancia ecosistémica y paisajística y la puesta en valor de las formas de vida campesina.'
   };
   const systems = [
-    { id:'ambiental', label:'Ambiental', color:'#58d68d', icon:'fa-leaf', x:230, y:380, r:82, objectives:[1,2,3], partial:[], description:'Estructura ecológica principal, paisajes, ecosistemas, agua, contaminación, riesgo, cambio climático y relación urbano-rural.' },
-    { id:'humanista', label:'Humanista-social', color:'#ef8b3c', icon:'fa-people-group', x:600, y:370, r:136, objectives:[6], partial:[], description:'Calidad de vida, vivienda, cuidado, equidad, acceso a servicios y reducción de desigualdades.' },
-    { id:'socio', label:'Económico-productivo', color:'#eab04c', icon:'fa-chart-line', x:990, y:210, r:72, objectives:[5], partial:[], description:'Empleo, empresas, actividades productivas, aglomeraciones económicas y relación entre vivienda y trabajo.' },
-    { id:'cultural', label:'Cultural-territorial', color:'#a879ff', icon:'fa-landmark', x:930, y:570, r:82, objectives:[4,7], partial:[], description:'Patrimonio, memoria, identidad, apropiación social, permanencia de moradores, barrios, paisajes culturales y formas de vida campesina.' },
-    { id:'tecnologico', label:'Tecnológico-infraestructural', color:'#55b7d9', icon:'fa-road', x:220, y:650, r:72, objectives:[], partial:[], description:'Transporte público, Metro, Regiotram, red vial, ciclorrutas, servicios públicos, equipamientos e infraestructura urbana.', noObjective:true }
+    { id:'ambiental', label:'Ambiental', color:'#58d68d', icon:'fa-leaf', x:180, y:305, r:82, objectives:[1,2,3], partial:[], description:'Estructura ecológica principal, paisajes, ecosistemas, agua, contaminación, riesgo, cambio climático y relación urbano-rural.' },
+    { id:'humanista', label:'Humanista-social', color:'#ef8b3c', icon:'fa-people-group', x:450, y:300, r:136, objectives:[6], partial:[], description:'Calidad de vida, vivienda, cuidado, equidad, acceso a servicios y reducción de desigualdades.' },
+    { id:'socio', label:'Económico-productivo', color:'#eab04c', icon:'fa-chart-line', x:760, y:285, r:72, objectives:[5], partial:[], description:'Empleo, empresas, actividades productivas, aglomeraciones económicas y relación entre vivienda y trabajo.' },
+    { id:'cultural', label:'Cultural-territorial', color:'#a879ff', icon:'fa-landmark', x:970, y:300, r:82, objectives:[4,7], partial:[], description:'Patrimonio, memoria, identidad, apropiación social, permanencia de moradores, barrios, paisajes culturales y formas de vida campesina.' },
+    { id:'tecnologico', label:'Tecnológico-infraestructural', color:'#55b7d9', icon:'fa-road', x:620, y:510, r:72, objectives:[], partial:[], description:'Transporte público, Metro, Regiotram, red vial, ciclorrutas, servicios públicos, equipamientos e infraestructura urbana.', noObjective:true }
   ];
   // La tabla solicita eliminar las líneas visibles: la red se lee por nodos, tamaños y clasificación.
   const links = [];
   const el = (tag, attrs={}) => { const n=document.createElementNS(NS,tag); Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v)); return n; };
   const render = () => {
     svg.innerHTML = '';
-    svg.setAttribute('viewBox','0 0 1200 760');
+    svg.setAttribute('viewBox','0 0 1200 620');
     const defs = el('defs');
     systems.forEach(s => { const f=el('filter',{id:`glow-${s.color.slice(1)}`,x:'-80%',y:'-80%',width:'260%',height:'260%'}); f.appendChild(el('feGaussianBlur',{stdDeviation:'4',result:'blur'})); const merge=el('feMerge'); merge.appendChild(el('feMergeNode',{in:'blur'})); merge.appendChild(el('feMergeNode',{in:'SourceGraphic'})); f.appendChild(merge); defs.appendChild(f); });
     svg.appendChild(defs);

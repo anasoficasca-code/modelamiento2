@@ -489,10 +489,34 @@ function renderNetwork() {
 let networkZoomScale = 1;
 const NETWORK_ZOOM_MIN = 0.75;
 const NETWORK_ZOOM_MAX = 2.25;
-const NETWORK_VIEWBOX_WIDTH = 1470;
-const NETWORK_VIEWBOX_HEIGHT = 780;
-const NETWORK_VIEWBOX_CENTER_X = NETWORK_VIEWBOX_WIDTH / 2;
-const NETWORK_VIEWBOX_CENTER_Y = NETWORK_VIEWBOX_HEIGHT / 2;
+/* El encuadre se ajusta a lo que de verdad ocupa la red: el lienzo fijo de
+   1470x780 dejaba franjas vacías arriba, abajo y a la derecha, y con eso la
+   red se veía más pequeña de lo que el espacio permitía. */
+let NETWORK_VIEWBOX_WIDTH = 1470;
+let NETWORK_VIEWBOX_HEIGHT = 780;
+let NETWORK_VIEWBOX_CENTER_X = NETWORK_VIEWBOX_WIDTH / 2;
+let NETWORK_VIEWBOX_CENTER_Y = NETWORK_VIEWBOX_HEIGHT / 2;
+
+function ajustarEncuadreRed() {
+  const svg = document.getElementById("networkViz");
+  const capa = svg?.querySelector(".nodes-layer");
+  if (!svg || !capa) return;
+  let caja;
+  try { caja = capa.getBBox(); } catch (e) { return; }
+  if (!caja || !caja.width || !caja.height) return;
+  const MARGEN = 46;
+  const w = caja.width + MARGEN * 2, h = caja.height + MARGEN * 2;
+  // El alto del lienzo se ajusta a la forma real de la red: así la red usa
+  // todo el ancho disponible (que es lo que manda su tamaño en pantalla) y
+  // no queda una franja negra arriba y abajo.
+  const ancho = svg.clientWidth;
+  if (ancho) svg.style.height = Math.round(Math.max(430, Math.min(760, ancho * h / w))) + "px";
+  NETWORK_VIEWBOX_WIDTH = w;
+  NETWORK_VIEWBOX_HEIGHT = h;
+  NETWORK_VIEWBOX_CENTER_X = caja.x + caja.width / 2;
+  NETWORK_VIEWBOX_CENTER_Y = caja.y + caja.height / 2;
+  updateNetworkZoom();
+}
 
 function updateNetworkZoom() {
   const svg = document.getElementById("networkViz");
@@ -934,7 +958,6 @@ const PN_NODES = [
   { id: "p_equipamientos", name: "Equipamientos", cluster: "EFC", color: "#46d6d0", icon: "fa-building-columns", x: 367.9, y: 377.0, r: 23.8 },
   { id: "p_servicios_de_cuidado", name: "Servicios de cuidado", cluster: "EFC", color: "#46d6d0", icon: "fa-hand-holding-heart", x: 246.8, y: 372.1, r: 14.0 },
   { id: "p_servicios_sociales", name: "Servicios sociales", cluster: "EFC", color: "#46d6d0", icon: "fa-people-roof", x: 313.3, y: 429.5, r: 14.0 },
-  { id: "p_vivienda", name: "Vivienda", cluster: "EFC", color: "#46d6d0", icon: "fa-house", x: 247.5, y: 468.0, r: 26.6 },
   { id: "p_servicios_publicos", name: "Servicios públicos", cluster: "EFC", color: "#46d6d0", icon: "fa-plug", x: 179.6, y: 405.0, r: 14.0 },
   { id: "p_ciclorutas", name: "Ciclorutas", cluster: "EFC", color: "#46d6d0", icon: "fa-bicycle", x: 93.5, y: 419.0, r: 14.0 },
   { id: "p_transporte_publico", name: "Transporte público", cluster: "EFC", color: "#46d6d0", icon: "fa-bus", x: 136.9, y: 487.6, r: 14.0 },
@@ -977,12 +1000,10 @@ const PN_EDGES = [
   { s: "p_complejos_de_paramos", t: "p_paisajes_sostenibles", tipo: "soporte", directa: false, sinFlecha: false, pagina: "70", articulo: "Art. 7 / 52", frase: "complejos de páramos … paisajes" },
   { s: "p_equipamientos", t: "p_servicios_de_cuidado", tipo: "soporte", directa: false, sinFlecha: false, pagina: "117–118", articulo: "Art. 94–95", frase: "equipamientos y servicios de cuidado" },
   { s: "p_equipamientos", t: "p_servicios_sociales", tipo: "soporte", directa: false, sinFlecha: false, pagina: "117–118", articulo: "Art. 94–95", frase: "equipamientos y servicios sociales" },
-  { s: "p_equipamientos", t: "p_vivienda", tipo: "soporte", directa: true, sinFlecha: false, pagina: "117", articulo: "Art. 94 / 95", frase: "equipamientos … soluciones habitacionales" },
-  { s: "p_servicios_publicos", t: "p_vivienda", tipo: "soporte", directa: false, sinFlecha: false, pagina: "179", articulo: "Art. 179", frase: "servicio público … actividades en la ciudad" },
-  { s: "p_ciclorutas", t: "p_vivienda", tipo: "soporte", directa: false, sinFlecha: false, pagina: "117", articulo: "Art. 88", frase: "accesibilidad … conectividad" },
   { s: "p_ciclorutas", t: "p_transporte_publico", tipo: "resiliencia", directa: false, sinFlecha: true, pagina: "117 / 158–159", articulo: "Art. 88 / 158–159", frase: "cicloinfraestructura … corredores verdes" },
   { s: "p_ciclorutas", t: "p_areas_de_resiliencia_climatica", tipo: "soporte", directa: true, sinFlecha: false, pagina: null, articulo: "", frase: "Conexión Ciclorutas – Áreas de resiliencia climática (soporte), añadida según lo indicado. Pendiente de completar con la cita y página exactas del documento de sustento." },
-  { s: "p_transporte_publico", t: "p_vivienda", tipo: "soporte", directa: false, sinFlecha: false, pagina: "117", articulo: "Art. 88", frase: "accesibilidad … conectividad" },
+  { s: "p_transporte_publico", t: "p_servicios_empresariales", tipo: "soporte", directa: true, sinFlecha: false, pagina: "122", articulo: "Art. 101", frase: "Eje de servicios empresariales … accesibilidad y conectividad del sistema de transporte" },
+  { s: "p_servicios_publicos", t: "p_centros_financieros", tipo: "soporte", directa: true, sinFlecha: false, pagina: "179", articulo: "Art. 179", frase: "servicio público … actividades en la ciudad" },
   { s: "p_red_vial", t: "p_transporte_publico", tipo: "soporte", directa: true, sinFlecha: false, pagina: "158–159", articulo: "Art. 158–159", frase: "malla arterial … transporte público" },
   { s: "p_red_vial", t: "p_equipamientos", tipo: "soporte", directa: true, sinFlecha: false, pagina: "117", articulo: "Art. 88 / 95", frase: "accesibilidad … equipamientos" },
   { s: "p_corredores_verdes", t: "p_ciclorutas", tipo: "soporte", directa: true, sinFlecha: false, pagina: "117", articulo: "Política de movilidad", frase: "corredores verdes … cicloinfraestructura" },
@@ -1514,6 +1535,8 @@ function setupSidebarTooltip() {
 document.addEventListener("DOMContentLoaded", () => {
   renderNetwork();
   setupNetworkZoom();
+  ajustarEncuadreRed();
+  window.addEventListener("resize", ajustarEncuadreRed);
   setupLegendToggle();
   setupSidePanels();
   renderPotStructure();

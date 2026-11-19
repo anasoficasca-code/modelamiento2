@@ -1,0 +1,332 @@
+diff --git a/modulo-10-corte.html b/modulo-10-corte.html
+index 12bc404..d192ef5 100644
+--- a/modulo-10-corte.html
++++ b/modulo-10-corte.html
+@@ -199,6 +199,74 @@
+         <a href="red-residuos-organicos.html" class="icon-nav-item" title="Red de problemáticas"><i class="fa-solid fa-diagram-project"></i></a>
+         <a href="modulo-09.html" class="icon-nav-item" title="09 · Modelo propio"><i class="fa-solid fa-atom"></i></a>
+       </nav>
++    <div id="natClimatePanel" style="margin-top:16px; padding-top:14px; border-top:1px dashed rgba(0,0,0,.1); font-family:'Segoe UI',sans-serif;">
++        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
++          <span style="font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#2a856a;"><i class="fa-solid fa-droplet"></i> Cota de Inundación Anual</span>
++          <span id="natMesLabel" style="font-size:11.5px; font-weight:800; color:#111418; background:#eef4f1; padding:2px 7px; border-radius:6px;">Abril</span>
++        </div>
++        <input type="range" id="natMesSlider" min="1" max="12" value="4" step="1" style="width:100%; accent-color:#2a856a; margin:6px 0; cursor:pointer;">
++        <div style="display:flex; gap:10px; align-items:center; margin:8px 0 4px;">
++          <div style="flex:1;">
++            <div style="display:flex; justify-content:space-between; font-size:9px; color:#64748b; margin-bottom:3px;">
++              <span>Espejo de agua</span><span id="natPctLabel">—</span>
++            </div>
++            <div style="height:5px; border-radius:3px; background:#e2ece7; overflow:hidden;">
++              <div id="natFloodBar" style="height:100%; width:0%; border-radius:3px; background:linear-gradient(90deg,#6fb89a,#2a856a); transition:width .3s cubic-bezier(.22,1,.36,1);"></div>
++            </div>
++          </div>
++          <div style="text-align:right; flex:none;">
++            <div id="natHa" style="font-size:14px; font-weight:800; color:#111418;">—</div>
++            <div style="font-size:8px; color:#64748b; margin-top:1px;">hectáreas</div>
++          </div>
++        </div>
++        <div id="natFloodStats" style="font-size:10px; color:#495057; line-height:1.4; margin-bottom:6px;"></div>
++        <button type="button" id="natPlayYearBtn" style="width:100%; padding:6px 10px; border-radius:8px; border:1px solid rgba(42,133,106,.3); background:#2a856a; color:#fff; font-size:10.5px; font-weight:700; cursor:pointer;">
++          ▶ Reproducir año completo
++        </button>
++      </div>
++<div id="cultCapa1Panel" class="cult-control-panel" style="display:none; font-family:'Segoe UI',sans-serif; margin-top:16px;">
++        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
++          <span style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#a21caf;"><i class="fa-solid fa-clock-rotate-left"></i> Memoria Histórica (1950–2024)</span>
++          <span id="cultYearLabel" style="font-size:12px; font-weight:800; color:#fff; background:#a21caf; padding:2px 8px; border-radius:6px;">1956</span>
++        </div>
++        <input type="range" id="cultYearSlider" min="1950" max="2024" value="1956" step="1" style="width:100%; accent-color:#a21caf; margin:6px 0; cursor:pointer;">
++        <div id="cultHistoryStats" style="font-size:11px; color:#334155; line-height:1.45; margin-bottom:6px;">
++          Área humedal: <strong style="color:#9333ea;">171.54 ha</strong> · Percepción: <strong style="color:#e11d48;">"Potrero / Pantano a secar"</strong>
++        </div>
++        <button type="button" id="cultPlayHistoryBtn" style="width:100%; padding:6px 10px; border-radius:8px; border:1px solid rgba(162,28,175,.3); background:#a21caf; color:#fff; font-size:11px; font-weight:700; cursor:pointer;">
++          ▶ Simular evolución histórica (1950 ➔ 2024)
++        </button>
++      </div>
++<div id="cultCapa2Panel" class="cult-control-panel" style="display:none; font-family:'Segoe UI',sans-serif; margin-top:16px;">
++        <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#0284c7; margin-bottom:4px;"><i class="fa-solid fa-door-closed"></i> Cerramiento EAAB & Filtro de Borde</div>
++        <div style="font-size:11px; color:#334155; line-height:1.45; margin-bottom:6px;">
++          Alameda El Porvenir: <strong style="color:#e11d48;">Velocidad Alta (Ciclistas/Deporte)</strong><br>
++          Filtro Portón ZMPA (12,14 ha): <strong style="color:#0284c7;">Solo Visitas Guiadas</strong> ➔ <strong style="color:#16a34a;">Paseo Lento Pasivo</strong>
++        </div>
++      </div>
++<div id="cultCapa3Panel" class="cult-control-panel" style="display:none; font-family:'Segoe UI',sans-serif; margin-top:16px;">
++        <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#15803d; margin-bottom:4px;"><i class="fa-solid fa-book-open-reader"></i> Recorrido Pedagógico & Experiencia Sensorial</div>
++        <div style="font-size:11px; color:#334155; line-height:1.45; margin-bottom:6px;">
++          Ruta: <strong>Biblioteca El Tintal ➔ Aula Ambiental ➔ Mirador</strong><br>
++          Franja de Silencio: <strong style="color:#16a34a;">Activa en plataforma de avistamiento</strong> (Aves se acercan al espejo de agua)
++        </div>
++      </div>
++<div id="cultCapa4Panel" class="cult-control-panel" style="display:none; font-family:'Segoe UI',sans-serif; margin-top:16px;">
++        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
++          <span style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#ea580c;"><i class="fa-solid fa-bus"></i> Fricción Vial Av. Ciudad de Cali</span>
++          <span id="cultTadBadge" style="font-size:11px; font-weight:800; color:#fff; background:#dc2626; padding:2px 8px; border-radius:6px;">TAD: +2 horas</span>
++        </div>
++        <div style="font-size:11px; color:#334155; line-height:1.4; margin-bottom:8px;">
++          División del humedal: Sector Noroccidental (4,9 ha) | Suroriental (13,9 ha).<br>
++          En lluvias: desborde hídrico e inoperancia vehicular.
++        </div>
++        <div style="display:flex; align-items:center; justify-content:space-between; background:#f8fafc; border:1px solid #e2e8f0; padding:8px 10px; border-radius:8px;">
++          <span style="font-size:11.5px; font-weight:700; color:#0f172a;">🌉 Vía Elevada / Flotante SOT:</span>
++          <button type="button" id="cultSotToggleBtn" style="padding:4px 10px; border-radius:6px; border:1px solid #16a34a; background:#16a34a; color:#fff; font-size:10.5px; font-weight:700; cursor:pointer;">
++            ACTIVAR WHAT-IF
++          </button>
++        </div>
++      </div>
+     </aside>
+   <main class="main">
+     <div id="sceneWrap">
+@@ -213,6 +281,22 @@
+          convenciones; abajo: alto del corte), por debajo de ella. -->
+     <div id="axoBackdrop" style="display:none;"></div>
+ 
++    <!-- Panel de convenciones (reemplaza la antigua etiqueta de escala) -->
++    <aside id="legendPanel" style="display:none; position:absolute; top:0; left:0; bottom:0; width:200px; z-index:400; background:rgba(255,255,255,.96); backdrop-filter:blur(10px); border-right:1px solid rgba(0,0,0,.08); padding:70px 16px 16px; overflow-y:auto; font-family:'Segoe UI',sans-serif;">
++      </aside>
++  <main class="main">
++    <div id="sceneWrap">
++      <canvas id="sceneCanvas"></canvas>
++      <div id="axoContextFade" style="display:none; position:absolute; inset:0; z-index:7; background:rgba(255,255,255,.38); pointer-events:none;"></div>
++    </div>
++
++    <!-- Fondo solido detras de la escala/axonometria activa: al achicarla
++         o moverla con el zoom/arrastre, esto tapa la axonometria inicial
++         de abajo para que nunca se vea "el fondo" ni se transparente
++         nada. Ocupa el mismo recuadro que la escala (izquierda: ancho de
++         convenciones; abajo: alto del corte), por debajo de ella. -->
++    <div id="axoBackdrop" style="display:none;"></div>
++
+     <!-- Panel de convenciones (reemplaza la antigua etiqueta de escala) -->
+     <aside id="legendPanel" style="display:none; position:absolute; top:0; left:0; bottom:0; width:200px; z-index:400; background:rgba(255,255,255,.96); backdrop-filter:blur(10px); border-right:1px solid rgba(0,0,0,.08); padding:70px 16px 16px; overflow-y:auto; font-family:'Segoe UI',sans-serif;">
+       <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:12px;">Convenciones</div>
+@@ -251,31 +335,7 @@
+ 
+       <!-- Cota de Inundacion Anual, ahora dentro de Convenciones (no
+            flotando sobre la axonometria) -->
+-      <div id="natClimatePanel" style="margin-top:16px; padding-top:14px; border-top:1px dashed rgba(0,0,0,.1); font-family:'Segoe UI',sans-serif;">
+-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+-          <span style="font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#2a856a;"><i class="fa-solid fa-droplet"></i> Cota de Inundación Anual</span>
+-          <span id="natMesLabel" style="font-size:11.5px; font-weight:800; color:#111418; background:#eef4f1; padding:2px 7px; border-radius:6px;">Abril</span>
+-        </div>
+-        <input type="range" id="natMesSlider" min="1" max="12" value="4" step="1" style="width:100%; accent-color:#2a856a; margin:6px 0; cursor:pointer;">
+-        <div style="display:flex; gap:10px; align-items:center; margin:8px 0 4px;">
+-          <div style="flex:1;">
+-            <div style="display:flex; justify-content:space-between; font-size:9px; color:#64748b; margin-bottom:3px;">
+-              <span>Espejo de agua</span><span id="natPctLabel">—</span>
+-            </div>
+-            <div style="height:5px; border-radius:3px; background:#e2ece7; overflow:hidden;">
+-              <div id="natFloodBar" style="height:100%; width:0%; border-radius:3px; background:linear-gradient(90deg,#6fb89a,#2a856a); transition:width .3s cubic-bezier(.22,1,.36,1);"></div>
+-            </div>
+-          </div>
+-          <div style="text-align:right; flex:none;">
+-            <div id="natHa" style="font-size:14px; font-weight:800; color:#111418;">—</div>
+-            <div style="font-size:8px; color:#64748b; margin-top:1px;">hectáreas</div>
+-          </div>
+-        </div>
+-        <div id="natFloodStats" style="font-size:10px; color:#495057; line-height:1.4; margin-bottom:6px;"></div>
+-        <button type="button" id="natPlayYearBtn" style="width:100%; padding:6px 10px; border-radius:8px; border:1px solid rgba(42,133,106,.3); background:#2a856a; color:#fff; font-size:10.5px; font-weight:700; cursor:pointer;">
+-          ▶ Reproducir año completo
+-        </button>
+-      </div>
++      
+     </aside>
+ 
+     <!-- Editor de la organizacion (panel + axonometria + corte): se puede
+@@ -541,7 +601,7 @@
+           </div>
+           <svg id="natWaterSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
+           <!-- Etiqueta temática lateral exterior al rombo -->
+-          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
++          <div class="nat-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#0369a1; background:#e0f2fe; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(2,132,199,.2);">Capa 01</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">SISTEMA INERTE & FÍSICO-HIDROLÓGICO</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Espejo hídrico dinámico (0,2 - 6,69 ha) · Borde de inundación · Conexión freática La Vaca</div>
+@@ -556,7 +616,7 @@
+           </div>
+           <svg id="natVegSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
+           <!-- Etiqueta temática lateral exterior al rombo -->
+-          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
++          <div class="nat-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#2e6930; background:#edf7ed; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(46,105,48,.2);">Capa 02</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">ESTRATIFICACIÓN VEGETAL & COBERTURA</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Franja riparia hidrófita (Typha / juncales) · Matorral perimetral ZMPA · Arbolado urbano</div>
+@@ -571,7 +631,7 @@
+           </div>
+           <svg id="natBirdSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
+           <!-- Etiqueta temática lateral exterior al rombo -->
+-          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
++          <div class="nat-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#854d0e; background:#fef9c3; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(133,77,14,.2);">Capa 03</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">NICHOS ECOLÓGICOS & AGENTES BIÓTICOS</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Playones de forrajeo en estiaje · Segregación litoral garzas/tinguas en aguas altas</div>
+@@ -586,7 +646,7 @@
+           </div>
+           <svg id="natMacroSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
+           <!-- Etiqueta temática lateral exterior al rombo -->
+-          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
++          <div class="nat-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#475569; background:#e2e8f0; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(71,85,105,.25);">Capa 04</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">CORREDORES DE CONECTIVIDAD REGIONAL</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Eje biogeográfico Cordillera-Río Bogotá · Vínculo genético intercuencas EEP</div>
+@@ -597,7 +657,7 @@
+         <div id="natLayerBase" class="nat-sublayer" data-exploded-top="70%" style="position:absolute; top:50%; left:50%; width:min(82vw, 900px); aspect-ratio:16/9; z-index:2; opacity:1; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+           <div class="sublayer-diamond" style="width:100%; height:100%; cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="natBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
+           <!-- Etiqueta temática lateral exterior al rombo -->
+-          <div class="nat-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">
++          <div class="nat-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(100,116,139,.2);">Base</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">EXISTING FEATURES</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Axonometría Base Cortada · Tejido urbano y geomorfología</div>
+@@ -625,55 +685,16 @@
+       </div>
+ 
+       <!-- Panel de Controles Flotante para Capa 1: Memoria Histórica -->
+-      <div id="cultCapa1Panel" class="cult-control-panel" style="position:absolute; bottom:20px; left:26px; z-index:322; width:340px; background:rgba(255,255,255,.95); backdrop-filter:blur(10px); border:1px solid rgba(0,0,0,.12); border-radius:14px; padding:12px 16px; box-shadow:0 12px 30px rgba(0,0,0,.08); font-family:'Segoe UI',sans-serif; display:none;">
+-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+-          <span style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#a21caf;"><i class="fa-solid fa-clock-rotate-left"></i> Memoria Histórica (1950–2024)</span>
+-          <span id="cultYearLabel" style="font-size:12px; font-weight:800; color:#fff; background:#a21caf; padding:2px 8px; border-radius:6px;">1956</span>
+-        </div>
+-        <input type="range" id="cultYearSlider" min="1950" max="2024" value="1956" step="1" style="width:100%; accent-color:#a21caf; margin:6px 0; cursor:pointer;">
+-        <div id="cultHistoryStats" style="font-size:11px; color:#334155; line-height:1.45; margin-bottom:6px;">
+-          Área humedal: <strong style="color:#9333ea;">171.54 ha</strong> · Percepción: <strong style="color:#e11d48;">"Potrero / Pantano a secar"</strong>
+-        </div>
+-        <button type="button" id="cultPlayHistoryBtn" style="width:100%; padding:6px 10px; border-radius:8px; border:1px solid rgba(162,28,175,.3); background:#a21caf; color:#fff; font-size:11px; font-weight:700; cursor:pointer;">
+-          ▶ Simular evolución histórica (1950 ➔ 2024)
+-        </button>
+-      </div>
++      
+ 
+       <!-- Panel de Controles Flotante para Capa 2: Cerramiento EAAB -->
+-      <div id="cultCapa2Panel" class="cult-control-panel" style="position:absolute; bottom:20px; left:26px; z-index:322; width:340px; background:rgba(255,255,255,.95); backdrop-filter:blur(10px); border:1px solid rgba(0,0,0,.12); border-radius:14px; padding:12px 16px; box-shadow:0 12px 30px rgba(0,0,0,.08); font-family:'Segoe UI',sans-serif; display:none;">
+-        <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#0284c7; margin-bottom:4px;"><i class="fa-solid fa-door-closed"></i> Cerramiento EAAB & Filtro de Borde</div>
+-        <div style="font-size:11px; color:#334155; line-height:1.45; margin-bottom:6px;">
+-          Alameda El Porvenir: <strong style="color:#e11d48;">Velocidad Alta (Ciclistas/Deporte)</strong><br>
+-          Filtro Portón ZMPA (12,14 ha): <strong style="color:#0284c7;">Solo Visitas Guiadas</strong> ➔ <strong style="color:#16a34a;">Paseo Lento Pasivo</strong>
+-        </div>
+-      </div>
++      
+ 
+       <!-- Panel de Controles Flotante para Capa 3: Recorrido Pedagógico & Avistamiento -->
+-      <div id="cultCapa3Panel" class="cult-control-panel" style="position:absolute; bottom:20px; left:26px; z-index:322; width:340px; background:rgba(255,255,255,.95); backdrop-filter:blur(10px); border:1px solid rgba(0,0,0,.12); border-radius:14px; padding:12px 16px; box-shadow:0 12px 30px rgba(0,0,0,.08); font-family:'Segoe UI',sans-serif; display:none;">
+-        <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#15803d; margin-bottom:4px;"><i class="fa-solid fa-book-open-reader"></i> Recorrido Pedagógico & Experiencia Sensorial</div>
+-        <div style="font-size:11px; color:#334155; line-height:1.45; margin-bottom:6px;">
+-          Ruta: <strong>Biblioteca El Tintal ➔ Aula Ambiental ➔ Mirador</strong><br>
+-          Franja de Silencio: <strong style="color:#16a34a;">Activa en plataforma de avistamiento</strong> (Aves se acercan al espejo de agua)
+-        </div>
+-      </div>
++      
+ 
+       <!-- Panel de Controles Flotante para Capa 4: Fricción Vial & Solución Adaptativa SOT -->
+-      <div id="cultCapa4Panel" class="cult-control-panel" style="position:absolute; bottom:20px; left:26px; z-index:322; width:350px; background:rgba(255,255,255,.95); backdrop-filter:blur(10px); border:1px solid rgba(0,0,0,.12); border-radius:14px; padding:12px 16px; box-shadow:0 12px 30px rgba(0,0,0,.08); font-family:'Segoe UI',sans-serif; display:none;">
+-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+-          <span style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#ea580c;"><i class="fa-solid fa-bus"></i> Fricción Vial Av. Ciudad de Cali</span>
+-          <span id="cultTadBadge" style="font-size:11px; font-weight:800; color:#fff; background:#dc2626; padding:2px 8px; border-radius:6px;">TAD: +2 horas</span>
+-        </div>
+-        <div style="font-size:11px; color:#334155; line-height:1.4; margin-bottom:8px;">
+-          División del humedal: Sector Noroccidental (4,9 ha) | Suroriental (13,9 ha).<br>
+-          En lluvias: desborde hídrico e inoperancia vehicular.
+-        </div>
+-        <div style="display:flex; align-items:center; justify-content:space-between; background:#f8fafc; border:1px solid #e2e8f0; padding:8px 10px; border-radius:8px;">
+-          <span style="font-size:11.5px; font-weight:700; color:#0f172a;">🌉 Vía Elevada / Flotante SOT:</span>
+-          <button type="button" id="cultSotToggleBtn" style="padding:4px 10px; border-radius:6px; border:1px solid #16a34a; background:#16a34a; color:#fff; font-size:10.5px; font-weight:700; cursor:pointer;">
+-            ACTIVAR WHAT-IF
+-          </button>
+-        </div>
+-      </div>
++      
+ 
+       <!-- Contenedor central apilado estilo referente -->
+       <div id="culturalExplodeStage" style="position:relative; width:min(96vw, 940px); height:min(86vh, 720px); display:flex; align-items:center; justify-content:center; margin-top:20px;">
+@@ -686,7 +707,7 @@
+             <canvas id="cultLayer1Canvas" style="width:100%; height:100%; display:block; position:relative; z-index:2;"></canvas>
+           </div>
+           <svg id="cultLayer1Svg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
+-          <div class="cult-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
++          <div class="cult-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#a21caf; background:#fdf4ff; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(162,28,175,.25);">Capa 01</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">MEMORIA HISTÓRICA & CAMBIO DE PERCEPCIÓN</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Transformación (1950 - Presente) · Reducción 171.54 ha ➔ 18.84 ha (-89%) · Nodos de cuidado</div>
+@@ -700,7 +721,7 @@
+             <canvas id="cultLayer2Canvas" style="width:100%; height:100%; display:block; position:relative; z-index:2;"></canvas>
+           </div>
+           <svg id="cultLayer2Svg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
+-          <div class="cult-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
++          <div class="cult-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#0369a1; background:#e0f2fe; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(3,105,161,.25);">Capa 02</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">CERRAMIENTO PERIMETRAL & FILTRO DE BORDE</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Alameda El Porvenir ➔ Portón EAAB ➔ Transición a paseo lento en ZMPA (12.14 ha)</div>
+@@ -714,7 +735,7 @@
+             <canvas id="cultLayer3Canvas" style="width:100%; height:100%; display:block; position:relative; z-index:2;"></canvas>
+           </div>
+           <svg id="cultLayer3Svg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
+-          <div class="cult-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
++          <div class="cult-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#15803d; background:#f0fdf4; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(21,128,61,.25);">Capa 03</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">RECORRIDO PEDAGÓGICO & EXPERIENCIA SENSORIAL</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Biblioteca El Tintal / Aula Ambiental ➔ Senderos nativos ➔ Franja de silencio y avistamiento</div>
+@@ -728,7 +749,7 @@
+             <canvas id="cultLayer4Canvas" style="width:100%; height:100%; display:block; position:relative; z-index:2;"></canvas>
+           </div>
+           <svg id="cultLayer4Svg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
+-          <div class="cult-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
++          <div class="cult-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#c2410c; background:#fff7ed; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(194,65,12,.25);">Capa 04</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">FRICCIÓN VIAL & SOLUCIÓN ADAPTATIVA SOT</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Av. Ciudad de Cali · Fraccionamiento (4.9 ha vs 13.9 ha) · Lluvias / TAD (+2h) ↔ Vía Elevada Flotante</div>
+@@ -737,8 +758,8 @@
+ 
+         <!-- Capa Base inferior -->
+         <div id="cultLayerBase" class="cult-sublayer" data-exploded-top="70%" style="position:absolute; top:50%; left:50%; width:min(82vw, 900px); aspect-ratio:16/9; z-index:2; opacity:1; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+-          <div class="sublayer-diamond" style="width:100%; height:100%; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="cultBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
+-          <div class="cult-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">
++          <div class="sublayer-diamond" style="width:100%; height:100%; cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="cultBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
++          <div class="cult-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(100,116,139,.2);">Base</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">EXISTING FEATURES</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Axonometría Base Cortada · Tejido urbano y geomorfología</div>
+@@ -776,7 +797,7 @@
+             <canvas id="techSewerCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
+           </div>
+           <svg id="techL4Svg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
+-          <div class="tech-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
++          <div class="tech-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#7c2d12; background:#fff7ed; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(234,88,12,.25);">Capa 04</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">REDES DE ALCANTARILLADO SUBTERRÁNEO</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Conexiones erradas (EACEH) por el Canal Castilla y el Canal Los Ángeles</div>
+@@ -789,7 +810,7 @@
+             <canvas id="techFloodCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
+           </div>
+           <svg id="techL3Svg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
+-          <div class="tech-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
++          <div class="tech-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#0369a1; background:#f0f9ff; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(234,88,12,.25);">Capa 03</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">INUNDACIÓN Y COLAPSO DE MOVILIDAD</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">La lámina de agua supera la Ronda Hidráulica e invade la Av. Ciudad de Cali</div>
+@@ -802,7 +823,7 @@
+             <canvas id="techNoiseCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
+           </div>
+           <svg id="techNoiseSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
+-          <div class="tech-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
++          <div class="tech-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#ea580c; background:#fff7ed; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(234,88,12,.25);">Capa 02</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">SIMULACIÓN DE RUIDO ACÚSTICO</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Mapa de calor de propagación sonora en vivo (dB) de los vehículos</div>
+@@ -816,7 +837,7 @@
+             <canvas id="techRoadsVehCanvas" style="width:100%; height:100%; display:block; position:relative;"></canvas>
+           </div>
+           <svg id="techRoadsVehSvg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:10;"></svg>
+-          <div class="tech-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
++          <div class="tech-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; pointer-events:none; z-index:10; opacity:0; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#e11d48; background:#ffe4e6; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(225,29,72,.25);">Capa 01</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">RED VIAL & TRÁFICO VEHICULAR</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Malla vial de Kennedy + Flujo de vehículos reales SUMO</div>
+@@ -826,7 +847,7 @@
+         <!-- Capa Base inferior -->
+         <div id="techLayerBase" class="tech-sublayer" data-exploded-top="72%" style="position:absolute; top:50%; left:50%; width:min(82vw, 900px); aspect-ratio:16/9; z-index:2; opacity:1; transform:translate(-50%, -40%); transition:top 1.8s cubic-bezier(.2,.85,.25,1), transform 1.8s cubic-bezier(.2,.85,.25,1), opacity 1.2s ease;">
+           <div class="sublayer-diamond" style="width:100%; height:100%; cursor:pointer; position:relative; box-shadow:none; background:transparent;"><img id="techBaseImg" style="width:100%; height:100%; object-fit:fill;"></div>
+-          <div class="tech-layer-tag" style="position:absolute; top:50%; left:calc(100% + 20px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:left; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">
++          <div class="tech-layer-tag" style="position:absolute; top:50%; right:calc(100% + 10px); transform:translateY(-50%); font-family:'Segoe UI',sans-serif; text-align:right; white-space:nowrap; z-index:10; opacity:1; transition:opacity .8s ease;">
+             <span style="display:inline-block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:4px; margin-bottom:3px; border:1px solid rgba(100,116,139,.2);">Base</span>
+             <div style="font-size:13.5px; font-weight:800; color:#1e293b; line-height:1.2; letter-spacing:-.01em;">EXISTING FEATURES</div>
+             <div style="font-size:10px; color:#64748b; font-weight:600;">Axonometría Base Cortada · Tejido urbano sin tráfico</div>

@@ -1,0 +1,134 @@
+/* =====================================================================
+   RAPOT v2: capa de diseño renovado para los módulos.
+   Solo aplica cuando <html> tiene la clase .rapot-v2 (la pone rapot-v2.js).
+   No cambia la lógica ni la estructura de ningún módulo.
+   ===================================================================== */
+html.rapot-v2 {
+  --v2-abyss: #012624;
+  --v2-deep: #011d1c;
+  --v2-kelp: #003734;
+  --v2-kelp-soft: rgba(3, 81, 75, .5);
+  --v2-mist: #edfffe;
+  --v2-silver: #bbc7c6;
+  --v2-slate: #707777;
+  --v2-phosphor: #fde9ff;
+  --v2-teal: #4fdccc;
+  --v2-line: rgba(255, 255, 255, .1);
+  --v2-font: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* tokens compartidos del sitio (site-theme.css) */
+  --site-bg: var(--v2-abyss);
+  --site-surface: var(--v2-deep);
+  --site-surface-2: var(--v2-kelp);
+  --site-line: var(--v2-line);
+  --site-line-strong: rgba(255, 255, 255, .16);
+  --site-text: var(--v2-mist);
+  --site-muted: var(--v2-silver);
+  --site-subtle: var(--v2-slate);
+  --site-teal: var(--v2-teal);
+  --site-teal-soft: rgba(79, 220, 204, .12);
+  --site-radius: 6px;
+  --site-font-body: var(--v2-font);
+  --site-font-display: var(--v2-font);
+  background: var(--v2-abyss) !important;
+}
+
+/* ---------- tipografía ---------- */
+html.rapot-v2 body,
+html.rapot-v2 button,
+html.rapot-v2 input,
+html.rapot-v2 select,
+html.rapot-v2 textarea,
+html.rapot-v2 option {
+  font-family: var(--v2-font) !important;
+}
+html.rapot-v2 body { -webkit-font-smoothing: antialiased; }
+html.rapot-v2 h1,
+html.rapot-v2 h2,
+html.rapot-v2 h3,
+html.rapot-v2 .hero-title,
+html.rapot-v2 .page-title,
+html.rapot-v2 .section-title,
+html.rapot-v2 .topbar-title,
+html.rapot-v2 .brand-name,
+html.rapot-v2 .card-title,
+html.rapot-v2 .panel-title {
+  font-family: var(--v2-font) !important;
+  font-weight: 500 !important;
+  letter-spacing: -.02em;
+}
+html.rapot-v2 h1, html.rapot-v2 h2 { letter-spacing: -.035em; }
+
+/* ---------- lienzo ---------- */
+html.rapot-v2 body,
+html.rapot-v2 .app,
+html.rapot-v2 .main {
+  background-color: var(--v2-abyss) !important;
+}
+html.rapot-v2 body { color: var(--v2-mist); }
+
+/* ---------- barra lateral ---------- */
+html.rapot-v2 .app > .sidebar,
+html.rapot-v2 .sidebar.sidebar-icons-only {
+  background: var(--v2-deep) !important;
+  border-right: 1px solid var(--v2-line) !important;
+  box-shadow: none !important;
+}
+html.rapot-v2 .app > .sidebar.sidebar-icons-only .icon-nav-item {
+  color: var(--v2-silver);
+  border-radius: 6px;
+}
+html.rapot-v2 .app > .sidebar.sidebar-icons-only .icon-nav-item:hover,
+html.rapot-v2 .app > .sidebar.sidebar-icons-only .icon-nav-item:focus-visible,
+html.rapot-v2 .app > .sidebar.sidebar-icons-only .icon-nav-item.active {
+  color: var(--v2-abyss) !important;
+  background: var(--v2-mist) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  transform: none;
+}
+html.rapot-v2 .app > .sidebar.sidebar-icons-only .icon-nav-item::after {
+  background: var(--v2-deep);
+  border: 1px solid var(--v2-line);
+  border-radius: 6px;
+  color: var(--v2-mist);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+html.rapot-v2 .sidebar .brand-icon {
+  color: var(--v2-mist) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* ---------- barra superior ---------- */
+/* los títulos flotantes (.hud-title) de las vistas 3D se dejan como están: van sobre lienzo claro */
+html.rapot-v2 .topbar {
+  background: rgba(1, 38, 36, .86) !important;
+  border-bottom: 1px solid var(--v2-line) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+/* ---------- superficies genéricas ---------- */
+html.rapot-v2 .card,
+html.rapot-v2 .panel,
+html.rapot-v2 .panel-block,
+html.rapot-v2 .surface,
+html.rapot-v2 .info-card,
+html.rapot-v2 .metric-card {
+  border-color: var(--v2-line) !important;
+  box-shadow: none !important;
+}
+
+/* ---------- controles ---------- */
+html.rapot-v2 :focus-visible {
+  outline: 2px solid var(--v2-teal);
+  outline-offset: 2px;
+}
+html.rapot-v2 ::selection { background: var(--v2-phosphor); color: var(--v2-abyss); }
+html.rapot-v2 * { scrollbar-color: var(--v2-kelp) transparent; }
+html.rapot-v2 ::-webkit-scrollbar { width: 10px; height: 10px; }
+html.rapot-v2 ::-webkit-scrollbar-thumb { background: var(--v2-kelp); border-radius: 6px; border: 2px solid var(--v2-abyss); }
+html.rapot-v2 ::-webkit-scrollbar-track { background: transparent; }

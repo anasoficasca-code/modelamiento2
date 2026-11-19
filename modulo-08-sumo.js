@@ -590,26 +590,18 @@
       return any ? 10 * Math.log10(energySum) : null;
     }
 
-    function drawNoiseLayer(vehicles, w, h) {
-      if (!noiseCanvas || !noiseCtx) return;
-      // NOTA: existe más arriba un motor acústico real (CNOSSOS-EU,
-      // totalLevelAtReceiverDbA) ya implementado y correcto, pero todavía
-      // devuelve null porque faltan los coeficientes oficiales (ver TODO).
-      // Por eso este dibujo sigue usando el método visual anterior (manchas
-      // + curva de intensidad), sin ningún cambio de color, transparencia
-      // ni apariencia — en cuanto se completen los coeficientes, este
-      // bloque se reemplaza por una llamada real a totalLevelAtReceiverDbA
-      // por cada punto del buffer.
-      // 1) Acumular "carga de tráfico" por zona en el buffer chico: cada
-      // vehículo suma una mancha suave (radial) alrededor de su posición;
-      // donde se juntan varios vehículos, la mancha se acumula más fuerte.
-      // El radio de cada mancha ahora depende del tipo de vía más cercana
-      // al vehículo (local=25m, mid=75m, major=150m — en METROS REALES,
-      // convertidos aquí a píxeles del buffer según el zoom actual).
+    // Campo de "carga de tráfico" del buffer chico (0..1 por celda). Es el
+    // MISMO que pinta la capa de ruido; se guarda aparte para poder leer el
+    // nivel en un punto (lo necesitan las mirlas) aunque la capa esté
+    // apagada.
+    let noiseField = null, noiseFieldW = 0, noiseFieldH = 0, noiseFieldImg = null;
+
+    function computeNoiseField(vehicles, w, h) {
+      if (!noiseBufCtx) return;
       noiseBufCtx.clearRect(0, 0, noiseBufW, noiseBufH);
       noiseBufCtx.globalCompositeOperation = "lighter";
       const bufScaleX = noiseBufW / w, bufScaleY = noiseBufH / h;
-      const metersToBufPx = view.scale * bufScaleX; // metros del mundo -> píxeles del buffer
+      const metersToBufPx = view.scale * bufScaleX;
       vehicles.forEach((v) => {
         const [sx, sy] = toScreen(v.x, v.y);
         const bx = sx * bufScaleX, by = sy * bufScaleY;
@@ -625,11 +617,51 @@
         noiseBufCtx.fill();
       });
       noiseBufCtx.globalCompositeOperation = "source-over";
-
-      // 2) Convertir esa acumulación de intensidad en color — el alpha de
-      // salida es SIEMPRE el mismo (NOISE_ALPHA); solo cambia el color
-      // según qué tan alta es la intensidad acumulada en ese punto.
       const img = noiseBufCtx.getImageData(0, 0, noiseBufW, noiseBufH);
+      const celdas = noiseBufW * noiseBufH;
+      if (!noiseField || noiseField.length !== celdas) noiseField = new Float32Array(celdas);
+      for (let i = 0, j = 0; j < celdas; i += 4, j++) noiseField[j] = img.data[i + 3] / 255;
+      noiseFieldW = noiseBufW; noiseFieldH = noiseBufH; noiseFieldImg = img;
+    }
+
+    // Nivel en dB(A) en un punto de la pantalla, leído del mismo campo y con
+    // la MISMA escala que su leyenda: t=0.2 → 60 dB, 0.4 → 70, 0.6 → 80…
+    const NOISE_DB_BASE = 50, NOISE_DB_SPAN = 50;
+    function noiseDbAtScreen(x, y, w, h) {
+      if (!noiseField || !noiseFieldW) return NOISE_DB_BASE;
+      const bx = Math.floor((x / w) * noiseFieldW), by = Math.floor((y / h) * noiseFieldH);
+      if (bx < 0 || by < 0 || bx >= noiseFieldW || by >= noiseFieldH) return NOISE_DB_BASE;
+      const t = Math.min(1, Math.pow(noiseField[by * noiseFieldW + bx], 2.4));
+      return NOISE_DB_BASE + NOISE_DB_SPAN * t;
+    }
+    // û del enunciado: unitario que apunta desde la avenida (más ruido)
+    // hacia el ave (menos ruido). Se obtiene del gradiente del propio campo,
+    // así funciona con cualquier trazado de vía, no solo con una avenida.
+    function noiseEscapeDir(x, y, w, h) {
+      const paso = Math.max(4, w / Math.max(1, noiseFieldW));
+      const gx = noiseDbAtScreen(x + paso, y, w, h) - noiseDbAtScreen(x - paso, y, w, h);
+      const gy = noiseDbAtScreen(x, y + paso, w, h) - noiseDbAtScreen(x, y - paso, w, h);
+      const m = Math.hypot(gx, gy);
+      if (m < 1e-4) return null;
+      return [-gx / m, -gy / m];
+    }
+
+    function drawNoiseLayer(vehicles, w, h) {
+      if (!noiseCanvas || !noiseCtx) return;
+      // NOTA: existe más arriba un motor acústico real (CNOSSOS-EU,
+      // totalLevelAtReceiverDbA) ya implementado y correcto, pero todavía
+      // devuelve null porque faltan los coeficientes oficiales (ver TODO).
+      // Por eso este dibujo sigue usando el método visual anterior (manchas
+      // + curva de intensidad), sin ningún cambio de color, transparencia
+      // ni apariencia — en cuanto se completen los coeficientes, este
+      // bloque se reemplaza por una llamada real a totalLevelAtReceiverDbA
+      // por cada punto del buffer.
+      // 2) Convertir la acumulación de intensidad (ya calculada en
+      // computeNoiseField) en color — el alpha de salida es SIEMPRE el
+      // mismo (NOISE_ALPHA); solo cambia el color según qué tan alta es la
+      // intensidad acumulada en ese punto.
+      const img = noiseFieldImg;
+      if (!img) return;
       const data = img.data;
       for (let i = 0; i < data.length; i += 4) {
         const intensity = data[i + 3] / 255; // canal alpha acumulado = "carga de tráfico"
@@ -824,6 +856,23 @@
         strokeSmoothPath(netCtx, screenPts);
         netCtx.stroke();
       });
+      // Refugio verde del rincón superior izquierdo: la tierra que queda
+      // entre la esquina del mapa y el río, pintada con el trazado real del
+      // río como borde para que el verde no se meta al agua.
+      const refugio = refugePolygon(w, h);
+      if (refugio && refugio.length > 3) {
+        netCtx.save();
+        netCtx.beginPath();
+        netCtx.moveTo(refugio[0][0], refugio[0][1]);
+        for (let i = 1; i < refugio.length; i++) netCtx.lineTo(refugio[i][0], refugio[i][1]);
+        netCtx.closePath();
+        netCtx.fillStyle = "rgba(94,186,124,0.26)";
+        netCtx.fill();
+        netCtx.strokeStyle = "rgba(126,214,152,0.42)";
+        netCtx.lineWidth = 1.2;
+        netCtx.stroke();
+        netCtx.restore();
+      }
       // Arbolado Urbano real de Kennedy: se calcula la posición base de
       // cada árbol con toScreen (igual que las vías), y luego se distorsiona
       // con las 4 esquinas arrastrables (interpolación bilineal), como el
@@ -856,23 +905,6 @@
           netCtx.arc(sx, sy, r, 0, Math.PI * 2);
           netCtx.fill();
         });
-        // Las 4 esquinas arrastrables: se dibujan más cerca del centro que
-        // su posición real (HANDLE_DISPLAY_SCALE), solo para que sean
-        // fáciles de agarrar — los árboles siguen en su escala normal.
-        // Solo visibles en modo distorsión.
-        if (window.sumoActiveMode === "trees") {
-          netCtx.fillStyle = "#ffb020";
-          netCtx.strokeStyle = "#1a0505";
-          netCtx.lineWidth = 1.5;
-          [TL, TR, BL, BR].forEach((p) => {
-            const px = (p.x - cx) * HANDLE_DISPLAY_SCALE + cx;
-            const py = (p.y - cy) * HANDLE_DISPLAY_SCALE + cy;
-            netCtx.beginPath();
-            netCtx.arc(px, py, 8, 0, Math.PI * 2);
-            netCtx.fill();
-            netCtx.stroke();
-          });
-        }
       }
       // se dibuja primero lo local (más numeroso y fino) y encima lo
       // principal (más grueso), para que las vías grandes no queden tapadas
@@ -925,7 +957,7 @@
     }
     fetch("./assets/kennedy_trees.json?v=rotatewhole-v1")
       .then((r) => { if (!r.ok) throw new Error("no se pudo cargar kennedy_trees.json"); return r.json(); })
-      .then((data) => { treeData = data; if (netData) drawNetwork(netCanvas.parentElement.clientWidth, netCanvas.parentElement.clientHeight); })
+      .then((data) => { treeData = data; buildBirdTrees(); refrescarCobertura(); if (netData) drawNetwork(netCanvas.parentElement.clientWidth, netCanvas.parentElement.clientHeight); })
       .catch((err) => console.warn("No se pudo cargar el arbolado de Kennedy:", err));
 
     // ---------- cargar la red (JSON ya recortado) ----------
@@ -1030,11 +1062,425 @@
       });
     }
 
+
+    // ================= MIRLAS (Turdus fuscater) =================
+    // Desplazamiento local diario desde los Cerros Orientales (oriente)
+    // hacia los humedales (occidente), buscando parches de vegetación para
+    // alimentarse y descansar. Cada mirla es un agente autónomo con
+    // posición (x,y) y velocidad (vx,vy); los árboles del Arbolado Urbano
+    // real de Kennedy son los atractores.
+    const BIRD_TREE_SPECIES = {
+      // índices de especie del propio archivo kennedy_trees.json
+      15: { key: "sauco",  name: "Saúco",  color: "#b06bff", weight: 1.00, food: true },
+      12: { key: "capuli", name: "Capulí", color: "#ff5fa8", weight: 0.76, food: true },
+      71: { key: "capuli", name: "Capulí", color: "#ff5fa8", weight: 0.76, food: true },
+      16: { key: "urapan", name: "Urapán", color: "#25d0a0", weight: 0.52, food: false },
+    };
+    const BIRD_VISION = 150;      // px — campo visual limitado
+    const BIRD_ARRIVE = 15;       // px — "muy cerca" del árbol
+    const BIRD_WIND = 30;         // px/s² — impulso global oriente → occidente
+    const BIRD_MAX_SPEED = 82;    // px/s — vuelo de crucero
+    const BIRD_REST_SPEED = 11;   // px/s — revoloteo mientras se alimenta o descansa
+    let BIRD_COUNT = 60;
+    // Umbral crítico de 60 dB(A) (Caltrans): por encima de ese nivel el
+    // ruido de tráfico enmascara por completo las señales de comunicación
+    // de las aves y su comportamiento cambia. Fuerza de repulsión:
+    //   F_ruido = -K_rep · max(0, Lp(R) - 60) · û
+    // con û el unitario que apunta desde la avenida hacia el ave; aquí se
+    // aplica en el sentido que aleja al ave de la calle ruidosa, que es lo
+    // que describe la regla.
+    const BIRD_NOISE_DB = 60;
+    const BIRD_K_REP = 45;
+    // Cobertura vegetal: porcentaje de aumento sobre la muestra base de
+    // árboles atractores. NO se inventa ningún árbol: se activan más de los
+    // que ya trae el Arbolado Urbano real (hay 12.935 de estas 3 especies).
+    const BIRD_TREE_BASE = { sauco: 260, capuli: 200, urapan: 220 };
+    let vegBoost = 0;
+    let refrescarCobertura = () => {};   // lo define la barra, más abajo
+    let birdTreesWorld = null;    // muestra de árboles atractores (coordenadas del mapa)
+    let birdTreesScreen = [];     // los mismos, ya proyectados a pantalla
+    let birds = [];
+    let birdsOn = false;   // al iniciar solo se ve la simulación de los carros
+    let birdLastTs = 0;
+
+    // Se toma una muestra repartida de cada especie: el arbolado real trae
+    // más de 12.000 árboles de estas tres, y buscar en todos cada cuadro
+    // sería innecesariamente caro.
+    function buildBirdTrees() {
+      if (!treeData || !treeData.trees) return;
+      const porEspecie = { sauco: [], capuli: [], urapan: [] };
+      treeData.trees.forEach((t) => {
+        const meta = BIRD_TREE_SPECIES[t[2]];
+        if (meta) porEspecie[meta.key].push([t[0], t[1], meta]);
+      });
+      const factor = 1 + vegBoost / 100;
+      const TOPE = { sauco: Math.round(BIRD_TREE_BASE.sauco * factor),
+                     capuli: Math.round(BIRD_TREE_BASE.capuli * factor),
+                     urapan: Math.round(BIRD_TREE_BASE.urapan * factor) };
+      birdTreesWorld = [];
+      Object.keys(porEspecie).forEach((k) => {
+        const lista = porEspecie[k];
+        const paso = Math.max(1, Math.floor(lista.length / TOPE[k]));
+        for (let i = 0; i < lista.length; i += paso) birdTreesWorld.push(lista[i]);
+      });
+    }
+
+    // Misma proyección que usa el dibujo del arbolado (distorsión de las 4
+    // esquinas + escala de la capa), para que las mirlas vean los árboles
+    // exactamente donde se ven en pantalla.
+    const TREE_CELL = 50;         // lado de la celda de la rejilla, en píxeles
+    let treeGrid = null, treeGridW = 0, treeGridH = 0;
+    function updateBirdTreesScreen(w, h) {
+      if (!birdTreesWorld || !treeWorldBBox) { birdTreesScreen = []; return; }
+      const { TL, TR, BL, BR } = getTreeCorners(w, h);
+      const bb = treeWorldBBox;
+      const wSpan = bb.maxX - bb.minX || 1, hSpan = bb.maxY - bb.minY || 1;
+      const cx = (TL.x + TR.x + BL.x + BR.x) / 4, cy = (TL.y + TR.y + BL.y + BR.y) / 4;
+      birdTreesScreen = [];
+      birdTreesWorld.forEach((t) => {
+        const [sx0, sy0] = treeDistortedScreen(t[0], t[1], bb, TL, TR, BL, BR, wSpan, hSpan);
+        const x = (sx0 - cx) * treeLayerScale + cx;
+        const y = (sy0 - cy) * treeLayerScale + cy;
+        if (x < -60 || x > w + 60 || y < -60 || y > h + 60) return;
+        birdTreesScreen.push({ x, y, meta: t[2] });
+      });
+      // rejilla: cada mirla solo revisa las celdas que toca su campo visual
+      treeGridW = Math.max(1, Math.ceil(w / TREE_CELL) + 3);
+      treeGridH = Math.max(1, Math.ceil(h / TREE_CELL) + 3);
+      treeGrid = new Array(treeGridW * treeGridH);
+      birdTreesScreen.forEach((t) => {
+        const cx = clampNum(Math.floor(t.x / TREE_CELL) + 1, 0, treeGridW - 1);
+        const cy = clampNum(Math.floor(t.y / TREE_CELL) + 1, 0, treeGridH - 1);
+        const i = cy * treeGridW + cx;
+        (treeGrid[i] || (treeGrid[i] = [])).push(t);
+      });
+    }
+    // Mejor árbol dentro del campo visual (más peso ecológico y más cerca)
+    function bestTreeNear(bx, by) {
+      if (!treeGrid) return null;
+      const r = BIRD_VISION;
+      const x0 = clampNum(Math.floor((bx - r) / TREE_CELL) + 1, 0, treeGridW - 1);
+      const x1 = clampNum(Math.floor((bx + r) / TREE_CELL) + 1, 0, treeGridW - 1);
+      const y0 = clampNum(Math.floor((by - r) / TREE_CELL) + 1, 0, treeGridH - 1);
+      const y1 = clampNum(Math.floor((by + r) / TREE_CELL) + 1, 0, treeGridH - 1);
+      let mejor = null, mejorPuntaje = 0, mejorDist = 0;
+      for (let cy = y0; cy <= y1; cy++) {
+        for (let cx = x0; cx <= x1; cx++) {
+          const celda = treeGrid[cy * treeGridW + cx];
+          if (!celda) continue;
+          for (let i = 0; i < celda.length; i++) {
+            const t = celda[i];
+            const dx = t.x - bx, dy = t.y - by;
+            const d2 = dx * dx + dy * dy;
+            if (d2 > r * r) continue;
+            const d = Math.sqrt(d2) || 0.001;
+            const puntaje = t.meta.weight / d;
+            if (puntaje > mejorPuntaje) { mejorPuntaje = puntaje; mejor = t; mejorDist = d; }
+          }
+        }
+      }
+      return mejor ? { arbol: mejor, dist: mejorDist } : null;
+    }
+
+    const clampNum = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+    // ---- Refugio verde del rincón superior izquierdo ----
+    // Es la franja de tierra que queda entre la esquina del mapa y el río
+    // que pasa por ahí: se pinta de verde translúcido SIN cruzar el río
+    // (el polígono usa el trazado real del río como borde) y aloja un grupo
+    // de mirlas residentes.
+    // Un SOLO trazado: el que bordea la esquina. Mezclando los dos, donde
+    // termina uno el borde saltaba al otro y aparecía un corte recto.
+    const REFUGE_RIVER_IDX = [0];
+    let refugePoly = null, refugeKey = "";
+    // El borde del refugio es la ORILLA SUPERIOR del río: para cada franja
+    // vertical se toma el punto más alto del trazado. Seguir el polilínea
+    // completa no sirve: en los meandros se dobla sobre sí misma y el
+    // relleno terminaba metiéndose al agua.
+    function refugePolygon(w, h) {
+      const clave = `${Math.round(w)}x${Math.round(h)}|${view.scale.toFixed(4)}|${view.offX.toFixed(1)}|${view.offY.toFixed(1)}|${ROTATE_DEG}`;
+      if (refugePoly && refugeKey === clave) return refugePoly;
+      const PASO = 8;
+      const orilla = new Map();
+      REFUGE_RIVER_IDX.forEach((idx) => {
+        const rio = TRACED_RIVERS[idx];
+        if (!rio) return;
+        rio.points.forEach(([wx, wy]) => {
+          const [x, y] = toScreen(wx, wy);
+          if (x < -80 || x > w + 80) return;
+          const celda = Math.round(x / PASO);
+          const previo = orilla.get(celda);
+          if (previo == null || y < previo) orilla.set(celda, y);
+        });
+      });
+      if (orilla.size < 3) return null;
+      const borde = [...orilla.entries()].sort((a, b) => a[0] - b[0]).map(([c, y]) => [c * PASO, y]);
+      const primero = borde[0], ultimo = borde[borde.length - 1];
+      refugePoly = [[primero[0], -60]].concat(borde, [[ultimo[0], -60]]);
+      refugeKey = clave;
+      return refugePoly;
+    }
+    function pointInPoly(x, y, poly) {
+      let dentro = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+        if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi + 1e-9) + xi) dentro = !dentro;
+      }
+      return dentro;
+    }
+    let refugeAnchorCache = null, refugeAnchorKey = "";
+    function refugeAnchor(w, h) {
+      const clave = `${Math.round(w)}x${Math.round(h)}|${view.scale.toFixed(4)}`;
+      if (refugeAnchorCache && refugeAnchorKey === clave) return refugeAnchorCache;
+      const poly = refugePolygon(w, h);
+      let sx = 0, sy = 0, n = 0;
+      (poly || []).forEach(([x, y]) => { if (x > 0 && y > 0 && x < w && y < h) { sx += x; sy += y; n++; } });
+      refugeAnchorCache = n ? { x: sx / n, y: Math.max(12, sy / n - 30) } : { x: w * 0.1, y: h * 0.1 };
+      refugeAnchorKey = clave;
+      return refugeAnchorCache;
+    }
+    function refugePointInside(w, h) {
+      const poly = refugePolygon(w, h);
+      if (!poly) return { x: w * 0.08, y: h * 0.08 };
+      for (let i = 0; i < 60; i++) {
+        const x = Math.random() * w * 0.45, y = Math.random() * h * 0.4;
+        if (x > 6 && y > 6 && pointInPoly(x, y, poly)) return { x, y };
+      }
+      return { x: w * 0.06, y: h * 0.06 };
+    }
+
+    // Punto al azar sobre uno de los humedales calcados.
+    function wetlandPoint(w, h) {
+      const poly = TRACED_WETLANDS[Math.floor(Math.random() * TRACED_WETLANDS.length)] || [];
+      const p = poly[Math.floor(Math.random() * poly.length)] || [CENTER_X, CENTER_Y];
+      const [sx, sy] = toScreen(p[0], p[1]);
+      return { x: clampNum(sx + (Math.random() - 0.5) * 30, 12, w - 12),
+               y: clampNum(sy + (Math.random() - 0.5) * 30, 12, h - 12) };
+    }
+
+    // origen: "noroeste" = arriba a la izquierda · "humedal" = ya posada en
+    // un humedal · "oriente" = entra por el borde oriental (así el flujo
+    // diario se mantiene cuando una mirla sale por el occidente).
+    function makeBird(w, h, origen) {
+      let x, y;
+      if (origen === "refugio") { const p = refugePointInside(w, h); x = p.x; y = p.y; }
+      else if (origen === "humedal") { const p = wetlandPoint(w, h); x = p.x; y = p.y; }
+      else if (origen === "noroeste") { x = w * (0.03 + Math.random() * 0.14); y = h * (0.03 + Math.random() * 0.20); }
+      else { x = w + 12 + Math.random() * 50; y = h * (0.08 + Math.random() * 0.82); }
+      const residente = origen === "refugio";
+      return { x, y,
+               vx: residente ? (Math.random() - 0.5) * 26 : -(30 + Math.random() * 30),
+               vy: (Math.random() - 0.5) * (residente ? 26 : 14),
+               rest: 0, cooldown: 0, restMeta: null, phase: Math.random() * 6.28, origen, residente };
+    }
+    const refugeTarget = () => Math.max(6, Math.round(BIRD_COUNT * 0.15));
+    function initBirds(w, h) {
+      birds = [];
+      const enRefugio = refugeTarget();
+      for (let i = 0; i < enRefugio; i++) birds.push(makeBird(w, h, "refugio"));
+      // como se pidió: unas salen desde arriba a la izquierda y otras ya
+      // están en los humedales
+      for (let i = enRefugio; i < BIRD_COUNT; i++) birds.push(makeBird(w, h, i % 2 ? "humedal" : "noroeste"));
+    }
+
+    function updateBirds(dtRaw, w, h) {
+      const dt = Math.min(0.05, Math.max(0, dtRaw));
+      if (!dt) return;
+      birds.forEach((b) => {
+        b.phase += dt * 9;
+        if (b.rest > 0) {
+          // Muy cerca de un árbol: desacelera notablemente y revolotea al
+          // azar 2 o 3 segundos (se alimenta o descansa).
+          b.rest -= dt;
+          b.vx += (Math.random() - 0.5) * 150 * dt;
+          b.vy += (Math.random() - 0.5) * 150 * dt;
+          const freno = Math.pow(0.02, dt);
+          b.vx *= freno; b.vy *= freno;
+          const sp = Math.hypot(b.vx, b.vy);
+          if (sp > BIRD_REST_SPEED) { b.vx = (b.vx / sp) * BIRD_REST_SPEED; b.vy = (b.vy / sp) * BIRD_REST_SPEED; }
+        } else if (b.residente) {
+          // Residentes del refugio: no las arrastra el flujo hacia el
+          // occidente; revolotean dentro de la mancha verde y, si se salen,
+          // vuelven a entrar.
+          if (b.cooldown > 0) b.cooldown -= dt;
+          b.vx += (Math.random() - 0.5) * 90 * dt;
+          b.vy += (Math.random() - 0.5) * 90 * dt;
+          const poly = refugePolygon(w, h);
+          if (poly && !pointInPoly(b.x, b.y, poly)) {
+            const destino = refugeAnchor(w, h);
+            const dx = destino.x - b.x, dy = destino.y - b.y;
+            const d = Math.hypot(dx, dy) || 1;
+            b.vx += (dx / d) * 130 * dt;
+            b.vy += (dy / d) * 130 * dt;
+          }
+          const spR = Math.hypot(b.vx, b.vy);
+          if (spR > 46) { b.vx = (b.vx / spR) * 46; b.vy = (b.vy / spR) * 46; }
+        } else {
+          if (b.cooldown > 0) b.cooldown -= dt;
+          // impulso global (viento/flujo) de oriente a occidente
+          b.vx -= BIRD_WIND * dt;
+          b.vy += Math.sin(b.phase * 0.28) * 8 * dt;
+          // campo visual limitado: se queda con el árbol más atractivo
+          const hallazgo = bestTreeNear(b.x, b.y);
+          const mejor = hallazgo ? hallazgo.arbol : null;
+          const mejorDist = hallazgo ? hallazgo.dist : 0;
+          if (mejor && b.cooldown <= 0) {
+            const ux = (mejor.x - b.x) / mejorDist, uy = (mejor.y - b.y) / mejorDist;
+            const esSauco = mejor.meta.key === "sauco";
+            const fuerza = mejor.meta.weight * (esSauco ? 230 : 130);
+            b.vx += ux * fuerza * dt;
+            b.vy += uy * fuerza * dt;
+            if (esSauco) {
+              // su alimento favorito: cambia bruscamente el rumbo
+              const sp = Math.hypot(b.vx, b.vy) || 1;
+              b.vx = b.vx * 0.7 + ux * sp * 0.3;
+              b.vy = b.vy * 0.7 + uy * sp * 0.3;
+            }
+            if (mejorDist < BIRD_ARRIVE) {
+              b.rest = 2 + Math.random();     // 2 a 3 segundos
+              b.restMeta = mejor.meta;
+              b.cooldown = 7;                 // no se vuelve a pegar al mismo árbol enseguida
+            }
+          }
+          const sp = Math.hypot(b.vx, b.vy);
+          if (sp > BIRD_MAX_SPEED) { b.vx = (b.vx / sp) * BIRD_MAX_SPEED; b.vy = (b.vy / sp) * BIRD_MAX_SPEED; }
+        }
+        // ---- Umbral crítico de 60 dB(A) ----
+        const db = noiseDbAtScreen(b.x, b.y, w, h);
+        b.db = db;
+        // La regla se evalúa donde está el ave Y un poco por delante de su
+        // rumbo: el sonido viaja, así que la mirla oye la avenida antes de
+        // llegar y la esquiva, en vez de reaccionar cuando ya está encima
+        // (con la fuerza solo en su posición apenas alcanza a desviarse).
+        let exceso = Math.max(0, db - BIRD_NOISE_DB);     // max(0, Lp(R) - 60)
+        let rx = b.x, ry = b.y;
+        const rapidez = Math.hypot(b.vx, b.vy) || 1;
+        for (let k = 1; k <= 3; k++) {
+          const ax = b.x + (b.vx / rapidez) * k * 30, ay = b.y + (b.vy / rapidez) * k * 30;
+          const e = Math.max(0, noiseDbAtScreen(ax, ay, w, h) - BIRD_NOISE_DB) * (1 - k * 0.15);
+          if (e > exceso) { exceso = e; rx = ax; ry = ay; }
+        }
+        b.estresada = exceso > 0;
+        if (exceso > 0) {
+          const u = noiseEscapeDir(rx, ry, w, h);
+          if (u) {
+            b.vx += BIRD_K_REP * exceso * u[0] * dt;
+            b.vy += BIRD_K_REP * exceso * u[1] * dt;
+          }
+          // por encima del umbral el comportamiento cambia: si estaba
+          // comiendo o descansando, deja el árbol y sale de la zona
+          if (b.rest > 0) { b.rest = 0; b.cooldown = Math.max(b.cooldown, 3); }
+          const sp = Math.hypot(b.vx, b.vy);
+          if (sp > BIRD_MAX_SPEED * 1.35) { b.vx = (b.vx / sp) * BIRD_MAX_SPEED * 1.35; b.vy = (b.vy / sp) * BIRD_MAX_SPEED * 1.35; }
+        }
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        if (b.y < 8) { b.y = 8; b.vy = Math.abs(b.vy); }
+        if (b.y > h - 8) { b.y = h - 8; b.vy = -Math.abs(b.vy); }
+        if (b.x > w + 70) { b.x = w + 70; b.vx = -Math.abs(b.vx); }
+        // salió por el occidente: vuelve a entrar por el oriente (Cerros).
+        // Las residentes del refugio no se van: se las devuelve al refugio.
+        if (b.x < -40) Object.assign(b, makeBird(w, h, b.residente ? "refugio" : "oriente"));
+      });
+    }
+
+    function drawBirds(w, h) {
+      // árboles atractores, con el color de su especie
+      birdTreesScreen.forEach((t) => {
+        vehCtx.beginPath();
+        vehCtx.fillStyle = t.meta.color;
+        vehCtx.globalAlpha = t.meta.key === "urapan" ? 0.45 : 0.78;
+        vehCtx.arc(t.x, t.y, t.meta.key === "sauco" ? 2.6 : 2.1, 0, Math.PI * 2);
+        vehCtx.fill();
+      });
+      vehCtx.globalAlpha = 1;
+      birds.forEach((b) => {
+        const ang = Math.atan2(b.vy, b.vx);
+        vehCtx.save();
+        vehCtx.translate(b.x, b.y);
+        if (b.estresada) {
+          // por encima de 60 dB(A): anillo de alerta, huyendo del ruido
+          vehCtx.beginPath();
+          vehCtx.strokeStyle = "#ff6b4d";
+          vehCtx.globalAlpha = 0.85;
+          vehCtx.lineWidth = 1.3;
+          vehCtx.arc(0, 0, 5.8, 0, Math.PI * 2);
+          vehCtx.stroke();
+          vehCtx.globalAlpha = 1;
+        }
+        if (b.rest > 0 && b.restMeta) {
+          // halo del color del árbol donde está posada / alimentándose
+          vehCtx.beginPath();
+          vehCtx.strokeStyle = b.restMeta.color;
+          vehCtx.globalAlpha = 0.75;
+          vehCtx.lineWidth = 1.2;
+          vehCtx.arc(0, 0, 5.2, 0, Math.PI * 2);
+          vehCtx.stroke();
+          vehCtx.globalAlpha = 1;
+        }
+        vehCtx.rotate(ang);
+        // La mirla es un ave oscura y el mapa es negro: se le pone un halo
+        // suave y un contorno claro para que se distinga del fondo.
+        const halo = vehCtx.createRadialGradient(0, 0, 0, 0, 0, 6);
+        halo.addColorStop(0, "rgba(226,232,240,0.30)");
+        halo.addColorStop(1, "rgba(226,232,240,0)");
+        vehCtx.fillStyle = halo;
+        vehCtx.beginPath();
+        vehCtx.arc(0, 0, 6, 0, Math.PI * 2);
+        vehCtx.fill();
+        // aleteo: más rápido en vuelo, casi quieto mientras descansa
+        const bat = Math.sin(b.phase) * (b.rest > 0 ? 0.7 : 2.2);
+        vehCtx.strokeStyle = "#eef2f7";
+        vehCtx.lineWidth = 1.15;
+        vehCtx.lineCap = "round";
+        vehCtx.beginPath();
+        vehCtx.moveTo(-3, -bat);
+        vehCtx.lineTo(0.3, 0);
+        vehCtx.lineTo(-3, bat);
+        vehCtx.stroke();
+        vehCtx.fillStyle = "#20222c";
+        vehCtx.strokeStyle = "rgba(238,242,247,0.9)";
+        vehCtx.lineWidth = 0.7;
+        vehCtx.beginPath();
+        vehCtx.ellipse(0, 0, 2.3, 1.3, 0, 0, Math.PI * 2);
+        vehCtx.fill();
+        vehCtx.stroke();
+        // pico naranja, como la mirla real
+        vehCtx.fillStyle = "#f2a93b";
+        vehCtx.beginPath();
+        vehCtx.arc(2.4, 0, 0.7, 0, Math.PI * 2);
+        vehCtx.fill();
+        vehCtx.restore();
+      });
+    }
+
+    // Ventana de solo lectura al estado de las mirlas (no cambia nada del
+    // comportamiento): sirve para verificar las reglas desde afuera.
+    window.SUMO_BIRDS_STATE = () => birds.map((b) => ({
+      x: b.x, y: b.y, vx: b.vx, vy: b.vy, rest: b.rest,
+      origen: b.origen, arbol: b.restMeta ? b.restMeta.key : null,
+      db: b.db || null, estresada: !!b.estresada,
+    }));
+    window.SUMO_BIRDS_TREES = () => ({ total: birdTreesScreen.length,
+      porEspecie: birdTreesScreen.reduce((acc, t) => { acc[t.meta.key] = (acc[t.meta.key] || 0) + 1; return acc; }, {}) });
+
+    function birdsFrame(w, h) {
+      if (!birdsOn) { birdLastTs = 0; return; }
+      const now = (typeof performance !== "undefined" ? performance.now() : Date.now());
+      const dt = birdLastTs ? (now - birdLastTs) / 1000 : 0;
+      birdLastTs = now;
+      updateBirdTreesScreen(w, h);
+      if (!birds.length) initBirds(w, h);
+      if (playing) updateBirds(dt, w, h);
+      drawBirds(w, h);
+    }
+
     function drawVehiclesAt(t) {
       const w = vehCanvas.parentElement.clientWidth, h = vehCanvas.parentElement.clientHeight;
       vehCtx.clearRect(0, 0, w, h);
       const baseVehicles = vehiclesAtTime(t);
       const vehicles = applyDemandAndClosure(baseVehicles, t);
+      if (noiseLayerOn || birdsOn) computeNoiseField(vehicles, w, h);
       if (noiseLayerOn) drawNoiseLayer(vehicles, w, h);
       else if (noiseCtx) noiseCtx.clearRect(0, 0, w, h);
       vehicles.forEach((v) => {
@@ -1062,6 +1508,7 @@
         vehCtx.globalAlpha = 1;
         vehCtx.restore();
       });
+      birdsFrame(w, h);
       timeLabel.textContent = `${fmtTime(t)} / ${slider.max ? fmtTime(Number(slider.max)) : "00:00"}`;
       if (!isScrubbing) slider.value = String(Math.round(t));
     }
@@ -1100,6 +1547,43 @@
       if (!ambienceAudio) return;
       ambienceAudio.muted = !ambienceAudio.muted;
       muteBtn.innerHTML = ambienceAudio.muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+    });
+    function setBirdCount(n, w, h) {
+      BIRD_COUNT = Math.max(1, Math.round(n));
+      if (!birds.length) return;
+      while (birds.length > BIRD_COUNT) birds.pop();
+      while (birds.length < BIRD_COUNT) {
+        const residentes = birds.filter((x) => x.residente).length;
+        birds.push(makeBird(w, h, residentes < refugeTarget() ? "refugio" : (birds.length % 2 ? "humedal" : "oriente")));
+      }
+    }
+    const vegSlider = document.getElementById("sumoVegSlider");
+    const vegVal = document.getElementById("sumoVegVal");
+    const vegCount = document.getElementById("sumoVegCount");
+    refrescarCobertura = () => {
+      if (vegVal) vegVal.textContent = `+${vegBoost}%`;
+      if (vegCount) vegCount.textContent = birdTreesWorld ? birdTreesWorld.length.toLocaleString("es-CO") : "—";
+    };
+    vegSlider?.addEventListener("input", () => {
+      vegBoost = Number(vegSlider.value);
+      buildBirdTrees();
+      refrescarCobertura();
+      drawVehiclesAt(playhead);
+    });
+    const birdSlider = document.getElementById("sumoBirdSlider");
+    const birdCountVal = document.getElementById("sumoBirdCountVal");
+    birdSlider?.addEventListener("input", () => {
+      const n = Number(birdSlider.value);
+      if (birdCountVal) birdCountVal.textContent = String(n);
+      const w = vehCanvas.parentElement.clientWidth, h = vehCanvas.parentElement.clientHeight;
+      setBirdCount(n, w, h);
+      drawVehiclesAt(playhead);
+    });
+    const birdToggle = document.getElementById("sumoBirdToggle");
+    birdToggle?.addEventListener("change", () => {
+      birdsOn = birdToggle.checked;
+      birdLastTs = 0;
+      drawVehiclesAt(playhead);
     });
     const noiseToggle = document.getElementById("sumoNoiseToggle");
     noiseToggle?.addEventListener("change", () => {
@@ -1185,122 +1669,8 @@
     });
 
     // El mapa queda fijo: sin arrastrar ni hacer zoom, con el encuadre
-    // definido por EXTRA_ZOOM/CENTER_X/CENTER_Y/ROTATE_DEG de arriba.
-
-    // ---------- Rotación GLOBAL del mapa (calles + árboles + vehículos
-    // juntos, todos usan ROTATE_DEG a través de toScreen) ----------
-    const mapRotInput = document.getElementById("sumoMapRotation");
-    const mapRotReset = document.getElementById("sumoMapRotationReset");
-    const mapRotCopy = document.getElementById("sumoMapRotationCopy");
-    const mapRotOutput = document.getElementById("sumoMapRotationOutput");
-    const mapRotStatus = document.getElementById("sumoMapRotationStatus");
-    function redrawWholeMap() {
-      const w = netCanvas.parentElement.clientWidth, h = netCanvas.parentElement.clientHeight;
-      drawNetwork(w, h);
-      drawVehiclesAt(playhead);
-      if (mapRotOutput) mapRotOutput.value = `ROTATE_DEG=${ROTATE_DEG.toFixed(1)}`;
-    }
-    mapRotInput?.addEventListener("input", () => {
-      ROTATE_DEG = Number(mapRotInput.value);
-      redrawWholeMap();
-    });
-    mapRotReset?.addEventListener("click", () => {
-      ROTATE_DEG = 0;
-      if (mapRotInput) mapRotInput.value = 0;
-      redrawWholeMap();
-    });
-    mapRotCopy?.addEventListener("click", async () => {
-      if (mapRotOutput) mapRotOutput.value = `ROTATE_DEG=${ROTATE_DEG.toFixed(1)}`;
-      try { await navigator.clipboard.writeText(mapRotOutput?.value || ""); } catch (_) {}
-      if (mapRotStatus) mapRotStatus.textContent = "Ángulo copiado. Pégamelo en el chat para dejarlo fijo así.";
-    });
-
-    // ---------- Distorsionar árboles con 4 esquinas (como "Distort" de
-    // Photoshop) — arrastrar un punto de esquina distorsiona esa esquina;
-    // arrastrar en otra parte mueve las 4 esquinas juntas (mover todo). ---
-    const treeMoveBtn = document.getElementById("sumoTreeMoveMode");
-    const treeDistortReset = document.getElementById("sumoTreeDistortReset");
-    const treeDistortCopy = document.getElementById("sumoTreeDistortCopy");
-    const treeDistortOutput = document.getElementById("sumoTreeDistortOutput");
-    const treeDistortStatus = document.getElementById("sumoTreeDistortStatus");
-    function updateTreeDistortOutput() {
-      if (!treeDistortOutput) return;
-      const c = treeCornerOffsets;
-      treeDistortOutput.value = `tl=(${c.tl.x.toFixed(0)},${c.tl.y.toFixed(0)})  tr=(${c.tr.x.toFixed(0)},${c.tr.y.toFixed(0)})  bl=(${c.bl.x.toFixed(0)},${c.bl.y.toFixed(0)})  br=(${c.br.x.toFixed(0)},${c.br.y.toFixed(0)})  scale=${treeLayerScale.toFixed(3)}`;
-    }
-    function redrawTreeDistort() {
-      redrawWholeMap();
-      updateTreeDistortOutput();
-    }
-    let activeDragCorner = null; // "tl" | "tr" | "bl" | "br" | "all" | null
-    let dragLast = null;
-    const CORNER_GRAB_RADIUS = 16;
-    treeMoveBtn?.addEventListener("click", () => {
-      const active = treeMoveBtn.classList.toggle("active");
-      window.sumoActiveMode = active ? "trees" : "draw";
-      if (treeDistortStatus) treeDistortStatus.textContent = active
-        ? "Modo activo: arrastra un punto naranja para distorsionar esa esquina, o arrastra en otra parte para mover todo."
-        : "Ajusta cuando quieras — vuelve a activar el modo.";
-      redrawWholeMap();
-    });
-    document.getElementById("sumoCanvasWrap")?.addEventListener("pointerdown", (event) => {
-      if (window.sumoActiveMode !== "trees" || !treeWorldBBox) return;
-      const rect = event.currentTarget.getBoundingClientRect();
-      const px = event.clientX - rect.left, py = event.clientY - rect.top;
-      const w = netCanvas.parentElement.clientWidth, h = netCanvas.parentElement.clientHeight;
-      const { TL, TR, BL, BR } = getTreeCorners(w, h);
-      const cx = (TL.x + TR.x + BL.x + BR.x) / 4, cy = (TL.y + TR.y + BL.y + BR.y) / 4;
-      // Los puntos de agarre se ven acercados al centro (HANDLE_DISPLAY_SCALE);
-      // para agarrarlos bien hay que comparar contra esa MISMA posición.
-      const corners = {
-        tl: { x: (TL.x - cx) * HANDLE_DISPLAY_SCALE + cx, y: (TL.y - cy) * HANDLE_DISPLAY_SCALE + cy },
-        tr: { x: (TR.x - cx) * HANDLE_DISPLAY_SCALE + cx, y: (TR.y - cy) * HANDLE_DISPLAY_SCALE + cy },
-        bl: { x: (BL.x - cx) * HANDLE_DISPLAY_SCALE + cx, y: (BL.y - cy) * HANDLE_DISPLAY_SCALE + cy },
-        br: { x: (BR.x - cx) * HANDLE_DISPLAY_SCALE + cx, y: (BR.y - cy) * HANDLE_DISPLAY_SCALE + cy },
-      };
-      let closest = null, closestDist = CORNER_GRAB_RADIUS;
-      Object.entries(corners).forEach(([key, p]) => {
-        const d = Math.hypot(p.x - px, p.y - py);
-        if (d < closestDist) { closestDist = d; closest = key; }
-      });
-      activeDragCorner = closest || "all"; // si no agarró ninguna esquina, mueve todo junto
-      dragLast = { x: event.clientX, y: event.clientY };
-    });
-    window.addEventListener("pointermove", (event) => {
-      if (!activeDragCorner || !dragLast) return;
-      // Si se agarró un punto de esquina, éste se ve más cerca del centro
-      // (HANDLE_DISPLAY_SCALE) que su posición real, así que el arrastre se
-      // divide por esa escala; si se está moviendo todo junto, se usa la
-      // escala real de la capa — en ambos casos, para que el arrastre se
-      // sienta 1:1 con el mouse sin importar qué tan "acercado" se vea.
-      const dragScale = activeDragCorner === "all" ? treeLayerScale : HANDLE_DISPLAY_SCALE;
-      const ddx = (event.clientX - dragLast.x) / dragScale;
-      const ddy = (event.clientY - dragLast.y) / dragScale;
-      dragLast = { x: event.clientX, y: event.clientY };
-      if (activeDragCorner === "all") {
-        Object.values(treeCornerOffsets).forEach((c) => { c.x += ddx; c.y += ddy; });
-      } else {
-        treeCornerOffsets[activeDragCorner].x += ddx;
-        treeCornerOffsets[activeDragCorner].y += ddy;
-      }
-      redrawTreeDistort();
-    });
-    window.addEventListener("pointerup", () => { activeDragCorner = null; dragLast = null; });
-    const treeLayerScaleInput = document.getElementById("sumoTreeSizeScale");
-    if (treeLayerScaleInput) treeLayerScaleInput.value = treeLayerScale;
-    treeLayerScaleInput?.addEventListener("input", () => { treeLayerScale = Number(treeLayerScaleInput.value); redrawTreeDistort(); });
-    treeDistortReset?.addEventListener("click", () => {
-      treeCornerOffsets = { tl: { x: 0, y: 0 }, tr: { x: 0, y: 0 }, bl: { x: 0, y: 0 }, br: { x: 0, y: 0 } };
-      treeLayerScale = 1;
-      if (treeLayerScaleInput) treeLayerScaleInput.value = 1;
-      redrawTreeDistort();
-    });
-    treeDistortCopy?.addEventListener("click", async () => {
-      updateTreeDistortOutput();
-      try { await navigator.clipboard.writeText(treeDistortOutput?.value || ""); } catch (_) {}
-      if (treeDistortStatus) treeDistortStatus.textContent = "Coordenadas de las 4 esquinas copiadas. Pégamelas en el chat para dejarlas fijas.";
-    });
-    updateTreeDistortOutput();
+    // definido por EXTRA_ZOOM/CENTER_X/CENTER_Y/ROTATE_DEG de arriba (fijo,
+    // ya no editable desde un panel).
 
     // ---------- Clic sobre un árbol: muestra su especie y altura ----------
     const treeInfoBox = document.createElement("div");
@@ -1308,7 +1678,7 @@
     treeInfoBox.hidden = true;
     document.getElementById("sumoCanvasWrap")?.appendChild(treeInfoBox);
     document.getElementById("sumoCanvasWrap")?.addEventListener("click", (event) => {
-      if (!treeData || !treeWorldBBox || window.sumoActiveMode === "trees") return; // no interferir con distorsionar/mover
+      if (!treeData || !treeWorldBBox) return;
       const rect = event.currentTarget.getBoundingClientRect();
       const clickX = event.clientX - rect.left, clickY = event.clientY - rect.top;
       const w = netCanvas.parentElement.clientWidth, h = netCanvas.parentElement.clientHeight;
