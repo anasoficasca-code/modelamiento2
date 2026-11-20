@@ -884,7 +884,7 @@
           if (m.transparent) m.opacity = m.opacity < 0.1 ? 0.07 : Math.min(0.7, Math.max(m.opacity * 2.2, 0.3)); // bordes de edificios: finos y tenues
         } else {
           const natural = hsl.s > 0.08 && ((hsl.h > 0.1 && hsl.h < 0.45) || (hsl.h > 0.5 && hsl.h < 0.7)); // parques y agua conservan su color
-          if (natural && hsl.h < 0.45) { m.color.setHSL(0.39, 0.3, 0.1 + hsl.l * 0.13); /* verde bosque sobrio */ if (m.transparent) m.opacity = Math.max(m.opacity, 0.92); } // verde mas fuerte
+          if (natural && hsl.h < 0.45) { m.map = null; m.color.setHSL(0.38, 0.3, 0.15); /* verde plano, sin textura de pasto */ m.opacity = 1; m.transparent = false; } // verde mas fuerte
           else if (natural) m.color.setHSL(0.55, 0.42, 0.12 + hsl.l * 0.16); // azul petróleo
           else m.color.setHSL(0.6, 0.08, 0.05 + hsl.l * 0.22); // edificios, techos y fachadas: gris frio neutro
           if (m.emissive) m.emissive.setHex(0x000000);
@@ -921,7 +921,7 @@
     camera.position.set(212.25, 475.68, 958.82);
     controls.target.set(144.45, 24.68, -5.88);
     camera.zoom = 1.55; // un poco mas de zoom que antes (1.23), se veia muy lejos
-    if (CONECTO) { camera.position.x += 46; controls.target.x += 46; camera.zoom = 1.2; } // entra el sector Bavaria
+    if (CONECTO) { camera.position.x += 52; controls.target.x += 52; camera.zoom = 1.27; } // entra el sector Bavaria
     viewSize = 190.0;
     resize();
     camera.updateProjectionMatrix();
@@ -1211,7 +1211,7 @@
       nodes:[
         { id:"s8_1", t:"Predio de Bavaria en engorde: suelo retenido a la espera de valorización", x:9330.0, y:2930.0 },
         { id:"s8_2", t:"Torres de vivienda en altura en el sector de Bavaria", x:8990.0, y:3330.0 },
-        { id:"s8_3", t:"Acumulación de residuos y escombros en el predio sin uso y sus bordes", x:9660.0, y:3330.0 },
+        { id:"s8_3", t:"Acumulación de residuos y escombros en el predio sin uso y sus bordes", x:9440.0, y:3440.0 },
       ],
       rel:[
         { from:"s8_1", to:"s8_2", pol:"+" },
@@ -1392,6 +1392,14 @@
     { from:"s5_2", to:"s1_2", pol:"+", verbo:"Las maniobras de carga y descarga en vía pública reducen drásticamente la capacidad de la red vial", inter:true },
     { from:"s1_4", to:"s6_2", pol:"+", verbo:"El parqueo prolongado de camiones convierte las rondas y andenes en puntos clandestinos de arrojamiento de basuras", inter:true }
   ];
+
+  // ?conecto=1: el sector Bavaria se conecta con el resto de la red (no queda aislado)
+  if (CONECTO) INTER_NETWORK_REL.push(
+    { from:"s8_1", to:"s4_6", pol:"+", verbo:"El suelo de Bavaria retenido en engorde se libera para torres masivas que superan la capacidad de las vías", inter:true },
+    { from:"s8_2", to:"s4_8", pol:"+", verbo:"Las torres nuevas de Bavaria suman pasajeros a un sistema masivo ya saturado", inter:true },
+    { from:"s8_3", to:"s2_8", pol:"+", verbo:"Los residuos del predio sin uso terminan arrastrados por la lluvia hacia los canales", inter:true },
+    { from:"s6_2", to:"s8_3", pol:"+", verbo:"Los camiones estacionados en los bordes del predio dejan basura y escombros", inter:true }
+  );
 
   // Diccionario unificado con todos los nodos por ID
   const allNodesById = {};
